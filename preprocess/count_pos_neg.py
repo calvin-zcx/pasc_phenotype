@@ -66,6 +66,10 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
         dfs_covid.append(chunk_covid_records)
 
         i += 1
+        if i == 1:
+            print('chunk.shape', chunk.shape)
+            print('chunk.columns', chunk.columns)
+
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             if debug:
