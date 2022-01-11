@@ -96,9 +96,10 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     print('Counter:', cnt)
     dfs_covid_all = pd.concat(dfs_covid)
     dfs_all = pd.concat(dfs)
+    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
     dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
-    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return dfs_all, dfs_covid_all, meta
 
 
