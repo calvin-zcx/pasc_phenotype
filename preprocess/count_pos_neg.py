@@ -45,7 +45,7 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     #                     iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
     sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
                                            '../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
-                                           chunksize=chunksize, multiprocess=True, num_processes=4)
+                                           chunksize=chunksize) #, multiprocess=True, num_processes=4)
 
     dfs = []  # holds data chunks
     dfs_covid = []
