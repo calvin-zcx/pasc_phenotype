@@ -23,7 +23,7 @@ import utils
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess-transform sas 2 csv')
-    parser.add_argument('--input', help='input sas file ')  # default=r'../data/V15_COVID19/COL/demographic.csv',
+    parser.add_argument('--input', help='input sas file')  # default=r'../data/V15_COVID19/COL/demographic.csv',
     parser.add_argument('--output', help='output csv')
     args = parser.parse_args()
     return args
