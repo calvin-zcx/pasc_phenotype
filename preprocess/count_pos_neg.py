@@ -39,10 +39,14 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     code_set = set(df_covid['concept_code'].to_list())
 
     # step 2: read lab results by chunk, due to large file size
-    sasds = pd.read_sas('../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
-                        encoding='windows-1252',
-                        chunksize=chunksize,
-                        iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
+    # sasds = pd.read_sas('../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
+    #                     encoding='windows-1252',
+    #                     chunksize=chunksize,
+    #                     iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
+    sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
+                                           '../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
+                                           chunksize=chunksize, multiprocess=True, num_processes=4)
+
     dfs = []  # holds data chunks
     dfs_covid = []
     cnt = Counter([])
@@ -51,7 +55,7 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     n_covid_rows = 0
     patid_set = set([])
     patid_covid_set = set([])
-    for chunk in sasds:
+    for chunk, meta in sasds:
         n_rows += len(chunk)
         dfs.append(chunk)
         if dataset == 'COL':
@@ -95,9 +99,10 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
     dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return dfs_all, dfs_covid_all, meta
 
 
 if __name__ == '__main__':
     args = parse_args()
     print(args)
-    read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
+    dfs_all, dfs_covid_all, meta = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
