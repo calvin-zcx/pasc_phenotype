@@ -39,13 +39,13 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     code_set = set(df_covid['concept_code'].to_list())
 
     # step 2: read lab results by chunk, due to large file size
-    # sasds = pd.read_sas('../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
-    #                     encoding='windows-1252',
-    #                     chunksize=chunksize,
-    #                     iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
-    sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
-                                           '../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
-                                           chunksize=chunksize) #, multiprocess=True, num_processes=4)
+    sasds = pd.read_sas('../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
+                        encoding='WINDOWS-1252',
+                        chunksize=chunksize,
+                        iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
+    # sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
+    #                                        '../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
+    #                                        chunksize=chunksize)  #, multiprocess=True, num_processes=4)
 
     dfs = []  # holds data chunks
     dfs_covid = []
@@ -55,9 +55,16 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     n_covid_rows = 0
     patid_set = set([])
     patid_covid_set = set([])
-    for chunk, meta in sasds:
+    for chunk in sasds:  # , meta
+        i += 1
+        if chunk.empty:
+            print("ERROR: Empty chunk! break!")
+            break
+
         n_rows += len(chunk)
-        dfs.append(chunk)
+        if debug:
+            dfs.append(chunk)
+
         if dataset == 'COL':
             chunk_covid_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set), :]
             patid_set.update(chunk['PATID'])
@@ -74,8 +81,6 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
             patid_covid_set.update(chunk_covid_records['patid'])
 
         dfs_covid.append(chunk_covid_records)
-
-        i += 1
         if i == 1:
             print('chunk.shape', chunk.shape)
             print('chunk.columns', chunk.columns)
@@ -95,15 +100,17 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     print('#chunk: ', i, 'chunk size:', chunksize)
     print('Counter:', cnt)
     dfs_covid_all = pd.concat(dfs_covid)
-    dfs_all = pd.concat(dfs)
+    print('dfs_covid_all.shape', dfs_covid_all.shape)
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
-    dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
+    if debug:
+        dfs_all = pd.concat(dfs)
+        dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return dfs_all, dfs_covid_all, meta
+    return dfs_covid_all  # dfs_all, dfs_covid_all, meta
 
 
 if __name__ == '__main__':
     args = parse_args()
     print(args)
-    dfs_all, dfs_covid_all, meta = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
+    dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
