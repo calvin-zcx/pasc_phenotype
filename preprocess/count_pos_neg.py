@@ -25,13 +25,14 @@ from collections import Counter
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess-count pos and negative from lab file')
     parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset directory')
+    parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
     return args
 
 
-def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=True):
+def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     start_time = time.time()
-    print('Choose dataset:', dataset)
+    print('Choose dataset:', dataset, 'chunksize:', chunksize, 'debug:', debug)
     # step 1: load covid lab test codes, may be updated by:
     # https://github.com/National-COVID-Cohort-Collaborative/Phenotype_Data_Acquisition/wiki/Latest-Phenotype
     df_covid = pd.read_csv(r'../data/V15_COVID19/covid_lab_test_names.csv')
@@ -84,4 +85,4 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=True):
 if __name__ == '__main__':
     args = parse_args()
     print(args)
-    read_lab_and_count_covid(dataset=args.dataset)
+    read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
