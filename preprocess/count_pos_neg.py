@@ -49,19 +49,25 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     i = 0
     n_rows = 0
     n_covid_rows = 0
+    patid_set = set([])
+    patid_covid_set = set([])
     for chunk in sasds:
         n_rows += len(chunk)
         dfs.append(chunk)
         if dataset == 'COL':
             chunk_covid_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set), :]
+            patid_set.update(chunk['PATID'])
         elif dataset == 'WCM':
             chunk_covid_records = chunk.loc[chunk['lab_loinc'].isin(code_set), :]
+            patid_set.update(chunk['patid'])
 
         n_covid_rows += len(chunk_covid_records)
         if dataset == 'COL':
             cnt.update(chunk_covid_records['RESULT_QUAL'])
+            patid_covid_set.update(chunk_covid_records['PATID'])
         elif dataset == 'WCM':
             cnt.update(chunk_covid_records['result_qual'])
+            patid_covid_set.update(chunk_covid_records['patid'])
 
         dfs_covid.append(chunk_covid_records)
 
@@ -72,12 +78,17 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
 
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+            print('len(patid_set):', len(patid_set))
+            print('len(patid_covid_set):', len(patid_covid_set))
+
             if debug:
                 print('IN DEBUG MODE, BREAK, AND DUMP!')
                 break
 
     dfs_covid_all = pd.concat(dfs_covid)
     print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows)
+    print('len(patid_set):', len(patid_set))
+    print('len(patid_covid_set):', len(patid_covid_set))
     print('#chunk: ', i, 'chunk size:', chunksize)
     print('Counter:', cnt)
     dfs_all = pd.concat(dfs)
