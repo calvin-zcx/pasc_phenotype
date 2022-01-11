@@ -85,12 +85,12 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
                 print('IN DEBUG MODE, BREAK, AND DUMP!')
                 break
 
-    dfs_covid_all = pd.concat(dfs_covid)
     print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows)
     print('len(patid_set):', len(patid_set))
     print('len(patid_covid_set):', len(patid_covid_set))
     print('#chunk: ', i, 'chunk size:', chunksize)
     print('Counter:', cnt)
+    dfs_covid_all = pd.concat(dfs_covid)
     dfs_all = pd.concat(dfs)
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
     dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
