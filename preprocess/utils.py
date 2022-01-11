@@ -40,23 +40,43 @@ def sas_2_csv(infile, outfile):
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
-def read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat'):
+def read_sas_2_df(infile, chunksize=100000, encoding='WINDOWS-1252', column_name='upper'):
     # Windows-1252
+    print('Warning: only use [def read_sas_2_df(infile, chunksize, encoding)] for small files, e.g. < 1 GB')
+    print('read: ', infile, 'chunksize:', chunksize, 'encoding:', encoding, 'column_name:', column_name)
     start_time = time.time()
-    sasds = pd.read_sas(infile, encoding='windows-1252', chunksize=100000, iterator=True) # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
-    dfs = []  # holds data chunks
+    sasds = pd.read_sas(infile,
+                        encoding=encoding,
+                        chunksize=chunksize,
+                        iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
+    df = []  # holds data chunks
     i = 0
+    n_rows = 0
     for chunk in sasds:
-        dfs.append(chunk)
         i += 1
+        if chunk.empty:
+            print("ERROR: Empty chunk! break!")
+            break
+        n_rows += len(chunk)
+        df.append(chunk)
         if i % 10 == 0:
-            print('chunk:',i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    #     if i == 10:
-    #         break
-    print('#chunk: ', i)
-    dfs_all = pd.concat(dfs)
-    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return dfs_all
+            print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    print('#chunk: ', i, 'chunk size:', chunksize, 'n_rows:', n_rows)
+    df = pd.concat(df)
+    print('df.shape:', df.shape)
+    print('df.columns:', df.columns)
+    if column_name == 'upper':
+        df.rename(columns=lambda x : x.upper(), inplace=True)
+        print('df.columns:', df.columns)
+    elif column_name == 'lower':
+        df.rename(columns=lambda x : x.lower(), inplace=True)
+        print('df.columns:', df.columns)
+    else:
+        print('keep original column name')
+
+    print('read_sas_2_df Done! Total Time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df
 
 
 if __name__ == '__main__':
