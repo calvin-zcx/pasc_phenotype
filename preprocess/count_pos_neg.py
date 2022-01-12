@@ -103,9 +103,12 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     print('dfs_covid_all.shape', dfs_covid_all.shape)
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
+    dfs_covid_all.to_csv("{}_covid_lab_sample.csv".format(dataset))
+
     if debug:
         dfs_all = pd.concat(dfs)
-        dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
+        # dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
+        dfs_all.to_csv("{}_lab_sample.csv".format(dataset))
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return dfs_covid_all  # dfs_all, dfs_covid_all, meta
 

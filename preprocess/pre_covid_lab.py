@@ -99,6 +99,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     print('len(id_lab):', len(id_lab))
 
     # add more information to df
+    print('add more information to excel')
     df = df.sort_values(by=['PATID', 'RESULT_DATE'])
     df['n_test'] = df['PATID'].apply(lambda x: len(id_lab[x]))
     df['covid_positive'] = df['PATID'].apply(lambda x: 'POSITIVE' in [a[2].upper() for a in id_lab[x]])
