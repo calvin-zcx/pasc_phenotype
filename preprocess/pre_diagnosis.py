@@ -98,7 +98,6 @@ def read_diagnosis(input_file, output_file=''):
             print('chunk:', i, 'len(dfs):', len(dfs),
                   'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row)
-            break
 
     print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
