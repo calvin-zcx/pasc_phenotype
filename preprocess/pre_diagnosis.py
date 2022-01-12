@@ -94,10 +94,11 @@ def read_diagnosis(input_file, output_file=''):
 
         dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
 
-        if i % 10 == 0:
+        if i % 5 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs),
                   'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row)
+            break
 
     print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
@@ -106,6 +107,12 @@ def read_diagnosis(input_file, output_file=''):
     print('len(id_dx):', len(id_dx))
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
+    # sort
+    print('sort dx list in id_dx by time')
+    for patid, dx_list in id_dx.items():
+        dx_list_sorted = sorted(dx_list, key = lambda x: x[0])
+        id_dx[patid] = dx_list_sorted
+
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     if output_file:
