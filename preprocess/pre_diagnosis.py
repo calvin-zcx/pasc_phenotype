@@ -24,15 +24,17 @@ def parse_args():
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/COL/diagnosis.sas7bdat'
         args.output_file = r'../data/V15_COVID19/output/diagnosis_COL.pkl'
+        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
     elif args.dataset == 'WCM':
         args.input_file = r'../data/V15_COVID19/WCM/diagnosis.sas7bdat'
         args.output_file = r'../data/V15_COVID19/output/diagnosis_WCM.pkl'
+        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
 
     print('args:', args)
     return args
 
 
-def read_diagnosis(input_file, output_file=''):
+def read_diagnosis(input_file, output_file='', selected_patients={}):
     """
     :param data_file: input demographics file with std format
     :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
@@ -53,6 +55,9 @@ def read_diagnosis(input_file, output_file=''):
                         encoding='WINDOWS-1252',
                         chunksize=chunksize,
                         iterator=True)
+    if selected_patients:
+        print('using selected_patients, len(selected_patients):', len(selected_patients))
+
     id_dx = defaultdict(list)
     i = 0
     n_rows = 0
@@ -89,8 +94,14 @@ def read_diagnosis(input_file, output_file=''):
             if pd.isna(dx) or pd.isna(dx_date):
                 n_discard_row += 1
             else:
-                id_dx[patid].append((dx_date, dx, dx_type, enc_type))
-                n_recorded_row += 1
+                if not selected_patients:
+                    id_dx[patid].append((dx_date, dx, dx_type, enc_type))
+                    n_recorded_row += 1
+                else:
+                    if patid in selected_patients:
+                        id_dx[patid].append((dx_date, dx, dx_type, enc_type))
+                        n_recorded_row += 1
+
 
         dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
 
@@ -129,5 +140,9 @@ if __name__ == '__main__':
     # python pre_diagnosis.py --dataset WCM 2>&1 | tee  log/pre_diagnosis_WCM.txt
     start_time = time.time()
     args = parse_args()
-    id_dx, df = read_diagnosis(args.input_file, args.output_file)
+    with open(args.patient_list_file, 'rb') as f:
+        selected_patients = pickle.load(f)
+        print('len(selected_patients):', len(selected_patients))
+
+    id_dx, df = read_diagnosis(args.input_file, args.output_file, selected_patients)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
