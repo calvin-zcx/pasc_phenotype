@@ -17,7 +17,7 @@ print = functools.partial(print, flush=True)
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='process parameters')
+    parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
@@ -84,6 +84,8 @@ def read_demo(input_file, output_file=''):
 
 
 if __name__ == '__main__':
+    # python pre_demo.py --dataset COL 2>&1 | tee  log/pre_demo_COL.txt
+    # python pre_demo.py --dataset WCM 2>&1 | tee  log/pre_demo_WCM.txt
     start_time = time.time()
     args = parse_args()
     id_demo, df_sub = read_demo(args.input_file, args.output_file)
