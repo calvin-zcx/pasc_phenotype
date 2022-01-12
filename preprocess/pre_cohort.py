@@ -82,9 +82,73 @@ def read_preprocessed_data(args):
 
 
 def integrate_preprocessed_data(args):
-    data = read_preprocessed_data(args)
-    print('len(data):', len(data))
-    pass
+    id_lab, id_demo, id_dx = read_preprocessed_data(args)
+    # print('len(data):', len(data))
+
+    # 1. build id --> covid label
+    id_label = {}
+    n_pos = n_neg = 0
+    for pid, row in id_lab.items():
+        v_labs = [x[2].upper() for x in row]
+        if 'POSITIVE' in v_labs:
+            id_label[pid] = True
+            n_pos += 1
+        else:
+            id_label[pid] = False
+            n_neg += 1
+    print('n_pos:', n_pos, 'n_neg:', n_neg)
+
+    # 2. exclude age: diagnosis age should
+    id_label_age = {}
+    n_pos = n_neg = 0
+    for pid, row in id_lab.items():
+        v_labs = [x[2].upper() for x in row]
+        v_ages = [x[3] for x in row]
+        if 'POSITIVE' in v_labs:
+            position = v_labs.index('POSITIVE')
+            age = v_ages[position]
+            if age >= 20:
+                id_label_age[pid] = (True, row[position][0])
+                n_pos += 1
+        else:
+            age = v_ages[0]
+            if age >= 20:
+                id_label_age[pid] = (False, row[0][0])
+                n_neg += 1
+    print('n_pos:', n_pos, 'n_neg:', n_neg)
+
+    # 3. check diagnosis codes
+    id_label_age_dx = {}
+    n_pos = n_neg = 0
+    for pid, row in id_label_age.items():
+        flag, index_date = row
+        v_dx = id_dx.get(pid, [])
+        if v_dx:
+            flag_follow = False
+            flag_baseline = False
+            for r in v_dx:
+                dx_date = r[0]
+                if 30 <= (dx_date - index_date).days <= 150:
+                    flag_follow = True
+                    break
+
+            for r in v_dx:
+                dx_date = r[0]
+                if -540 <= (dx_date - index_date).days <= -30:
+                    flag_baseline = True
+                    break
+
+            if flag_follow and flag_baseline:
+                if flag:
+                    n_pos += 1
+                    id_label_age_dx[pid] = (True, index_date)
+                else:
+                    n_neg += 1
+                    id_label_age_dx[pid] = (False, index_date)
+
+    print('n_pos:', n_pos, 'n_neg:', n_neg)
+
+    return id_lab, id_demo, id_dx, id_label_age_dx
 
 
 if __name__ == '__main__':
@@ -92,6 +156,5 @@ if __name__ == '__main__':
     # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC.txt
     start_time = time.time()
     args = parse_args()
-
-    integrate_preprocessed_data(args)
+    id_lab, id_demo, id_dx, id_label_age_dx = integrate_preprocessed_data(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
