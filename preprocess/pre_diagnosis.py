@@ -66,6 +66,7 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     n_no_date = 0
     n_discard_row = 0
     n_recorded_row = 0
+    n_not_in_list_row = 0
     for chunk in sasds:  # , meta
         i += 1
         if chunk.empty:
@@ -101,17 +102,20 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
                     if patid in selected_patients:
                         id_dx[patid].append((dx_date, dx, dx_type, enc_type))
                         n_recorded_row += 1
+                    else:
+                        n_not_in_list_row += 1
 
         dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
 
         if i % 10 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs),
                   'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-            print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row)
+            print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
+                  'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
-          'n_recorded_row:', n_recorded_row)
+          'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('len(id_dx):', len(id_dx))
     dfs = pd.concat(dfs)
