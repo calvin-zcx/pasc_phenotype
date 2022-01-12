@@ -111,6 +111,9 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
 
 
 if __name__ == '__main__':
+    # later: rename: pre_lab,   rename upper to simplify codes
+    # python count_pos_neg.py --dataset COL 2>&1 | tee  log/count_pos_neg_COL.txt
+    # python count_pos_neg.py --dataset WCM 2>&1 | tee  log/count_pos_neg_WCM.txt
     args = parse_args()
     print(args)
     dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
