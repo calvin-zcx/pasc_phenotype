@@ -21,7 +21,7 @@ import matplotlib.pyplot as plt
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/output/covid_lab_COL.xlsx'
@@ -89,8 +89,10 @@ def read_covid_lab_and_generate_label(input_file, output_file=''):
     # add more information to df
     df = df.sort_values(by=['PATID', 'RESULT_DATE'])
     df['n_test'] = df['PATID'].apply(lambda x: len(id_lab[x]))
-    df['covid_positive'] = df['PATID'].apply(lambda x: {'POSITIVE', 'positive'}.issubset([a[-1] for a in id_lab[x]]))
-
+    df['covid_positive'] = df['PATID'].apply(lambda x: 'POSITIVE' in [a[-1].upper() for a in id_lab[x]])
+    # df['covid_positive'] = df['PATID'].apply(lambda x: any(b in [a[-1] for a in id_lab[x]] for b in ['POSITIVE',
+    # 'positive'])) any(b in [a[-1] for a in id_lab[x]] for b in ['POSITIVE', 'positive']) {'POSITIVE',
+    # 'positive'}.issubset([a[-1] for a in id_lab[x]])
     if output_file:
         utils.check_and_mkdir(output_file)
         pickle.dump(id_lab, open(output_file, 'wb'))
@@ -105,7 +107,7 @@ def data_analyisi(id_lab):
     cnt = []
     for k, v in id_lab.items():
         cnt.append(len(v))
-
+    pd.DataFrame(cnt).describe()
     c = Counter(cnt)
     df = pd.DataFrame(c.most_common(), columns=['covid_test_count', 'num_of_people'])
     df.to_excel(r'../data/V15_COVID19/output/test_frequency_COL.xlsx')
@@ -118,4 +120,7 @@ if __name__ == '__main__':
     args = parse_args()
     id_lab, df = read_covid_lab_and_generate_label(args.input_file, args.output_file)
     # patient_dates = build_patient_dates(args.demo_file, args.dx_file, r'output/patient_dates.pkl')
+    print('#positive:', len(df.loc[df['covid_positive'], 'PATID'].unique()))
+    print('#negative:', len(df.loc[~df['covid_positive'], 'PATID'].unique()))
+    print('total:', len(df.loc[:, 'PATID'].unique()))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
