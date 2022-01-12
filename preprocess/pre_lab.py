@@ -101,22 +101,29 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     print('Counter:', cnt)
     dfs_covid_all = pd.concat(dfs_covid)
     print('dfs_covid_all.shape', dfs_covid_all.shape)
-    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
+    print('dfs_covid_all.columns', dfs_covid_all.columns)
     dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
     dfs_covid_all.to_csv("{}_covid_lab_sample.csv".format(dataset))
 
     if debug:
         dfs_all = pd.concat(dfs)
+        print('dfs_all.shape', dfs_all.shape)
+        print('dfs_all.columns', dfs_all.columns)
+        dfs_all.rename(columns=lambda x: x.upper(), inplace=True)
+        print('dfs_all.columns', dfs_all.columns)
         # dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
         dfs_all.to_csv("{}_lab_sample.csv".format(dataset))
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
     return dfs_covid_all  # dfs_all, dfs_covid_all, meta
 
 
 if __name__ == '__main__':
     # later: rename: pre_lab,   rename upper to simplify codes
-    # python count_pos_neg.py --dataset COL 2>&1 | tee  log/count_pos_neg_COL.txt
-    # python count_pos_neg.py --dataset WCM 2>&1 | tee  log/count_pos_neg_WCM.txt
+    # python pre_lab.py --dataset COL 2>&1 | tee  log/count_pos_neg_COL.txt
+    # python pre_lab.py --dataset WCM 2>&1 | tee  log/count_pos_neg_WCM.txt
     args = parse_args()
     print(args)
     dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)

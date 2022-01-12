@@ -144,7 +144,7 @@ if __name__ == '__main__':
     with open(args.demo_file, 'rb') as f:
         # to add age information for each covid tests
         id_demo = pickle.load(f)
-        print('loda demo information: len(id_demo):', len(id_demo))
+        print('load demo information: len(id_demo):', len(id_demo))
 
     id_lab, df = read_covid_lab_and_generate_label(args.input_file, args.output_file, id_demo)
     # patient_dates = build_patient_dates(args.demo_file, args.dx_file, r'output/patient_dates.pkl')
