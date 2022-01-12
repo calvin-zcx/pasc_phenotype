@@ -137,8 +137,8 @@ def data_analysis(id_lab):
 
 
 if __name__ == '__main__':
-    # python pre_demo.py --dataset COL 2>&1 | tee  log/pre_demo_COL.txt
-    # python pre_demo.py --dataset WCM 2>&1 | tee  log/pre_demo_WCM.txt
+    # python pre_covid_lab.py --dataset COL 2>&1 | tee  log/pre_covid_lab_COL.txt
+    # python pre_covid_lab.py --dataset WCM 2>&1 | tee  log/pre_covid_lab_WCM.txt
     start_time = time.time()
     args = parse_args()
     with open(args.demo_file, 'rb') as f:
