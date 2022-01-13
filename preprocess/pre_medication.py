@@ -319,8 +319,8 @@ def combine_2_id_med(id_med1, id_med2, output_file=''):
 
 
 if __name__ == '__main__':
-    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_combine_and_EC.txt
-    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC.txt
+    # python pre_medication.py --dataset COL 2>&1 | tee  log/pre_medication_COL.txt
+    # python pre_medication.py --dataset WCM 2>&1 | tee  log/pre_medication_WCM.txt
     start_time = time.time()
     args = parse_args()
     with open(args.patient_list_file, 'rb') as f:

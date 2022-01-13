@@ -152,8 +152,8 @@ def integrate_preprocessed_data(args):
 
 
 if __name__ == '__main__':
-    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_combine_and_EC.txt
-    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC.txt
+    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_combine_and_EC_COL.txt
+    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC_WCM.txt
     start_time = time.time()
     args = parse_args()
     id_lab, id_demo, id_dx, id_label_age_dx = integrate_preprocessed_data(args)
