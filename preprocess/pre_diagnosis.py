@@ -139,6 +139,13 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
 
 
 if __name__ == '__main__':
+    # with open(r'../data/V15_COVID19/output/patient_demo_COL.pkl', 'rb') as f:
+    #     id_demo_col = pickle.load(f)
+    #     print('len(id_demo_col):', len(id_demo_col))
+    # with open(r'../data/V15_COVID19/output/patient_demo_WCM.pkl', 'rb') as f:
+    #     id_demo_wcm = pickle.load(f)
+    #     print('len(id_demo_wcm):', len(id_demo_wcm))
+
     # python pre_diagnosis.py --dataset COL 2>&1 | tee  log/pre_diagnosis_COL.txt
     # python pre_diagnosis.py --dataset WCM 2>&1 | tee  log/pre_diagnosis_WCM.txt
     start_time = time.time()
@@ -146,10 +153,6 @@ if __name__ == '__main__':
     with open(args.patient_list_file, 'rb') as f:
         selected_patients = pickle.load(f)
         print('len(selected_patients):', len(selected_patients))
-
-    # with open(r'../data/V15_COVID19/output/patient_demo_COL.pkl', 'rb') as f:
-    #     id_demo = pickle.load(f)
-    #     print('len(id_demo):', len(id_demo))
 
     id_dx, df = read_diagnosis(args.input_file, args.output_file, selected_patients)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
