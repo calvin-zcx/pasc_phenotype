@@ -135,12 +135,11 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
                     else:
                         n_not_in_list_row += 1
 
-        if i % 1 == 0:
+        if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows,
                   'n_no_rxnorm:', n_no_rxnorm, 'n_no_date:', n_no_date, 'n_no_days_supply:', n_no_days_supply,
                   'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
-            break
 
     print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('n_rows:', n_rows,
@@ -256,12 +255,11 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
                     else:
                         n_not_in_list_row += 1
 
-        if i % 1 == 0:
+        if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows,
                   'n_no_rxnorm:', n_no_rxnorm, 'n_no_date:', n_no_date, 'n_no_days_supply:', n_no_days_supply,
                   'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
-            break
 
     print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('n_rows:', n_rows,
