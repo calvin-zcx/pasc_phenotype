@@ -205,6 +205,13 @@ if __name__ == '__main__':
     c = Counter(dx_encounter_type)
     print('Encounter type of diagnosis:', c.most_common())
 
+    gender_type = []
+    for key, row in data.items():
+        gender = row[1][1]
+        gender_type.append(gender)
+    c = Counter(gender_type)
+    print('Gender type:', c.most_common())
+
     race_type = []
     for key, row in data.items():
         race = row[1][-1]
