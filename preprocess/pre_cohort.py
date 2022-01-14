@@ -71,59 +71,75 @@ def read_preprocessed_data(args):
         id_dx = pickle.load(f)
         print('load diagnosis file done! len(id_dx):', len(id_dx))
 
-    # # 4. load medication file
-    # with open(args.med_file, 'rb') as f:
-    #     id_med = pickle.load(f)
-    #     print('load medication file done! len(id_med):', len(id_med))
+    # 4. load medication file
+    with open(args.med_file, 'rb') as f:
+        id_med = pickle.load(f)
+        print('load medication file done! len(id_med):', len(id_med))
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    return id_lab, id_demo, id_dx
+    return id_lab, id_demo, id_dx, id_med
 
 
 def integrate_preprocessed_data(args):
-    id_lab, id_demo, id_dx = read_preprocessed_data(args)
+    start_time = time.time()
+    id_lab, id_demo, id_dx, id_med = read_preprocessed_data(args)
     # print('len(data):', len(data))
 
-    # 1. build id --> covid label
-    id_label = {}
+    # Step 1. Load included patients build id --> index records
+    #    lab-confirmed positive:  first positive record
+    #    lab-confirmed negative: first negative record
+    id_indexrecord = {}
     n_pos = n_neg = 0
     for pid, row in id_lab.items():
-        v_labs = [x[2].upper() for x in row]
-        if 'POSITIVE' in v_labs:
-            id_label[pid] = True
+        v_lables= [x[2].upper() for x in row]
+        if 'POSITIVE' in v_lables:
             n_pos += 1
+            position = v_lables.index('POSITIVE')
+            indexrecord = row[position]
+            id_indexrecord[pid] = (True, ) + indexrecord
         else:
-            id_label[pid] = False
             n_neg += 1
-    print('n_pos:', n_pos, 'n_neg:', n_neg)
+            position = 0
+            indexrecord = row[position]
+            id_indexrecord[pid] = (False, ) + indexrecord
+    print('Step1: Initial Included cohorts:')
+    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    # Can calculate more statistics
 
-    # 2. exclude age: diagnosis age should
-    id_label_age = {}
+    # Step 2: Applying EC. exclude index age < 20
     n_pos = n_neg = 0
-    for pid, row in id_lab.items():
-        v_labs = [x[2].upper() for x in row]
-        v_ages = [x[3] for x in row]
-        if 'POSITIVE' in v_labs:
-            position = v_labs.index('POSITIVE')
-            age = v_ages[position]
-            if age >= 20:
-                id_label_age[pid] = (True, row[position][0])
-                n_pos += 1
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        age = row[4]
+        if age < 20:
+            # excluded
+            exclude_list.append(pid)
         else:
-            age = v_ages[0]
-            if age >= 20:
-                id_label_age[pid] = (False, row[0][0])
+            # included
+            if covid_flag:
+                n_pos += 1
+            else:
                 n_neg += 1
-    print('n_pos:', n_pos, 'n_neg:', n_neg)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    print('Step2: exclude index age < 20, len(exclude_list):', len(exclude_list),)
+    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    # print('exclude_list', exclude_list)
 
-    # 3. check diagnosis codes
-    id_label_age_dx = {}
+    # Step 3. Applying EC exclude no diagnosis in baseline period [-18th month, -1st month] or
+    #         no dx in follow-up [1st month, 5th month]
     n_pos = n_neg = 0
-    for pid, row in id_label_age.items():
-        flag, index_date = row
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
         v_dx = id_dx.get(pid, [])
-        if v_dx:
+        if not v_dx:
+            exclude_list.append(pid)
+        else:
             flag_follow = False
             flag_baseline = False
             for r in v_dx:
@@ -139,16 +155,37 @@ def integrate_preprocessed_data(args):
                     break
 
             if flag_follow and flag_baseline:
-                if flag:
+                if covid_flag:
                     n_pos += 1
-                    id_label_age_dx[pid] = (True, index_date)
                 else:
                     n_neg += 1
-                    id_label_age_dx[pid] = (False, index_date)
+            else:
+                exclude_list.append(pid)
 
-    print('n_pos:', n_pos, 'n_neg:', n_neg)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    print('Step3: exclude no diagnosis in baseline period [-18th month, -1st month] or '
+          'no dx in follow-up [1st month, 5th month], len(exclude_list):', len(exclude_list))
+    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    # print('exclude_list', exclude_list)
 
-    return id_lab, id_demo, id_dx, id_label_age_dx
+    print('Finally selected cohorts: len(id_indexrecord):', len(id_indexrecord))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # step 4: build data structure, do the right encoding mapping:
+    # place holder, change later
+    raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med]
+    data = {}
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        lab = id_lab[pid]
+        demo = id_demo[pid]
+        dx = id_dx[pid]
+        med = id_med[pid]
+        # utilization = id_util[pid]
+        data[pid] = [row, demo, dx, med, lab]
+    print('Final data: len(data):', len(data))
+    print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return data, raw_data
 
 
 if __name__ == '__main__':
@@ -156,5 +193,5 @@ if __name__ == '__main__':
     # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC_WCM.txt
     start_time = time.time()
     args = parse_args()
-    id_lab, id_demo, id_dx, id_label_age_dx = integrate_preprocessed_data(args)
+    data, raw_data = integrate_preprocessed_data(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

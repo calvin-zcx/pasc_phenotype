@@ -39,8 +39,8 @@ def parse_args():
 def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     """
     :param data_file: input demographics file with std format
-    :param out_file: output id_covidlab[patid] = [(time, code, label), ...] sorted by time,  pickle
-    :return: id_covidlab[patid] = [(time, code, label), ...] sorted by time
+    :param out_file: output id_covidlab[patid] = [(time, code, label, age), ...] sorted by time,  pickle
+    :return: id_covidlab[patid] = [(time, code, label, age), ...] sorted by time
     :Notice:
         1.COL data: e.g:
         df.shape: (372633, 36)
