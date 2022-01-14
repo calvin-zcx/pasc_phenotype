@@ -203,4 +203,11 @@ if __name__ == '__main__':
         for b in dx:
             dx_encounter_type.append(b[-1])
     c = Counter(dx_encounter_type)
-    print(c)
+    print('Encounter type of diagnosis:', c.most_common())
+
+    race_type = []
+    for key, row in data.items():
+        race = row[1][-1]
+        race_type.append(race)
+    c = Counter(race_type)
+    print('Race type:', c.most_common())
