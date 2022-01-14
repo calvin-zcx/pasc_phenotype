@@ -195,3 +195,12 @@ if __name__ == '__main__':
     args = parse_args()
     data, raw_data = integrate_preprocessed_data(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    print('Can check statistics of final selected cohorts')
+    dx_encounter_type = []
+    for key, row in data.items():
+        dx = row[2]
+        for b in dx:
+            dx_encounter_type.append(b[-1])
+    c = Counter(dx_encounter_type)
+    print(c)
