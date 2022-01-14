@@ -98,6 +98,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
             rx_end_date = row['RX_END_DATE']
             rxnorm = row['RXNORM_CUI']
             rx_days = row['RX_DAYS_SUPPLY']
+            raw_rxnorm = row['RAW_RXNORM_CUI']
 
             # start_date
             if pd.notna(rx_start_date):
@@ -110,8 +111,11 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
 
             # rxrnom
             if pd.isna(rxnorm):
-                n_no_rxnorm += 1
-                rxnorm = np.nan
+                if pd.notna(raw_rxnorm):
+                    rxnorm = raw_rxnorm
+                else:
+                    n_no_rxnorm += 1
+                    rxnorm = np.nan
 
             # days supply
             if pd.notna(rx_days):
