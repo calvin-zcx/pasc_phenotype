@@ -30,12 +30,16 @@ def parse_args():
         args.demo_file = r'../data/V15_COVID19/output/patient_demo_COL.pkl'
         args.dx_file = r'../data/V15_COVID19/output/diagnosis_COL.pkl'
         args.med_file = r'../data/V15_COVID19/output/medication_COL.pkl'
+        args.enc_file = r'../data/V15_COVID19/output/encounter_COL.pkl'
+
         args.output_file = r'../data/V15_COVID19/output/covid_cohorts_COL.pkl'
     elif args.dataset == 'WCM':
         args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
         args.demo_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
         args.dx_file = r'../data/V15_COVID19/output/diagnosis_WCM.pkl'
         args.med_file = r'../data/V15_COVID19/output/medication_WCM.pkl'
+        args.enc_file = r'../data/V15_COVID19/output/encounter_WCM.pkl'
+
         args.output_file = r'../data/V15_COVID19/output/covid_cohorts_WCM.pkl'
 
     print('args:', args)
@@ -76,14 +80,19 @@ def read_preprocessed_data(args):
         id_med = pickle.load(f)
         print('load medication file done! len(id_med):', len(id_med))
 
+    # 5. load encounter file
+    with open(args.enc_file, 'rb') as f:
+        id_enc= pickle.load(f)
+        print('load encounter file done! len(id_med):', len(id_enc))
+
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    return id_lab, id_demo, id_dx, id_med
+    return id_lab, id_demo, id_dx, id_med, id_enc
 
 
 def integrate_preprocessed_data(args):
     start_time = time.time()
-    id_lab, id_demo, id_dx, id_med = read_preprocessed_data(args)
+    id_lab, id_demo, id_dx, id_med, id_enc = read_preprocessed_data(args)
     # print('len(data):', len(data))
 
     # Step 1. Load included patients build id --> index records
@@ -173,7 +182,7 @@ def integrate_preprocessed_data(args):
 
     # step 4: build data structure, do the right encoding mapping:
     # place holder, change later
-    raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med]
+    raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc]
     data = {}
     for pid, row in id_indexrecord.items():
         # (True/False, lab_date, lab_code, result_label, age)
@@ -181,8 +190,9 @@ def integrate_preprocessed_data(args):
         demo = id_demo[pid]
         dx = id_dx[pid]
         med = id_med[pid]
+        enc = id_enc[pid]
         # utilization = id_util[pid]
-        data[pid] = [row, demo, dx, med, lab]
+        data[pid] = [row, demo, dx, med, lab, enc]
     print('Final data: len(data):', len(data))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return data, raw_data
@@ -196,7 +206,7 @@ if __name__ == '__main__':
     data, raw_data = integrate_preprocessed_data(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    print('Can check statistics of final selected cohorts')
+    print('Get some statistics of final selected cohorts')
     dx_encounter_type = []
     for key, row in data.items():
         dx = row[2]

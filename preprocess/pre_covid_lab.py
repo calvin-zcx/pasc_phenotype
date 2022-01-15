@@ -94,7 +94,9 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     # sort
     print('sort lab list in id_lab by time')
     for patid, lab_list in id_lab.items():
-        lab_list_sorted = sorted(lab_list, key=lambda x: x[0])
+        # add a set operation to reduce duplicates
+        # sorted returns a sorted list
+        lab_list_sorted = sorted(set(lab_list), key=lambda x: x[0])
         id_lab[patid] = lab_list_sorted
     print('len(id_lab):', len(id_lab))
 
