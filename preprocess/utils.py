@@ -42,7 +42,7 @@ def sas_2_csv(infile, outfile):
 
 def read_sas_2_df(infile, chunksize=100000, encoding='WINDOWS-1252', column_name='upper'):
     # Windows-1252
-    print('Warning: only use [def read_sas_2_df(infile, chunksize, encoding)] for small files, e.g. < 1 GB')
+    print(r"Warning: only use [read_sas_2_df(infile, chunksize, encoding, column_name)] for small files, e.g. < 1 GB")
     print('read: ', infile, 'chunksize:', chunksize, 'encoding:', encoding, 'column_name:', column_name)
     start_time = time.time()
     sasds = pd.read_sas(infile,

@@ -22,19 +22,67 @@ def parse_args():
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/COL/demographic.sas7bdat'
+        args.address_file = r'../data/V15_COVID19/COL/lds_address_history.sas7bdat'
+
         args.output_file = r'../data/V15_COVID19/output/patient_demo_COL.pkl'
     elif args.dataset == 'WCM':
         args.input_file = r'../data/V15_COVID19/WCM/demographic.sas7bdat'
+        args.address_file = r'../data/V15_COVID19/WCM/lds_address_history.sas7bdat'
+
         args.output_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
 
     print('args:', args)
     return args
 
 
-def read_demo(input_file, output_file=''):
+def read_address(input_file):
     """
-    :param data_file: input demographics file with std format
-    :param out_file: output id_demo[patid] = (sex, bdate, race) pickle
+        :param data_file: input demographics file with std format
+        :return: id_demo[patid] = zip5/9
+        :Notice:
+            1.COL data: e.g:
+            df.shape: (549115, 12)
+            n_no_zip: 0 n_has_zip9: 300686 n_has_zip5: 248429
+
+            2. WCM data: e.g.
+            df.shape: (685598, 12)
+            n_no_zip: 111323 n_has_zip9: 1967 n_has_zip5: 572308
+
+        """
+    start_time = time.time()
+    print('In read_address, input_file:', input_file)
+    df = utils.read_sas_2_df(input_file)
+    print('df.shape', df.shape, 'df.columns:', df.columns)
+    id_zip = {}
+    n_no_zip = 0
+    n_has_zip5 = n_has_zip9 = 0
+    for index, row in df.iterrows():
+        patid = row['PATID']
+        # city = row['ADDRESS_CITY']
+        # state = row['ADDRESS_STATE']
+        zip5 = row['ADDRESS_ZIP5']
+        zip9 = row['ADDRESS_ZIP9']
+        if pd.notna(zip9):
+            zipcode = zip9
+            n_has_zip9 += 1
+        elif pd.notna(zip5):
+            zipcode = zip5
+            n_has_zip5 += 1
+        else:
+            zipcode = np.nan
+            n_no_zip += 1
+
+        id_zip[patid] = zipcode
+
+    print('len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip, 'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5)
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return id_zip, df
+
+
+def read_demo(input_file, id_zip, output_file=''):
+    """
+    :param data_file: input demographics file with std format, id and zipcode mapping
+    :param out_file: output id_demo[patid] = (sex, bdate, race, zipcode) pickle
     :return: id_demo[patid] = (sex, bdate, race, zipcode)
     :Notice:
         1.COL data: e.g:
@@ -67,10 +115,12 @@ def read_demo(input_file, output_file=''):
             01         8 01=American Indian or Alaska Native
     """
     start_time = time.time()
+    print('In read_demo, input_file:', input_file, 'len(id_zip):', len(id_zip), 'output_file', output_file)
     df = utils.read_sas_2_df(input_file)
+    print('df.shape', df.shape, 'df.columns:', df.columns)
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', ]]
     records_list = df_sub.values.tolist()
-    id_demo = {x[0]: x[1:] for x in records_list}
+    id_demo = {x[0]: x[1:] + [id_zip.get(x[0], np.nan),] for x in records_list}
 
     print('df.shape {}, len(id_demo) {}'.format(df.shape, len(id_demo)))
     if output_file:
@@ -88,6 +138,7 @@ if __name__ == '__main__':
     # python pre_demo.py --dataset WCM 2>&1 | tee  log/pre_demo_WCM.txt
     start_time = time.time()
     args = parse_args()
-    id_demo, df_sub = read_demo(args.input_file, args.output_file)
+    id_zip, df_addr = read_address(args.address_file)
+    id_demo, df_sub = read_demo(args.input_file, id_zip, args.output_file)
     # patient_dates = build_patient_dates(args.demo_file, args.dx_file, r'output/patient_dates.pkl')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
