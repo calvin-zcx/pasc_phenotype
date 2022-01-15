@@ -23,121 +23,17 @@ def parse_args():
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/COL/encounter.sas7bdat'
-        args.diagnosis_file = r'../data/V15_COVID19/COL/diagnosis.sas7bdat'
+        # args.diagnosis_file = r'../data/V15_COVID19/COL/diagnosis.sas7bdat'
         args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
         args.output_file = r'../data/V15_COVID19/output/encounter_COL.pkl'
     elif args.dataset == 'WCM':
         args.input_file = r'../data/V15_COVID19/WCM/encounter.sas7bdat'
-        args.diagnosis_file = r'../data/V15_COVID19/WCM/diagnosis.sas7bdat'
+        # args.diagnosis_file = r'../data/V15_COVID19/WCM/diagnosis.sas7bdat'
         args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
         args.output_file = r'../data/V15_COVID19/output/encounter_WCM.pkl'
 
     print('args:', args)
     return args
-
-
-def read_diagnosis(input_file, output_file='', selected_patients={}):
-    """
-    :param data_file: input demographics file with std format
-    :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
-    :return: id_code-list[patid] = [(time, ICD), ...]  sorted by time
-    :Notice:
-        discard rows with NULL admit_date or dx
-
-        1.COL data: e.g:
-        df.shape: (16666999, 19)
-
-        2. WCM data: e.g.
-        df.shape: (47319049, 19)
-
-    """
-    start_time = time.time()
-    chunksize = 100000
-    sasds = pd.read_sas(input_file,
-                        encoding='WINDOWS-1252',
-                        chunksize=chunksize,
-                        iterator=True)
-    if selected_patients:
-        print('using selected_patients, len(selected_patients):', len(selected_patients))
-
-    id_dx = defaultdict(list)
-    i = 0
-    n_rows = 0
-    dfs = []
-    n_no_dx = 0
-    n_no_date = 0
-    n_discard_row = 0
-    n_recorded_row = 0
-    n_not_in_list_row = 0
-    for chunk in sasds:  # , meta
-        i += 1
-        if chunk.empty:
-            print("ERROR: Empty chunk! break!")
-            break
-
-        n_rows += len(chunk)
-        chunk.rename(columns=lambda x: x.upper(), inplace=True)
-        if i == 1:
-            print('chunk.shape', chunk.shape)
-            print('chunk.columns', chunk.columns)
-
-        for index, row in chunk.iterrows():
-            patid = row['PATID']
-            enc_id = row['ENCOUNTERID']
-            enc_type = row['ENC_TYPE']
-            dx = row['DX']
-            dx_type = row["DX_TYPE"]
-            dx_date = row["ADMIT_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
-
-            if pd.isna(dx):
-                n_no_dx += 1
-            if pd.isna(dx_date):
-                n_no_date += 1
-
-            if pd.isna(dx) or pd.isna(dx_date):
-                n_discard_row += 1
-            else:
-                if not selected_patients:
-                    id_dx[patid].append((dx_date, dx, dx_type, enc_type))
-                    n_recorded_row += 1
-                else:
-                    if patid in selected_patients:
-                        id_dx[patid].append((dx_date, dx, dx_type, enc_type))
-                        n_recorded_row += 1
-                    else:
-                        n_not_in_list_row += 1
-
-        dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
-
-        if i % 10 == 0:
-            print('chunk:', i, 'len(dfs):', len(dfs),
-                  'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-            print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
-                  'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
-
-    print('n_rows:', n_rows, '#chunk: ', i, 'chunk size:', chunksize)
-    print('n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
-          'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
-
-    print('len(id_dx):', len(id_dx))
-    dfs = pd.concat(dfs)
-    print('dfs.shape', dfs.shape)
-    # sort
-    print('sort dx list in id_dx by time')
-    for patid, dx_list in id_dx.items():
-        dx_list_sorted = sorted(dx_list, key = lambda x: x[0])
-        id_dx[patid] = dx_list_sorted
-
-    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
-    if output_file:
-        utils.check_and_mkdir(output_file)
-        pickle.dump(id_dx, open(output_file, 'wb'))
-        dfs.to_csv(output_file.replace('.pkl', '') + '.csv')
-        print('dump done to {}'.format(output_file))
-
-    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return id_dx, dfs
 
 
 def read_encounter(input_file, output_file='', selected_patients={}):
