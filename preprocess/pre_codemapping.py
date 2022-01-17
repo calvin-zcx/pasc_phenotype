@@ -113,12 +113,12 @@ def zip_aid_mapping():
     print('zip5_df.shape', zip5_df.shape)
     zip5_df.to_csv(r'../data/mapping/zip5_for_debug.csv')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return zip_adi
+    return zip_adi, zip5_df
 
 
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
 
     # rxrnom_atcset, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
-    df = zip_aid_mapping()
+    zip_adi, zip5_df = zip_aid_mapping()
     print('Done!')
