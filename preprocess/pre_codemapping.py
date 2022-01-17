@@ -70,6 +70,7 @@ def zip_aid_mapping():
     ## df_combined = pd.merge(readme_df, df2, left_on='State_abr', right_on='address_state', how='left')
     ## df_combined.to_csv(r'../data/mapping/ADI/2019_ADI_9_V3.1_readme_statistics_check_v2.csv')
     zip_adi = {}
+    zip5_df = []
     for index, row in readme_df.iterrows():
         state = row[1]
         name = row[2]
@@ -91,8 +92,9 @@ def zip_aid_mapping():
 
             zip9_list = df[['ZIPID', 'nation_rank', 'state_rank']].values.tolist()
             zip5_list = zip5_scores[['zip5', 'nation_rank', 'state_rank']].values.tolist()
-
-            n_null_zip9 = n_null_zip5 = 0
+            # save zip5 for debugging
+            zip5_df.append(zip5_scores[['zip5', 'nation_rank', 'state_rank']])
+            # n_null_zip9 = n_null_zip5 = 0
             zip_adi.update({x[0][1:]: x[1:] for x in zip9_list if pd.notna(x[0]) })
             print('......len(zip_adi) after adding zip9:', len(zip_adi))
             zip_adi.update({x[0][1:]: x[1:] for x in zip5_list if pd.notna(x[0])})
@@ -105,6 +107,11 @@ def zip_aid_mapping():
     utils.check_and_mkdir(output_file)
     pickle.dump(zip_adi, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
+
+    # double check zip5
+    zip5_df = pd.concat(zip5_df)
+    print('zip5_df.shape', zip5_df.shape)
+    zip5_df.to_csv(r'../data/mapping/zip5_for_debug.csv')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return zip_adi
 
