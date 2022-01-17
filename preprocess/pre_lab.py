@@ -81,6 +81,25 @@ def covid_lab_phenotyping():
     return df_combined
 
 
+def PASC_lab_frequency():
+    df_pasc_lab = pd.read_excel(r'../data/V15_COVID19/covid_phenotype/PASC_Lab_LOINC.xlsx',
+                               sheet_name='LOINC')
+    print('df_pasc_lab.shape:', df_pasc_lab.shape)
+
+    df_COL_fre = pd.read_excel(r'../data/V15_COVID19/covid_phenotype/lab_loinc_COL_frequency.xlsx',
+                               sheet_name='lab_loinc_COL_frequency')
+    print('df_COL_fre.shape:', df_COL_fre.shape)
+    df_WCM_fre = pd.read_excel(r'../data/V15_COVID19/covid_phenotype/lab_loinc_WCM_frequency.xlsx',
+                               sheet_name='lab_loinc_WCM_frequency')
+    print('df_WCM_fre.shape:', df_WCM_fre.shape)
+
+    df_combined1 = pd.merge(df_pasc_lab, df_COL_fre[['LAB_LOINC', 'Frequency']], left_on='LOINC', right_on='LAB_LOINC', how='left')
+    df_combined2 = pd.merge(df_combined1, df_WCM_fre[['LAB_LOINC', 'Frequency']], left_on='LOINC', right_on='LAB_LOINC', how='left')
+    df_combined2.to_csv(r'../data/V15_COVID19/covid_phenotype/PASC_Lab_LOINC_frquency_in_data.csv')
+
+    return df_combined2
+
+
 def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     start_time = time.time()
     print('Choose dataset:', dataset, 'chunksize:', chunksize, 'debug:', debug)
@@ -177,5 +196,6 @@ if __name__ == '__main__':
     # python pre_lab.py --dataset WCM 2>&1 | tee  log/count_pos_neg_WCM.txt
     args = parse_args()
     print(args)
-    covid_lab_phenotyping()
+    # covid_lab_phenotyping()
+    df = PASC_lab_frequency()
     # dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)

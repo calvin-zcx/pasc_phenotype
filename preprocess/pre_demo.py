@@ -18,7 +18,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/COL/demographic.sas7bdat'
@@ -58,8 +58,8 @@ def read_address(input_file):
     n_has_zip5 = n_has_zip9 = 0
     for index, row in df.iterrows():
         patid = row['PATID']
-        # city = row['ADDRESS_CITY']
-        # state = row['ADDRESS_STATE']
+        city = row['ADDRESS_CITY']
+        state = row['ADDRESS_STATE']
         zip5 = row['ADDRESS_ZIP5']
         zip9 = row['ADDRESS_ZIP9']
         if pd.notna(zip9):
@@ -72,7 +72,7 @@ def read_address(input_file):
             zipcode = np.nan
             n_no_zip += 1
 
-        id_zip[patid] = zipcode
+        id_zip[patid] = (zipcode, state, city)
 
     print('len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip, 'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5)
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -120,7 +120,7 @@ def read_demo(input_file, id_zip, output_file=''):
     print('df.shape', df.shape, 'df.columns:', df.columns)
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', ]]
     records_list = df_sub.values.tolist()
-    id_demo = {x[0]: x[1:] + [id_zip.get(x[0], np.nan),] for x in records_list}
+    id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan])) for x in records_list}
 
     print('df.shape {}, len(id_demo) {}'.format(df.shape, len(id_demo)))
     if output_file:
@@ -140,5 +140,4 @@ if __name__ == '__main__':
     args = parse_args()
     id_zip, df_addr = read_address(args.address_file)
     id_demo, df_sub = read_demo(args.input_file, id_zip, args.output_file)
-    # patient_dates = build_patient_dates(args.demo_file, args.dx_file, r'output/patient_dates.pkl')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

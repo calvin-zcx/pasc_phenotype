@@ -211,7 +211,7 @@ if __name__ == '__main__':
     for key, row in data.items():
         dx = row[2]
         for b in dx:
-            dx_encounter_type.append(b[-1])
+            dx_encounter_type.append(b[3])
     c = Counter(dx_encounter_type)
     print('Encounter type of diagnosis:', c.most_common())
 
@@ -224,7 +224,14 @@ if __name__ == '__main__':
 
     race_type = []
     for key, row in data.items():
-        race = row[1][-1]
+        race = row[1][2]
         race_type.append(race)
     c = Counter(race_type)
     print('Race type:', c.most_common())
+
+    state_type = []
+    for key, row in data.items():
+        race = row[1][4]
+        state_type.append(race)
+    c = Counter(state_type)
+    print('State type:', c.most_common())
