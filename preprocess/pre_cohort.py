@@ -90,7 +90,7 @@ def read_preprocessed_data(args):
     return id_lab, id_demo, id_dx, id_med, id_enc
 
 
-def integrate_preprocessed_data(args):
+def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     id_lab, id_demo, id_dx, id_med, id_enc = read_preprocessed_data(args)
     # print('len(data):', len(data))
@@ -207,7 +207,7 @@ if __name__ == '__main__':
     # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC_WCM.txt
     start_time = time.time()
     args = parse_args()
-    data, raw_data = integrate_preprocessed_data(args)
+    data, raw_data = integrate_data_and_apply_eligibility(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     print('Get some statistics of final selected cohorts')
@@ -238,4 +238,4 @@ if __name__ == '__main__':
         race = row[1][4]
         state_type.append(race)
     c = Counter(state_type)
-    print('State type:', c.most_common())
+    print('State type:', c.most_common(60))
