@@ -23,7 +23,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
@@ -32,7 +32,7 @@ def parse_args():
         args.med_file = r'../data/V15_COVID19/output/medication_COL.pkl'
         args.enc_file = r'../data/V15_COVID19/output/encounter_COL.pkl'
 
-        args.output_file = r'../data/V15_COVID19/output/covid_cohorts_COL.pkl'
+        args.output_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
     elif args.dataset == 'WCM':
         args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
         args.demo_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
@@ -40,7 +40,7 @@ def parse_args():
         args.med_file = r'../data/V15_COVID19/output/medication_WCM.pkl'
         args.enc_file = r'../data/V15_COVID19/output/encounter_WCM.pkl'
 
-        args.output_file = r'../data/V15_COVID19/output/covid_cohorts_WCM.pkl'
+        args.output_file = r'../data/V15_COVID19/output/data_cohorts_WCM.pkl'
 
     print('args:', args)
     return args
@@ -194,6 +194,10 @@ def integrate_preprocessed_data(args):
         # utilization = id_util[pid]
         data[pid] = [row, demo, dx, med, lab, enc]
     print('Final data: len(data):', len(data))
+
+    utils.check_and_mkdir(args.output_file)
+    pickle.dump(data, open(args.output_file, 'wb'))
+    print('dump done to {}'.format(args.output_file))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return data, raw_data
 
