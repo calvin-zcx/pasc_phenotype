@@ -34,27 +34,35 @@ def rxnorm_atc_from_NIH_UMLS():
     atc_df = rx_df.loc[rx_df[11] == 'ATC']
     print('atc_df.shape:', atc_df.shape)
     ra = set()
-    rxrnom_atcset = defaultdict(set)
+    rxnorm_atcset = defaultdict(set)
+    atc_rxnormset = defaultdict(set)
     for index, row in atc_df.iterrows():
         rx = row[0].strip()
         atc = row[13].strip()
         name = row[14]
         ra.add((rx, atc, name))
-        rxrnom_atcset[rx].add(atc)
+        rxnorm_atcset[rx].add((atc, name))
+        atc_rxnormset[atc].add((rx, name))
 
     print('unique rxrnom-atc-name records: len(ra):', len(ra))
-    print('len(rxrnom_atcset):', len(rxrnom_atcset))
+    print('len(rxnorm_atcset):', len(rxnorm_atcset))
+    print('len(atc_rxnormset):', len(atc_rxnormset))
 
     df = pd.DataFrame(ra, columns=['rxnorm', 'atc', 'name']).sort_values(by='rxnorm', key=lambda x: x.astype(int))
     df.to_csv(r'../data/mapping/rxnorm_atc_mapping_from_NIH_UMLS_full_01032022.csv')
 
     output_file = r'../data/mapping/rxnorm_atc_mapping.pkl'
     utils.check_and_mkdir(output_file)
-    pickle.dump(rxrnom_atcset, open(output_file, 'wb'))
-
+    pickle.dump(rxnorm_atcset, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
+
+    output_file = r'../data/mapping/atc_rxnorm_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(atc_rxnormset, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return rxrnom_atcset, df
+    return rxnorm_atcset, atc_rxnormset, df
 
 
 def zip_aid_mapping():
@@ -116,9 +124,37 @@ def zip_aid_mapping():
     return zip_adi, zip5_df
 
 
+def ICD10_to_CCSR():
+    # To get code mapping from icd10 to ccsr.
+    # Data source: https://www.hcup-us.ahrq.gov/toolssoftware/ccsr/dxccsr.jsp
+    # CCSR v2022.1: Fiscal Year 2022, Released October 2021 - valid for ICD 10-CM diagnosis codes through September 2022
+    # CCSR for ICD-10-CM Diagnoses Tool, v2022.1 (ZIP file, 4.8 MB) released 10/28/21
+    start_time = time.time()
+    df = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV')
+    print('df.shape:', df.shape)
+
+    icd_ccsr = {}
+    for index, row in df.iterrows():
+        icd = row[0].strip(r"'").strip(r'"').strip()
+        icd_name = row[1]
+        ccsr = row[6].strip(r"'").strip(r'"').strip()
+        ccsr_name = row[7]
+        icd_ccsr[icd] = [ccsr, ccsr_name, icd, icd_name]
+
+    print('len(icd_ccsr):', len(icd_ccsr))
+    output_file = r'../data/mapping/icd_ccsr_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_ccsr, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_ccsr, df
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
-
-    # rxrnom_atcset, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
-    zip_adi, zip5_df = zip_aid_mapping()
-    print('Done!')
+    start_time = time.time()
+    rxnorm_atcset, atc_rxnormset, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
+    # zip_adi, zip5_df = zip_aid_mapping()
+    # icd_ccsr, ccsr_df = ICD10_to_CCSR()
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

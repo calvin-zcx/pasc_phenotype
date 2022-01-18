@@ -50,12 +50,22 @@ def read_address(input_file):
 
         """
     start_time = time.time()
+    # 1. load address zip file
     print('In read_address, input_file:', input_file)
     df = utils.read_sas_2_df(input_file)
     print('df.shape', df.shape, 'df.columns:', df.columns)
+
+    # 2. load zip adi dictionary
+    with open(r'../data/mapping/zip9or5_adi_mapping.pkl', 'rb') as f:
+        zip_adi = pickle.load(f)
+        print('load zip9or5_adi_mapping.pkl file done! len(zip_adi):', len(zip_adi))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # 3. build patid --> address dictionary
     id_zip = {}
     n_no_zip = 0
     n_has_zip5 = n_has_zip9 = 0
+    n_has_adi = 0
     for index, row in df.iterrows():
         patid = row['PATID']
         city = row['ADDRESS_CITY']
@@ -72,9 +82,17 @@ def read_address(input_file):
             zipcode = np.nan
             n_no_zip += 1
 
-        id_zip[patid] = (zipcode, state, city)
+        if pd.notna(zipcode) and (zipcode in zip_adi):
+            adi = zip_adi[zipcode]
+            n_has_adi += 1
+        else:
+            adi = [np.nan, np.nan]
 
-    print('len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip, 'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5)
+        id_zip[patid] = [zipcode, state, city] + adi
+
+    print('len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip,
+          'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5, 'n_has_adi:', n_has_adi)
+
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_zip, df
 
@@ -120,7 +138,7 @@ def read_demo(input_file, id_zip, output_file=''):
     print('df.shape', df.shape, 'df.columns:', df.columns)
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', ]]
     records_list = df_sub.values.tolist()
-    id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan])) for x in records_list}
+    id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan, np.nan, np.nan])) for x in records_list}
 
     print('df.shape {}, len(id_demo) {}'.format(df.shape, len(id_demo)))
     if output_file:
