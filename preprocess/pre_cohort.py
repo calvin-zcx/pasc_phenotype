@@ -63,27 +63,27 @@ def read_preprocessed_data(args):
     # 1. load covid patients lab list
     with open(args.covid_lab_file, 'rb') as f:
         id_lab = pickle.load(f)
-        print('Load covid patients lab list done! len(id_lab):', len(id_lab))
+        print('1-Load covid patients lab list done! len(id_lab):', len(id_lab))
 
     # 2. load demographics file
     with open(args.demo_file, 'rb') as f:
         id_demo = pickle.load(f)
-        print('load demographics file done! len(id_demo):', len(id_demo))
+        print('2-load demographics file done! len(id_demo):', len(id_demo))
 
     # 3. load diagnosis file
     with open(args.dx_file, 'rb') as f:
         id_dx = pickle.load(f)
-        print('load diagnosis file done! len(id_dx):', len(id_dx))
+        print('3-load diagnosis file done! len(id_dx):', len(id_dx))
 
     # 4. load medication file
     with open(args.med_file, 'rb') as f:
         id_med = pickle.load(f)
-        print('load medication file done! len(id_med):', len(id_med))
+        print('4-load medication file done! len(id_med):', len(id_med))
 
     # 5. load encounter file
     with open(args.enc_file, 'rb') as f:
-        id_enc= pickle.load(f)
-        print('load encounter file done! len(id_med):', len(id_enc))
+        id_enc = pickle.load(f)
+        print('5-load encounter file done! len(id_med):', len(id_enc))
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
