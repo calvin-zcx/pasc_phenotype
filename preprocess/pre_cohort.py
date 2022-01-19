@@ -23,7 +23,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
@@ -106,12 +106,12 @@ def integrate_data_and_apply_eligibility(args):
             n_pos += 1
             position = v_lables.index('POSITIVE')
             indexrecord = row[position]
-            id_indexrecord[pid] = (True, ) + indexrecord
+            id_indexrecord[pid] = [True, ] + list(indexrecord)
         else:
             n_neg += 1
             position = 0
             indexrecord = row[position]
-            id_indexrecord[pid] = (False, ) + indexrecord
+            id_indexrecord[pid] = [False, ] + list(indexrecord)
     print('Step1: Initial Included cohorts:')
     print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # Can calculate more statistics

@@ -11,7 +11,7 @@ import pickle
 import matplotlib.pyplot as plt
 import numpy as np
 import csv
-from collections import Counter, defaultdict
+from collections import Counter, defaultdict, OrderedDict
 import pandas as pd
 import json
 import requests
@@ -48,9 +48,27 @@ def rxnorm_atc_from_NIH_UMLS():
     print('len(rxnorm_atcset):', len(rxnorm_atcset))
     print('len(atc_rxnormset):', len(atc_rxnormset))
 
+    # select atc-l3 len(atc) == 4 to index:
+    atc3_info = defaultdict(list)
+    for x in ra:
+        rx, atc, name = x
+        if len(atc) == 4:
+            atc3_info[atc].extend([rx, name])
+    atc3_info_sorted = OrderedDict(sorted(atc3_info.items()))
+    atc3_index = {}
+    for i, (key, val) in enumerate(atc3_info_sorted.items()):
+        atc3_index[key] = [i, ] + val
+    print('Unique atc level 3 codes: len(atc3_index):', len(atc3_index))
+    output_file = r'../data/mapping/atcL3_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(atc3_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    # dump for debug
     df = pd.DataFrame(ra, columns=['rxnorm', 'atc', 'name']).sort_values(by='rxnorm', key=lambda x: x.astype(int))
     df.to_csv(r'../data/mapping/rxnorm_atc_mapping_from_NIH_UMLS_full_01032022.csv')
 
+    # dump
     output_file = r'../data/mapping/rxnorm_atc_mapping.pkl'
     utils.check_and_mkdir(output_file)
     pickle.dump(rxnorm_atcset, open(output_file, 'wb'))
@@ -62,7 +80,7 @@ def rxnorm_atc_from_NIH_UMLS():
     print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return rxnorm_atcset, atc_rxnormset, df
+    return rxnorm_atcset, atc_rxnormset, atc3_index, df
 
 
 def zip_aid_mapping():
@@ -133,6 +151,22 @@ def ICD10_to_CCSR():
     df = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV')
     print('df.shape:', df.shape)
 
+    df_dimension = pd.read_excel(r'../data/mapping/DXCCSR_v2022-1/DXCCSR-Reference-File-v2022-1.xlsx',
+                                 sheet_name='CCSR_Categories', skiprows=[0])
+    df_dimension = df_dimension.reset_index()
+
+    ccsr_index = {}
+    for index, row in df_dimension.iterrows():
+        ccsr = row[1]
+        name = row[2]
+        ccsr_index[ccsr] = (index, name)
+
+    print('len(ccsr_index):', len(ccsr_index))
+    output_file = r'../data/mapping/ccsr_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(ccsr_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
     icd_ccsr = {}
     for index, row in df.iterrows():
         icd = row[0].strip(r"'").strip(r'"').strip()
@@ -148,13 +182,13 @@ def ICD10_to_CCSR():
     print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return icd_ccsr, df
+    return icd_ccsr, ccsr_index,  df
 
 
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
-    rxnorm_atcset, atc_rxnormset, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
+    rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
     # zip_adi, zip5_df = zip_aid_mapping()
-    # icd_ccsr, ccsr_df = ICD10_to_CCSR()
+    # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
