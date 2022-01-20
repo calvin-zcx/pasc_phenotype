@@ -199,6 +199,8 @@ def add_rxnorm_ingredient_by_umls_api():
 def combine_rxnorm_ingredients_dicts():
     # compare, contrast, and update existing dictionary
     # if api exists, use api, then use my derived dictionary
+    # some times, our files give better results than api
+
     print('In combine_rxnorm_ingredients_dicts()...')
     start_time = time.time()
     with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
@@ -213,22 +215,33 @@ def combine_rxnorm_ingredients_dicts():
         record_example = next(iter(rx_ing_api.items()))
         print('e.g.:', record_example)
 
+    with open(r'../data/mapping/rxnorm_atc_mapping.pkl', 'rb') as f:
+        rxnorm_atc = pickle.load(f)
+        print('Load rxRNOM_CUI to ATC mapping done! len(rxnorm_atc):', len(rxnorm_atc))
+        record_example = next(iter(rxnorm_atc.items()))
+        print('e.g.:', record_example)
+
     n_no_change = n_new_add = 0
     n_exist_but_different = 0
     i = 0
-    for key, val in rx_ing.items():
+    # using UMLS file as default, api as aux, gave best coverage of atc
+    default_rx_ing = rx_ing
+    second_rx_ing = rx_ing_api
+
+    n_default = len(default_rx_ing)
+    for key, val in second_rx_ing.items():
         i += 1
-        if key in rx_ing_api:  # then use rx_ing_api records
+        if key in default_rx_ing:  # then use default_rx_ing records
             n_no_change += 1
-            val_api = set(rx_ing_api[key])
-            if set(val) != val_api:
+            val_default = set(default_rx_ing[key])
+            if set(val) != val_default:
                 n_exist_but_different += 1
-                print(n_exist_but_different, key, 'api:', rx_ing_api[key], 'file:', val)
+                print(n_exist_but_different, key, 'api:', rx_ing_api[key], 'file:', rx_ing[key])
         else:  # add new records from our generated file
             n_new_add += 1
-            rx_ing_api[key] = val
+            default_rx_ing[key] = val
 
-    print('Combine {} + {} into:'.format(len(rx_ing), len(rx_ing_api)), len(rx_ing_api),
+    print('Combine {} + {} into:'.format(n_default, len(second_rx_ing)), len(default_rx_ing),
           "n_no_change:", n_no_change, "n_new_add:", n_new_add, "n_exist_but_different:", n_exist_but_different)
 
     node_df = pd.read_csv(r'../data/mapping/RXNCONSO.RRF', sep='|', header=None, dtype=str)
@@ -236,12 +249,21 @@ def combine_rxnorm_ingredients_dicts():
     node_cui_df = node_df.loc[(node_df[11] == 'RXNORM'), [0, 14]].drop_duplicates()
     rxnorm_name = {row[0]: row[14] for index, row in node_cui_df.iterrows()}
 
+    # sort records, and check atc coverage
     records = []
-    for key, val in rx_ing_api.items():
+    n_ing = n_ing_has_atc = 0
+    for key, val in default_rx_ing.items():
         val = sorted(val)
-        rx_ing_api[key] = val
+        default_rx_ing[key] = val
         name = rxnorm_name[key]
         records.append((key, name, len(val), ';'.join(val)))
+
+        n_ing += len(val)
+        for x in val:
+            if x in rxnorm_atc:
+                n_ing_has_atc += 1
+
+    print('len(default_rx_ing):', len(default_rx_ing), 'n_ing:', n_ing, 'n_ing_has_atc:', n_ing_has_atc)
 
     records = sorted(records, key=lambda x: int(x[0]))
     df_records = pd.DataFrame(records, columns=['rxnorm_cui', 'name', 'num of ingredient(s)', 'ingredient(s)'])
@@ -251,11 +273,11 @@ def combine_rxnorm_ingredients_dicts():
     print('rxnorm to active ingredient(s) COMBINED: ', len(rx_ing_api))
     output_file = r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl'
     utils.check_and_mkdir(output_file)
-    pickle.dump(rx_ing_api, open(output_file, 'wb'))
+    pickle.dump(default_rx_ing, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    return rx_ing_api, df_records
+    return default_rx_ing, df_records
 
 
 def rxnorm_atc_from_NIH_UMLS():
@@ -431,8 +453,8 @@ if __name__ == '__main__':
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
 
     # 2. Build rxnorm to ingredient(s) mapping
-    rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
-    rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
+    # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
+    # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
     rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
