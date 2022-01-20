@@ -38,7 +38,7 @@ def rxnorm_ingredient_from_NIH_UMLS():
     # step 2: select RXNREL.RRF where col2 == 'CUI' and col6 == 'CUI
     # step 3: if rxcui2 col4 is IN:  rx_ing[col0] .append( col4 )
     # step 4: if rxcui2 col4 is MIN and rxcui1 col0 is SCD and relation is ingredients_of, rx_ing[col0] = rx_ing[col4]
-
+    print('In rxnorm_ingredient_from_NIH_UMLS()...')
     start_time = time.time()
     link_df = pd.read_csv(r'../data/mapping/RXNREL.RRF', sep='|', header=None, dtype=str)
     node_df = pd.read_csv(r'../data/mapping/RXNCONSO.RRF', sep='|', header=None, dtype=str)
@@ -136,7 +136,7 @@ def add_rxnorm_ingredient_by_umls_api():
     # 2. api search
     # 3. compare, contrast, and update existing dictionary
     # if api exists, use api, then use my derived dictionary
-
+    print('In add_rxnorm_ingredient_by_umls_api()...')
     start_time = time.time()
     with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
         rxnorm_ing = pickle.load(f)
@@ -199,6 +199,7 @@ def add_rxnorm_ingredient_by_umls_api():
 def combine_rxnorm_ingredients_dicts():
     # compare, contrast, and update existing dictionary
     # if api exists, use api, then use my derived dictionary
+    print('In combine_rxnorm_ingredients_dicts()...')
     start_time = time.time()
     with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
         rx_ing = pickle.load(f)
