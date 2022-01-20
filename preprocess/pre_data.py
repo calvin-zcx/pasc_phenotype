@@ -22,7 +22,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
@@ -130,6 +130,18 @@ def _encoding_race(race):
         encoding[0, 3] = 1
     else:
         encoding[0, 4] = 1
+    return encoding
+
+
+def _encoding_hispanic(hispanic):
+    # ['not hispanic', 'hispanic', 'unknown']
+    encoding = np.zeros((1, 3), dtype='float')
+    if hispanic == 'N':
+        encoding[0, 0] = 1
+    elif hispanic == 'Y':
+        encoding[0, 1] = 1
+    else:
+        encoding[0, 2] = 1
     return encoding
 
 
@@ -243,6 +255,9 @@ def build_baseline_covariates(args):
     race_array = np.zeros((n, 5), dtype='float')
     race_column_names = ['white', 'black', 'asian', 'other', 'unknown']
 
+    hispanic_array = np.zeros((n, 3), dtype='float')
+    hispanic_column_names = ['not hispanic', 'hispanic', 'unknown']
+
     social_array = np.zeros((n, 10), dtype='float')
     social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
@@ -256,8 +271,11 @@ def build_baseline_covariates(args):
     med_array = np.zeros((n, 269), dtype='float')  # atc level 3 category
     med_column_names = list(atcl3_encoding.keys())
 
-    adi_value_list = [v[1][6] for key, v in id_data.items()]
+    # impute adi value by median of all:
+    adi_value_list = [v[1][7] for key, v in id_data.items()]
     adi_value_default = np.nanmedian(adi_value_list)
+    # pd.DataFrame(adi_value_list).describe()
+    # pd.DataFrame(adi_value_list).hist(bins=20)
     for i, (pid, item) in enumerate(id_data.items()):
         pid_list.append(pid)
 
@@ -270,6 +288,7 @@ def build_baseline_covariates(args):
         age_array[i, :] = _encoding_age(index_age_year)
         gender_array[i] = _encoding_gender(gender)
         race_array[i, :] = _encoding_race(race)
+        hispanic_array[i, :] = _encoding_hispanic(hispanic)
         social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
         # Only count following covariates in baseline
         utilization_array[i, :] = _encoding_utilization(enc, index_date)
