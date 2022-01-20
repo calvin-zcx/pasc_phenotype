@@ -1,4 +1,5 @@
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import time
@@ -15,6 +16,7 @@ from collections import Counter
 from collections import defaultdict
 import utils
 import functools
+
 print = functools.partial(print, flush=True)
 
 
@@ -49,6 +51,12 @@ def _load_mapping():
         record_example = next(iter(ccsr_encoding.items()))
         print('e.g.:', record_example)
 
+    with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
+        rxnorm_ing = pickle.load(f)
+        print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
+        record_example = next(iter(rxnorm_ing.items()))
+        print('e.g.:', record_example)
+
     with open(r'../data/mapping/rxnorm_atc_mapping.pkl', 'rb') as f:
         rxnorm_atc = pickle.load(f)
         print('Load rxRNOM_CUI to ATC mapping done! len(rxnorm_atc):', len(rxnorm_atc))
@@ -67,7 +75,7 @@ def _load_mapping():
     #     record_example = next(iter(atc_rxnorm.items()))
     #     print('e.g.:', record_example)
 
-    return icd_ccsr, ccsr_encoding, rxnorm_atc, atcl3_encoding
+    return icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl3_encoding
 
 
 def _is_in_baseline(event_time, index_time):
@@ -175,19 +183,34 @@ def _encoding_dx(dx_list, icd_ccsr, ccsr_encoding, index_date):
     return encoding
 
 
-def _encoding_med(med_list, rxnorm_atc, atcl3_encoding, index_date):
+def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3):
     # encoding 269 atc level 3 diagnoses codes in the baseline
+    # mapping rxnorm_cui to its ingredient(s)
+    # for each ingredient, mapping to atc and thus atc[:5] is level three
+    # summarize all unique atcL3 codes
+    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
+    atc_n_chars = atclevel_chars.get(atc_level, 4)  # default level 3, using first 4 chars
     encoding = np.zeros((1, len(atcl3_encoding)), dtype='float')
     for records in med_list:
         med_date, rxnorm, supply_days = records
         if _is_in_baseline(med_date, index_date):
             if rxnorm in rxnorm_atc:
-                atcl3_list = list[set([x[:5] for x in rxnorm_atc[rxnorm]])]
-                pos_list = [atcl3_encoding[x][0] for x in atcl3_list]
+                atcl3_set = set([x[0][:atc_n_chars] for x in rxnorm_atc[rxnorm]])
+                pos_list = [atcl3_encoding[x][0] for x in atcl3_set]
+                for pos in pos_list:
+                    encoding[0, pos] += 1
+            elif rxnorm in rxnorm_ing:
+                ing_list = rxnorm_ing[rxnorm]
+                atcl3_set = set([])
+                for ing in ing_list:
+                    if ing in rxnorm_atc:
+                        atcl3_set.update([[x[0][:atc_n_chars] for x in rxnorm_atc[ing]]])
+
+                pos_list = [atcl3_encoding[x][0] for x in atcl3_set]
                 for pos in pos_list:
                     encoding[0, pos] += 1
             else:
-                print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary!')
+                print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
     return encoding
 
 
@@ -195,7 +218,7 @@ def build_baseline_covariates(args):
     start_time = time.time()
     print('In build_baseline_covariates...')
     # step 1: load encoding dictionary
-    icd_ccsr, ccsr_encoding, rxnorm_atc, atcl3_encoding = _load_mapping()
+    icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl3_encoding = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('Load cohorts pickle data file:', args.input_file)
@@ -251,8 +274,7 @@ def build_baseline_covariates(args):
         # Only count following covariates in baseline
         utilization_array[i, :] = _encoding_utilization(enc, index_date)
         dx_array[i, :] = _encoding_dx(dx, icd_ccsr, ccsr_encoding, index_date)
-        med_array[i, :] = _encoding_med(med, rxnorm_atc, atcl3_encoding, index_date)
-
+        med_array[i, :] = _encoding_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date)
 
         df_records_aux.append(records_aux)
 
