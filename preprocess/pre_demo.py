@@ -18,7 +18,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/COL/demographic.sas7bdat'
@@ -117,6 +117,11 @@ def read_demo(input_file, id_zip, output_file=''):
             03     77446 03=Black or African American
             02     17360 02=Asian
             OT      6332 OT=Other
+        HISPANIC
+            N           284645
+            UN          199929
+            Y           173171
+            NI            8207
         2. WCM data: e.g.
         df.shape: (1534329, 17)
         df['SEX'].value_counts():
@@ -131,12 +136,16 @@ def read_demo(input_file, id_zip, output_file=''):
             UN      1101 UN=Unknown
             04         8 04=Native Hawaiian or Other Pacific Islander
             01         8 01=American Indian or Alaska Native
+        HISPANIC
+        N     1267042
+        Y      265346
+        NI       1941
     """
     start_time = time.time()
     print('In read_demo, input_file:', input_file, 'len(id_zip):', len(id_zip), 'output_file', output_file)
     df = utils.read_sas_2_df(input_file)
     print('df.shape', df.shape, 'df.columns:', df.columns)
-    df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', ]]
+    df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC']]
     records_list = df_sub.values.tolist()
     id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan, np.nan, np.nan])) for x in records_list}
 

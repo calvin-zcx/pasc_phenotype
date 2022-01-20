@@ -51,7 +51,7 @@ def _load_mapping():
         record_example = next(iter(ccsr_encoding.items()))
         print('e.g.:', record_example)
 
-    with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl', 'rb') as f:
         rxnorm_ing = pickle.load(f)
         print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
         record_example = next(iter(rxnorm_ing.items()))
@@ -204,7 +204,7 @@ def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, 
                 atcl3_set = set([])
                 for ing in ing_list:
                     if ing in rxnorm_atc:
-                        atcl3_set.update([[x[0][:atc_n_chars] for x in rxnorm_atc[ing]]])
+                        atcl3_set.update([x[0][:atc_n_chars] for x in rxnorm_atc[ing]])
 
                 pos_list = [atcl3_encoding[x][0] for x in atcl3_set]
                 for pos in pos_list:
