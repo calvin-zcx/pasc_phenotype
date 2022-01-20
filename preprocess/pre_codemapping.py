@@ -109,7 +109,8 @@ def rxnorm_ingredient_from_NIH_UMLS():
 
 # Data source 5: nih rxclass api https://rxnav.nlm.nih.gov/api-RxClass.getClassByRxNormDrugId.html
 def _parse_from_nih_rxnorm_api(rxcui):
-    r = requests.get('https://rxnav.nlm.nih.gov/REST/rxcui/{}/property.json?propName=Active_moiety_RxCUI'.format(rxcui))
+    # Notice: Here we use Active_ingredient_RxCUI
+    r = requests.get('https://rxnav.nlm.nih.gov/REST/rxcui/{}/property.json?propName=Active_ingredient_RxCUI'.format(rxcui))
     # Active_ingredient_RxCUI or use Active_moiety_RxCUI  ?  e.g. 1114700 different
     # moiety seems more low level
     # moiety: {"propConceptGroup":{"propConcept":
@@ -134,11 +135,12 @@ def add_rxnorm_ingredient_by_umls_api():
     # 1. find all rxnorm in umls file
     # 2. api search
     # 3. compare, contrast, and update existing dictionary
+    # if api exists, use api, then use my derived dictionary
 
     start_time = time.time()
     with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
         rxnorm_ing = pickle.load(f)
-        print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
+        print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_ing):', len(rxnorm_ing))
         record_example = next(iter(rxnorm_ing.items()))
         print('e.g.:', record_example)
 
@@ -159,12 +161,12 @@ def add_rxnorm_ingredient_by_umls_api():
         ings = _parse_from_nih_rxnorm_api(rx)
         if ings:
             rx_ing_api[rx].update(ings)
-            n_has_return+=1
+            n_has_return += 1
         else:
             n_no_return += 1
 
         if rx in rxnorm_ing:
-            print(i, rx, ':already found:', ';'.join(rxnorm_ing[rx]), 'new found', ';'.join(sorted(ings)))
+            print(i, rx, ':already found:', ';'.join(rxnorm_ing[rx]), 'vs new found:', ';'.join(sorted(ings)))
 
         if i % 10000 == 0:
             print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -174,10 +176,12 @@ def add_rxnorm_ingredient_by_umls_api():
 
     records = []
     for key, val in rx_ing_api.items():
-        rx_ing_api[key] = sorted(val)
+        val = sorted(val)
+        rx_ing_api[key] = val
         name = rxnorm_name[key]
         records.append((key, name, len(val), ';'.join(val)))
 
+    records = sorted(records, key=lambda x: int(x[0]))
     df_rx_ing = pd.DataFrame(records, columns=['rxnorm_cui', 'name', 'num of ingredient(s)', 'ingredient(s)'])
     print('df_rx_ing.shape', df_rx_ing.shape)
     df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api.csv')
@@ -190,6 +194,67 @@ def add_rxnorm_ingredient_by_umls_api():
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     return rx_ing_api, df_rx_ing
+
+
+def combine_rxnorm_ingredients_dicts():
+    # compare, contrast, and update existing dictionary
+    # if api exists, use api, then use my derived dictionary
+    start_time = time.time()
+    with open(r'../data/mapping/rxnorm_ingredient_mapping.pkl', 'rb') as f:
+        rx_ing = pickle.load(f)
+        print('Load rxRNOM_CUI to ingredient mapping generated from umls files done! len(rx_ing):', len(rx_ing))
+        record_example = next(iter(rx_ing.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl', 'rb') as f:
+        rx_ing_api = pickle.load(f)
+        print('Load rxRNOM_CUI to ingredient mapping generated from API done! len(rx_ing_api):', len(rx_ing_api))
+        record_example = next(iter(rx_ing_api.items()))
+        print('e.g.:', record_example)
+
+    n_no_change = n_new_add = 0
+    n_exist_but_different = 0
+    i = 0
+    for key, val in rx_ing.items():
+        i += 1
+        if key in rx_ing_api:  # then use rx_ing_api records
+            n_no_change += 1
+            val_api = set(rx_ing_api[key])
+            if set(val) != val_api:
+                n_exist_but_different += 1
+                print(n_exist_but_different, key, 'api:', rx_ing_api[key], 'file:', val)
+        else:  # add new records from our generated file
+            n_new_add += 1
+            rx_ing_api[key] = val
+
+    print('Combine {} + {} into:'.format(len(rx_ing), len(rx_ing_api)), len(rx_ing_api),
+          "n_no_change:", n_no_change, "n_new_add:", n_new_add, "n_exist_but_different:", n_exist_but_different)
+
+    node_df = pd.read_csv(r'../data/mapping/RXNCONSO.RRF', sep='|', header=None, dtype=str)
+    print('node_df.shape:', node_df.shape)  # node_df.shape: (1101174, 19)
+    node_cui_df = node_df.loc[(node_df[11] == 'RXNORM'), [0, 14]].drop_duplicates()
+    rxnorm_name = {row[0]: row[14] for index, row in node_cui_df.iterrows()}
+
+    records = []
+    for key, val in rx_ing_api.items():
+        val = sorted(val)
+        rx_ing_api[key] = val
+        name = rxnorm_name[key]
+        records.append((key, name, len(val), ';'.join(val)))
+
+    records = sorted(records, key=lambda x: int(x[0]))
+    df_records = pd.DataFrame(records, columns=['rxnorm_cui', 'name', 'num of ingredient(s)', 'ingredient(s)'])
+    print('df_records.shape', df_records.shape)
+    df_records.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_combined.csv')
+
+    print('rxnorm to active ingredient(s) COMBINED: ', len(rx_ing_api))
+    output_file = r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(rx_ing_api, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return rx_ing_api, df_records
 
 
 def rxnorm_atc_from_NIH_UMLS():
@@ -361,9 +426,17 @@ def ICD10_to_CCSR():
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
+    # 1. Build rxnorm to atc mapping:
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
-    # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
+
+    # 2. Build rxnorm to ingredient(s) mapping
+    rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
+    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+
+    # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()
+
+    # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
