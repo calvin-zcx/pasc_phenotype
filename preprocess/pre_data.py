@@ -263,7 +263,7 @@ def build_baseline_covariates(args):
 
         index_info, demo, dx, med, covid_lab, enc = item
         flag, index_date, covid_loinc, flag_name, index_age_year = index_info
-        birth_date, gender, race, zipcode, state, city, nation_adi, state_adi = demo
+        birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
         records_aux = []
         records_aux.extend(index_info + demo)
 
