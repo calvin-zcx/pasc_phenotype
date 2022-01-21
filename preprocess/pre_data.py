@@ -244,25 +244,26 @@ def build_baseline_covariates(args):
     # step 3: encoding cohorts into matrix
     n = len(id_data)
     pid_list = []
-    age_array = np.zeros((n, 7), dtype='float')
+    covid_list = []
+    age_array = np.zeros((n, 7), dtype='int')
     age_column_names = ['age20-29', 'age30-39', 'age40-49', 'age50-59', 'age60-69', 'age70-79', 'age>=80']
-    gender_array = np.zeros((n, 1), dtype='float')
+    gender_array = np.zeros((n, 1), dtype='int')
     gender_column_names = ['gender-female', ]
-    race_array = np.zeros((n, 5), dtype='float')
+    race_array = np.zeros((n, 5), dtype='int')
     race_column_names = ['white', 'black', 'asian', 'other', 'unknown']
-    hispanic_array = np.zeros((n, 3), dtype='float')
+    hispanic_array = np.zeros((n, 3), dtype='int')
     hispanic_column_names = ['not hispanic', 'hispanic', 'unknown']
-    social_array = np.zeros((n, 10), dtype='float')
+    social_array = np.zeros((n, 10), dtype='int')
     social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
-    utilization_array = np.zeros((n, 4), dtype='float')
+    utilization_array = np.zeros((n, 4), dtype='int')
     utilization_column_names = ['inpatient visits', 'outpatient visits', 'emergency visits', 'other visits']
-    dx_array = np.zeros((n, 544), dtype='float')  # ccsr 6-char category
+    dx_array = np.zeros((n, 544), dtype='int')  # ccsr 6-char category
     dx_column_names = list(ccsr_encoding.keys())
-    med_array = np.zeros((n, 269), dtype='float')  # atc level 3 category
+    med_array = np.zeros((n, 269), dtype='int')  # atc level 3 category
     med_column_names = list(atcl3_encoding.keys())
 
-    column_names = ['patid', ] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
+    column_names = ['patid', 'covid',] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
                    social_column_names + utilization_column_names + dx_column_names + med_column_names
     print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -275,12 +276,12 @@ def build_baseline_covariates(args):
     df_records_aux = []  # for double check, and get basic information
     for i, (pid, item) in enumerate(id_data.items()):
         pid_list.append(pid)
-
         index_info, demo, dx, med, covid_lab, enc = item
 
         flag, index_date, covid_loinc, flag_name, index_age_year = index_info
         birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
+        covid_list.append(flag)
         # store raw information for debugging
         # add dx, med, enc in acute, and follow-up
         # currently only store baseline information
@@ -307,7 +308,8 @@ def build_baseline_covariates(args):
     print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     #   step 4: build pandas, column, and dump
-    data_array = np.hstack((np.array(pid_list).reshape(-1, 1),
+    data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
+                            np.array(covid_list).reshape(-1, 1),
                             age_array,
                             gender_array,
                             race_array,
@@ -341,12 +343,24 @@ def build_outcomes_in_followup(args):
     pass
 
 
+def fine_tune_cohorts(args):
+    # define count to bool
+
+    pass
+
+
+def analyse_cohorts(args):
+    df = pd.read_csv(args.output_file_covariates, dtype={'patid':str, 'covid':int})
+    return df
+
+
 if __name__ == '__main__':
     # python pre_data.py --dataset COL 2>&1 | tee  log/pre_data_COL.txt
     # python pre_data.py --dataset WCM 2>&1 | tee  log/pre_data_WCM.txt
 
     start_time = time.time()
     args = parse_args()
+    # df_data = analyse_cohorts(args)
     df_data, df_records_aux = build_baseline_covariates(args)
     # outcomes_df = build_outcomes_in_followup(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
