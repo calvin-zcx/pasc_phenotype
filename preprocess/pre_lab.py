@@ -104,10 +104,10 @@ def covid_lab_frequency_in_data():
     df_pasc_lab = pd.read_excel(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all.xlsx', sheet_name='Clean')
     print('df_pasc_lab.shape:', df_pasc_lab.shape)
 
-    df_fre = pd.read_excel(r'../data/V15_COVID19/covid_phenotype/lab_LOINC_frequency_in_sites.xlsx', sheet_name='Sheet1')
+    df_fre = pd.read_csv(r'../data/V15_COVID19/covid_phenotype/all_lab_LOINC_merge_result.csv')
     print('df_fre.shape:', df_fre.shape)
     df_combined = pd.merge(df_pasc_lab, df_fre, left_on='loinc_num', right_on='LOINC', how='left')
-    df_combined.to_csv(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all_with_frquency_in_data.csv')
+    df_combined.to_csv(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all_with_frequency.csv')
 
     return df_combined
 
@@ -210,5 +210,5 @@ if __name__ == '__main__':
     print(args)
     # covid_lab_phenotyping()
     # df = PASC_lab_frequency()
-    df = covid_lab_frequency_in_data()
+    # df = covid_lab_frequency_in_data()
     dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)

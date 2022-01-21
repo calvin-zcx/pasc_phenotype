@@ -22,16 +22,19 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
         args.output_file_covariates = r'../data/V15_COVID19/output/cohorts_covariates_df_COL.csv'
         args.output_file_outcomes = r'../data/V15_COVID19/output/cohorts_outcomes_df_COL.csv'
+        args.output_file_raw = r'../data/V15_COVID19/output/cohorts_raw_df_COL.csv'
+
     elif args.dataset == 'WCM':
         args.input_file = r'../data/V15_COVID19/output/data_cohorts_WCM.pkl'
         args.output_file_covariates = r'../data/V15_COVID19/output/cohorts_covariates_df_WCM.csv'
         args.output_file_outcomes = r'../data/V15_COVID19/output/cohorts_outcomes_df_WCM.csv'
+        args.output_file_raw = r'../data/V15_COVID19/output/cohorts_raw_df_WCM.csv'
 
     print('args:', args)
     return args
@@ -239,52 +242,58 @@ def build_baseline_covariates(args):
         print('Load covid patients pickle data done! len(id_data):', len(id_data))
 
     # step 3: encoding cohorts into matrix
-    df_records_aux = []  # for double check, and get basic information
-    df_records_aux_column = []
-
     n = len(id_data)
     pid_list = []
-    column_names = []
-
     age_array = np.zeros((n, 7), dtype='float')
     age_column_names = ['age20-29', 'age30-39', 'age40-49', 'age50-59', 'age60-69', 'age70-79', 'age>=80']
-
     gender_array = np.zeros((n, 1), dtype='float')
     gender_column_names = ['gender-female', ]
-
     race_array = np.zeros((n, 5), dtype='float')
     race_column_names = ['white', 'black', 'asian', 'other', 'unknown']
-
     hispanic_array = np.zeros((n, 3), dtype='float')
     hispanic_column_names = ['not hispanic', 'hispanic', 'unknown']
-
     social_array = np.zeros((n, 10), dtype='float')
     social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
-
     utilization_array = np.zeros((n, 4), dtype='float')
     utilization_column_names = ['inpatient visits', 'outpatient visits', 'emergency visits', 'other visits']
-
     dx_array = np.zeros((n, 544), dtype='float')  # ccsr 6-char category
     dx_column_names = list(ccsr_encoding.keys())
-
     med_array = np.zeros((n, 269), dtype='float')  # atc level 3 category
     med_column_names = list(atcl3_encoding.keys())
+
+    column_names = ['patid', ] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
+                   social_column_names + utilization_column_names + dx_column_names + med_column_names
+    print('len(column_names):', len(column_names), '\n', column_names)
 
     # impute adi value by median of all:
     adi_value_list = [v[1][7] for key, v in id_data.items()]
     adi_value_default = np.nanmedian(adi_value_list)
     # pd.DataFrame(adi_value_list).describe()
     # pd.DataFrame(adi_value_list).hist(bins=20)
+
+    df_records_aux = []  # for double check, and get basic information
     for i, (pid, item) in enumerate(id_data.items()):
         pid_list.append(pid)
 
         index_info, demo, dx, med, covid_lab, enc = item
+
         flag, index_date, covid_loinc, flag_name, index_age_year = index_info
         birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
-        records_aux = []
-        records_aux.extend(index_info + demo)
 
+        # store raw information for debugging
+        # add dx, med, enc in acute, and follow-up
+        # currently only store baseline information
+        records_aux = [pid, ]
+        records_aux.extend(index_info + demo)
+        dx_str = ';'.join([x[1].replace('.', '') for x in dx if _is_in_baseline(x[0], index_date)])
+        med_str = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
+        lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
+        enc_str = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
+        records_aux.extend([dx_str, med_str, lab_str, enc_str])
+        df_records_aux.append(records_aux)
+
+        # encoding data for modeling
         age_array[i, :] = _encoding_age(index_age_year)
         gender_array[i] = _encoding_gender(gender)
         race_array[i, :] = _encoding_race(race)
@@ -295,11 +304,37 @@ def build_baseline_covariates(args):
         dx_array[i, :] = _encoding_dx(dx, icd_ccsr, ccsr_encoding, index_date)
         med_array[i, :] = _encoding_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date)
 
-        df_records_aux.append(records_aux)
+    print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     #   step 4: build pandas, column, and dump
+    data_array = np.hstack((np.array(pid_list).reshape(-1, 1),
+                            age_array,
+                            gender_array,
+                            race_array,
+                            hispanic_array,
+                            social_array,
+                            utilization_array,
+                            dx_array,
+                            med_array))
+
+    df_data = pd.DataFrame(data_array, columns=column_names)
+    print('df_data.shape:', df_data.shape)
+
+    df_records_aux = pd.DataFrame(df_records_aux,
+                                  columns=['patid', "flag", "index_date", "covid_loinc", "flag_name", "index_age_year",
+                                           "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
+                                           "nation_adi", "state_adi",
+                                           "dx_str_baseline", "med_str_baseline", "lab_str", "enc_str_baseline"])
+    print('df_records_aux.shape:', df_records_aux.shape)
+
+    utils.check_and_mkdir(args.output_file_covariates)
+    df_data.to_csv(args.output_file_covariates)
+    print('dump done to {}'.format(args.output_file_covariates))
+    df_records_aux.to_csv(args.output_file_raw)
+    print('dump done to {}'.format(args.output_file_raw))
+
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    pass
+    return df_data, df_records_aux
 
 
 def build_outcomes_in_followup(args):
@@ -307,10 +342,11 @@ def build_outcomes_in_followup(args):
 
 
 if __name__ == '__main__':
-    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_combine_and_EC_COL.txt
-    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC_WCM.txt
+    # python pre_data.py --dataset COL 2>&1 | tee  log/pre_data_COL.txt
+    # python pre_data.py --dataset WCM 2>&1 | tee  log/pre_data_WCM.txt
+
     start_time = time.time()
     args = parse_args()
-    baseline_covariates_df = build_baseline_covariates(args)
-    outcomes_df = build_baseline_covariates(args)
+    df_data, df_records_aux = build_baseline_covariates(args)
+    # outcomes_df = build_outcomes_in_followup(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
