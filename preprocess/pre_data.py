@@ -10,25 +10,18 @@ import numpy as np
 from misc import utils
 from eligibility_setting import _is_in_baseline, _is_in_followup, _is_in_acute
 import functools
-
 print = functools.partial(print, flush=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.input_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
-        args.output_file_covariates = r'../data/V15_COVID19/output/cohorts_covariates_df_COL.csv'
-        args.output_file_outcomes = r'../data/V15_COVID19/output/cohorts_outcomes_df_COL.csv'
-        args.output_file_raw = r'../data/V15_COVID19/output/cohorts_raw_df_COL.csv'
 
-    elif args.dataset == 'WCM':
-        args.input_file = r'../data/V15_COVID19/output/data_cohorts_WCM.pkl'
-        args.output_file_covariates = r'../data/V15_COVID19/output/cohorts_covariates_df_WCM.csv'
-        args.output_file_outcomes = r'../data/V15_COVID19/output/cohorts_outcomes_df_WCM.csv'
-        args.output_file_raw = r'../data/V15_COVID19/output/cohorts_raw_df_WCM.csv'
+    args.input_file = r'../data/V15_COVID19/output/data_cohorts_{}.pkl'.format(args.dataset)
+    args.output_file_covariates = r'../data/V15_COVID19/output/cohorts_covariates_df_{}.csv'.format(args.dataset)
+    args.output_file_outcomes = r'../data/V15_COVID19/output/cohorts_outcomes_df_{}.csv'.format(args.dataset)
+    args.output_file_raw = r'../data/V15_COVID19/output/cohorts_raw_df_{}.csv'.format(args.dataset)
 
     print('args:', args)
     return args
@@ -228,6 +221,7 @@ def build_baseline_covariates(args):
     # step 3: encoding cohorts into matrix
     n = len(id_data)
     pid_list = []
+    site_list = []
     covid_list = []
     age_array = np.zeros((n, 7), dtype='int')
     age_column_names = ['age20-29', 'age30-39', 'age40-49', 'age50-59', 'age60-69', 'age70-79', 'age>=80']
@@ -247,8 +241,8 @@ def build_baseline_covariates(args):
     med_array = np.zeros((n, 269), dtype='int')  # atc level 3 category
     med_column_names = list(atcl3_encoding.keys())
 
-    column_names = ['patid',
-                    'covid', ] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
+    column_names = ['patid', 'site', 'covid', ] + \
+                   age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
                    social_column_names + utilization_column_names + dx_column_names + med_column_names
     print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -264,6 +258,7 @@ def build_baseline_covariates(args):
         index_info, demo, dx, med, covid_lab, enc = item
         flag, index_date, covid_loinc, flag_name, index_age_year = index_info
         birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
+        site_list.append(args.dataset)
         covid_list.append(flag)
 
         # store raw information for debugging
@@ -306,6 +301,7 @@ def build_baseline_covariates(args):
 
     #   step 4: build pandas, column, and dump
     data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
+                            np.asarray(site_list).reshape(-1, 1),
                             np.array(covid_list).reshape(-1, 1),
                             age_array,
                             gender_array,
@@ -320,7 +316,7 @@ def build_baseline_covariates(args):
     print('df_data.shape:', df_data.shape)
 
     df_records_aux = pd.DataFrame(df_records_aux,
-                                  columns=['patid', "site", "flag", "index_date", "covid_loinc", "flag_name",
+                                  columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
                                            "index_age_year",
                                            "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
                                            "nation_adi", "state_adi",
@@ -331,9 +327,9 @@ def build_baseline_covariates(args):
     print('df_records_aux.shape:', df_records_aux.shape)
 
     utils.check_and_mkdir(args.output_file_covariates)
-    df_data.to_csv(args.output_file_covariates)
+    df_data.to_csv(args.output_file_covariates, index=False)
     print('dump done to {}'.format(args.output_file_covariates))
-    df_records_aux.to_csv(args.output_file_raw)
+    df_records_aux.to_csv(args.output_file_raw, index=False)
     print('dump done to {}'.format(args.output_file_raw))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

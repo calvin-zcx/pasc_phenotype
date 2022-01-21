@@ -10,6 +10,20 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\mapping\rxnorm_atc_mapping_from_NIH_UMLS_full_01032022-playwith.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\mapping\rxnorm_atc_mapping_from_NIH_UMLS_full_01032022.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\preprocess\col_cohorts_describe.csv">
           <value>
             <Attribute>

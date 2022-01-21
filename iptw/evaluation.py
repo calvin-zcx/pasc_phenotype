@@ -9,7 +9,7 @@ from scipy.special import softmax
 from lifelines import KaplanMeierFitter, CoxPHFitter
 from lifelines.statistics import survival_difference_at_fixed_point_in_time_test
 import pandas as pd
-from misc import check_and_mkdir
+from misc.utils import check_and_mkdir
 import pickle
 import os
 
@@ -111,6 +111,7 @@ def model_eval_common(X, T, Y, PS_logits, loss=None, normalized=False, verbose=1
         KM_ALL = []
 
     return IPTW_ALL, AUC_ALL, SMD_ALL, ATE_ALL, KM_ALL
+
 
 def final_eval_ml(model, args, train_x, train_t, train_y, val_x, val_t, val_y, test_x, test_t, test_y,
                   x, t, y, drug_name, feature_name, n_feature, dump_ori=True):
