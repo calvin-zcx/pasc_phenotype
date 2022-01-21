@@ -1,20 +1,15 @@
 import sys
 # for linux env.
 sys.path.insert(0,'..')
-from datetime import datetime
-import os
-import pandas as pd
-from tqdm import tqdm
 import time
 import pickle
 import argparse
-import csv
-import utils
-import numpy as np
+from misc import utils
+from eligibility_setting import _is_in_baseline, _is_in_followup, INDEX_AGE_MINIMUM
 import functools
 from collections import Counter
 print = functools.partial(print, flush=True)
-from collections import defaultdict
+
 
 # 1. aggregate preprocessed data [covid lab, demo, diagnosis, medication] into cohorts data structure
 # 2. applying EC [eligibility criteria] to include and exclude patients for each cohorts
@@ -116,14 +111,14 @@ def integrate_data_and_apply_eligibility(args):
     print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # Can calculate more statistics
 
-    # Step 2: Applying EC. exclude index age < 20
+    # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
     n_pos = n_neg = 0
     exclude_list = []
     for pid, row in id_indexrecord.items():
         # (True/False, lab_date, lab_code, result_label, age)
         covid_flag = row[0]
         age = row[4]
-        if age < 20:
+        if age < INDEX_AGE_MINIMUM: # DEFAULT 20
             # excluded
             exclude_list.append(pid)
         else:
@@ -133,7 +128,7 @@ def integrate_data_and_apply_eligibility(args):
             else:
                 n_neg += 1
     [id_indexrecord.pop(pid, None) for pid in exclude_list]
-    print('Step2: exclude index age < 20, len(exclude_list):', len(exclude_list),)
+    print('Step2: exclude index age < {}, len(exclude_list):'.format(INDEX_AGE_MINIMUM), len(exclude_list),)
     print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # print('exclude_list', exclude_list)
 
@@ -153,13 +148,13 @@ def integrate_data_and_apply_eligibility(args):
             flag_baseline = False
             for r in v_dx:
                 dx_date = r[0]
-                if 30 <= (dx_date - index_date).days <= 150:
+                if _is_in_followup(dx_date, index_date):  # 30 <= (dx_date - index_date).days <= 150:
                     flag_follow = True
                     break
 
             for r in v_dx:
                 dx_date = r[0]
-                if -540 <= (dx_date - index_date).days <= -30:
+                if _is_in_baseline(dx_date, index_date):  # -540 <= (dx_date - index_date).days <= -30:
                     flag_baseline = True
                     break
 
@@ -180,8 +175,7 @@ def integrate_data_and_apply_eligibility(args):
     print('Finally selected cohorts: len(id_indexrecord):', len(id_indexrecord))
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    # step 4: build data structure, do the right encoding mapping:
-    # place holder, change later
+    # step 4: build data structure for later encoding.
     raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc]
     data = {}
     for pid, row in id_indexrecord.items():

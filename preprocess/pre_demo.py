@@ -1,18 +1,14 @@
 import sys
 # for linux env.
 sys.path.insert(0,'..')
-from datetime import datetime
-import os
 import pandas as pd
-from tqdm import tqdm
 import time
 import pickle
 import argparse
-import csv
-import utils
+from misc import utils
 import numpy as np
 import functools
-from collections import Counter
+
 print = functools.partial(print, flush=True)
 
 

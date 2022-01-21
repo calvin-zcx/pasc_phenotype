@@ -1,6 +1,6 @@
 import sys
 # for linux env.
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import scipy
 import numpy as np
 import pandas as pd

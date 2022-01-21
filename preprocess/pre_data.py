@@ -5,16 +5,10 @@ sys.path.insert(0, '..')
 import time
 import pickle
 import argparse
-import os
-import random
 import pandas as pd
-import json
-import matplotlib.pyplot as plt
 import numpy as np
-import itertools
-from collections import Counter
-from collections import defaultdict
-import utils
+from misc import utils
+from eligibility_setting import _is_in_baseline, _is_in_followup, _is_in_acute
 import functools
 
 print = functools.partial(print, flush=True)
@@ -22,7 +16,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
     args = parser.parse_args()
     if args.dataset == 'COL':
         args.input_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
@@ -79,16 +73,6 @@ def _load_mapping():
     #     print('e.g.:', record_example)
 
     return icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl3_encoding
-
-
-def _is_in_baseline(event_time, index_time):
-    # baseline: -18 month to -1 month prior to the index date
-    return -540 <= (event_time - index_time).days <= -30
-
-
-def _is_in_followup(event_time, index_time):
-    # baseline: 1 month to 5 month after the index date
-    return 30 <= (event_time - index_time).days <= 150
 
 
 def _encoding_age(age):
@@ -263,7 +247,8 @@ def build_baseline_covariates(args):
     med_array = np.zeros((n, 269), dtype='int')  # atc level 3 category
     med_column_names = list(atcl3_encoding.keys())
 
-    column_names = ['patid', 'covid',] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
+    column_names = ['patid',
+                    'covid', ] + age_column_names + gender_column_names + race_column_names + hispanic_column_names + \
                    social_column_names + utilization_column_names + dx_column_names + med_column_names
     print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -277,21 +262,33 @@ def build_baseline_covariates(args):
     for i, (pid, item) in enumerate(id_data.items()):
         pid_list.append(pid)
         index_info, demo, dx, med, covid_lab, enc = item
-
         flag, index_date, covid_loinc, flag_name, index_age_year = index_info
         birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
-
         covid_list.append(flag)
+
         # store raw information for debugging
         # add dx, med, enc in acute, and follow-up
-        # currently only store baseline information
-        records_aux = [pid, ]
+        # currently focus on baseline information
+        records_aux = [pid, args.dataset]
         records_aux.extend(index_info + demo)
-        dx_str = ';'.join([x[1].replace('.', '') for x in dx if _is_in_baseline(x[0], index_date)])
-        med_str = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
+
         lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
-        enc_str = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
-        records_aux.extend([dx_str, med_str, lab_str, enc_str])
+        dx_str_baseline = ';'.join([x[1].replace('.', '') for x in dx if _is_in_baseline(x[0], index_date)])
+        med_str_baseline = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
+        enc_str_baseline = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
+
+        dx_str_acute = ';'.join([x[1].replace('.', '') for x in dx if _is_in_acute(x[0], index_date)])
+        med_str_acute = ';'.join([x[1] for x in med if _is_in_acute(x[0], index_date)])
+        enc_str_acute = ';'.join([x[1] for x in enc if _is_in_acute(x[0], index_date)])
+
+        dx_str_followup = ';'.join([x[1].replace('.', '') for x in dx if _is_in_followup(x[0], index_date)])
+        med_str_followup = ';'.join([x[1] for x in med if _is_in_followup(x[0], index_date)])
+        enc_str_followup = ';'.join([x[1] for x in enc if _is_in_followup(x[0], index_date)])
+
+        records_aux.extend([lab_str,
+                            dx_str_baseline, med_str_baseline, enc_str_baseline,
+                            dx_str_acute, med_str_acute, enc_str_acute,
+                            dx_str_followup, med_str_followup, enc_str_followup])
         df_records_aux.append(records_aux)
 
         # encoding data for modeling
@@ -323,10 +320,14 @@ def build_baseline_covariates(args):
     print('df_data.shape:', df_data.shape)
 
     df_records_aux = pd.DataFrame(df_records_aux,
-                                  columns=['patid', "flag", "index_date", "covid_loinc", "flag_name", "index_age_year",
+                                  columns=['patid', "site", "flag", "index_date", "covid_loinc", "flag_name",
+                                           "index_age_year",
                                            "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
                                            "nation_adi", "state_adi",
-                                           "dx_str_baseline", "med_str_baseline", "lab_str", "enc_str_baseline"])
+                                           "lab_str",
+                                           "dx_str_baseline", "med_str_baseline", "enc_str_baseline",
+                                           "dx_str_acute", "med_str_acute", "enc_str_acute",
+                                           "dx_str_followup", "med_str_followup", "enc_str_followup"])
     print('df_records_aux.shape:', df_records_aux.shape)
 
     utils.check_and_mkdir(args.output_file_covariates)
@@ -350,7 +351,7 @@ def fine_tune_cohorts(args):
 
 
 def analyse_cohorts(args):
-    df = pd.read_csv(args.output_file_covariates, dtype={'patid':str, 'covid':int})
+    df = pd.read_csv(args.output_file_covariates, dtype={'patid': str, 'covid': int})
     return df
 
 

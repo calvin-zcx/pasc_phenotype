@@ -2,21 +2,14 @@ import sys
 # for linux env.
 sys.path.insert(0,'..')
 import os
-import shutil
-import zipfile
-import urllib.parse
-import urllib.request
-import tqdm
 import pickle
-import matplotlib.pyplot as plt
 import numpy as np
-import csv
-from collections import Counter, defaultdict, OrderedDict
+from collections import defaultdict, OrderedDict
 import pandas as pd
-import json
 import requests
 import functools
-import utils
+from misc import utils
+
 print = functools.partial(print, flush=True)
 import time
 
