@@ -14,17 +14,12 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess diagnosis')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='WCM', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.input_file = r'../data/V15_COVID19/COL/diagnosis.sas7bdat'
-        args.output_file = r'../data/V15_COVID19/output/diagnosis_COL.pkl'
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.input_file = r'../data/V15_COVID19/WCM/diagnosis.sas7bdat'
-        args.output_file = r'../data/V15_COVID19/output/diagnosis_WCM.pkl'
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
 
+    args.input_file = r'../data/V15_COVID19/{}/diagnosis.sas7bdat'.format(args.dataset)
+    args.patient_list_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
@@ -115,38 +110,35 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     print('len(id_dx):', len(id_dx))
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
-    # sort
+
+    # sort and de-duplicates
     print('sort dx list in id_dx by time')
     for patid, dx_list in id_dx.items():
         # add a set operation to reduce duplicates
         # sorted returns a sorted list
         dx_list_sorted = sorted(set(dx_list), key=lambda x: x[0])
         id_dx[patid] = dx_list_sorted
-
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     if output_file:
         utils.check_and_mkdir(output_file)
         pickle.dump(id_dx, open(output_file, 'wb'))
         dfs.to_csv(output_file.replace('.pkl', '') + '.csv')
-        print('dump done to {}'.format(output_file))
+        print('Dump id_dx done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_dx, dfs
 
 
 if __name__ == '__main__':
-    # with open(r'../data/V15_COVID19/output/patient_demo_COL.pkl', 'rb') as f:
-    #     id_demo_col = pickle.load(f)
-    #     print('len(id_demo_col):', len(id_demo_col))
-    # with open(r'../data/V15_COVID19/output/patient_demo_WCM.pkl', 'rb') as f:
-    #     id_demo_wcm = pickle.load(f)
-    #     print('len(id_demo_wcm):', len(id_demo_wcm))
-
     # python pre_diagnosis.py --dataset COL 2>&1 | tee  log/pre_diagnosis_COL.txt
     # python pre_diagnosis.py --dataset WCM 2>&1 | tee  log/pre_diagnosis_WCM.txt
+    # python pre_diagnosis.py --dataset NYU 2>&1 | tee  log/pre_diagnosis_NYU.txt
+    # python pre_diagnosis.py --dataset MONTE 2>&1 | tee  log/pre_diagnosis_MONTE.txt
+    # python pre_diagnosis.py --dataset MSHS 2>&1 | tee  log/pre_diagnosis_MSHS.txt
     start_time = time.time()
     args = parse_args()
+    print('Selected site:', args.dataset)
     with open(args.patient_list_file, 'rb') as f:
         selected_patients = pickle.load(f)
         print('len(selected_patients):', len(selected_patients))
