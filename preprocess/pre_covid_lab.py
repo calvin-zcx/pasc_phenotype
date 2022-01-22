@@ -134,11 +134,10 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
 
     # Add more information to df, just for debugging.
     # Formal positive and negative definition in pre_cohort.py
-    print('Add more information to excel for debugging purpose')
+    print('Add more information to csv for debugging purpose')
     df_covid = df_covid.sort_values(by=['PATID', 'RESULT_DATE'])
     df_covid['n_test'] = df_covid['PATID'].apply(lambda x: len(id_lab[x]))
     df_covid['covid_positive'] = df_covid['PATID'].apply(lambda x: 'POSITIVE' in [a[2].upper() for a in id_lab[x]])
-
     # Do we need a better definition considering NI?
     if id_demo:
         df_covid['age'] = np.nan
