@@ -32,7 +32,10 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     # step 1: load covid lab test codes, may be updated by:
     print('Step 1: load selected and existed covid PCR lab code')
     df_covid = pd.read_csv(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all.csv')
-    # choose only PCR tests
+    # No. We can choose according our list,
+    # and then narrow down to the PCR test in pre_covid_lab.py
+    # !!! chosen PCR tests in pre_covid_lab.py
+    # Keep all covid related codes here
     """
     loinc_num	component	type	COL Frequency	WCM Frequency	MONTE Frequency	NYU Frequency	MSHS Frequency	Total Orders
     94309-2	SARS coronavirus 2 RNA	Molecular			385168	762104	21518	1168790
@@ -42,11 +45,17 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     (very few, ignore currently) 94558-4	SARS coronavirus 2 Ag	Antigen	56	120		5828		6004
     94759-8	SARS coronavirus 2 RNA	Molecular		8			448	456
     """
-    df_covid_pcr = df_covid.loc[(df_covid['type'] == 'Molecular') & (df_covid['Total Orders'] > 0), :]
-    pd.set_option('display.max_columns', None)
-    print(df_covid_pcr)
-    code_set = set(df_covid_pcr['loinc_num'].to_list())
-    print('Selected and existed Covid PCR codes:', code_set)
+    # df_covid_pcr = df_covid.loc[(df_covid['type'] == 'Molecular') & (df_covid['Total Orders'] > 0), :]
+    # pd.set_option('display.max_columns', None)
+    # print(df_covid_pcr)
+    # code_set = set(df_covid_pcr['loinc_num'].to_list())
+    # print('Selected and existed Covid PCR codes:', code_set)
+
+    print('df_covid.shape:', df_covid.shape)
+    code_set = set(df_covid['loinc_num'].to_list())
+    print('Selected all Covid related codes: ', code_set)
+    print('len(code_set):', len(code_set))
+
     # step 2: read lab results by chunk, due to large file size
     print('Step 2, read lab data, and select patients who took COVID PCR test, with their covid lab records')
     print('read:', args.input_file)
