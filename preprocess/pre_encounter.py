@@ -138,6 +138,10 @@ def read_encounter(input_file, output_file='', selected_patients={}):
 if __name__ == '__main__':
     # python pre_encounter.py --dataset COL 2>&1 | tee  log/pre_encounter_COL.txt
     # python pre_encounter.py --dataset WCM 2>&1 | tee  log/pre_encounter_WCM.txt
+    # python pre_encounter.py --dataset NYU 2>&1 | tee  log/pre_encounter_NYU.txt
+    # python pre_encounter.py --dataset MONTE 2>&1 | tee  log/pre_encounter_MONTE.txt
+    # python pre_encounter.py --dataset MSHS 2>&1 | tee  log/pre_encounter_MSHS.txt
+
     start_time = time.time()
     args = parse_args()
     with open(args.patient_list_file, 'rb') as f:
