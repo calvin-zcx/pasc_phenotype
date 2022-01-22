@@ -96,7 +96,9 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
                     else:
                         n_not_in_list_row += 1
 
-        dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
+        # # monte case, too large, error. other sites ok
+        # dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
+        dfs.append(chunk[["ADMIT_DATE"]])
 
         if i % 10 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs),
@@ -125,7 +127,7 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     if output_file:
         utils.check_and_mkdir(output_file)
         pickle.dump(id_dx, open(output_file, 'wb'))
-        dfs.to_csv(output_file.replace('.pkl', '') + '.csv')
+        # dfs.to_csv(output_file.replace('.pkl', '') + '.csv') # monte case, too large, error. other sites ok
         print('Dump id_dx done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
