@@ -167,7 +167,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return id_lab, df_covid
+    return id_lab, df_covid, df
 
 
 def data_analysis(id_lab):
@@ -193,8 +193,9 @@ if __name__ == '__main__':
         id_demo = pickle.load(f)
         print('load', args.demo_file, 'demo information: len(id_demo):', len(id_demo))
 
-    id_lab, df_pcr = read_covid_lab_and_generate_label(args.input_file, args.output_file, id_demo)
+    id_lab, df_pcr, df = read_covid_lab_and_generate_label(args.input_file, args.output_file, id_demo)
+    print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
+    print('PCR-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
     print('PCR-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))
-    print('PCR-test#negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
-    print('PCR-test total:', len(df_pcr.loc[:, 'PATID'].unique()))
+    print('PCR-test #negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
