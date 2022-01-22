@@ -14,18 +14,12 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='WCM', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='NYU', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.input_file = r'../data/V15_COVID19/COL/demographic.sas7bdat'
-        args.address_file = r'../data/V15_COVID19/COL/lds_address_history.sas7bdat'
 
-        args.output_file = r'../data/V15_COVID19/output/patient_demo_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.input_file = r'../data/V15_COVID19/WCM/demographic.sas7bdat'
-        args.address_file = r'../data/V15_COVID19/WCM/lds_address_history.sas7bdat'
-
-        args.output_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
+    args.input_file = r'../data/V15_COVID19/{}/demographic.sas7bdat'.format(args.dataset)
+    args.address_file = r'../data/V15_COVID19/{}/lds_address_history.sas7bdat'.format(args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -48,7 +42,7 @@ def read_address(input_file):
     start_time = time.time()
     # 1. load address zip file
     print('In read_address, input_file:', input_file)
-    df = utils.read_sas_2_df(input_file)
+    df = utils.read_sas_2_df(input_file)  # , chunksize=100000, encoding='WINDOWS-1252', column_name='upper'
     print('df.shape', df.shape, 'df.columns:', df.columns)
 
     # 2. load zip adi dictionary
@@ -86,7 +80,7 @@ def read_address(input_file):
 
         id_zip[patid] = [zipcode, state, city] + adi
 
-    print('len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip,
+    print('df.shape:', df.shape, 'len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip,
           'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5, 'n_has_adi:', n_has_adi)
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -140,8 +134,14 @@ def read_demo(input_file, id_zip, output_file=''):
     start_time = time.time()
     print('In read_demo, input_file:', input_file, 'len(id_zip):', len(id_zip), 'output_file', output_file)
     df = utils.read_sas_2_df(input_file)
+
+    print('SEX:', df['SEX'].value_counts(dropna=False))
+    print('RACE:', df['RACE'].value_counts(dropna=False))
+    print('HISPANIC:', df['HISPANIC'].value_counts(dropna=False))
+
     print('df.shape', df.shape, 'df.columns:', df.columns)
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC']]
+
     records_list = df_sub.values.tolist()
     id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan, np.nan, np.nan])) for x in records_list}
 
@@ -159,6 +159,10 @@ def read_demo(input_file, id_zip, output_file=''):
 if __name__ == '__main__':
     # python pre_demo.py --dataset COL 2>&1 | tee  log/pre_demo_COL.txt
     # python pre_demo.py --dataset WCM 2>&1 | tee  log/pre_demo_WCM.txt
+    # python pre_demo.py --dataset NYU 2>&1 | tee  log/pre_demo_NYU.txt
+    # python pre_demo.py --dataset MONTE 2>&1 | tee  log/pre_demo_MONTE.txt
+    # python pre_demo.py --dataset MSHS 2>&1 | tee  log/pre_demo_MSHS.txt
+
     start_time = time.time()
     args = parse_args()
     id_zip, df_addr = read_address(args.address_file)

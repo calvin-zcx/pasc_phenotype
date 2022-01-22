@@ -15,16 +15,12 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.input_file = r'../data/V15_COVID19/output/covid_lab_COL.csv' # xlsx
-        args.output_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
-        args.demo_file = r'../data/V15_COVID19/output/patient_demo_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.input_file = r'../data/V15_COVID19/output/covid_lab_WCM.csv'  # xlsx
-        args.output_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
-        args.demo_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
+
+    args.input_file = r'../data/V15_COVID19/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    args.demo_file = r'../data/V15_COVID19/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
