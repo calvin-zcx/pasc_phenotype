@@ -18,22 +18,16 @@ from collections import defaultdict
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser = argparse.ArgumentParser(description='preprocess medication table')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.med_admin_file = r'../data/V15_COVID19/COL/med_admin.sas7bdat'
-        args.prescribe_file = r'../data/V15_COVID19/COL/prescribing.sas7bdat'
-        args.med_admin_output = r'../data/V15_COVID19/output/med_admin_COL.pkl'
-        args.prescribe_output = r'../data/V15_COVID19/output/prescribing_COL.pkl'
-        args.output_file = r'../data/V15_COVID19/output/medication_COL.pkl'
 
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.prescribe_file = r'../data/V15_COVID19/WCM/prescribing.sas7bdat'
-        args.output_file = r'../data/V15_COVID19/output/medication_WCM.pkl'
-
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
+    args.patient_list_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    args.med_admin_file = r'../data/V15_COVID19/{}/med_admin.sas7bdat'.format(args.dataset)
+    args.prescribe_file = r'../data/V15_COVID19/{}/prescribing.sas7bdat'.format(args.dataset)
+    args.med_admin_output = r'../data/V15_COVID19/output/{}/_med_admin_{}.pkl'.format(args.dataset, args.dataset)
+    args.prescribe_output = r'../data/V15_COVID19/output/{}/_prescribing_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -66,7 +60,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
     id_med = defaultdict(set)
     i = 0
     n_rows = 0
-    # dfs = []
+    dfs = []
 
     n_no_rxnorm = 0
     n_no_date = 0
@@ -135,6 +129,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
                     else:
                         n_not_in_list_row += 1
 
+        dfs.append(chunk[['RX_START_DATE']])
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows,
@@ -147,11 +142,13 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
           'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('len(id_med):', len(id_med))
-    # dfs = pd.concat(dfs)
-    # print('dfs.shape', dfs.shape)
+    dfs = pd.concat(dfs)
+    print('dfs.shape', dfs.shape)
+    print('Time range of prescribing table  of selected patients [RX_START_DATE]:',
+          dfs["RX_START_DATE"].describe(datetime_is_numeric=True))
 
     # sort
-    print('sort dx list in id_dx by time')
+    print('Sort dx list in id_dx by time')
     for patid, med_list in id_med.items():
         med_list_sorted = sorted(med_list, key=lambda x: x[0])
         id_med[patid] = med_list_sorted
@@ -194,7 +191,7 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
     id_med = defaultdict(set)
     i = 0
     n_rows = 0
-    # dfs = []
+    dfs = []
 
     n_no_rxnorm = 0
     n_no_date = 0
@@ -255,6 +252,7 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
                     else:
                         n_not_in_list_row += 1
 
+        dfs.append(chunk[['MEDADMIN_START_DATE']])
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('n_rows:', n_rows,
@@ -267,9 +265,11 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
           'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('len(id_med):', len(id_med))
+    dfs = pd.concat(dfs)
+    print('dfs.shape', dfs.shape)
+    print('Time range of med_admin table  of selected patients [MEDADMIN_START_DATE]:',
+          dfs["MEDADMIN_START_DATE"].describe(datetime_is_numeric=True))
 
-    # dfs = pd.concat(dfs)
-    # print('dfs.shape', dfs.shape)
     # sort
     print('sort dx list in id_dx by time')
     for patid, med_list in id_med.items():
@@ -328,15 +328,16 @@ if __name__ == '__main__':
         print('len(selected_patients):', len(selected_patients))
 
     print('args.dataset:', args.dataset)
-    if args.dataset == 'COL':
-        print("step 1. prescribe")
-        id_med1 = read_prescribing(args.prescribe_file, args.prescribe_output, selected_patients)
-        print("step 2. med_admin")
-        id_med2 = read_med_admin(args.med_admin_file, args.med_admin_output, selected_patients)
-        print("step 3. combine")
-        id_med = combine_2_id_med(id_med1, id_med2, args.output_file)
-    else:
-        print("Here for {}, only using prescribing file".format(args.dataset))
-        id_med = read_prescribing(args.prescribe_file, args.output_file, selected_patients)
+    print("step 1. prescribe")
+    id_med1 = read_prescribing(args.prescribe_file, args.prescribe_output, selected_patients)
+    print('read_prescribing done, len(id_med1):', len(id_med1))
+
+    print("step 2. med_admin")
+    id_med2 = read_med_admin(args.med_admin_file, args.med_admin_output, selected_patients)
+    print('read_med_admin done, len(id_med2):', len(id_med2))
+
+    print("step 3. combine both")
+    id_med = combine_2_id_med(id_med1, id_med2, args.output_file)
+    print('combine_2_id_med done, len(id_med):', len(id_med))
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
