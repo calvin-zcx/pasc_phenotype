@@ -38,6 +38,17 @@ def read_address(input_file):
             df.shape: (685598, 12)
             n_no_zip: 111323 n_has_zip9: 1967 n_has_zip5: 572308
 
+            3.NYU:
+            df.shape: (653395, 12) len(id_zip): 653395
+            n_no_zip: 0 n_has_zip9: 0 n_has_zip5: 653395 n_has_adi: 653340
+
+            4.MONTE:
+            df.shape: (272874, 12) len(id_zip):
+            272874 n_no_zip: 313 n_has_zip9: 52894 n_has_zip5: 219667 n_has_adi: 270779
+
+            5. MSHS
+            df.shape: (1723311, 12) len(id_zip):
+            1723311 n_no_zip: 96687 n_has_zip9: 0 n_has_zip5: 1626624 n_has_adi: 1626414
         """
     start_time = time.time()
     # 1. load address zip file
@@ -143,6 +154,7 @@ def read_demo(input_file, id_zip, output_file=''):
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC']]
 
     records_list = df_sub.values.tolist()
+    # 'PATID' -->[ 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC', zipcode, state, city, adi_nation, adi_state]
     id_demo = {x[0]: x[1:] + list(id_zip.get(x[0], [np.nan, np.nan, np.nan, np.nan, np.nan])) for x in records_list}
 
     print('df.shape {}, len(id_demo) {}'.format(df.shape, len(id_demo)))
