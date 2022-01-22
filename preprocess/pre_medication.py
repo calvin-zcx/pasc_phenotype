@@ -265,10 +265,16 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
           'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('len(id_med):', len(id_med))
-    dfs = pd.concat(dfs)
-    print('dfs.shape', dfs.shape)
-    print('Time range of med_admin table  of selected patients [MEDADMIN_START_DATE]:',
-          dfs["MEDADMIN_START_DATE"].describe(datetime_is_numeric=True))
+    try:
+        dfs = pd.concat(dfs)
+        print('dfs.shape', dfs.shape)
+        print('Time range of med_admin table  of selected patients [MEDADMIN_START_DATE]:',
+              dfs["MEDADMIN_START_DATE"].describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e)
 
     # sort
     print('sort dx list in id_dx by time')
