@@ -33,9 +33,8 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     """
     1. scan date range of all covid-related tests
     2. selected only PCR-tested records
-    3. build index information
+    3. build id --> index information
     [4.] save encounter id for check covid test encounter type later in the cohort build
-
     :param data_file: input demographics file with std format
     :param out_file: output id_covidlab[patid] = [(time, code, label, age), ...] sorted by time,  pickle
     :return: id_covidlab[patid] = [(time, code, label, age), ...] sorted by time
