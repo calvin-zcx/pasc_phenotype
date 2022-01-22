@@ -14,19 +14,13 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess diagnosis')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.input_file = r'../data/V15_COVID19/COL/encounter.sas7bdat'
-        # args.diagnosis_file = r'../data/V15_COVID19/COL/diagnosis.sas7bdat'
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
-        args.output_file = r'../data/V15_COVID19/output/encounter_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.input_file = r'../data/V15_COVID19/WCM/encounter.sas7bdat'
-        # args.diagnosis_file = r'../data/V15_COVID19/WCM/diagnosis.sas7bdat'
-        args.patient_list_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
-        args.output_file = r'../data/V15_COVID19/output/encounter_WCM.pkl'
 
+    args.patient_list_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset,
+                                                                                              args.dataset)
+    args.input_file = r'../data/V15_COVID19/{}/encounter.sas7bdat'.format(args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/encounter_{}.pkl'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
@@ -93,16 +87,16 @@ def read_encounter(input_file, output_file='', selected_patients={}):
                 n_discard_row += 1
             else:
                 if not selected_patients:
-                    id_enc[patid].append((admit_date, enc_type))
+                    id_enc[patid].append((admit_date, enc_type, enc_id))
                     n_recorded_row += 1
                 else:
                     if patid in selected_patients:
-                        id_enc[patid].append((admit_date, enc_type))
+                        id_enc[patid].append((admit_date, enc_type, enc_id))
                         n_recorded_row += 1
                     else:
                         n_not_in_list_row += 1
 
-        # dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
+        dfs.append(chunk[["ADMIT_DATE"]])
 
         if i % 10 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs),
@@ -116,8 +110,11 @@ def read_encounter(input_file, output_file='', selected_patients={}):
           'n_discard_row:', n_discard_row, 'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
 
     print('len(id_enc):', len(id_enc))
-    # dfs = pd.concat(dfs)
-    # print('dfs.shape', dfs.shape)
+    dfs = pd.concat(dfs)
+    print('dfs.shape', dfs.shape)
+    print('Time range of encounter table  of selected patients [ADMIT_DATE]:',
+          dfs["ADMIT_DATE"].describe(datetime_is_numeric=True))
+
     # sort
     print('sort encounter list in id_enc by time')
     for patid, records in id_enc.items():
