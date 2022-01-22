@@ -143,11 +143,20 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     # Do we need a better definition considering NI?
     if id_demo:
         df_covid['age'] = np.nan
+        age_list = []
+        n_no_age = 0
         for index, row in tqdm(df_covid.iterrows(), total=len(df_covid)):
             patid = row['PATID']
             lab_date = row["RESULT_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
             if patid in id_demo:
-                df_covid.loc[index, "age"] = (lab_date - id_demo[patid][0]).days // 365
+                # df_covid.loc[index, "age"] = (lab_date - id_demo[patid][0]).days // 365
+                age = (lab_date - id_demo[patid][0]).days // 365
+            else:
+                age = np.nan
+                n_no_age += 1
+            age_list.append(age)
+        df_covid['age'] = age_list
+        print('n_no_age:', n_no_age, r"len(df_covid['age'])", len(df_covid['age']))
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     if output_file:
