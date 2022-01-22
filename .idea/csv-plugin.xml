@@ -24,13 +24,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\preprocess\col_cohorts_describe.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
       </map>
     </option>
   </component>

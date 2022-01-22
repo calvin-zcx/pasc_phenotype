@@ -124,10 +124,15 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     print('Output file:', args.output_file)
     utils.check_and_mkdir(args.output_file)
     dfs_covid_all.to_csv(args.output_file)
-
-    print('Output file:', args.output_file_xlsx)
-    utils.check_and_mkdir(args.output_file_xlsx)
-    dfs_covid_all.to_excel(args.output_file_xlsx)
+    try:
+        # dump xlsx for debugging
+        print('Output file:', args.output_file_xlsx)
+        utils.check_and_mkdir(args.output_file_xlsx)
+        dfs_covid_all.to_excel(args.output_file_xlsx)
+    except Exception as e:
+        # in write raise ValueError( ValueError: This sheet is too large!
+        # Your sheet size is: 1592362, 35 Max sheet size is: 1048576, 16384
+        print(e)
 
     if debug:
         dfs_all = pd.concat(dfs)
