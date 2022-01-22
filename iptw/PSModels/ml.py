@@ -39,12 +39,13 @@ class PropensityEstimator:
                     'min_child_samples': [200, 250, 300],
                     'random_state': [random_seed],
                 }
+
             else:
                 self.paras_grid = {}
         else:
             self.paras_grid = {k: v for k, v in paras_grid.items()}
             for k, v in self.paras_grid.items():
-                if isinstance(v, str):
+                if isinstance(v, str) or not isinstance(v, (list, set)):
                     print(k, v, 'is a fixed parameter')
                     self.paras_grid[k] = [v, ]
 
@@ -55,7 +56,7 @@ class PropensityEstimator:
             self.paras_list = [{self.paras_names[i]: para[i] for i in range(len(para))} for para in paras_list]
             if self.learner == 'LR':
                 no_penalty_case = {'penalty': 'none', 'max_iter': 200, 'random_state': random_seed, }
-                if no_penalty_case not in self.paras_list:
+                if (no_penalty_case not in self.paras_list) and (len(self.paras_list) > 1):
                     self.paras_list.append(no_penalty_case)
                     print('Add no penalty case to logistic regression model:', no_penalty_case)
 
@@ -96,6 +97,10 @@ class PropensityEstimator:
             model = LogisticRegression(**para_d).fit(X_train, T_train)
         elif self.learner == 'LIGHTGBM':
             model = lgb.LGBMClassifier(**para_d).fit(X_train, T_train)
+        # elif learner == 'SVM':
+        #   model = svm.SVC().fit(confounder, treatment)
+        # elif learner == 'CART':
+        #   model = tree.DecisionTreeClassifier(max_depth=6).fit(confounder, treatment)
         else:
             raise ValueError
 
@@ -186,9 +191,9 @@ class PropensityEstimator:
     def predict_inverse_weight(self, X,  T, stabilized=True, clip=False):
         T_pre = self.predict_ps(X)
         treated_w, controlled_w = cal_weights(T, T_pre, normalized=True, stabilized=stabilized, clip=clip)
-        weight = np.zeros_like(T)
-        weight[T == 1] = treated_w
-        weight[T == 0] = controlled_w
+        weight = np.zeros((len(T)))
+        weight[T == 1] = treated_w.squeeze()
+        weight[T == 0] = controlled_w.squeeze()
         return weight
 
     def predict_smd(self, X,  T, abs=False, verbose=False):
@@ -202,17 +207,3 @@ class PropensityEstimator:
         return log_loss(T, T_pre)
 
 
-# class PropensityEstimator:
-#     def __init__(self, learner, confounder, treatment):
-#         if learner == 'Logistic-regression':
-#             self.learner = LogisticRegression(solver='liblinear', penalty='l2', C=1).fit(confounder, treatment)
-#         elif learner == 'SVM':
-#             self.learner = svm.SVC().fit(confounder, treatment)
-#         elif learner == 'CART':
-#             self.learner = tree.DecisionTreeClassifier(max_depth=6).fit(confounder, treatment)
-#
-#     def compute_weights(self, confounder):
-#         pred_propensity = self.learner.predict_proba(confounder)[:, 1]
-#         # pred_clip_propensity = np.clip(pred_propensity, a_min=np.quantile(pred_propensity, 0.1), a_max=np.quantile(pred_propensity, 0.9))
-#         # inverse_propensity = 1. / pred_propensity
-#         return pred_propensity

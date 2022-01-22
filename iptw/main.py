@@ -11,7 +11,7 @@ import pandas as pd
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from PSModels import mlp, lstm, ml
+from PSModels import ml
 from misc import utils
 import itertools
 import functools
@@ -93,7 +93,18 @@ if __name__ == "__main__":
 
     df_covs_array = (df_covs_include > 0).astype('float')
 
-    model = ml.PropensityEstimator().cross_validation_fit(df_covs_array, df_label)
+    model = ml.PropensityEstimator(learner='LR', paras_grid={'penalty': 'l2',
+                                                             'C': 0.03162277660168379,
+                                                             'max_iter': 200,
+                                                             'random_state': 0}).cross_validation_fit(df_covs_array, df_label)
+
+    ps = model.predict_ps(df_covs_array)
+    iptw = model.predict_inverse_weight(df_covs_array, df_label, stabilized=True, clip=False)
+    smd, smd_weighted = model.predict_smd(df_covs_array, df_label, abs=False, verbose=True)
+    plt.plot(smd)
+    plt.plot(smd_weighted)
+    plt.show()
+
     model.results.to_csv('evaluation_ALL-model-select2.csv')  # args.save_model_filename +
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

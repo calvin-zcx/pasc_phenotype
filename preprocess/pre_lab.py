@@ -5,35 +5,58 @@ import pandas as pd
 import time
 import argparse
 import functools
+from misc import utils
 print = functools.partial(print, flush=True)
 from collections import Counter
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess-count pos and negative from lab file')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset directory')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
+
+    args.input_file = r'../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file_xlsx = r'../data/V15_COVID19/output/{}/covid_lab_{}.xlsx'.format(args.dataset, args.dataset)
+
+    print('args:', args)
+
     return args
 
 
-def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
+def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     start_time = time.time()
-    print('Choose dataset:', dataset, 'chunksize:', chunksize, 'debug:', debug)
+    print('in read_lab_and_count_covid')
+    print('Choose dataset:', args.dataset, 'chunksize:', chunksize, 'debug:', debug)
     # step 1: load covid lab test codes, may be updated by:
-    # https://github.com/National-COVID-Cohort-Collaborative/Phenotype_Data_Acquisition/wiki/Latest-Phenotype
-    df_covid = pd.read_csv(r'../data/V15_COVID19/covid_phenotype/covid_lab_test_names.csv')
-    code_set = set(df_covid['LAB_LOINC'].to_list())
-
+    print('Step 1: load selected and existed covid PCR lab code')
+    df_covid = pd.read_csv(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all.csv')
+    # choose only PCR tests
+    """
+    loinc_num	component	type	COL Frequency	WCM Frequency	MONTE Frequency	NYU Frequency	MSHS Frequency	Total Orders
+    94309-2	SARS coronavirus 2 RNA	Molecular			385168	762104	21518	1168790
+    94500-6	SARS coronavirus 2 RNA	Molecular	336953	508395		40423	88057	973828
+    94306-8	SARS coronavirus 2 RNA panel	Molecular					569015	569015
+    94746-5	SARS coronavirus 2 RNA	Molecular				559367		559367
+    (very few, ignore currently) 94558-4	SARS coronavirus 2 Ag	Antigen	56	120		5828		6004
+    94759-8	SARS coronavirus 2 RNA	Molecular		8			448	456
+    """
+    df_covid_pcr = df_covid.loc[(df_covid['type'] == 'Molecular') & (df_covid['Total Orders'] > 0), :]
+    pd.set_option('display.max_columns', None)
+    print(df_covid_pcr)
+    code_set = set(df_covid_pcr['loinc_num'].to_list())
+    print('Selected and existed Covid PCR codes:', code_set)
     # step 2: read lab results by chunk, due to large file size
-    sasds = pd.read_sas('../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
+    print('Step 2, read lab data, and select patients who took COVID PCR test, with their covid lab records')
+    print('read:', args.input_file)
+    sasds = pd.read_sas(args.input_file,
                         encoding='WINDOWS-1252',
                         chunksize=chunksize,
                         iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
     # sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
     #                                        '../data/V15_COVID19/{}/lab_result_cm.sas7bdat'.format(dataset),
     #                                        chunksize=chunksize)  #, multiprocess=True, num_processes=4)
-
     dfs = []  # holds data chunks
     dfs_covid = []
     cnt = Counter([])
@@ -48,29 +71,26 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
             print("ERROR: Empty chunk! break!")
             break
 
-        n_rows += len(chunk)
-        if debug:
-            dfs.append(chunk)
-
-        if dataset == 'COL':
-            chunk_covid_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set), :]
-            patid_set.update(chunk['PATID'])
-        elif dataset == 'WCM':
-            chunk_covid_records = chunk.loc[chunk['lab_loinc'].isin(code_set), :]
-            patid_set.update(chunk['patid'])
-
-        n_covid_rows += len(chunk_covid_records)
-        if dataset == 'COL':
-            cnt.update(chunk_covid_records['RESULT_QUAL'])
-            patid_covid_set.update(chunk_covid_records['PATID'])
-        elif dataset == 'WCM':
-            cnt.update(chunk_covid_records['result_qual'])
-            patid_covid_set.update(chunk_covid_records['patid'])
-
-        dfs_covid.append(chunk_covid_records)
+        chunk.rename(columns=lambda x: x.upper(), inplace=True)
         if i == 1:
             print('chunk.shape', chunk.shape)
             print('chunk.columns', chunk.columns)
+
+        if debug:
+            dfs.append(chunk)
+
+        chunk_covid_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set), :]
+        dfs_covid.append(chunk_covid_records)
+        # only keep covid test records.
+        # other records of patients who took covid test need to scan again
+
+        patid_set.update(chunk['PATID'])
+        patid_covid_set.update(chunk_covid_records['PATID'])
+
+        n_rows += len(chunk)
+        n_covid_rows += len(chunk_covid_records)
+
+        cnt.update(chunk_covid_records['RESULT_QUAL'])
 
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -91,8 +111,14 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
     print('dfs_covid_all.columns', dfs_covid_all.columns)
     dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
     print('dfs_covid_all.columns', dfs_covid_all.columns)
-    dfs_covid_all.to_excel("{}_covid_lab_sample.xlsx".format(dataset))
-    dfs_covid_all.to_csv("{}_covid_lab_sample.csv".format(dataset))
+
+    print('Output file:', args.output_file)
+    utils.check_and_mkdir(args.output_file)
+    dfs_covid_all.to_csv(args.output_file)
+
+    print('Output file:', args.output_file_xlsx)
+    utils.check_and_mkdir(args.output_file_xlsx)
+    dfs_covid_all.to_excel(args.output_file_xlsx)
 
     if debug:
         dfs_all = pd.concat(dfs)
@@ -100,8 +126,7 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
         print('dfs_all.columns', dfs_all.columns)
         dfs_all.rename(columns=lambda x: x.upper(), inplace=True)
         print('dfs_all.columns', dfs_all.columns)
-        # dfs_all.to_excel("{}_lab_sample.xlsx".format(dataset))
-        dfs_all.to_csv("{}_lab_sample.csv".format(dataset))
+        dfs_all.to_csv("{}_lab_all.csv".format(args.dataset))
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     return dfs_covid_all  # dfs_all, dfs_covid_all, meta
@@ -109,10 +134,13 @@ def read_lab_and_count_covid(dataset='COL', chunksize=100000, debug=False):
 
 if __name__ == '__main__':
     # later: rename: pre_lab,   rename upper to simplify codes
-    # python pre_lab.py --dataset COL 2>&1 | tee  log/count_pos_neg_COL.txt
-    # python pre_lab.py --dataset WCM 2>&1 | tee  log/count_pos_neg_WCM.txt
+    # python pre_lab.py --dataset COL 2>&1 | tee  log/pre_lab_COL.txt
+    # python pre_lab.py --dataset WCM 2>&1 | tee  log/pre_lab_WCM.txt
+    # python pre_lab.py --dataset NYU 2>&1 | tee  log/pre_lab_NYU.txt
+    # python pre_lab.py --dataset MONTE 2>&1 | tee  log/pre_lab_MONTE.txt
+    # python pre_lab.py --dataset MSHS 2>&1 | tee  log/pre_lab_MSHS.txt
     start_time = time.time()
     args = parse_args()
     print(args)
-    dfs_covid_all = read_lab_and_count_covid(dataset=args.dataset, debug=args.debug)
+    dfs_covid_all = read_lab_and_count_covid(args, debug=args.debug)
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

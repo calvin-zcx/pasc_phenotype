@@ -256,6 +256,7 @@ def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True, 
     if clip:
         treated_w = np.clip(treated_w, a_min=1e-06, a_max=100)
         controlled_w = np.clip(controlled_w, a_min=1e-06, a_max=100)
+        # pred_clip_propensity = np.clip(pred_propensity, a_min=np.quantile(pred_propensity, 0.1), a_max=np.quantile(pred_propensity, 0.9))
 
     treated_w, controlled_w = np.reshape(treated_w, (len(treated_w), 1)), np.reshape(controlled_w,
                                                                                      (len(controlled_w), 1))
@@ -280,7 +281,7 @@ def weighted_var(x, w):
     return var
 
 
-def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, verbose=1, abs=True):
+def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, verbose=1, abs=True):
     # covariates, and IPTW
     ones_idx, zeros_idx = np.where(golds_treatment == 1), np.where(golds_treatment == 0)
     treated_w, controlled_w = cal_weights(golds_treatment, logits_treatment, normalized=normalized)
@@ -289,41 +290,41 @@ def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, ver
               'n_controlled:{}, n_controlled_w:{} |'
               'n:{}, n_w:{}'.format(len(treated_w), treated_w.sum(), len(controlled_w), controlled_w.sum(),
                                     len(golds_treatment), treated_w.sum() + controlled_w.sum()))
-    hidden_val = np.asarray(hidden_val)  # original covariates, to be weighted
-    hidden_treated, hidden_controlled = hidden_val[ones_idx], hidden_val[zeros_idx]
+    covariates = np.asarray(covariates)  # original covariates, to be weighted
+    covariates_treated, covariates_controlled = covariates[ones_idx], covariates[zeros_idx]
 
     # Original SMD
-    hidden_treated_mu, hidden_treated_var = np.mean(hidden_treated, axis=0), np.var(hidden_treated, axis=0, ddof=1)
-    hidden_controlled_mu, hidden_controlled_var = np.mean(hidden_controlled, axis=0), np.var(hidden_controlled, axis=0,
+    covariates_treated_mu, covariates_treated_var = np.mean(covariates_treated, axis=0), np.var(covariates_treated, axis=0, ddof=1)
+    covariates_controlled_mu, covariates_controlled_var = np.mean(covariates_controlled, axis=0), np.var(covariates_controlled, axis=0,
                                                                                              ddof=1)
-    VAR = np.sqrt((hidden_treated_var + hidden_controlled_var) / 2)
-    # hidden_deviation = np.abs(hidden_treated_mu - hidden_controlled_mu) / VAR
-    # hidden_deviation[np.isnan(hidden_deviation)] = 0  # -1  # 0  # float('-inf') represent VAR is 0
-    hidden_deviation = np.divide(
-        hidden_treated_mu - hidden_controlled_mu,
-        VAR, out=np.zeros_like(hidden_treated_mu), where=VAR != 0)
+    VAR = np.sqrt((covariates_treated_var + covariates_controlled_var) / 2)
+    # covariates_deviation = np.abs(covariates_treated_mu - covariates_controlled_mu) / VAR
+    # covariates_deviation[np.isnan(covariates_deviation)] = 0  # -1  # 0  # float('-inf') represent VAR is 0
+    covariates_deviation = np.divide(
+        covariates_treated_mu - covariates_controlled_mu,
+        VAR, out=np.zeros_like(covariates_treated_mu), where=VAR != 0)
     if abs:
-        hidden_deviation = np.abs(hidden_deviation)
+        covariates_deviation = np.abs(covariates_deviation)
 
-    max_unbalanced_original = np.max(np.abs(hidden_deviation))
+    max_unbalanced_original = np.max(np.abs(covariates_deviation))
 
     # Weighted SMD
-    hidden_treated_w_mu, hidden_treated_w_var = weighted_mean(hidden_treated, treated_w), weighted_var(hidden_treated,
+    covariates_treated_w_mu, covariates_treated_w_var = weighted_mean(covariates_treated, treated_w), weighted_var(covariates_treated,
                                                                                                        treated_w)
-    hidden_controlled_w_mu, hidden_controlled_w_var = weighted_mean(hidden_controlled, controlled_w), weighted_var(
-        hidden_controlled, controlled_w)
-    VAR_w = np.sqrt((hidden_treated_w_var + hidden_controlled_w_var) / 2)
-    # hidden_deviation_w = np.abs(hidden_treated_w_mu - hidden_controlled_w_mu) / VAR_w
-    # hidden_deviation_w[np.isnan(hidden_deviation_w)] = 0  # -1  # 0
-    hidden_deviation_w = np.divide(
-        hidden_treated_w_mu - hidden_controlled_w_mu,
-        VAR_w, out=np.zeros_like(hidden_treated_w_mu), where=VAR_w != 0)
+    covariates_controlled_w_mu, covariates_controlled_w_var = weighted_mean(covariates_controlled, controlled_w), weighted_var(
+        covariates_controlled, controlled_w)
+    VAR_w = np.sqrt((covariates_treated_w_var + covariates_controlled_w_var) / 2)
+    # covariates_deviation_w = np.abs(covariates_treated_w_mu - covariates_controlled_w_mu) / VAR_w
+    # covariates_deviation_w[np.isnan(covariates_deviation_w)] = 0  # -1  # 0
+    covariates_deviation_w = np.divide(
+        covariates_treated_w_mu - covariates_controlled_w_mu,
+        VAR_w, out=np.zeros_like(covariates_treated_w_mu), where=VAR_w != 0)
     if abs:
-        hidden_deviation_w = np.abs(hidden_deviation_w)
+        covariates_deviation_w = np.abs(covariates_deviation_w)
 
-    max_unbalanced_weighted = np.max(np.abs(hidden_deviation_w))
+    max_unbalanced_weighted = np.max(np.abs(covariates_deviation_w))
 
-    return max_unbalanced_original, hidden_deviation, max_unbalanced_weighted, hidden_deviation_w
+    return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w
 
 
 def cal_ATE(golds_treatment, logits_treatment, golds_outcome, normalized):
