@@ -321,6 +321,10 @@ def combine_2_id_med(id_med1, id_med2, output_file=''):
 if __name__ == '__main__':
     # python pre_medication.py --dataset COL 2>&1 | tee  log/pre_medication_COL.txt
     # python pre_medication.py --dataset WCM 2>&1 | tee  log/pre_medication_WCM.txt
+    # python pre_medication.py --dataset NYU 2>&1 | tee  log/pre_medication_NYU.txt
+    # python pre_medication.py --dataset MONTE 2>&1 | tee  log/pre_medication_MONTE.txt
+    # python pre_medication.py --dataset MSHS 2>&1 | tee  log/pre_medication_MSHS.txt
+
     start_time = time.time()
     args = parse_args()
     with open(args.patient_list_file, 'rb') as f:
