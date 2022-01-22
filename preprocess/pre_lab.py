@@ -133,7 +133,6 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
 
 
 if __name__ == '__main__':
-    # later: rename: pre_lab,   rename upper to simplify codes
     # python pre_lab.py --dataset COL 2>&1 | tee  log/pre_lab_COL.txt
     # python pre_lab.py --dataset WCM 2>&1 | tee  log/pre_lab_WCM.txt
     # python pre_lab.py --dataset NYU 2>&1 | tee  log/pre_lab_NYU.txt
