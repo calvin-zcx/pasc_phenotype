@@ -93,7 +93,7 @@ if __name__ == "__main__":
 
     df_covs_array = (df_covs_include > 0).astype('float')
 
-    model = ml.PropensityEstimator().fit_and_test(df_covs_array, df_label)
-    model.results.to_csv('evaluation_ALL-model-select.csv')  # args.save_model_filename +
+    model = ml.PropensityEstimator().cross_validation_fit(df_covs_array, df_label)
+    model.results.to_csv('evaluation_ALL-model-select2.csv')  # args.save_model_filename +
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

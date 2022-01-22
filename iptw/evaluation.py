@@ -239,7 +239,7 @@ def roc_auc_expected(logits_treatment, normalized):
     return AUC
 
 
-def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True):
+def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True, clip=False):
     ones_idx, zeros_idx = np.where(golds_treatment == 1), np.where(golds_treatment == 0)
     logits_treatment = logits_to_probability(logits_treatment, normalized)
     p_T = len(ones_idx[0]) / (len(ones_idx[0]) + len(zeros_idx[0]))
@@ -253,11 +253,9 @@ def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True):
         treated_w, controlled_w = 1. / logits_treatment[ones_idx], 1. / (
                     1. - logits_treatment[zeros_idx])  # why *p_T here? my added test
 
-    treated_w = np.clip(treated_w, a_min=1e-06, a_max=50)
-    controlled_w = np.clip(controlled_w, a_min=1e-06, a_max=50)
-
-    # treated_w = np.where(treated_w < 10, treated_w, 25)
-    # controlled_w = np.where(controlled_w < 10, controlled_w, 10)
+    if clip:
+        treated_w = np.clip(treated_w, a_min=1e-06, a_max=100)
+        controlled_w = np.clip(controlled_w, a_min=1e-06, a_max=100)
 
     treated_w, controlled_w = np.reshape(treated_w, (len(treated_w), 1)), np.reshape(controlled_w,
                                                                                      (len(controlled_w), 1))
@@ -282,7 +280,7 @@ def weighted_var(x, w):
     return var
 
 
-def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, verbose=1):
+def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, verbose=1, abs=True):
     # covariates, and IPTW
     ones_idx, zeros_idx = np.where(golds_treatment == 1), np.where(golds_treatment == 0)
     treated_w, controlled_w = cal_weights(golds_treatment, logits_treatment, normalized=normalized)
@@ -302,10 +300,12 @@ def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, ver
     # hidden_deviation = np.abs(hidden_treated_mu - hidden_controlled_mu) / VAR
     # hidden_deviation[np.isnan(hidden_deviation)] = 0  # -1  # 0  # float('-inf') represent VAR is 0
     hidden_deviation = np.divide(
-        np.abs(hidden_treated_mu - hidden_controlled_mu),
+        hidden_treated_mu - hidden_controlled_mu,
         VAR, out=np.zeros_like(hidden_treated_mu), where=VAR != 0)
+    if abs:
+        hidden_deviation = np.abs(hidden_deviation)
 
-    max_unbalanced_original = np.max(hidden_deviation)
+    max_unbalanced_original = np.max(np.abs(hidden_deviation))
 
     # Weighted SMD
     hidden_treated_w_mu, hidden_treated_w_var = weighted_mean(hidden_treated, treated_w), weighted_var(hidden_treated,
@@ -316,10 +316,12 @@ def cal_deviation(hidden_val, golds_treatment, logits_treatment, normalized, ver
     # hidden_deviation_w = np.abs(hidden_treated_w_mu - hidden_controlled_w_mu) / VAR_w
     # hidden_deviation_w[np.isnan(hidden_deviation_w)] = 0  # -1  # 0
     hidden_deviation_w = np.divide(
-        np.abs(hidden_treated_w_mu - hidden_controlled_w_mu),
+        hidden_treated_w_mu - hidden_controlled_w_mu,
         VAR_w, out=np.zeros_like(hidden_treated_w_mu), where=VAR_w != 0)
+    if abs:
+        hidden_deviation_w = np.abs(hidden_deviation_w)
 
-    max_unbalanced_weighted = np.max(hidden_deviation_w)
+    max_unbalanced_weighted = np.max(np.abs(hidden_deviation_w))
 
     return max_unbalanced_original, hidden_deviation, max_unbalanced_weighted, hidden_deviation_w
 
