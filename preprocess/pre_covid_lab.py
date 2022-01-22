@@ -79,7 +79,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     print('.........Select only PCR patients:...........')
     df_covid = df.loc[df['LAB_LOINC'].isin(code_set), :]
     print('PCR tested df_covid.shape', df_covid.shape)
-    print('Unique patit of PCR test:', len(df_covid['PATID'].unique()))
+    print('Unique patid of PCR test:', len(df_covid['PATID'].unique()))
     print('Time range of PCR Covid Test:', df_covid["RESULT_DATE"].describe(datetime_is_numeric=True))
 
     id_lab = defaultdict(list)
@@ -144,7 +144,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
 
     if id_demo:
         df_covid['age'] = np.nan
-        for index, row in df_covid.iterrows():
+        for index, row in tqdm(df_covid.iterrows(), total=len(df_covid)):
             patid = row['PATID']
             lab_date = row["RESULT_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
             if patid in id_demo:
