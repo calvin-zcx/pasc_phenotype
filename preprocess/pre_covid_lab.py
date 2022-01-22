@@ -162,7 +162,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
         print('Dump file:', output_file)
         utils.check_and_mkdir(output_file)
         pickle.dump(id_lab, open(output_file, 'wb'))
-        df_covid.to_excel(output_file.replace('.pkl', '') + '.xlsx')
+        df_covid.to_csv(output_file.replace('.pkl', '') + '.csv')
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
