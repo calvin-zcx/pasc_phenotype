@@ -185,7 +185,9 @@ def integrate_data_and_apply_eligibility(args):
     print('Final data: len(data):', len(data))
 
     utils.check_and_mkdir(args.output_file)
-    pickle.dump(data, open(args.output_file, 'wb'))
+    # pickle.dump(data, open(args.output_file, 'wb'))
+    utils.dump(data, args.output_file)
+
     print('dump done to {}'.format(args.output_file))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return data, raw_data
