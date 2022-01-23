@@ -128,16 +128,18 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     if output_file:
         print('Dump id_dx to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
-        try:
-            # MemoryError for pickle.dump for a large or complex file
-            pickle.dump(id_dx, open(output_file, 'wb'))
-            print('Dump Done! id_dx to {}'.format(output_file))
-            # dfs.to_csv(output_file.replace('.pkl', '') + '.csv') # monte case, too large, error. other sites ok
-        except Exception as e:
-            print(e)
-            print('Try to use joblib.dump(id_dx, filename) and loading by joblib.load(filename)')
-            joblib.dump(id_dx, output_file.replace('.pkl', '.joblib'))
-            print('Dump done to:', output_file.replace('.pkl', '.joblib'))
+        utils.dump(id_dx, output_file)
+        # utils.dump follows below logics:
+        # try:
+        #     # MemoryError for pickle.dump for a large or complex file
+        #     pickle.dump(id_dx, open(output_file, 'wb'))
+        #     print('Dump Done! id_dx to {}'.format(output_file))
+        #     # dfs.to_csv(output_file.replace('.pkl', '') + '.csv') # monte case, too large, error. other sites ok
+        # except Exception as e:
+        #     print(e)
+        #     print('Try to use joblib.dump(id_dx, filename) and loading by joblib.load(filename)')
+        #     joblib.dump(id_dx, output_file + '.joblib')
+        #     print('Dump done to:', output_file + '.joblib')
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_dx, dfs
