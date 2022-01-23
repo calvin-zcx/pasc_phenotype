@@ -132,6 +132,7 @@ def integrate_data_and_apply_eligibility(args):
     #         no dx in follow-up [1st month, 6th month]
     n_pos = n_neg = 0
     exclude_list = []
+    n_exclude_due_to_baseline = n_exclude_due_to_followup = n_exclude_due_to_both = 0
     for pid, row in id_indexrecord.items():
         # (True/False, lab_date, lab_code, result_label, age)
         covid_flag = row[0]
@@ -154,6 +155,13 @@ def integrate_data_and_apply_eligibility(args):
                     flag_baseline = True
                     break
 
+            if not flag_follow:
+                n_exclude_due_to_followup += 1
+            if not flag_baseline:
+                n_exclude_due_to_baseline += 1
+            if (not flag_baseline) and (not flag_follow):
+                n_exclude_due_to_both += 1
+
             if flag_follow and flag_baseline:
                 if covid_flag:
                     n_pos += 1
@@ -165,6 +173,10 @@ def integrate_data_and_apply_eligibility(args):
     [id_indexrecord.pop(pid, None) for pid in exclude_list]
     print('Step3: exclude no diagnosis in baseline period [-18th month, -1st month] or '
           'no dx in follow-up [1st month, 6th month], len(exclude_list):', len(exclude_list))
+    print('n_exclude_due_to_followup:', n_exclude_due_to_followup,
+          'n_exclude_due_to_baseline:', n_exclude_due_to_baseline,
+          'n_exclude_due_to_both:', n_exclude_due_to_both)
+
     print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # print('exclude_list', exclude_list)
 
