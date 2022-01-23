@@ -18,24 +18,16 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', choices=['COL', 'WCM'], default='COL', help='input dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
-    if args.dataset == 'COL':
-        args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_COL.pkl'
-        args.demo_file = r'../data/V15_COVID19/output/patient_demo_COL.pkl'
-        args.dx_file = r'../data/V15_COVID19/output/diagnosis_COL.pkl'
-        args.med_file = r'../data/V15_COVID19/output/medication_COL.pkl'
-        args.enc_file = r'../data/V15_COVID19/output/encounter_COL.pkl'
 
-        args.output_file = r'../data/V15_COVID19/output/data_cohorts_COL.pkl'
-    elif args.dataset == 'WCM':
-        args.covid_lab_file = r'../data/V15_COVID19/output/patient_covid_lab_WCM.pkl'
-        args.demo_file = r'../data/V15_COVID19/output/patient_demo_WCM.pkl'
-        args.dx_file = r'../data/V15_COVID19/output/diagnosis_WCM.pkl'
-        args.med_file = r'../data/V15_COVID19/output/medication_WCM.pkl'
-        args.enc_file = r'../data/V15_COVID19/output/encounter_WCM.pkl'
+    args.covid_lab_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    args.demo_file = r'../data/V15_COVID19/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
+    args.dx_file = r'../data/V15_COVID19/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
+    args.med_file = r'../data/V15_COVID19/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
+    args.enc_file = r'../data/V15_COVID19/output/{}/encounter_{}.pkl'.format(args.dataset, args.dataset)
 
-        args.output_file = r'../data/V15_COVID19/output/data_cohorts_WCM.pkl'
+    args.output_file = r'../data/V15_COVID19/output{}/data_cohorts_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -65,10 +57,13 @@ def read_preprocessed_data(args):
         id_demo = pickle.load(f)
         print('2-load demographics file done! len(id_demo):', len(id_demo))
 
-    # 3. load diagnosis file
-    with open(args.dx_file, 'rb') as f:
-        id_dx = pickle.load(f)
-        print('3-load diagnosis file done! len(id_dx):', len(id_dx))
+    # 3. load diagnosis file.
+    # NYU may use joblib file and load method.
+    # with open(args.dx_file, 'rb') as f:
+    #     id_dx = pickle.load(f)
+    #     print('3-load diagnosis file done! len(id_dx):', len(id_dx))
+    id_dx = utils.load(args.dx)
+    print('3-load diagnosis file done! len(id_dx):', len(id_dx))
 
     # 4. load medication file
     with open(args.med_file, 'rb') as f:
@@ -118,7 +113,7 @@ def integrate_data_and_apply_eligibility(args):
         # (True/False, lab_date, lab_code, result_label, age)
         covid_flag = row[0]
         age = row[4]
-        if age < INDEX_AGE_MINIMUM: # DEFAULT 20
+        if age < INDEX_AGE_MINIMUM:  # DEFAULT 20
             # excluded
             exclude_list.append(pid)
         else:
@@ -133,7 +128,7 @@ def integrate_data_and_apply_eligibility(args):
     # print('exclude_list', exclude_list)
 
     # Step 3. Applying EC exclude no diagnosis in baseline period [-18th month, -1st month] or
-    #         no dx in follow-up [1st month, 5th month]
+    #         no dx in follow-up [1st month, 6th month]
     n_pos = n_neg = 0
     exclude_list = []
     for pid, row in id_indexrecord.items():
@@ -168,7 +163,7 @@ def integrate_data_and_apply_eligibility(args):
 
     [id_indexrecord.pop(pid, None) for pid in exclude_list]
     print('Step3: exclude no diagnosis in baseline period [-18th month, -1st month] or '
-          'no dx in follow-up [1st month, 5th month], len(exclude_list):', len(exclude_list))
+          'no dx in follow-up [1st month, 6th month], len(exclude_list):', len(exclude_list))
     print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # print('exclude_list', exclude_list)
 
@@ -197,8 +192,12 @@ def integrate_data_and_apply_eligibility(args):
 
 
 if __name__ == '__main__':
-    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_combine_and_EC_COL.txt
-    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_combine_and_EC_WCM.txt
+    # python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_COL.txt
+    # python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_WCM.txt
+    # python pre_cohort.py --dataset NYU 2>&1 | tee  log/pre_cohort_NYU.txt
+    # python pre_cohort.py --dataset MONTE 2>&1 | tee  log/pre_cohort_MONTE.txt
+    # python pre_cohort.py --dataset MSHS 2>&1 | tee  log/pre_cohort_MSHS.txt
+
     start_time = time.time()
     args = parse_args()
     data, raw_data = integrate_data_and_apply_eligibility(args)

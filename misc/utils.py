@@ -42,6 +42,22 @@ def dump(data, filename):
         print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
 
 
+def load(filename):
+    print('Try to load data file', filename)
+    try:
+        with open(filename, 'rb') as f:
+            data = pickle.load(f)
+        print('Load done by pickle.load! len(data):', len(data))
+        return data
+    except Exception as e:
+        print(e)
+        print('Try to load by joblib.load({})'.format(filename + '.joblib'))
+        with open(filename + '.joblib', 'rb') as f:
+            data = joblib.load(f)
+        print('Load done by joblib.load! len(data):', len(data))
+        return data
+
+
 def sas_2_csv(infile, outfile):
     start_time = time.time()
     # r'../COL/lab_result_cm.sas7bdat'

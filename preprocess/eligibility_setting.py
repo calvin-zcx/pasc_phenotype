@@ -16,7 +16,7 @@ def _is_in_baseline(event_time, index_time):
 
 def _is_in_followup(event_time, index_time):
     # baseline: 1 month to 5 month after the index date
-    return 30 <= (event_time - index_time).days <= 150
+    return 30 <= (event_time - index_time).days <= 180
 
 
 def _is_in_acute(event_time, index_time):
