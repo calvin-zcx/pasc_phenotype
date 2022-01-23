@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import time
 from collections import defaultdict
-import pickle as pkl
+import pickle
 import math
 import itertools
 import os
@@ -16,6 +16,7 @@ import argparse
 import csv
 import functools
 print = functools.partial(print, flush=True)
+import joblib
 
 
 def check_and_mkdir(path):
@@ -25,6 +26,24 @@ def check_and_mkdir(path):
         print('make dir:', dirname)
     else:
         print(dirname, 'exists, no change made')
+
+
+# def dump(data, filename, method='pickle'):
+#     check_and_mkdir(filename)
+#     if method == 'pickle':
+#         try:
+#             # MemoryError for pickle.dump for a large or complex file
+#             with open(filename, 'wb') as fo:
+#                 pickle.dump(data, fo)
+#             print('Dump Done by pickle.dump! Saved as:', filename)
+#         except Exception as e:
+#             print(e)
+#             print('Try to use joblib.dump(data, filename) and loading by joblib.load(filename)')
+#             joblib.dump(data, filename + '.joblib')
+#             print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
+#     else:
+#         joblib.dump(data, filename + '.joblib')
+#         print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
 
 
 def sas_2_csv(infile, outfile):
