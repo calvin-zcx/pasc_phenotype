@@ -27,7 +27,7 @@ def parse_args():
     args.med_file = r'../data/V15_COVID19/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
     args.enc_file = r'../data/V15_COVID19/output/{}/encounter_{}.pkl'.format(args.dataset, args.dataset)
 
-    args.output_file = r'../data/V15_COVID19/output{}/data_cohorts_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -62,7 +62,7 @@ def read_preprocessed_data(args):
     # with open(args.dx_file, 'rb') as f:
     #     id_dx = pickle.load(f)
     #     print('3-load diagnosis file done! len(id_dx):', len(id_dx))
-    id_dx = utils.load(args.dx)
+    id_dx = utils.load(args.dx_file)
     print('3-load diagnosis file done! len(id_dx):', len(id_dx))
 
     # 4. load medication file
@@ -82,12 +82,13 @@ def read_preprocessed_data(args):
 
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
+    print('In integrate_data_and_apply_eligibility, site:', args.dataset)
     id_lab, id_demo, id_dx, id_med, id_enc = read_preprocessed_data(args)
-    # print('len(data):', len(data))
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
     #    lab-confirmed negative: first negative record
+
     id_indexrecord = {}
     n_pos = n_neg = 0
     for pid, row in id_lab.items():
@@ -103,7 +104,7 @@ def integrate_data_and_apply_eligibility(args):
             indexrecord = row[position]
             id_indexrecord[pid] = [False, ] + list(indexrecord)
     print('Step1: Initial Included cohorts:')
-    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # Can calculate more statistics
 
     # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
@@ -124,7 +125,7 @@ def integrate_data_and_apply_eligibility(args):
                 n_neg += 1
     [id_indexrecord.pop(pid, None) for pid in exclude_list]
     print('Step2: exclude index age < {}, len(exclude_list):'.format(INDEX_AGE_MINIMUM), len(exclude_list),)
-    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    print('Total len(id_indexrecord): ', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # print('exclude_list', exclude_list)
 
     # Step 3. Applying EC exclude no diagnosis in baseline period [-18th month, -1st month] or
@@ -143,7 +144,7 @@ def integrate_data_and_apply_eligibility(args):
             flag_baseline = False
             for r in v_dx:
                 dx_date = r[0]
-                if _is_in_followup(dx_date, index_date):  # 30 <= (dx_date - index_date).days <= 150:
+                if _is_in_followup(dx_date, index_date):  # 30 <= (dx_date - index_date).days <= 180:
                     flag_follow = True
                     break
 
@@ -164,23 +165,22 @@ def integrate_data_and_apply_eligibility(args):
     [id_indexrecord.pop(pid, None) for pid in exclude_list]
     print('Step3: exclude no diagnosis in baseline period [-18th month, -1st month] or '
           'no dx in follow-up [1st month, 6th month], len(exclude_list):', len(exclude_list))
-    print('len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
     # print('exclude_list', exclude_list)
 
-    print('Finally selected cohorts: len(id_indexrecord):', len(id_indexrecord))
-    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('Finally selected cohorts:')
+    print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
 
     # step 4: build data structure for later encoding.
     raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc]
     data = {}
     for pid, row in id_indexrecord.items():
-        # (True/False, lab_date, lab_code, result_label, age)
+        # (True/False, lab_date, lab_code, result_label, age, enc-id)
         lab = id_lab[pid]
         demo = id_demo[pid]
         dx = id_dx[pid]
         med = id_med[pid]
         enc = id_enc[pid]
-        # utilization = id_util[pid]
         data[pid] = [row, demo, dx, med, lab, enc]
     print('Final data: len(data):', len(data))
 
