@@ -125,10 +125,11 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     if output_file:
+        print('Dump id_dx to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
         pickle.dump(id_dx, open(output_file, 'wb'))
         # dfs.to_csv(output_file.replace('.pkl', '') + '.csv') # monte case, too large, error. other sites ok
-        print('Dump id_dx done to {}'.format(output_file))
+        print('Dump Done! id_dx to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_dx, dfs
