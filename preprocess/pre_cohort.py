@@ -140,6 +140,9 @@ def integrate_data_and_apply_eligibility(args):
         v_dx = id_dx.get(pid, [])
         if not v_dx:
             exclude_list.append(pid)
+            n_exclude_due_to_followup += 1
+            n_exclude_due_to_baseline += 1
+            n_exclude_due_to_both += 1
         else:
             flag_follow = False
             flag_baseline = False
