@@ -20,7 +20,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL',
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='NYU',
                         help='site dataset')
     args = parser.parse_args()
 
@@ -67,11 +67,21 @@ def cohorts_characterization_build_data(args):
             # One the same day, one patient may have multiple encounter type, e.g. from outpatient --> inpatient
             # how to summarize encounter/ hospital utilization of cohorts?
             # Or just count the total type of the covid encounter?
+
+            # get index enc type by enc id! enc_item: (date, enc_type, enc_id)
             for enc_item in enc:
                 if enc_item[2] == index_enc_id:
                     index_enc_type = enc_item[1]
                     enc_type_flag = True
                     break
+            # get index enc type by enc date! enc_item: (date, enc_type, enc_id)
+            # if multiple date match, currently choose first.
+            if not enc_type_flag:
+                for enc_item in enc:
+                    if enc_item[0].date() == index_date.date():
+                        index_enc_type = enc_item[1]
+                        enc_type_flag = True
+                        break
 
             if not enc_type_flag:
                 print('not found covid index encounter type', pid, site)
@@ -259,6 +269,6 @@ if __name__ == '__main__':
     args = parse_args()
     df = cohorts_characterization_build_data(args)
     # df = cohorts_characterization_analyse(args)
-    df_pos = df.loc[df["covid"], :]
-    df_neg = df.loc[~df["covid"], :]
+    # df_pos = df.loc[df["covid"], :]
+    # df_neg = df.loc[~df["covid"], :]
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
