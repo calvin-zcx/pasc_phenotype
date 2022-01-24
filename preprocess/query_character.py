@@ -89,7 +89,7 @@ def cohorts_characterization_build_data(args):
                     index_enc_type = ';'.join(_enc_type_list)
 
             if not enc_type_flag:
-                print('not found covid index encounter type', pid, site)
+                print('not found covid index encounter type:', index_enc_id, site, pid)
                 n_no_index_enc_type += 1
             # store raw information for debugging
             # add dx, med, enc in acute, and follow-up
