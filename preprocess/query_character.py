@@ -79,7 +79,7 @@ def cohorts_characterization_build_data(args):
             # store raw information for debugging
             # add dx, med, enc in acute, and follow-up
             # currently focus on baseline information
-            records_aux = [pid, args.dataset]
+            records_aux = [pid, site]
             records_aux.extend(index_info + [index_enc_type, ] + demo)
 
             lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
@@ -257,8 +257,8 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df = cohorts_characterization_build_data(args)
-    df = cohorts_characterization_analyse(args)
+    df = cohorts_characterization_build_data(args)
+    # df = cohorts_characterization_analyse(args)
     df_pos = df.loc[df["covid"], :]
     df_neg = df.loc[~df["covid"], :]
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
