@@ -7,16 +7,21 @@ import pickle
 import argparse
 import pandas as pd
 import numpy as np
-from tqdm import  tqdm
+from tqdm import tqdm
 from misc import utils
 from eligibility_setting import _is_in_baseline, _is_in_followup, _is_in_acute
 import functools
+import matplotlib.pyplot as plt
+import seaborn as sns
+import datetime
+
 print = functools.partial(print, flush=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL', help='site dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL',
+                        help='site dataset')
     args = parser.parse_args()
 
     # args.input_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(args.dataset, args.dataset)
@@ -32,7 +37,7 @@ def cohorts_characterization_build_data(args):
     if args.dataset == 'ALL':
         sites = ['COL', 'MSHS', 'MONTE', 'NYU', 'WCM']
     else:
-        sites = [args.dataset,]
+        sites = [args.dataset, ]
     print('Loading: ', sites)
     # step 1: load 5 cohorts pickle data, store necessary info for analysis
     df_records_aux = []
@@ -58,6 +63,10 @@ def cohorts_characterization_build_data(args):
 
             index_enc_type = np.nan
             enc_type_flag = False
+            # Notice: NYU covid lab data has no encounter id, need to use time to match encounter table
+            # One the same day, one patient may have multiple encounter type, e.g. from outpatient --> inpatient
+            # how to summarize encounter/ hospital utilization of cohorts?
+            # Or just count the total type of the covid encounter?
             for enc_item in enc:
                 if enc_item[2] == index_enc_id:
                     index_enc_type = enc_item[1]
@@ -119,7 +128,127 @@ def cohorts_characterization_build_data(args):
 
 
 def cohorts_characterization_analyse(args):
-    df = pd.read_csv(args.output_file_covariates, dtype={'patid': str, 'covid': int})
+    df = pd.read_csv(args.output_file, dtype={'patid': str}, parse_dates=['index_date', 'birth_date'])  #
+    df_pos = df.loc[df["covid"], :]
+    df_neg = df.loc[~df["covid"], :]
+
+    # age
+    pos_age_iqr = df_pos['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
+    neg_age_iqr = df_neg['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
+    print('pos:  {} ({} -- {})'.format(pos_age_iqr[1], pos_age_iqr[0], pos_age_iqr[2]))
+    print('neg:  {} ({} -- {})'.format(neg_age_iqr[1], neg_age_iqr[0], pos_age_iqr[2]))
+
+    pos_cnt, pos_interval = np.histogram(df_pos['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
+    neg_cnt, neg_interval = np.histogram(df_neg['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
+
+    def print_age_group(cnt):
+        tot = np.sum(cnt)
+        for c in cnt:
+            print('{} ({:.1f})'.format(c, c / tot * 100))
+
+    print('pos age group:')
+    print_age_group(pos_cnt)
+
+    print('neg age group:')
+    print_age_group(neg_cnt)
+
+    def print_series_group(cnt, vocab_dic={}):
+        tot = cnt.sum()
+        for index, value in cnt.items():
+            if not vocab_dic:
+                print('{}\t{} ({:.1f})'.format(index, value, value / tot * 100))
+            else:
+                print('{}\t{} ({:.1f})'.format(vocab_dic[index], value, value / tot * 100))
+
+    pos_female = df_pos['gender'].value_counts(dropna=False)
+    neg_female = df_neg['gender'].value_counts(dropna=False)
+    print('pos gender group:')
+    print_series_group(pos_female)
+    print('neg gender group:')
+    print_series_group(neg_female)
+
+    race_dict = {"01": "American Indian or Alaska Native",
+                 "02": "Asian",
+                 "03": "Black or African American",
+                 "04": "Native Hawaiian or Other Pacific Islander",
+                 "05": "White",
+                 "06": "Multiple race",
+                 "07": "Refuse to answer",
+                 "NI": "No information",
+                 "UN": "Unknown",
+                 "OT": "Other"
+                 }
+    pos_race = df_pos['race'].value_counts(dropna=False)
+    neg_race = df_neg['race'].value_counts(dropna=False)
+    print('pos race group:')
+    print_series_group(pos_race, race_dict)
+    print('neg race group:')
+    print_series_group(neg_race, race_dict)
+
+    hispanic_dict = {"Y": "Yes",
+                     "N": "No",
+                     "R": "Refuse to answer",
+                     "NI": "No information",
+                     "UN": "Unknown",
+                     "OT": "Other"}
+
+    pos_hisp = df_pos['hispanic'].value_counts(dropna=False)
+    neg_hisp = df_neg['hispanic'].value_counts(dropna=False)
+    print('pos hispanic group:')
+    print_series_group(pos_hisp, hispanic_dict)
+    print('neg hispanic group:')
+    print_series_group(neg_hisp, hispanic_dict)
+
+    # ADI
+    pos_adi_iqr = df_pos['nation_adi'].quantile([0.25, 0.5, 0.75]).to_list()
+    neg_adi_iqr = df_neg['nation_adi'].quantile([0.25, 0.5, 0.75]).to_list()
+    print('adi pos:  {} ({} -- {})'.format(pos_adi_iqr[1], pos_adi_iqr[0], pos_adi_iqr[2]))
+    print('adi neg:  {} ({} -- {})'.format(neg_adi_iqr[1], neg_adi_iqr[0], neg_adi_iqr[2]))
+
+    # df_pos['index_date'] = df_pos['index_date'].astype("datetime64")
+    df_pos['index_date'].groupby(df["index_date"].dt.month).count().plot(kind="bar")
+
+    fig, ax = plt.subplots(figsize=(28, 18))
+    # Add x-axis and y-axis
+    hist = df_pos['index_date'].hist(bins=pd.date_range(start='1/1/2020', end='12/1/2021', freq='M'))
+    plt.xticks(fontsize=24)
+    plt.yticks(fontsize=24)
+    plt.xlabel('Date', fontsize=28)
+    plt.ylabel('Cases', fontsize=28)
+    plt.title("Monthly COVID-19 PCR positive cases, INSIGHT Data Warehouse, 2020/3 - 2021/11",
+              fontdict={'fontsize':28})
+    # Rotate tick marks on x-axis
+    plt.setp(ax.get_xticklabels(), rotation=45)
+    plt.show()
+
+    pos_month = pd.Series(index=df_pos['index_date'], data=1, name='positive cases').resample('1M').count()
+    neg_month = pd.Series(index=df_neg['index_date'], data=1, name='negative cases').resample('1M').count()
+    month_result = pos_month.to_frame().join(neg_month.to_frame(), how='outer')
+    month_result.to_excel('positive_and_negative_monthly_counts.xlsx')
+
+    def count_time_period(date_series):
+        bins = [datetime.datetime(2020, 1, 1, 0, 0),
+                datetime.datetime(2020, 7, 1, 0, 0),
+                datetime.datetime(2020, 11, 1, 0, 0),
+                datetime.datetime(2021, 3, 1, 0, 0),
+                datetime.datetime(2021, 7, 1, 0, 0),
+                datetime.datetime(2021, 12, 30, 0, 0)]
+        results = []
+        for i in range(len(bins)-1):
+            tot = len(date_series)
+            cnt = ((bins[i] <= date_series) & (date_series < bins[i+1])).sum()
+            results.append((cnt, cnt/tot))
+        df = pd.DataFrame(results, columns=['count', 'fraction'])
+        for x in results:
+            print('{} ({:.1f})'.format(x[0], x[1]*100))
+        return df
+    print('positive_4monthly_counts:')
+    pos_time_period = count_time_period(df_pos['index_date'])
+    print('negative_4monthly_counts:')
+    neg_time_period = count_time_period(df_neg['index_date'])
+    pos_time_period.to_excel('../data/V15_COVID19/output/character/positive_4monthly_counts.xlsx')
+    neg_time_period.to_excel('../data/V15_COVID19/output/character/negative_4monthly_counts.xlsx')
+
     return df
 
 
@@ -128,5 +257,8 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df = cohorts_characterization_build_data(args)
+    # df = cohorts_characterization_build_data(args)
+    df = cohorts_characterization_analyse(args)
+    df_pos = df.loc[df["covid"], :]
+    df_neg = df.loc[~df["covid"], :]
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
