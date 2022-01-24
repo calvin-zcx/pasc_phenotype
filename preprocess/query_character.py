@@ -54,6 +54,7 @@ def cohorts_characterization_build_data(args):
 
         n_no_index_enc_type = 0
         n_enc_id_match = n_enc_date_match = 0
+        n_enc_date_match_only_one = n_enc_date_match_two_or_more = 0
         for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             pid_list.append(pid)
             index_info, demo, dx, med, covid_lab, enc = item
@@ -95,6 +96,10 @@ def cohorts_characterization_build_data(args):
                 if enc_type_flag:
                     index_enc_type = ';'.join(_enc_type_list)
                     n_enc_date_match += 1
+                    if len(_enc_type_list) == 1:
+                        n_enc_date_match_only_one += 1
+                    elif len(_enc_type_list) > 1:
+                        n_enc_date_match_two_or_more += 1
 
             if not enc_type_flag:
                 print('not found covid index encounter type:', i, index_enc_id, site, pid)
@@ -129,7 +134,9 @@ def cohorts_characterization_build_data(args):
               'len(df_records_aux)', len(df_records_aux),
               'n_no_index_enc_type:', n_no_index_enc_type,
               'n_enc_id_match:', n_enc_id_match,
-              'n_enc_date_match:', n_enc_date_match)
+              'n_enc_date_match:', n_enc_date_match,
+              'n_enc_date_match_only_one:', n_enc_date_match_only_one,
+              'n_enc_date_match_two_or_more:', n_enc_date_match_two_or_more)
 
     print('Integrating done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
