@@ -69,11 +69,12 @@ def cohorts_characterization_build_data(args):
             # Or just count the total type of the covid encounter?
 
             # get index enc type by enc id! enc_item: (date, enc_type, enc_id)
-            for enc_item in enc:
-                if enc_item[2] == index_enc_id:
-                    index_enc_type = enc_item[1]
-                    enc_type_flag = True
-                    break
+            if pd.notna(index_enc_id):
+                for enc_item in enc:
+                    if enc_item[2] == index_enc_id:
+                        index_enc_type = enc_item[1]
+                        enc_type_flag = True
+                        break
             # get index enc type by enc date! enc_item: (date, enc_type, enc_id)
             # if multiple date match, currently choose first.
             if not enc_type_flag:
