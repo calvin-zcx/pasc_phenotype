@@ -62,10 +62,15 @@ def cohorts_characterization_build_data(args):
             site_list.append(args.dataset)
             covid_list.append(flag)
 
+            # follow-up days: defined as index days to the days of last encounter
+            if len(enc) > 0:
+                followup_day = (enc[-1][0] - index_date).days
+            else:
+                followup_day = np.nan
+
             # matching index encounter type:
             index_enc_type = np.nan
             enc_type_flag = False
-
             if pd.notna(index_enc_id):
                 # If exits encounter id
                 # get index enc type by enc id! enc_item: (date, enc_type, enc_id)
@@ -98,7 +103,7 @@ def cohorts_characterization_build_data(args):
             # add dx, med, enc in acute, and follow-up
             # currently focus on baseline information
             records_aux = [pid, site]
-            records_aux.extend(index_info + [index_enc_type, ] + demo)
+            records_aux.extend(index_info + [index_enc_type, followup_day] + demo)
 
             lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
             dx_str_baseline = ';'.join([x[1].replace('.', '') for x in dx if _is_in_baseline(x[0], index_date)])
@@ -131,7 +136,7 @@ def cohorts_characterization_build_data(args):
     #   step 2: build pandas, column, and dump
     df_records_aux = pd.DataFrame(df_records_aux,
                                   columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
-                                           "index_age_year", "index_enc_id", "index_enc_type",
+                                           "index_age_year", "index_enc_id", "index_enc_type", "followup_day",
                                            "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
                                            "nation_adi", "state_adi",
                                            "lab_str",
