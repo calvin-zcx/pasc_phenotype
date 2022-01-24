@@ -61,6 +61,7 @@ def cohorts_characterization_build_data(args):
             site_list.append(args.dataset)
             covid_list.append(flag)
 
+            # matching index encounter type:
             index_enc_type = np.nan
             enc_type_flag = False
             # Notice: NYU covid lab data has no encounter id, need to use time to match encounter table
@@ -75,14 +76,18 @@ def cohorts_characterization_build_data(args):
                         index_enc_type = enc_item[1]
                         enc_type_flag = True
                         break
+
             # get index enc type by enc date! enc_item: (date, enc_type, enc_id)
-            # if multiple date match, currently choose first.
+            # if multiple date match, count all.
             if not enc_type_flag:
+                _enc_type_list = []
                 for enc_item in enc:
                     if enc_item[0].date() == index_date.date():
-                        index_enc_type = enc_item[1]
+                        # index_enc_type = enc_item[1]
+                        _enc_type_list.append(enc_item[1])
                         enc_type_flag = True
-                        break
+                if enc_type_flag:
+                    index_enc_type = ';'.join(_enc_type_list)
 
             if not enc_type_flag:
                 print('not found covid index encounter type', pid, site)
