@@ -20,7 +20,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='NYU',
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
                         help='site dataset')
     args = parser.parse_args()
 
@@ -64,26 +64,25 @@ def cohorts_characterization_build_data(args):
             # matching index encounter type:
             index_enc_type = np.nan
             enc_type_flag = False
-            # Notice: NYU covid lab data has no encounter id, need to use time to match encounter table
-            # One the same day, one patient may have multiple encounter type, e.g. from outpatient --> inpatient
-            # how to summarize encounter/ hospital utilization of cohorts?
-            # Or just count the total type of the covid encounter?
 
-            # get index enc type by enc id! enc_item: (date, enc_type, enc_id)
             if pd.notna(index_enc_id):
+                # If exits encounter id
+                # get index enc type by enc id! enc_item: (date, enc_type, enc_id)
                 for enc_item in enc:
                     if enc_item[2] == index_enc_id:
                         index_enc_type = enc_item[1]
                         enc_type_flag = True
                         break
-
-            # get index enc type by enc date! enc_item: (date, enc_type, enc_id)
-            # if multiple date match, count all.
-            if not enc_type_flag:
+            else:
+                # Notice: NYU covid lab data has no encounter id, need to use time to match encounter table
+                # One the same day, one patient may have multiple encounter type, e.g. from outpatient --> inpatient
+                # how to summarize encounter/ hospital utilization of cohorts?
+                # get index enc type by enc date! enc_item: (date, enc_type, enc_id)
+                # if multiple date match, count all.
                 _enc_type_list = []
                 for enc_item in enc:
                     if enc_item[0].date() == index_date.date():
-                        # index_enc_type = enc_item[1]
+                        # index_enc_type = enc_itelm[1]
                         _enc_type_list.append(enc_item[1])
                         enc_type_flag = True
                 if enc_type_flag:

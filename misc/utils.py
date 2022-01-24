@@ -49,7 +49,7 @@ def load(filename):
         with open(filename, 'rb') as f:
             data = pickle.load(f)
         print('Load done by pickle.load! len(data):', len(data),
-              'time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+              'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
     except Exception as e:
         print(e)
@@ -57,7 +57,7 @@ def load(filename):
         with open(filename + '.joblib', 'rb') as f:
             data = joblib.load(f)
         print('Load done by joblib.load! len(data):', len(data),
-              'time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+              'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
 
 
