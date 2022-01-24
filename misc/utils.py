@@ -43,18 +43,21 @@ def dump(data, filename):
 
 
 def load(filename):
+    start_time = time.time()
     print('Try to load data file', filename)
     try:
         with open(filename, 'rb') as f:
             data = pickle.load(f)
-        print('Load done by pickle.load! len(data):', len(data))
+        print('Load done by pickle.load! len(data):', len(data),
+              'time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
     except Exception as e:
         print(e)
         print('Try to load by joblib.load({})'.format(filename + '.joblib'))
         with open(filename + '.joblib', 'rb') as f:
             data = joblib.load(f)
-        print('Load done by joblib.load! len(data):', len(data))
+        print('Load done by joblib.load! len(data):', len(data),
+              'time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
 
 
