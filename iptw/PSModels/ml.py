@@ -81,7 +81,7 @@ class PropensityEstimator:
     def _evaluation_helper(X, T, T_pre):
         loss = log_loss(T, T_pre)
         auc = roc_auc_score(T, T_pre)
-        max_smd, smd, max_smd_weighted, smd_w = cal_deviation(X, T, T_pre, normalized=True, verbose=False, abs=True)
+        max_smd, smd, max_smd_weighted, smd_w, before, after = cal_deviation(X, T, T_pre, normalized=True, verbose=False, abs=True)
         n_unbalanced_feature = len(np.where(smd > SMD_THRESHOLD)[0])
         n_unbalanced_feature_weighted = len(np.where(smd_w > SMD_THRESHOLD)[0])
         result = (loss, auc, max_smd, n_unbalanced_feature, max_smd_weighted, n_unbalanced_feature_weighted)
@@ -198,9 +198,9 @@ class PropensityEstimator:
 
     def predict_smd(self, X,  T, abs=False, verbose=False):
         T_pre = self.predict_ps(X)
-        max_smd, smd, max_smd_weighted, smd_weighted = cal_deviation(X, T, T_pre, normalized=True,
-                                                                     verbose=verbose, abs=abs)
-        return smd, smd_weighted
+        max_smd, smd, max_smd_weighted, smd_weighted, before, after = cal_deviation(X, T, T_pre, normalized=True,
+                                                                                    verbose=verbose, abs=abs)
+        return smd, smd_weighted, before, after
 
     def predict_loss(self, X, T):
         T_pre = self.predict_ps(X)

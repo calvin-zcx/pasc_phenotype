@@ -1,4 +1,5 @@
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import time
@@ -15,19 +16,22 @@ from PSModels import ml
 from misc import utils
 import itertools
 import functools
+
 print = functools.partial(print, flush=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL', help='site dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL',
+                        help='site dataset')
     parser.add_argument("--random_seed", type=int, default=0)
     # parser.add_argument('--run_model', choices=['LSTM', 'LR', 'MLP', 'XGBOOST', 'LIGHTGBM'], default='MLP')
     args = parser.parse_args()
 
     # More args
-    args.data_file = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(args.dataset)
+    args.data_file = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(
+        args.dataset)
 
     if args.random_seed < 0:
         from datetime import datetime
@@ -41,7 +45,7 @@ def parse_args():
 def _evaluation_helper(X, T, PS_logits, loss):
     y_pred_prob = logits_to_probability(PS_logits, normalized=False)
     auc = roc_auc_score(T, y_pred_prob)
-    max_smd, smd, max_smd_weighted, smd_w = cal_deviation(X, T, PS_logits, normalized=False, verbose=False)
+    max_smd, smd, max_smd_weighted, smd_w, before, after = cal_deviation(X, T, PS_logits, normalized=False, verbose=False)
     n_unbalanced_feature = len(np.where(smd > SMD_THRESHOLD)[0])
     n_unbalanced_feature_weighted = len(np.where(smd_w > SMD_THRESHOLD)[0])
     result = (loss, auc, max_smd, n_unbalanced_feature, max_smd_weighted, n_unbalanced_feature_weighted)
@@ -50,6 +54,35 @@ def _evaluation_helper(X, T, PS_logits, loss):
 
 def _loss_helper(v_loss, v_weights):
     return np.dot(v_loss, v_weights) / np.sum(v_weights)
+
+
+def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
+    # (covariates_treated_mu, covariates_treated_var, covariates_controlled_mu, covariates_controlled_var), \
+    # (covariates_treated_w_mu, covariates_treated_w_var, covariates_controlled_w_mu, covariates_controlled_w_var)
+
+    columns = df.columns
+    df_pos = df.loc[label == 1, :]
+    df_neg = df.loc[label == 0, :]
+    df_pos_mean = df_pos.mean()
+    df_neg_mean = df_neg.mean()
+    df_pos_sum = df_pos.sum()
+    df_neg_sum = df_neg.sum()
+    df_summary = pd.DataFrame(index=df.columns, data={
+                                                     'Positive Total Patients': df_pos.sum(),
+                                                     'Negative Total Patients': df_neg.sum(),
+                                                    'Positive Percentage/mean': df_pos.mean(),
+                                                    'Positive std': before[1],
+                                                    'Negative Percentage/mean': df_neg.mean(),
+                                                    'Negative std': before[3],
+                                                     'Positive mean after re-weighting': after[0],
+                                                     'Negative mean after re-weighting': after[2],
+                                                     'Positive std after re-weighting': before[1],
+                                                     'Negative std after re-weighting': before[3],
+                                                      'SMD before re-weighting': smd,
+                                                      'SMD after re-weighting':smd_weighted,
+                                         })
+    df_summary.to_csv('../data/V15_COVID19/output/character/evaluation_elixhauser_encoding_balancing.csv')
+    return df_summary
 
 
 if __name__ == "__main__":
@@ -95,18 +128,22 @@ if __name__ == "__main__":
 
     df_covs_array = (df_covs_include > 0).astype('float')
 
-    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(df_covs_array, df_label)
-    # , paras_grid = {'penalty': 'l2',
-    #                 'C': 0.03162277660168379,
-    #                 'max_iter': 200,
-    #                 'random_state': 0}
+    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, paras_grid={
+        'penalty': 'l2',
+        'C': 0.03162277660168379,
+        'max_iter': 200,
+        'random_state': 0}).cross_validation_fit(df_covs_array, df_label)
+
     ps = model.predict_ps(df_covs_array)
     iptw = model.predict_inverse_weight(df_covs_array, df_label, stabilized=True, clip=False)
-    smd, smd_weighted = model.predict_smd(df_covs_array, df_label, abs=False, verbose=True)
-    plt.plot(smd)
-    plt.plot(smd_weighted)
+    smd, smd_weighted, before, after = model.predict_smd(df_covs_array, df_label, abs=False, verbose=True)
+    plt.scatter(range(len(smd)), smd)
+    plt.scatter(range(len(smd)), smd_weighted)
     plt.show()
 
-    model.results.to_csv('../data/V15_COVID19/output/character/evaluation_elixhauser_encoding_model_selection.csv')  # args.save_model_filename +
+    df_summary = summary_covariate(df_covs_array, df_label, iptw, smd, smd_weighted, before, after)
+
+    model.results.to_csv(
+        '../data/V15_COVID19/output/character/evaluation_elixhauser_encoding_model_selection.csv')  # args.save_model_filename +
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

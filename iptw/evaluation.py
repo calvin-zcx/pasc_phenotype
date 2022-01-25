@@ -56,7 +56,7 @@ def model_eval_common(X, T, Y, PS_logits, loss=None, normalized=False, verbose=1
 
     # 3. SMD score
     if report >= 3:
-        max_smd, smd, max_smd_weighted, smd_w = cal_deviation(X, T, PS_logits, normalized)
+        max_smd, smd, max_smd_weighted, smd_w, _, _ = cal_deviation(X, T, PS_logits, normalized)
         n_unbalanced_feature = len(np.where(smd > SMD_THRESHOLD)[0])
         n_unbalanced_feature_w = len(np.where(smd_w > SMD_THRESHOLD)[0])
         SMD_ALL = (max_smd, smd, n_unbalanced_feature, max_smd_weighted, smd_w, n_unbalanced_feature_w)
@@ -324,7 +324,9 @@ def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, ver
 
     max_unbalanced_weighted = np.max(np.abs(covariates_deviation_w))
 
-    return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w
+    return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w,\
+           (covariates_treated_mu, covariates_treated_var,covariates_controlled_mu, covariates_controlled_var), \
+           (covariates_treated_w_mu, covariates_treated_w_var, covariates_controlled_w_mu, covariates_controlled_w_var)
 
 
 def cal_ATE(golds_treatment, logits_treatment, golds_outcome, normalized):
