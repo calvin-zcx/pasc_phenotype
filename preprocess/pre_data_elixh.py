@@ -384,6 +384,7 @@ def build_baseline_covariates(args):
         data_all_sites.append(df_data)
         print('df_data.shape:', df_data.shape)
         # end iterate sites
+
     print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
     print(_no_mapping_rxrnom_all)
 
@@ -406,6 +407,8 @@ def build_baseline_covariates(args):
 
     df_records_aux.to_csv(args.output_file_raw)
     print('dump done to {}'.format(args.output_file_raw))
+
+    utils.dump(_no_mapping_rxrnom_all, '_no_mapping_rxrnom_all_set.pkl')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_data_all_sites, df_records_aux
