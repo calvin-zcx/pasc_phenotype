@@ -14,15 +14,18 @@ import datetime
 from misc import utils
 from eligibility_setting_elixhauser import _is_in_baseline, _is_in_followup, _is_in_acute
 import functools
+
 print = functools.partial(print, flush=True)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL', help='site dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
+                        help='site dataset')
     args = parser.parse_args()
 
-    args.output_file_covariates = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(args.dataset)
+    args.output_file_covariates = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(
+        args.dataset)
     args.output_file_raw = r'../data/V15_COVID19/output/character/pcr_cohorts_raw_elixh_df_{}.csv'.format(args.dataset)
 
     print('args:', args)
@@ -213,7 +216,7 @@ def _encoding_dx(dx_list, icd_cmr, cmr_encoding, index_date, verbos=0):
     return encoding
 
 
-def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=2):
+def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=2, verbose=0):
     # encoding 2 atc level 2 diagnoses codes H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS in the baseline
     # mapping rxnorm_cui to its ingredient(s)
     # for each ingredient, mapping to atc and thus atc[:3] is level three
@@ -222,7 +225,7 @@ def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, a
     atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
     atc_n_chars = atclevel_chars.get(atc_level, 3)  # default level 2, using first 3 chars
     encoding = np.zeros((1, 2), dtype='float')
-
+    _no_mapping_rxrnom = set([])
     for records in med_list:
         med_date, rxnorm, supply_days = records
         if _is_in_baseline(med_date, index_date):
@@ -242,8 +245,10 @@ def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, a
                 for pos in pos_list:
                     encoding[0, pos] += 1
             else:
-                print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
-    return encoding
+                _no_mapping_rxrnom.add(rxnorm)
+                if verbose:
+                    print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
+    return encoding, _no_mapping_rxrnom
 
 
 def build_baseline_covariates(args):
@@ -261,6 +266,7 @@ def build_baseline_covariates(args):
 
     data_all_sites = []
     df_records_aux = []  # for double check, and get basic information
+    _no_mapping_rxrnom_all = set([])
     print('Try to load: ', sites)
     for site in tqdm(sites):
         print('Loading: ', site)
@@ -276,7 +282,7 @@ def build_baseline_covariates(args):
         site_list = []
         covid_list = []
         age_array = np.zeros((n, 6), dtype='int')
-        age_column_names = ['age20-39',  'age40-54', 'age55-64', 'age65-74', 'age75-84', 'age>=85']
+        age_column_names = ['age20-39', 'age40-54', 'age55-64', 'age65-74', 'age75-84', 'age>=85']
         gender_array = np.zeros((n, 1), dtype='int')
         gender_column_names = ['gender-female', ]
         race_array = np.zeros((n, 5), dtype='int')
@@ -353,11 +359,11 @@ def build_baseline_covariates(args):
             utilization_array[i, :] = _encoding_utilization(enc, index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             dx_array[i, :] = _encoding_dx(dx, icd_cmr, cmr_encoding, index_date)
-            med_array[i, :] = _encoding_med(med, rxnorm_ing, rxnorm_atc,
-                                            {'H02': (0, "CORTICOSTEROIDS FOR SYSTEMIC USE"),
-                                             'L04': (1, "IMMUNOSUPPRESSANTS")},
-                                            index_date)
-
+            med_array[i, :], _no_mapping_rxrnom = _encoding_med(med, rxnorm_ing, rxnorm_atc,
+                                                                {'H02': (0, "CORTICOSTEROIDS FOR SYSTEMIC USE"),
+                                                                 'L04': (1, "IMMUNOSUPPRESSANTS")},
+                                                                index_date)
+            _no_mapping_rxrnom_all.update(_no_mapping_rxrnom)
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
         #   step 4: build pandas, column, and dump
@@ -378,12 +384,14 @@ def build_baseline_covariates(args):
         data_all_sites.append(df_data)
         print('df_data.shape:', df_data.shape)
         # end iterate sites
+    print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
+    print(_no_mapping_rxrnom_all)
 
     df_data_all_sites = pd.concat(data_all_sites)
     print('df_data_all_sites.shape:', df_data_all_sites.shape)
     df_records_aux = pd.DataFrame(df_records_aux,
                                   columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
-                                           "index_age_year",
+                                           "index_age_year", "index_enc_id",
                                            "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
                                            "nation_adi", "state_adi",
                                            "lab_str",
