@@ -53,6 +53,7 @@ def _loss_helper(v_loss, v_weights):
 
 
 if __name__ == "__main__":
+    # python main.py --dataset ALL 2>&1 | tee  log/main_covariates_elixhauser.txt
     start_time = time.time()
     args = parse_args()
 
