@@ -48,20 +48,20 @@ def cohorts_characterization_build_data(args):
         print('Load covid patients pickle data done! len(id_data):', len(id_data))
 
         n = len(id_data)
-        pid_list = []
-        site_list = []
-        covid_list = []
+        # pid_list = []
+        # site_list = []
+        # covid_list = []
 
         n_no_index_enc_type = 0
         n_enc_id_match = n_enc_date_match = 0
         n_enc_date_match_only_one = n_enc_date_match_two_or_more = 0
         for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-            pid_list.append(pid)
+            # pid_list.append(pid)
             index_info, demo, dx, med, covid_lab, enc = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
-            site_list.append(args.dataset)
-            covid_list.append(flag)
+            # site_list.append(args.dataset)
+            # covid_list.append(flag)
 
             # follow-up days: defined as index days to the days of last encounter
             if len(enc) > 0:
