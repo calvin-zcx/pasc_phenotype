@@ -106,7 +106,7 @@ class PropensityEstimator:
 
         return model
 
-    def cross_validation_fit(self, X, T, kfold=10, verbose=1, shuffle=False):
+    def cross_validation_fit(self, X, T, kfold=10, verbose=1, shuffle=True):
         start_time = time.time()
         kf = KFold(n_splits=kfold, random_state=self.random_seed, shuffle=shuffle)
         if verbose:

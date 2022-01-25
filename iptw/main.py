@@ -95,7 +95,7 @@ if __name__ == "__main__":
 
     df_covs_array = (df_covs_include > 0).astype('float')
 
-    model = ml.PropensityEstimator(learner='LR').cross_validation_fit(df_covs_array, df_label)
+    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(df_covs_array, df_label)
     # , paras_grid = {'penalty': 'l2',
     #                 'C': 0.03162277660168379,
     #                 'max_iter': 200,
