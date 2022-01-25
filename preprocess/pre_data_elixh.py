@@ -408,7 +408,7 @@ def build_baseline_covariates(args):
     df_records_aux.to_csv(args.output_file_raw)
     print('dump done to {}'.format(args.output_file_raw))
 
-    utils.dump(_no_mapping_rxrnom_all, '_no_mapping_rxrnom_all_set.pkl')
+    utils.dump(_no_mapping_rxrnom_all, '../data/V15_COVID19/output/character/_no_mapping_rxrnom_all_set.pkl')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_data_all_sites, df_records_aux
