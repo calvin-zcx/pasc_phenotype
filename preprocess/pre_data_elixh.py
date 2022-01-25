@@ -383,6 +383,7 @@ def build_baseline_covariates(args):
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)
         print('df_data.shape:', df_data.shape)
+        print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
         # end iterate sites
 
     print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
