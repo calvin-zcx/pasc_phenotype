@@ -439,6 +439,53 @@ def ICD10_to_CCSR():
     return icd_ccsr, ccsr_index,  df
 
 
+def ICD_to_elixhauser_comorbidity():
+    # To get code mapping from icd10 to elixhauser_comorbidity.
+    # Data source: https://www.hcup-us.ahrq.gov/toolssoftware/comorbidityicd10/comorbidity_icd10.jsp#down
+    # Elixhauser Comorbidity Software Refined Tool, v2022.1 (ZIP file, 1.5 MB) released 10/29/21
+
+    start_time = time.time()
+    # df_dimension = pd.read_excel(r'../data/mapping/CMR_v2022-1/CMR-Reference-File-v2022-1.xlsx',
+    #                              sheet_name='Comorbidity_Measures', skiprows=[0])
+    df_dimension = pd.read_csv(r'../data/mapping/CMR_v2022-1/_my_comorbidity_index.csv', dtype=str)
+    print('df_dimension.shape:', df_dimension.shape)
+    df = pd.read_excel(r'../data/mapping/CMR_v2022-1/CMR-Reference-File-v2022-1.xlsx',
+                       sheet_name='DX_to_Comorb_Mapping', skiprows=[0])
+    df = df.drop(['Unnamed: 42', 'Unnamed: 43'], axis=1)
+    print('df.shape:', df.shape)
+    df = df.set_index('ICD-10-CM Diagnosis')
+    df_array = df.iloc[:, 2:]
+
+    rows, cols = np.where(df_array > 0)
+    rows_name = df_array.index[rows]
+    cols_name = df_array.columns[cols]
+    icd_cmr = defaultdict(list)
+    for i, j in zip(rows_name, cols_name):
+        icd_cmr[i].append(j)
+
+    df_dimension = df_dimension.reset_index()
+    cmr_index = {}
+    for index, row in df_dimension.iterrows():
+        cmr = row['col_name']
+        name = row['Comorbidity Description']
+        cmr_index[cmr] = (index, name)
+
+    print('len(icd_cmr):', len(icd_cmr))
+    output_file = r'../data/mapping/icd_cmr_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cmr, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cmr_index):', len(cmr_index))
+    output_file = r'../data/mapping/cmr_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cmr_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cmr, cmr_index, df
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -448,11 +495,14 @@ if __name__ == '__main__':
     # 2. Build rxnorm to ingredient(s) mapping
     # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()
 
     # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
+
+    # 5. Build ICD10 to elixhauser_comorbidity
+    icd_cmr, cmr_index, df = ICD_to_elixhauser_comorbidity()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

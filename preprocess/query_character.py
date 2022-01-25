@@ -20,7 +20,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL',
                         help='site dataset')
     args = parser.parse_args()
 
@@ -160,15 +160,15 @@ def cohorts_characterization_build_data(args):
 
 
 def cohorts_characterization_analyse(args):
-    df = pd.read_csv(args.output_file, dtype={'patid': str}, parse_dates=['index_date', 'birth_date'])  #
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/pcr_cohorts_character_raw_ALL.csv', dtype={'patid': str}, parse_dates=['index_date', 'birth_date'])  #
     df_pos = df.loc[df["covid"], :]
     df_neg = df.loc[~df["covid"], :]
 
     # age
     pos_age_iqr = df_pos['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
     neg_age_iqr = df_neg['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
-    print('pos:  {} ({} -- {})'.format(pos_age_iqr[1], pos_age_iqr[0], pos_age_iqr[2]))
-    print('neg:  {} ({} -- {})'.format(neg_age_iqr[1], neg_age_iqr[0], pos_age_iqr[2]))
+    print('pos:  {} ({}--{})'.format(pos_age_iqr[1], pos_age_iqr[0], pos_age_iqr[2]))
+    print('neg:  {} ({}--{})'.format(neg_age_iqr[1], neg_age_iqr[0], pos_age_iqr[2]))
 
     pos_cnt, pos_interval = np.histogram(df_pos['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
     neg_cnt, neg_interval = np.histogram(df_neg['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
@@ -192,6 +192,7 @@ def cohorts_characterization_analyse(args):
             else:
                 print('{}\t{} ({:.1f})'.format(vocab_dic[index], value, value / tot * 100))
 
+    # gender
     pos_female = df_pos['gender'].value_counts(dropna=False)
     neg_female = df_neg['gender'].value_counts(dropna=False)
     print('pos gender group:')
@@ -199,6 +200,7 @@ def cohorts_characterization_analyse(args):
     print('neg gender group:')
     print_series_group(neg_female)
 
+    # race
     race_dict = {"01": "American Indian or Alaska Native",
                  "02": "Asian",
                  "03": "Black or African American",
@@ -217,6 +219,7 @@ def cohorts_characterization_analyse(args):
     print('neg race group:')
     print_series_group(neg_race, race_dict)
 
+    # hispanic
     hispanic_dict = {"Y": "Yes",
                      "N": "No",
                      "R": "Refuse to answer",
@@ -237,9 +240,55 @@ def cohorts_characterization_analyse(args):
     print('adi pos:  {} ({} -- {})'.format(pos_adi_iqr[1], pos_adi_iqr[0], pos_adi_iqr[2]))
     print('adi neg:  {} ({} -- {})'.format(neg_adi_iqr[1], neg_adi_iqr[0], neg_adi_iqr[2]))
 
-    # df_pos['index_date'] = df_pos['index_date'].astype("datetime64")
-    df_pos['index_date'].groupby(df["index_date"].dt.month).count().plot(kind="bar")
 
+    # follow-up days
+    pos_followup_iqr = df_pos[r'followup_day'].quantile([0.25, 0.5, 0.75]).to_list()
+    neg_followup_iqr = df_neg[r'followup_day'].quantile([0.25, 0.5, 0.75]).to_list()
+    print('pos_followup_iqr:  {} ({}--{})'.format(pos_followup_iqr[1], pos_followup_iqr[0], pos_followup_iqr[2]))
+    print('neg_followup_iqr:  {} ({}--{})'.format(neg_followup_iqr[1], neg_followup_iqr[0], neg_followup_iqr[2]))
+
+    # index type:
+    def print_encounter(env_cnt):
+        tot = env_cnt.sum()
+        outpatient = env_cnt['AV'] + env_cnt['OA'] + env_cnt['TH']
+        emergency = env_cnt['ED']
+        inpatient = env_cnt['EI'] + env_cnt['IP']
+        other = env_cnt['OT']
+        norecord = env_cnt[np.nan]
+        v_list = [outpatient, emergency, inpatient, other, norecord]
+        v_list_name = ["outpatient", "emergency", "inpatient", "other", "norecord"]
+        for v, name in zip(v_list, v_list_name):
+            print('{}\t{} ({:.1f})'.format(name, v, v / tot * 100))
+
+    def count_multiple_enc(env_type):
+        l = []
+        for types in env_type:
+            if pd.notna(types) and ';' in types:
+                types_set = set(types.split(';'))
+                l.extend(types_set)
+            else:
+                l.append(types)
+        counts = pd.Series(l).value_counts(dropna=False)
+        return counts
+
+    pos_enc_type = df_pos.loc[~df_pos[r'index_enc_type'].str.contains(";", na=False), r'index_enc_type'].value_counts(dropna=False)
+    neg_enc_type = df_neg.loc[~df_neg[r'index_enc_type'].str.contains(";", na=False), r'index_enc_type'].value_counts(dropna=False)
+    print('pos_enc_type without multiple enc type visits:')
+    print_encounter(pos_enc_type)
+    print('neg_enc_type without multiple enc type visits:')
+    print_encounter(neg_enc_type)
+
+    pos_enc_type_multiple = count_multiple_enc(df_pos[r'index_enc_type'])
+    neg_enc_type_multiple = count_multiple_enc(df_neg[r'index_enc_type'])
+    print('pos_enc_type_multiple:')
+    print_encounter(pos_enc_type_multiple)
+    print('neg_enc_type_multiple:')
+    print_encounter(neg_enc_type_multiple)
+
+    # df_pos['index_date'] = df_pos['index_date'].astype("datetime64")
+    # df_pos['index_date'].groupby(df["index_date"].dt.month).count().plot(kind="bar")
+
+    # temporal dynamics
     fig, ax = plt.subplots(figsize=(28, 18))
     # Add x-axis and y-axis
     hist = df_pos['index_date'].hist(bins=pd.date_range(start='1/1/2020', end='12/1/2021', freq='M'))
@@ -256,7 +305,7 @@ def cohorts_characterization_analyse(args):
     pos_month = pd.Series(index=df_pos['index_date'], data=1, name='positive cases').resample('1M').count()
     neg_month = pd.Series(index=df_neg['index_date'], data=1, name='negative cases').resample('1M').count()
     month_result = pos_month.to_frame().join(neg_month.to_frame(), how='outer')
-    month_result.to_excel('positive_and_negative_monthly_counts.xlsx')
+    month_result.to_excel('../data/V15_COVID19/output/character/positive_and_negative_monthly_counts.xlsx')
 
     def count_time_period(date_series):
         bins = [datetime.datetime(2020, 1, 1, 0, 0),
@@ -289,8 +338,8 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df = cohorts_characterization_build_data(args)
-    # df = cohorts_characterization_analyse(args)
+    # df = cohorts_characterization_build_data(args)
+    df = cohorts_characterization_analyse(args)
     # df_pos = df.loc[df["covid"], :]
     # df_neg = df.loc[~df["covid"], :]
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
