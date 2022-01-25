@@ -21,7 +21,7 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='ALL', help='site dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL', help='site dataset')
     parser.add_argument("--random_seed", type=int, default=0)
     # parser.add_argument('--run_model', choices=['LSTM', 'LR', 'MLP', 'XGBOOST', 'LIGHTGBM'], default='MLP')
     args = parser.parse_args()
