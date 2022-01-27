@@ -1,5 +1,7 @@
 import sys
 # for linux env.
+import pandas as pd
+
 sys.path.insert(0,'..')
 import time
 import pickle
@@ -19,6 +21,7 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
+
     args = parser.parse_args()
 
     args.covid_lab_file = r'../data/V15_COVID19/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
@@ -26,8 +29,10 @@ def parse_args():
     args.dx_file = r'../data/V15_COVID19/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     args.med_file = r'../data/V15_COVID19/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
     args.enc_file = r'../data/V15_COVID19/output/{}/encounter_{}.pkl'.format(args.dataset, args.dataset)
+    args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
 
-    args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(args.dataset, args.dataset)
+    # args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_incidence_cohorts_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -47,15 +52,23 @@ def read_preprocessed_data(args):
 
     """
     start_time = time.time()
+    # 0. Load pasc list
+    df_pasc_list = pd.read_excel(args.pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    pasc_codes = df_pasc_list['ICD-10-CM Code'].to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('0-Load compiled pasc list done from {}\nlen(pasc_codes)'.format(args.pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
     # 1. load covid patients lab list
     with open(args.covid_lab_file, 'rb') as f:
         id_lab = pickle.load(f)
-        print('1-Load covid patients lab list done! len(id_lab):', len(id_lab))
+        print('1-Load covid patients lab list done from {}!\nlen(id_lab):'.format(args.covid_lab_file), len(id_lab))
 
     # 2. load demographics file
     with open(args.demo_file, 'rb') as f:
         id_demo = pickle.load(f)
-        print('2-load demographics file done! len(id_demo):', len(id_demo))
+        print('2-load demographics file done from {}!\nlen(id_demo):'.format(args.demo_file), len(id_demo))
 
     # 3. load diagnosis file.
     # NYU may use joblib file and load method.
@@ -63,32 +76,246 @@ def read_preprocessed_data(args):
     #     id_dx = pickle.load(f)
     #     print('3-load diagnosis file done! len(id_dx):', len(id_dx))
     id_dx = utils.load(args.dx_file)
-    print('3-load diagnosis file done! len(id_dx):', len(id_dx))
+    print('3-load diagnosis file done from {}!\nlen(id_dx):'.format(args.dx_file), len(id_dx))
 
     # 4. load medication file
     with open(args.med_file, 'rb') as f:
         id_med = pickle.load(f)
-        print('4-load medication file done! len(id_med):', len(id_med))
+        print('4-load medication file done from {}!\nlen(id_med):'.format(args.med_file), len(id_med))
 
     # 5. load encounter file
     with open(args.enc_file, 'rb') as f:
         id_enc = pickle.load(f)
-        print('5-load encounter file done! len(id_med):', len(id_enc))
+        print('5-load encounter file done from {}!\nlen(id_med):'.format(args.enc_file), len(id_enc))
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    return id_lab, id_demo, id_dx, id_med, id_enc
+    return df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc
+
+
+def _eligibility_age(id_indexrecord, age_minimum_criterion):
+    print("Step: applying _eligibility_age, exclude index age < ", age_minimum_criterion,
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        age = row[4]
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if age < age_minimum_criterion:
+            # exclude, DEFAULT 20
+            exclude_list.append(pid)
+            if covid_flag:
+                n_pos_exclude += 1
+            else:
+                n_neg_exclude += 1
+        else:
+            # include
+            if covid_flag:
+                n_pos_after += 1
+            else:
+                n_neg_after += 1
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
+def _eligibility_baseline_any_dx(id_indexrecord, id_dx, func_is_in_baseline):
+    print("Step: applying _eligibility_baseline_any_dx",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            exclude_list.append(pid)
+            if covid_flag:
+                n_pos_exclude += 1
+            else:
+                n_neg_exclude += 1
+        else:
+            flag_baseline = False
+            for r in v_dx:
+                dx_date = r[0]
+                if func_is_in_baseline(dx_date, index_date):
+                    flag_baseline = True
+                    break
+
+            if flag_baseline:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+            else:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
+def _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is_in_followup):
+    print("Step: applying _eligibility_followup_any_pasc",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            exclude_list.append(pid)
+            if covid_flag:
+                n_pos_exclude += 1
+            else:
+                n_neg_exclude += 1
+        else:
+            flag_followup = False
+            for r in v_dx:
+                dx_date = r[0]
+                dx = r[1]
+                dx_type = r[2]
+                if int(dx_type) == 9:
+                    print('icd code 9:', dx)
+
+                if func_is_in_followup(dx_date, index_date) and (dx in pasc_codes_set):
+                    flag_followup = True
+                    break
+
+            if flag_followup:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+            else:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
+def _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is_in_baseline):
+    print("Step: applying _eligibility_baseline_no_pasc",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            # include, because no pasc
+            if covid_flag:
+                n_pos_after += 1
+            else:
+                n_neg_after += 1
+        else:
+            flag_has_baseline_pasc = False
+            for r in v_dx:
+                dx_date = r[0]
+                dx = r[1]
+                dx_type = r[2]
+                # if int(dx_type) == 9:
+                #     print('icd code 9:', dx)
+                if func_is_in_baseline(dx_date, index_date) and (dx in pasc_codes_set):
+                    flag_has_baseline_pasc = True
+                    break
+
+            if flag_has_baseline_pasc:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+            else:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
 
 
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
-    id_lab, id_demo, id_dx, id_med, id_enc = read_preprocessed_data(args)
+    df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc = read_preprocessed_data(args)
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
     #    lab-confirmed negative: first negative record
-
     id_indexrecord = {}
     n_pos = n_neg = 0
     for pid, row in id_lab.items():
@@ -108,83 +335,18 @@ def integrate_data_and_apply_eligibility(args):
     # Can calculate more statistics
 
     # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
-    n_pos = n_neg = 0
-    exclude_list = []
-    for pid, row in id_indexrecord.items():
-        # (True/False, lab_date, lab_code, result_label, age)
-        covid_flag = row[0]
-        age = row[4]
-        if age < INDEX_AGE_MINIMUM:  # DEFAULT 20
-            # excluded
-            exclude_list.append(pid)
-        else:
-            # included
-            if covid_flag:
-                n_pos += 1
-            else:
-                n_neg += 1
-    [id_indexrecord.pop(pid, None) for pid in exclude_list]
-    print('Step2: exclude index age < {}, len(exclude_list):'.format(INDEX_AGE_MINIMUM), len(exclude_list),)
-    print('Total len(id_indexrecord): ', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
-    # print('exclude_list', exclude_list)
+    id_indexrecord = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM)
 
-    # Step 3. Applying EC exclude no diagnosis in baseline period [-18th month, -1st month] or
-    #         no dx in follow-up [1st month, 6th month]
-    n_pos = n_neg = 0
-    exclude_list = []
-    n_exclude_due_to_baseline = n_exclude_due_to_followup = n_exclude_due_to_both = 0
-    for pid, row in id_indexrecord.items():
-        # (True/False, lab_date, lab_code, result_label, age)
-        covid_flag = row[0]
-        index_date = row[1]
-        v_dx = id_dx.get(pid, [])
-        if not v_dx:
-            exclude_list.append(pid)
-            n_exclude_due_to_followup += 1
-            n_exclude_due_to_baseline += 1
-            n_exclude_due_to_both += 1
-        else:
-            flag_follow = False
-            flag_baseline = False
-            for r in v_dx:
-                dx_date = r[0]
-                if _is_in_followup(dx_date, index_date):  # 30 <= (dx_date - index_date).days <= 180:
-                    flag_follow = True
-                    break
+    # Step 3: Applying EC. Any diagnosis in the baseline period
+    id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
 
-            for r in v_dx:
-                dx_date = r[0]
-                if _is_in_baseline(dx_date, index_date):  # -540 <= (dx_date - index_date).days <= -30:
-                    flag_baseline = True
-                    break
+    # Step 4: Applying EC. Any PASC diagnoses in the follow-up
+    id_indexrecord = _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_followup)
 
-            if not flag_follow:
-                n_exclude_due_to_followup += 1
-            if not flag_baseline:
-                n_exclude_due_to_baseline += 1
-            if (not flag_baseline) and (not flag_follow):
-                n_exclude_due_to_both += 1
+    # Step 5: Applying EC. No PASC diagnoses in the baseline
+    id_indexrecord = _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_baseline)
 
-            if flag_follow and flag_baseline:
-                if covid_flag:
-                    n_pos += 1
-                else:
-                    n_neg += 1
-            else:
-                exclude_list.append(pid)
-
-    [id_indexrecord.pop(pid, None) for pid in exclude_list]
-    print('Step3: exclude no diagnosis in baseline period [-18th month, -1st month] or '
-          'no dx in follow-up [1st month, 6th month], len(exclude_list):', len(exclude_list))
-    print('n_exclude_due_to_followup:', n_exclude_due_to_followup,
-          'n_exclude_due_to_baseline:', n_exclude_due_to_baseline,
-          'n_exclude_due_to_both:', n_exclude_due_to_both)
-
-    print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
-    # print('exclude_list', exclude_list)
-
-    print('Finally selected cohorts:')
-    print('Total len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg)
+    print('Final selected cohorts total len(id_indexrecord):', len(id_indexrecord))
 
     # step 4: build data structure for later encoding.
     raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc]
