@@ -219,8 +219,8 @@ def _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, func_i
                 dx_date = r[0]
                 dx = r[1]
                 dx_type = r[2]
-                if int(dx_type) == 9:
-                    print('icd code 9:', dx)
+                # if int(dx_type) == 9:
+                #     print('icd code 9:', dx)
 
                 if func_is_in_followup(dx_date, index_date) and (dx in pasc_codes_set):
                     flag_followup = True
