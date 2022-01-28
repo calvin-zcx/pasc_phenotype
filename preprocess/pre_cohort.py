@@ -32,8 +32,8 @@ def parse_args():
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
 
     # args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(args.dataset, args.dataset)
-    # args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_incidence_cohorts_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_prevalence_cohorts_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_incidence_cohorts_{}.pkl'.format(args.dataset, args.dataset)
+    # args.output_file = r'../data/V15_COVID19/output/{}/data_pcr_prevalence_cohorts_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -344,8 +344,9 @@ def integrate_data_and_apply_eligibility(args):
     # Step 4: Applying EC. Any PASC diagnoses in the follow-up
     id_indexrecord = _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_followup)
 
-    # Step 5: Applying EC. No PASC diagnoses in the baseline
-    # id_indexrecord = _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_baseline)
+    # Step 5: Applying EC. No PASC diagnoses in the baseline  --> incidence cohorts
+    # comment out this line of code for prevalence cohorts.
+    id_indexrecord = _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_baseline)
 
     print('Final selected cohorts total len(id_indexrecord):', len(id_indexrecord))
 
