@@ -331,15 +331,15 @@ def build_baseline_covariates(args):
             records_aux.extend(index_info + demo)
 
             lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
-            dx_str_baseline = ';'.join([x[1].replace('.', '') for x in dx if _is_in_baseline(x[0], index_date)])
+            dx_str_baseline = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_baseline(x[0], index_date)])
             med_str_baseline = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
             enc_str_baseline = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
 
-            dx_str_acute = ';'.join([x[1].replace('.', '') for x in dx if _is_in_acute(x[0], index_date)])
+            dx_str_acute = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_acute(x[0], index_date)])
             med_str_acute = ';'.join([x[1] for x in med if _is_in_acute(x[0], index_date)])
             enc_str_acute = ';'.join([x[1] for x in enc if _is_in_acute(x[0], index_date)])
 
-            dx_str_followup = ';'.join([x[1].replace('.', '') for x in dx if _is_in_followup(x[0], index_date)])
+            dx_str_followup = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_followup(x[0], index_date)])
             med_str_followup = ';'.join([x[1] for x in med if _is_in_followup(x[0], index_date)])
             enc_str_followup = ';'.join([x[1] for x in enc if _is_in_followup(x[0], index_date)])
 
