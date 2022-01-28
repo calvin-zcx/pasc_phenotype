@@ -203,7 +203,7 @@ def _encoding_dx(dx_list, icd_cmr, cmr_encoding, index_date, verbos=0):
     for records in dx_list:
         dx_date, icd = records[:2]
         if _is_in_baseline(dx_date, index_date):
-            icd = icd.replace('.', '')
+            icd = icd.replace('.', '').upper()
             if icd in icd_cmr:
                 cmr_list = icd_cmr[icd]  # one icd can mapping 1, 2, or 3 cmd categories
                 for cmr in cmr_list:

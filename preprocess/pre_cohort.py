@@ -55,7 +55,7 @@ def read_preprocessed_data(args):
     # 0. Load pasc list
     df_pasc_list = pd.read_excel(args.pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
     print('df_pasc_list.shape', df_pasc_list.shape)
-    pasc_codes = df_pasc_list['ICD-10-CM Code'].to_list()
+    pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
     pasc_codes_set = set(pasc_codes)
     print('0-Load compiled pasc list done from {}\nlen(pasc_codes)'.format(args.pasc_list_file),
           len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
@@ -217,7 +217,7 @@ def _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, func_i
             flag_followup = False
             for r in v_dx:
                 dx_date = r[0]
-                dx = r[1]
+                dx = r[1].replace('.', '').upper()
                 dx_type = r[2]
                 # if int(dx_type) == 9:
                 #     print('icd code 9:', dx)
@@ -277,7 +277,7 @@ def _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is
             flag_has_baseline_pasc = False
             for r in v_dx:
                 dx_date = r[0]
-                dx = r[1]
+                dx = r[1].replace('.', '').upper()
                 dx_type = r[2]
                 # if int(dx_type) == 9:
                 #     print('icd code 9:', dx)
