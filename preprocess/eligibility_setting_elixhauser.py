@@ -5,21 +5,35 @@ sys.path.insert(0, '..')
 
 
 # Configure baseline and follow up setting here
-# Mayb change later
+# 2022-01-27 updates: align with CDC query and our morning discussion
+
 INDEX_AGE_MINIMUM = 20
+BASELINE_LEFT = -3*365
+BASELINE_RIGHT = -1
+FOLLOWUP_LEFT = 30
+FOLLOWUP_RIGHT = 30*6
+
+print('Adopted Eligibility Setting:')
+print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
+print("...BASELINE_LEFT:", BASELINE_LEFT)
+print("...BASELINE_RIGHT:", BASELINE_RIGHT)
+print("...FOLLOWUP_LEFT:", FOLLOWUP_LEFT)
+print("...FOLLOWUP_RIGHT:", FOLLOWUP_RIGHT)
 
 
 def _is_in_baseline(event_time, index_time):
-    # baseline: -18 month to -1 month prior to the index date
-    return -30*3*12 <= (event_time - index_time).days <= -1
+    # baseline: -3 years to -1 days prior to the index date
+    # 2022-01-27 updates: align with CDC covariates
+    return BASELINE_LEFT <= (event_time - index_time).days <= BASELINE_RIGHT
 
 
 def _is_in_followup(event_time, index_time):
-    # baseline: 1 month to 5 month after the index date
-    return 30 <= (event_time - index_time).days <= 180
+    # follow-up: 1 month to 6 month after the index date
+    # 2022-01-27 updates: align with CDC query and our morning discussion
+    return FOLLOWUP_LEFT <= (event_time - index_time).days <= FOLLOWUP_RIGHT
 
 
 def _is_in_acute(event_time, index_time):
-    # baseline: 1 month to 5 month after the index date
-    return -14 <= (event_time - index_time).days <= 14
+    # not validated, just for debug
+    return -7 < (event_time - index_time).days <= 14
 

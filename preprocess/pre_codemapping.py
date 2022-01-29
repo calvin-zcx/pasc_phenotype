@@ -486,6 +486,52 @@ def ICD_to_elixhauser_comorbidity():
     return icd_cmr, cmr_index, df
 
 
+def ICD_to_PASC():
+    # To get code mapping from icd10 to PASC our compiled list.
+    # Data source: ../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx May be updated later
+
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        hd_domain = row['HD Domain (Defined by Nature paper)']
+        ccsr_code = row['CCSR CATEGORY 1']
+        ccsr_category = row['CCSR CATEGORY 1 DESCRIPTION']
+        icd = row['ICD-10-CM Code']
+        icd_name = row['ICD-10-CM Code Description']
+        icd_pasc[icd] = [ccsr_category, ccsr_code, hd_domain, icd_name]
+
+    df_dim = df_pasc_list['CCSR CATEGORY 1 DESCRIPTION'].value_counts().reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_pasc_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/pasc_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -504,5 +550,8 @@ if __name__ == '__main__':
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
 
     # 5. Build ICD10 to elixhauser_comorbidity
-    icd_cmr, cmr_index, df = ICD_to_elixhauser_comorbidity()
+    # icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
+
+    # 6. Build ICD10 to pasc
+    icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
