@@ -27,7 +27,7 @@ class PropensityEstimator:
             if self.learner == 'LR':
                 self.paras_grid = {
                     'penalty': ['l2'],  # 'l1',
-                    'C': 10 ** np.arange(-3, 3, 0.5),
+                    'C': 10 ** np.arange(-2, 2.5, 0.5),
                     'max_iter': [200],  # [100, 200, 500],
                     'random_state': [random_seed],
                 }
@@ -117,17 +117,18 @@ class PropensityEstimator:
         # For each model in model space, do cross-validation training and testing,
         # performance of a model is average (std) over K cross-validated datasets
         # select best model with the best average K-cross-validated performance
-
+        X = np.asarray(X)
+        T = np.asarray(T)
         for i, para_d in tqdm(enumerate(self.paras_list, 1), total=len(self.paras_list)):
             i_model_balance_over_kfold = []
             i_model_fit_over_kfold = []
             for k, (train_index, test_index) in enumerate(kf.split(X), 1):
                 print('Training {}th (/{}) model over the {}th-fold data'.format(i, len(self.paras_list), k))
                 # training and testing datasets:
-                X_train = X.loc[train_index, :]
-                T_train = T.loc[train_index]
-                X_test = X.loc[test_index, :]
-                T_test = T.loc[test_index]
+                X_train = X[train_index, :]
+                T_train = T[train_index]
+                X_test = X[test_index, :]
+                T_test = T[test_index]
 
                 # model estimation on training data
                 model = self._model_estimation(para_d, X_train, T_train)

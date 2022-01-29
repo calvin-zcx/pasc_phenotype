@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.special import softmax
 from lifelines import KaplanMeierFitter, CoxPHFitter
-from lifelines.statistics import survival_difference_at_fixed_point_in_time_test
+from lifelines.statistics import survival_difference_at_fixed_point_in_time_test, proportional_hazard_test, logrank_test
 import pandas as pd
 from misc.utils import check_and_mkdir
 import pickle
@@ -425,3 +425,66 @@ def cal_survival_KM(golds_treatment, logits_treatment, golds_outcome, normalized
            (kmf1_w, kmf0_w, ate_w, survival_1_w, survival_0_w, results_w), \
            (HR_ori, CI_ori, cph_ori), \
            (HR, CI, cph)
+
+
+def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile=''):
+    ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
+    treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
+    treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
+    treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
+
+    # kmf = KaplanMeierFitter()
+    kmf1 = KaplanMeierFitter(label='Exposed').fit(treated_t2e, event_observed=treated_flag, label="Exposed")
+    kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e, event_observed=controlled_flag, label="Control")
+
+    point_in_time = [60, 90, 120, 150, 180]
+    results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
+    # results.print_summary()
+    survival_1 = kmf1.predict(point_in_time).to_numpy()
+    survival_0 = kmf0.predict(point_in_time).to_numpy()
+    ate = survival_1 - survival_0
+
+    kmf1_w = KaplanMeierFitter(label='Treated_IPTW').fit(treated_t2e, event_observed=treated_flag,
+                                                         label="Treated_IPTW", weights=treated_w)
+    kmf0_w = KaplanMeierFitter(label='Control_IPTW').fit(controlled_t2e, event_observed=controlled_flag,
+                                                         label="Control_IPTW", weights=controlled_w)
+    results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
+    # results_w.print_summary()
+    survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
+    survival_0_w = kmf0_w.predict(point_in_time).to_numpy()
+    ate_w = survival_1_w - survival_0_w
+
+    if fig_outfile:
+        ax = plt.subplot(111)
+        kmf1.plot_survival_function(ax=ax)
+        kmf0.plot_survival_function(ax=ax)
+        kmf1_w.plot_survival_function(ax=ax)
+        kmf0_w.plot_survival_function(ax=ax)
+        plt.savefig(fig_outfile)
+
+    # cox for hazard ratio
+    cph = CoxPHFitter()
+    cox_data = pd.DataFrame({'T': events_t2e, 'event': events_flag, 'treatment': golds_treatment, 'weights':weights})
+    try:
+        cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True)
+        HR = cph.hazard_ratios_['treatment']
+        CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
+        test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=treated_flag, event_observed_B=controlled_flag, weights_A=treated_w, weights_B=controlled_w,)
+        test_p = test_results.p_value
+
+        cph_ori = CoxPHFitter()
+        cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': events_flag, 'treatment': golds_treatment})
+        cph_ori.fit(cox_data_ori, 'T', 'event')
+        HR_ori = cph_ori.hazard_ratios_['treatment']
+        CI_ori = np.exp(cph_ori.confidence_intervals_.values.reshape(-1))
+        test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=treated_flag, event_observed_B=controlled_flag)
+        test_p_ori = test_results_ori.p_value
+
+    except:
+        cph = HR = CI = test_p_ori = None
+        cph_ori = HR_ori = CI_ori = test_p = None
+
+    return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
+           (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
+           (HR_ori, CI_ori, test_p_ori, cph_ori), \
+           (HR, CI, test_p, cph)
