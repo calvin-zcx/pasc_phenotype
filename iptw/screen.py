@@ -188,11 +188,11 @@ if __name__ == "__main__":
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = '../data/V15_COVID19/output/character/specific/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
+        out_file_balance = r'../data/V15_COVID19/output/character/specific/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile='../data/V15_COVID19/output/character/specific/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/specific/{}-{}-km.png'.format(i, pasc))
 
         try:
             _results = [i, pasc,
@@ -216,7 +216,7 @@ if __name__ == "__main__":
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv('../data/V15_COVID19/output/character/specific/causal_effects_specific-ERRORSAVE.csv')
+            df_causal.to_csv(r'../data/V15_COVID19/output/character/specific/causal_effects_specific-ERRORSAVE.csv')
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -228,5 +228,5 @@ if __name__ == "__main__":
                                           'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                                           'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv('../data/V15_COVID19/output/character/specific/causal_effects_specific.csv')
+    df_causal.to_csv(r'../data/V15_COVID19/output/character/specific/causal_effects_specific.csv')
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
