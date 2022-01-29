@@ -391,8 +391,8 @@ def build_baseline_covariates(args):
         outcome_t2e = np.zeros((n, 137), dtype='int')
         outcome_flag = np.zeros((n, 137), dtype='int')
         outcome_baseline = np.zeros((n, 137), dtype='int')
-        outcome_column_names = ['patid', 'site', 'covid', ] + \
-                               ['flag@' + x for x in pasc_encoding.keys()] + \
+        # ['patid', 'site', 'covid', ] + \
+        outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
                                ['t2e@' + x for x in pasc_encoding.keys()] + \
                                ['baseline@' + x for x in pasc_encoding.keys()]
         ICD_cnts_pos = Counter()
@@ -482,10 +482,15 @@ def build_baseline_covariates(args):
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)
 
-        outcome_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
-                                   np.asarray(site_list).reshape(-1, 1),
-                                   np.array(covid_list).reshape(-1, 1),
-                                   outcome_flag,
+        # outcome_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
+        #                            np.asarray(site_list).reshape(-1, 1),
+        #                            np.array(covid_list).reshape(-1, 1),
+        #                            outcome_flag,
+        #                            outcome_t2e,
+        #                            outcome_baseline
+        #                            ))
+
+        outcome_array = np.hstack((outcome_flag,
                                    outcome_t2e,
                                    outcome_baseline
                                    ))
