@@ -91,7 +91,7 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
-    # python main.py --dataset ALL 2>&1 | tee  log/main_covariates_elixhauser.txt
+    # python screen.py --dataset ALL 2>&1 | tee  log/screen.txt
     start_time = time.time()
     args = parse_args()
 
@@ -193,16 +193,31 @@ if __name__ == "__main__":
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
                                               fig_outfile='../data/V15_COVID19/output/character/specific/{}-{}-km.png'.format(i, pasc))
-        causal_results.append([i, pasc,
-                               covid_label.sum(), (covid_label == 0).sum(),
-                               pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
-                               pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
-                               (smd > SMD_THRESHOLD).sum(),  (smd_weighted > SMD_THRESHOLD).sum(),
-                               km[2], km[3], km[6].p_value,
-                               km_w[2], km_w[3], km_w[6].p_value,
-                               cox[0], cox[1], cox[3].summary.p.treatment, cox[2],
-                               cox_w[0], cox_w[1], cox_w[3].summary.p.treatment, cox_w[2]])
-        print(causal_results[-1])
+
+        try:
+            _results = [i, pasc,
+                       covid_label.sum(), (covid_label == 0).sum(),
+                       pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
+                       pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
+                       (smd > SMD_THRESHOLD).sum(),  (smd_weighted > SMD_THRESHOLD).sum(),
+                       km[2], km[3], km[6].p_value,
+                       km_w[2], km_w[3], km_w[6].p_value,
+                       cox[0], cox[1], cox[3].summary.p.treatment, cox[2],
+                       cox_w[0], cox_w[1], cox_w[3].summary.p.treatment, cox_w[2]]
+            causal_results.append(_results)
+            print(causal_results[-1])
+        except:
+            print('Error in ', i, pasc)
+            df_causal = pd.DataFrame(causal_results, columns=[
+                'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                'no. unbalance', 'no. unbalance iptw',
+                'km-diff', 'km-diff-time', 'km-diff-p',
+                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
+                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
+
+            df_causal.to_csv('../data/V15_COVID19/output/character/specific/causal_effects_specific-ERRORSAVE.csv')
+
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=[

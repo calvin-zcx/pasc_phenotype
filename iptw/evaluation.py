@@ -461,6 +461,8 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         kmf1_w.plot_survival_function(ax=ax)
         kmf0_w.plot_survival_function(ax=ax)
         plt.savefig(fig_outfile)
+        plt.close()
+
 
     # cox for hazard ratio
     cph = CoxPHFitter()
