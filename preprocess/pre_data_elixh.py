@@ -411,9 +411,15 @@ def build_baseline_covariates_and_outcome(args):
         print('Loading: ', site)
         input_file = r'../data/V15_COVID19/output/{}/data_pcr_cohorts_{}.pkl'.format(site, site)
         print('Load cohorts pickle data file:', input_file)
-        with open(input_file, 'rb') as f:
-            id_data = pickle.load(f)
-            print('Load covid patients pickle data done! len(id_data):', len(id_data))
+        try:
+            with open(input_file, 'rb') as f:
+                id_data = pickle.load(f)
+                print('Load covid patients pickle data done! len(id_data):', len(id_data))
+        except:
+            print('Error occur, try loading again!')
+            with open(input_file, 'rb') as f:
+                id_data = pickle.load(f)
+                print('AGAIN Load covid patients pickle data done! len(id_data):', len(id_data))
 
         # step 3: encoding cohorts baseline covariates into matrix
         n = len(id_data)
