@@ -141,7 +141,7 @@ if __name__ == "__main__":
     causal_results = []
     for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1)):
         # bulid specific cohorts:
-        print(i, pasc)
+        print('\n In screening:', i, pasc)
         pasc_flag = df_outcome['flag@' + pasc]
         pasc_t2e = df_outcome['t2e@' + pasc].astype('float')
         pasc_baseline = df_outcome['baseline@' + pasc]
@@ -170,6 +170,11 @@ if __name__ == "__main__":
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             pasc_flag.sum(), (pasc_flag == 0).sum()))
 
+        if i not in [113, 124, 130, 133, 135, 137]:  # 106,
+            continue
+        else:
+            print(i)
+
         # continue
         model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, ).cross_validation_fit(covs_array, covid_label, verbose=0)
         # paras_grid = {
@@ -178,6 +183,7 @@ if __name__ == "__main__":
         #     'max_iter': 200,
         #     'random_state': 0}
         ps = model.predict_ps(covs_array)
+        model.report_stats()
         iptw = model.predict_inverse_weight(covs_array, covid_label, stabilized=True, clip=False)
         smd, smd_weighted, before, after = model.predict_smd(covs_array, covid_label, abs=False, verbose=True)
         # plt.scatter(range(len(smd)), smd)
@@ -188,11 +194,11 @@ if __name__ == "__main__":
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/V15_COVID19/output/character/specific/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
+        out_file_balance = r'../data/V15_COVID19/output/character/specificDX/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/specific/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/specificDX/{}-{}-km.png'.format(i, pasc))
 
         try:
             _results = [i, pasc,
@@ -200,10 +206,11 @@ if __name__ == "__main__":
                        pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
                        (smd > SMD_THRESHOLD).sum(),  (smd_weighted > SMD_THRESHOLD).sum(),
+                       np.abs(smd).max(), np.abs(smd_weighted).max(),
                        km[2], km[3], km[6].p_value,
                        km_w[2], km_w[3], km_w[6].p_value,
-                       cox[0], cox[1], cox[3].summary.p.treatment, cox[2],
-                       cox_w[0], cox_w[1], cox_w[3].summary.p.treatment, cox_w[2]]
+                       cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
+                       cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
             print(causal_results[-1])
         except:
@@ -211,22 +218,21 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=[
                 'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. unbalance', 'no. unbalance iptw',
+                'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv(r'../data/V15_COVID19/output/character/specific/causal_effects_specific-ERRORSAVE.csv')
+            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-ERRORSAVE-v2.csv')
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=[
         'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
-        'no. unbalance', 'no. unbalance iptw',
-        'km-diff', 'km-diff-time', 'km-diff-p',
-                                          'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                                          'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
-                                          'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
+        'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
+        'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+        'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv(r'../data/V15_COVID19/output/character/specific/causal_effects_specific.csv')
+    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-v2.csv')
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
