@@ -170,18 +170,13 @@ if __name__ == "__main__":
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             pasc_flag.sum(), (pasc_flag == 0).sum()))
 
-        if i not in [113, 124, 130, 133, 135, 137]:  # 106,
-            continue
-        else:
-            print(i)
-
-        # continue
         model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, ).cross_validation_fit(covs_array, covid_label, verbose=0)
         # paras_grid = {
         #     'penalty': 'l2',
         #     'C': 0.03162277660168379,
         #     'max_iter': 200,
         #     'random_state': 0}
+
         ps = model.predict_ps(covs_array)
         model.report_stats()
         iptw = model.predict_inverse_weight(covs_array, covid_label, stabilized=True, clip=False)
