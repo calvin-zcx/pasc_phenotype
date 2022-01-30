@@ -184,7 +184,6 @@ if __name__ == "__main__":
         # plt.scatter(range(len(smd)), smd)
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
-        df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         print('n unbalanced covariates before:after = {}:{}'.format(
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
@@ -192,6 +191,8 @@ if __name__ == "__main__":
         out_file_balance = r'../data/V15_COVID19/output/character/specificDX/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
+
+        df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv('../data/V15_COVID19/output/character/specificDX/{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
