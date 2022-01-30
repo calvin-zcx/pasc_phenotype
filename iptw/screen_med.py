@@ -24,7 +24,7 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='ALL',
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
                         help='site dataset')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=2)
@@ -90,7 +90,7 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
-    # python screen.py --dataset ALL 2>&1 | tee  log/screen.txt
+    # python screen_med.py --dataset ALL 2>&1 | tee  log/screen_med.txt
     start_time = time.time()
     args = parse_args()
 
@@ -194,18 +194,18 @@ if __name__ == "__main__":
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/V15_COVID19/output/character/specificMed/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
+        out_file_balance = r'../data/V15_COVID19/output/character/specificMed/{}-{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc, atcl3_encoding[pasc][2])
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
-        df_summary.to_csv('../data/V15_COVID19/output/character/specificMed/{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc))
+        df_summary.to_csv('../data/V15_COVID19/output/character/specificMed/{}-{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc, atcl3_encoding[pasc][2]))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/specificMed/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/specificMed/{}-{}-{}-km.png'.format(i, pasc, atcl3_encoding[pasc][2]))
 
         try:
-            _results = [i, pasc,
+            _results = [i, pasc, atcl3_encoding.get(pasc, ''),
                        covid_label.sum(), (covid_label == 0).sum(),
                        pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=[
-                'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                'i', 'pasc', 'pasc-med','covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. unbalance', 'no. unbalance iptw',
                 'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
@@ -228,15 +228,15 @@ if __name__ == "__main__":
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific-ERRORSAVE.csv')
+            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific_med-ERRORSAVE.csv')
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=[
-        'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+        'i', 'pasc', 'pasc-med', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
         'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
         'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific.csv')
+    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific_med.csv')
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
