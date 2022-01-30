@@ -603,7 +603,7 @@ def build_baseline_covariates_and_outcome(args):
               'df_outcome_med.shape:', df_outcome_med.shape)
 
         print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
-        print('done site:', site)
+        print('Done site:', site)
         # end iterate sites
 
     print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
