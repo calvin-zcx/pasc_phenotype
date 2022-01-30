@@ -23,6 +23,8 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
                         help='site dataset')
+    parser.add_argument('--debug', action='store_true')
+
     args = parser.parse_args()
 
     args.output_file_covariates = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(
@@ -489,29 +491,30 @@ def build_baseline_covariates_and_outcome(args):
             site_list.append(site)
             covid_list.append(flag)
 
-            # store raw information for debugging
-            # add dx, med, enc in acute, and follow-up
-            # currently focus on baseline information
-            records_aux = [pid, site]
-            records_aux.extend(index_info + demo)
-            lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
-            dx_str_baseline = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_baseline(x[0], index_date)])
-            med_str_baseline = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
-            enc_str_baseline = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
+            if args.debug:
+                # store raw information for debugging
+                # add dx, med, enc in acute, and follow-up
+                # currently focus on baseline information
+                records_aux = [pid, site]
+                records_aux.extend(index_info + demo)
+                lab_str = ';'.join([x[2] for x in covid_lab])  # all lab tests
+                dx_str_baseline = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_baseline(x[0], index_date)])
+                med_str_baseline = ';'.join([x[1] for x in med if _is_in_baseline(x[0], index_date)])
+                enc_str_baseline = ';'.join([x[1] for x in enc if _is_in_baseline(x[0], index_date)])
 
-            dx_str_acute = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_acute(x[0], index_date)])
-            med_str_acute = ';'.join([x[1] for x in med if _is_in_acute(x[0], index_date)])
-            enc_str_acute = ';'.join([x[1] for x in enc if _is_in_acute(x[0], index_date)])
+                dx_str_acute = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_acute(x[0], index_date)])
+                med_str_acute = ';'.join([x[1] for x in med if _is_in_acute(x[0], index_date)])
+                enc_str_acute = ';'.join([x[1] for x in enc if _is_in_acute(x[0], index_date)])
 
-            dx_str_followup = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_followup(x[0], index_date)])
-            med_str_followup = ';'.join([x[1] for x in med if _is_in_followup(x[0], index_date)])
-            enc_str_followup = ';'.join([x[1] for x in enc if _is_in_followup(x[0], index_date)])
+                dx_str_followup = ';'.join([x[1].replace('.', '').upper() for x in dx if _is_in_followup(x[0], index_date)])
+                med_str_followup = ';'.join([x[1] for x in med if _is_in_followup(x[0], index_date)])
+                enc_str_followup = ';'.join([x[1] for x in enc if _is_in_followup(x[0], index_date)])
 
-            records_aux.extend([lab_str,
-                                dx_str_baseline, med_str_baseline, enc_str_baseline,
-                                dx_str_acute, med_str_acute, enc_str_acute,
-                                dx_str_followup, med_str_followup, enc_str_followup])
-            df_records_aux.append(records_aux)
+                records_aux.extend([lab_str,
+                                    dx_str_baseline, med_str_baseline, enc_str_baseline,
+                                    dx_str_acute, med_str_acute, enc_str_acute,
+                                    dx_str_followup, med_str_followup, enc_str_followup])
+                df_records_aux.append(records_aux)
 
             # encoding data for modeling
             age_array[i, :] = _encoding_age(index_age_year)
@@ -618,16 +621,17 @@ def build_baseline_covariates_and_outcome(args):
     df_outcome_med_all_sites = pd.concat(outcome_med_all_sites)
     print('df_outcome_med_all_sites.shape:', df_outcome_med_all_sites.shape)
 
-    df_records_aux = pd.DataFrame(df_records_aux,
-                                  columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
-                                           "index_age_year", "index_enc_id",
-                                           "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
-                                           "nation_adi", "state_adi",
-                                           "lab_str",
-                                           "dx_str_baseline", "med_str_baseline", "enc_str_baseline",
-                                           "dx_str_acute", "med_str_acute", "enc_str_acute",
-                                           "dx_str_followup", "med_str_followup", "enc_str_followup"])
-    print('df_records_aux.shape:', df_records_aux.shape)
+    if args.debug:
+        df_records_aux = pd.DataFrame(df_records_aux,
+                                      columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
+                                               "index_age_year", "index_enc_id",
+                                               "birth_date", "gender", "race", "hispanic", "zipcode", "state", "city",
+                                               "nation_adi", "state_adi",
+                                               "lab_str",
+                                               "dx_str_baseline", "med_str_baseline", "enc_str_baseline",
+                                               "dx_str_acute", "med_str_acute", "enc_str_acute",
+                                               "dx_str_followup", "med_str_followup", "enc_str_followup"])
+        print('df_records_aux.shape:', df_records_aux.shape)
 
     utils.check_and_mkdir(args.output_file_covariates)
     df_data_all_sites.to_csv(args.output_file_covariates)
@@ -641,8 +645,9 @@ def build_baseline_covariates_and_outcome(args):
     df_outcome_med_all_sites.to_csv(args.output_file_outcome_med)
     print('dump outcome medication done to {}'.format(args.output_file_outcome_med))
 
-    df_records_aux.to_csv(args.output_file_raw)
-    print('dump debug file done to {}'.format(args.output_file_raw))
+    if args.debug:
+        df_records_aux.to_csv(args.output_file_raw)
+        print('dump debug file done to {}'.format(args.output_file_raw))
 
     utils.dump(_no_mapping_rxrnom_all, '../data/V15_COVID19/output/character/_no_mapping_rxrnom_all_set.pkl')
 

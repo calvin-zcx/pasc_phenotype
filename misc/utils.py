@@ -113,6 +113,30 @@ def read_sas_2_df(infile, chunksize=100000, encoding='WINDOWS-1252', column_name
     return df
 
 
+def stringlist_2_list(s):
+    r = s.strip('][').replace(',', ' ').split()
+    r = list(map(float, r))
+    return r
+
+
+def stringlist_2_str(s, percent=False, digit=-1):
+    r = s.strip('][').replace(',', ' ').split()
+    r = list(map(float, r))
+    if percent:
+        r = [x * 100 for x in r]
+
+    if digit == 0:
+        rr = ','.join(['{:.0f}'.format(x) for x in r])
+    elif digit == 1:
+        rr = ','.join(['{:.1f}'.format(x) for x in r])
+    elif digit == 2:
+        rr = ','.join(['{:.2f}'.format(x) for x in r])
+    elif digit == 3:
+        rr = ','.join(['{:.1f}'.format(x) for x in r])
+    else:
+        rr = ','.join(['{}'.format(x) for x in r])
+    return rr
+
 if __name__ == '__main__':
     start_time = time.time()
     df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')
