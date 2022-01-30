@@ -463,9 +463,9 @@ def build_baseline_covariates_and_outcome(args):
         # step 4: build outcome t2e and flag in follow-up,
         #         and outcome flag in baseline for dynamic cohort selection
         # in total, there are 137 PASC categories in our lists.
-        outcome_t2e = np.zeros((n, 137), dtype='int')
-        outcome_flag = np.zeros((n, 137), dtype='int')
-        outcome_baseline = np.zeros((n, 137), dtype='int')
+        outcome_t2e = np.zeros((n, 137), dtype='int16')
+        outcome_flag = np.zeros((n, 137), dtype='int16')
+        outcome_baseline = np.zeros((n, 137), dtype='int16')
         # ['patid', 'site', 'covid', ] + \
         outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
                                ['t2e@' + x for x in pasc_encoding.keys()] + \
@@ -474,9 +474,9 @@ def build_baseline_covariates_and_outcome(args):
         ICD_cnts_neg = Counter()
         # build ATC-L3 medication outcomes
         # encoding 269 atc level 3 diagnoses codes in the baseline
-        outcome_med_t2e = np.zeros((n, 269), dtype='int')
-        outcome_med_flag = np.zeros((n, 269), dtype='int')
-        outcome_med_baseline = np.zeros((n, 269), dtype='int')
+        outcome_med_t2e = np.zeros((n, 269), dtype='int16')
+        outcome_med_flag = np.zeros((n, 269), dtype='int16')
+        outcome_med_baseline = np.zeros((n, 269), dtype='int16')
         outcome_med_column_names = ['flag@' + x for x in atcl3_encoding.keys()] + \
                                    ['t2e@' + x for x in atcl3_encoding.keys()] + \
                                    ['baseline@' + x for x in atcl3_encoding.keys()]
