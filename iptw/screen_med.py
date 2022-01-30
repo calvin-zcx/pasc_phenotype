@@ -144,7 +144,7 @@ if __name__ == "__main__":
 
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
-    for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
+    for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1), total=len(atcl3_encoding)):
         # bulid specific cohorts:
         print('\n In screening:', i, pasc)
         pasc_flag = df_outcome['flag@' + pasc]
