@@ -661,13 +661,13 @@ def build_baseline_covariates_and_outcome(args):
     ICD_cnts_neg = pd.DataFrame(ICD_cnts_neg.most_common(), columns=['ICD', 'No.person in neg'])
     df_combined_ICD_cnts = pd.merge(ICD_cnts_pos, ICD_cnts_neg, on='ICD', how='outer')
     df_combined_ICD_cnts['ICD name'] = df_combined_ICD_cnts['ICD'].apply(lambda x: icd_ccsr.get(x, ''))
-    df_combined_ICD_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_followup.csv')
+    df_combined_ICD_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_followup-{}.csv'.format(args.dataset))
 
     atc_cnts_pos = pd.DataFrame(atc_cnts_pos.most_common(), columns=['atc', 'No.person in pos'])
     atc_cnts_neg = pd.DataFrame(atc_cnts_neg.most_common(), columns=['atc', 'No.person in neg'])
     df_combined_atc_cnts = pd.merge(atc_cnts_pos, atc_cnts_neg, on='atc', how='outer')
     df_combined_atc_cnts['atc name'] = df_combined_atc_cnts['atc'].apply(lambda x: atcl3_encoding.get(x, ''))
-    df_combined_atc_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_atc_cnts_followup.csv')
+    df_combined_atc_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_atc_cnts_followup-{}.csv'.format(args.dataset))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_data_all_sites, df_records_aux, df_outcome_all_sites, df_combined_ICD_cnts, df_combined_atc_cnts
