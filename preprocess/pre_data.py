@@ -176,7 +176,7 @@ def _encoding_dx(dx_list, icd_ccsr, ccsr_encoding, index_date):
 
 
 def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3):
-    # encoding 269 atc level 3 diagnoses codes in the baseline
+    # encoding 269 atc level 3  codes in the baseline
     # mapping rxnorm_cui to its ingredient(s)
     # for each ingredient, mapping to atc and thus atc[:5] is level three
     # summarize all unique atcL3 codes

@@ -29,6 +29,8 @@ def parse_args():
         args.dataset)
     args.output_file_outcome = r'../data/V15_COVID19/output/character/pcr_cohorts_outcome_pasc_encoding_{}.csv'.format(
         args.dataset)
+    args.output_file_outcome_med = r'../data/V15_COVID19/output/character/pcr_cohorts_outcome_atcl3_encoding_{}.csv'.format(
+        args.dataset)
 
     args.output_file_raw = r'../data/V15_COVID19/output/character/pcr_cohorts_raw_elixh_df_{}.csv'.format(args.dataset)
 
@@ -88,8 +90,14 @@ def _load_mapping():
         print('e.g.:', record_example)
 
     with open(r'../data/mapping/atcL2_index_mapping.pkl', 'rb') as f:
+        atcl2_encoding = pickle.load(f)
+        print('Load to ATC-Level-2 to encoding mapping done! len(atcl2_encoding):', len(atcl2_encoding))
+        record_example = next(iter(atcl2_encoding.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
         atcl3_encoding = pickle.load(f)
-        print('Load to ATC-Level-2 to encoding mapping done! len(atcl2_encoding):', len(atcl3_encoding))
+        print('Load to ATC-Level-3 to encoding mapping done! len(atcl3_encoding):', len(atcl3_encoding))
         record_example = next(iter(atcl3_encoding.items()))
         print('e.g.:', record_example)
 
@@ -99,7 +107,8 @@ def _load_mapping():
     #     record_example = next(iter(atc_rxnorm.items()))
     #     print('e.g.:', record_example)
 
-    return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl3_encoding
+    return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
+           rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding
 
 
 def _encoding_age(age):
@@ -282,7 +291,63 @@ def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, a
     return encoding, _no_mapping_rxrnom
 
 
-def _encoding_outcome(dx_list, icd_pasc, pasc_encoding, index_date):
+def _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level):
+    assert atc_level in [1,2,3,4,5]
+    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
+    atc_n_chars = atclevel_chars[atc_level]  # default level 2, using first 3 chars
+    if rxnorm in rxnorm_atc:
+        atcl_set = set([x[0][:atc_n_chars] for x in rxnorm_atc[rxnorm]])
+    elif rxnorm in rxnorm_ing:
+        ing_list = rxnorm_ing[rxnorm]
+        atcl_set = set([])
+        for ing in ing_list:
+            if ing in rxnorm_atc:
+                atcl_set.update([x[0][:atc_n_chars] for x in rxnorm_atc[ing]])
+    else:
+        atcl_set = set()
+    return atcl_set
+
+
+def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=3, verbose=0):
+    # mapping rxnorm_cui to its ingredient(s)
+    # for each ingredient, mapping to atc and thus atc[:3] is level three
+    # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
+    # atc l3, 269 codes
+    outcome_t2e = np.zeros((1, len(atcl_encoding)), dtype='float')
+    outcome_flag = np.zeros((1, len(atcl_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(atcl_encoding)), dtype='int')
+
+    _no_mapping_rxrnom = set([])
+    for records in med_list:
+        med_date, rxnorm, supply_days = records
+        atcl_set = _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level)
+
+        if len(atcl_set) > 0:
+            pos_list = [atcl_encoding[x][0] for x in atcl_set if x in atcl_encoding]
+        else:
+            _no_mapping_rxrnom.add(rxnorm)
+            if verbose:
+                print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
+            continue
+
+        # build baseline
+        if _is_in_baseline(med_date, index_date):
+            for pos in pos_list:
+                outcome_baseline[0, pos] += 1
+
+        # build outcome
+        if _is_in_followup(med_date, index_date):
+            days = (med_date - index_date).days
+            for pos in pos_list:
+                if outcome_flag[0, pos] == 0:
+                    # only records the first event and time
+                    outcome_t2e[0, pos] = days
+                    outcome_flag[0, pos] = 1
+
+    return outcome_flag, outcome_t2e, outcome_baseline
+
+
+def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
     # encoding 137 outcomes from our PASC list
     #         outcome_t2e = np.zeros((n, 137), dtype='int')
     #         outcome_flag = np.zeros((n, 137), dtype='int')
@@ -319,11 +384,12 @@ def _encoding_outcome(dx_list, icd_pasc, pasc_encoding, index_date):
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
-def build_baseline_covariates(args):
+def build_baseline_covariates_and_outcome(args):
     start_time = time.time()
     print('In build_baseline_covariates...')
     # step 1: load encoding dictionary
-    icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding = _load_mapping()
+    icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
+    icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -334,6 +400,7 @@ def build_baseline_covariates(args):
 
     data_all_sites = []
     outcome_all_sites = []
+    outcome_med_all_sites = []
 
     df_records_aux = []  # for double check, and get basic information
     _no_mapping_rxrnom_all = set([])
@@ -397,6 +464,16 @@ def build_baseline_covariates(args):
                                ['baseline@' + x for x in pasc_encoding.keys()]
         ICD_cnts_pos = Counter()
         ICD_cnts_neg = Counter()
+        # build ATC-L3 medication outcomes
+        # encoding 269 atc level 3 diagnoses codes in the baseline
+        outcome_med_t2e = np.zeros((n, 269), dtype='int')
+        outcome_med_flag = np.zeros((n, 269), dtype='int')
+        outcome_med_baseline = np.zeros((n, 269), dtype='int')
+        outcome_med_column_names = ['flag@' + x for x in atcl3_encoding.keys()] + \
+                                   ['t2e@' + x for x in atcl3_encoding.keys()] + \
+                                   ['baseline@' + x for x in atcl3_encoding.keys()]
+        atc_cnts_pos = Counter()
+        atc_cnts_neg = Counter()
 
         # impute adi value by median of all:
         adi_value_list = [v[1][7] for key, v in id_data.items()]
@@ -453,15 +530,38 @@ def build_baseline_covariates(args):
             _no_mapping_rxrnom_all.update(_no_mapping_rxrnom)
 
             # encoding outcome
-            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome(dx, icd_pasc, pasc_encoding, index_date)
+            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
+
+            outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3)
 
             # count dx in pos and neg
-            dx_set = set([i_dx[1].replace('.', '').upper() for i_dx in dx])
+            dx_set = set()
+            for i_dx in dx:
+                dx_t = i_dx[0]
+                icd = i_dx[1].replace('.', '').upper()
+                if _is_in_followup(dx_t, index_date):
+                    dx_set.add(icd)
+
             for i_dx in dx_set:
                 if flag:
                     ICD_cnts_pos[i_dx] += 1
                 else:
                     ICD_cnts_neg[i_dx] += 1
+
+            # count medication atc in pos and neg
+            med_set = set()
+            for i_med in med:
+                t = i_med[0]
+                rx = i_med[1]
+                if _is_in_followup(t, index_date):
+                    _added = _rxnorm_to_atc(rx, rxnorm_ing, rxnorm_atc, atc_level=3)
+                    med_set.update(_added)
+
+            for i_med in med_set:
+                if flag:
+                    atc_cnts_pos[i_med] += 1
+                else:
+                    atc_cnts_neg[i_med] += 1
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -490,14 +590,18 @@ def build_baseline_covariates(args):
         #                            outcome_baseline
         #                            ))
 
-        outcome_array = np.hstack((outcome_flag,
-                                   outcome_t2e,
-                                   outcome_baseline
-                                   ))
+        outcome_array = np.hstack((outcome_flag, outcome_t2e, outcome_baseline ))
         df_outcome = pd.DataFrame(outcome_array, columns=outcome_column_names)
         outcome_all_sites.append(df_outcome)
 
-        print('df_data.shape:', df_data.shape, 'df_outcome.shape:', df_outcome.shape)
+        outcome_med_array = np.hstack((outcome_med_flag, outcome_med_t2e, outcome_med_baseline))
+        df_outcome_med = pd.DataFrame(outcome_med_array, columns=outcome_med_column_names)
+        outcome_med_all_sites.append(df_outcome_med)
+
+        print('df_data.shape:', df_data.shape,
+              'df_outcome.shape:', df_outcome.shape,
+              'df_outcome_med.shape:', df_outcome_med.shape)
+
         print('len(_no_mapping_rxrnom_all):', len(_no_mapping_rxrnom_all))
         print('done site:', site)
         # end iterate sites
@@ -510,6 +614,9 @@ def build_baseline_covariates(args):
 
     df_outcome_all_sites = pd.concat(outcome_all_sites)
     print('df_outcome_all_sites.shape:', df_outcome_all_sites.shape)
+
+    df_outcome_med_all_sites = pd.concat(outcome_med_all_sites)
+    print('df_outcome_med_all_sites.shape:', df_outcome_med_all_sites.shape)
 
     df_records_aux = pd.DataFrame(df_records_aux,
                                   columns=['patid', "site", "covid", "index_date", "covid_loinc", "flag_name",
@@ -528,31 +635,30 @@ def build_baseline_covariates(args):
 
     utils.check_and_mkdir(args.output_file_outcome)
     df_outcome_all_sites.to_csv(args.output_file_outcome)
-    print('dump outcome done to {}'.format(args.output_file_outcome))
+    print('dump outcome diagnosis done to {}'.format(args.output_file_outcome))
+
+    utils.check_and_mkdir(args.output_file_outcome_med)
+    df_outcome_med_all_sites.to_csv(args.output_file_outcome_med)
+    print('dump outcome medication done to {}'.format(args.output_file_outcome_med))
 
     df_records_aux.to_csv(args.output_file_raw)
     print('dump debug file done to {}'.format(args.output_file_raw))
 
     utils.dump(_no_mapping_rxrnom_all, '../data/V15_COVID19/output/character/_no_mapping_rxrnom_all_set.pkl')
 
-    ICD_cnts_pos = pd.DataFrame(ICD_cnts_pos.most_common(), columns=['ICD', 'No.person'])
-    ICD_cnts_pos.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_pos.csv')
+    ICD_cnts_pos = pd.DataFrame(ICD_cnts_pos.most_common(), columns=['ICD', 'No.person in pos'])
+    ICD_cnts_neg = pd.DataFrame(ICD_cnts_neg.most_common(), columns=['ICD', 'No.person in neg'])
+    df_combined_ICD_cnts = pd.merge(ICD_cnts_pos, ICD_cnts_neg, on='ICD', how='outer')
+    df_combined_ICD_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_followup.csv')
 
-    ICD_cnts_neg = pd.DataFrame(ICD_cnts_neg.most_common(), columns=['ICD', 'No.person'])
-    ICD_cnts_neg.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_neg.csv')
+    atc_cnts_pos = pd.DataFrame(atc_cnts_pos.most_common(), columns=['atc', 'No.person in pos'])
+    atc_cnts_neg = pd.DataFrame(atc_cnts_neg.most_common(), columns=['atc', 'No.person in neg'])
+    df_combined_atc_cnts = pd.merge(atc_cnts_pos, atc_cnts_neg, on='atc', how='outer')
+    df_combined_atc_cnts.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_atc_cnts_followup.csv')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_data_all_sites, df_records_aux, df_outcome_all_sites, ICD_cnts_pos, ICD_cnts_neg
+    return df_data_all_sites, df_records_aux, df_outcome_all_sites, df_combined_ICD_cnts, df_combined_atc_cnts
 
-
-def build_outcomes_in_followup(args):
-    pass
-
-
-def fine_tune_cohorts(args):
-    # define count to bool
-
-    pass
 
 
 def analyse_cohorts(args):
@@ -567,6 +673,7 @@ if __name__ == '__main__':
     start_time = time.time()
     args = parse_args()
     # df_data = analyse_cohorts(args)
-    df_data, df_records_aux, df_outcome_all_sites, ICD_cnts_pos, ICD_cnts_neg = build_baseline_covariates(args)
+    df_data, df_records_aux, df_outcome_all_sites, \
+    df_combined_ICD_cnts, df_combined_atc_cnts = build_baseline_covariates_and_outcome(args)
     # outcomes_df = build_outcomes_in_followup(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
