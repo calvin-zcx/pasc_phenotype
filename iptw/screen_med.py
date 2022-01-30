@@ -34,7 +34,7 @@ def parse_args():
     # More args
     args.data_file = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(
         args.dataset)
-    args.data_file_outcome = r'../data/V15_COVID19/output/character/pcr_cohorts_outcome_pasc_encoding_{}.csv'.format(
+    args.data_file_outcome = r'../data/V15_COVID19/output/character/pcr_cohorts_outcome_atcl3_encoding_{}.csv'.format(
         args.dataset)
 
     if args.random_seed < 0:
@@ -86,7 +86,6 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
         'SMD before re-weighting': smd,
         'SMD after re-weighting': smd_weighted,
     })
-    # df_summary.to_csv('../data/V15_COVID19/output/character/evaluation_elixhauser_encoding_balancing.csv')
     return df_summary
 
 
@@ -125,21 +124,27 @@ if __name__ == "__main__":
     print('df_outcome.shape:', df_outcome.shape)
 
     # Load index information
-    with open(r'../data/mapping/icd_pasc_mapping.pkl', 'rb') as f:
-        icd_pasc = pickle.load(f)
-        print('Load ICD-10 to PASC mapping done! len(icd_pasc):', len(icd_pasc))
-        record_example = next(iter(icd_pasc.items()))
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl', 'rb') as f:
+        rxnorm_ing = pickle.load(f)
+        print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
+        record_example = next(iter(rxnorm_ing.items()))
         print('e.g.:', record_example)
 
-    with open(r'../data/mapping/pasc_index_mapping.pkl', 'rb') as f:
-        pasc_encoding = pickle.load(f)
-        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(pasc_encoding))
-        record_example = next(iter(pasc_encoding.items()))
+    with open(r'../data/mapping/rxnorm_atc_mapping.pkl', 'rb') as f:
+        rxnorm_atc = pickle.load(f)
+        print('Load rxRNOM_CUI to ATC mapping done! len(rxnorm_atc):', len(rxnorm_atc))
+        record_example = next(iter(rxnorm_atc.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
+        atcl3_encoding = pickle.load(f)
+        print('Load to ATC-Level-3 to encoding mapping done! len(atcl3_encoding):', len(atcl3_encoding))
+        record_example = next(iter(atcl3_encoding.items()))
         print('e.g.:', record_example)
 
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
-    for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1)):
+    for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
         # bulid specific cohorts:
         print('\n In screening:', i, pasc)
         pasc_flag = df_outcome['flag@' + pasc]
@@ -185,17 +190,18 @@ if __name__ == "__main__":
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
+
         print('n unbalanced covariates before:after = {}:{}'.format(
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/V15_COVID19/output/character/specificDX/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
+        out_file_balance = r'../data/V15_COVID19/output/character/specificMed/{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc)
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
-        df_summary.to_csv('../data/V15_COVID19/output/character/specificDX/{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc))
+        df_summary.to_csv('../data/V15_COVID19/output/character/specificMed/{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/specificDX/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/specificMed/{}-{}-km.png'.format(i, pasc))
 
         try:
             _results = [i, pasc,
@@ -221,7 +227,7 @@ if __name__ == "__main__":
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-ERRORSAVE-v2.csv')
+            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific-ERRORSAVE.csv')
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -231,5 +237,5 @@ if __name__ == "__main__":
         'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-v2.csv')
+    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific.csv')
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
