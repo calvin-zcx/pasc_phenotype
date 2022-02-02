@@ -3,6 +3,13 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\data\V15_COVID19\output\character\specificDX\61-Gangrene-covariates_balance_elixhauser.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\mapping\_Active_moiety_RxCUI\rxnorm_ingredient_mapping_from_api_combined.csv">
           <value>
             <Attribute>
