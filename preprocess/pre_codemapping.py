@@ -532,6 +532,16 @@ def ICD_to_PASC():
     return icd_pasc, pasc_index, df_pasc_list
 
 
+def load_cdc_mapping():
+    input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
+    df_all = pd.read_excel(input_file, sheet_name=None)  # read all sheets
+
+    table_name = sorted(df_all.keys())
+
+    print('len(df_all):', len(df_all))
+    return df_all
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -553,5 +563,8 @@ if __name__ == '__main__':
     # icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
 
     # 6. Build ICD10 to pasc
-    icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
+    # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
+
+    # 7. Load CDC code mapping:
+    df_all = load_cdc_mapping()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

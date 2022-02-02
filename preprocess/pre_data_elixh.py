@@ -190,7 +190,7 @@ def _encoding_utilization(enc_list, index_date):
     for records in enc_list:
         enc_date, type, enc_id = records
         if _is_in_baseline(enc_date, index_date):
-            if type == 'EI' or type == 'IP':
+            if type == 'EI' or type == 'IP' or type == 'OS':
                 encoding[0, 0] += 1
             elif type == 'AV' or type == 'OA' or type == 'TH':
                 encoding[0, 1] += 1
