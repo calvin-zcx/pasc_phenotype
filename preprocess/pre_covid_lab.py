@@ -18,7 +18,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='WCM', help='site dataset')
+    parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'../data/V15_COVID19/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -47,7 +47,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
 
     """
     start_time = time.time()
-    print('Step 1: load selected and existed covid PCR lab code')
+    print('Step 1: load selected and existed covid PCR/Antigen lab code')
     df_covid_list = pd.read_csv(r'../data/V15_COVID19/covid_phenotype/COVID_LOINC_all.csv')
     """
         loinc_num	component	type	COL Frequency	WCM Frequency	MONTE Frequency	NYU Frequency	MSHS Frequency	Total Orders
@@ -58,12 +58,15 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
         (very few, ignore currently) 94558-4	SARS coronavirus 2 Ag	Antigen	56	120		5828		6004
         94759-8	SARS coronavirus 2 RNA	Molecular		8			448	456
         """
-    df_covid_pcr_list = df_covid_list.loc[(df_covid_list['type'] == 'Molecular') & (df_covid_list['Total Orders'] > 0),
+    # updated 2022-02-02, also include antigen, to be consistent with CDC cohorts
+    # even in RWD, they are small
+    df_covid_pcr_list = df_covid_list.loc[
+                        (df_covid_list['type'].isin(['Molecular', "Antigen"])) & (df_covid_list['Total Orders'] > 0),
                         :]
     pd.set_option('display.max_columns', None)
     print(df_covid_pcr_list)
     code_set = set(df_covid_pcr_list['loinc_num'].to_list())
-    print('Selected and existed Covid PCR codes:', code_set)
+    print('Selected and existed Covid PCR/Antigen codes:', code_set)
     # df = pd.read_excel(input_file, sheet_name='Sheet1',
     #                    dtype=str,
     #                    parse_dates=['SPECIMEN_DATE', "RESULT_DATE"])
@@ -75,11 +78,11 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     print('Unique patid:', len(df['PATID'].unique()))
     print('Time range of All Covid Test:', df["RESULT_DATE"].describe(datetime_is_numeric=True))
 
-    print('.........Select only PCR patients:...........')
+    print('.........Select PCR/Antigen patients:...........')
     df_covid = df.loc[df['LAB_LOINC'].isin(code_set), :]
-    print('PCR tested df_covid.shape', df_covid.shape)
-    print('Unique patid of PCR test:', len(df_covid['PATID'].unique()))
-    print('Time range of PCR Covid Test:', df_covid["RESULT_DATE"].describe(datetime_is_numeric=True))
+    print('PCR/Antigen tested df_covid.shape', df_covid.shape)
+    print('Unique patid of PCR/Antigen test:', len(df_covid['PATID'].unique()))
+    print('Time range of PCR/Antigen Covid Test:', df_covid["RESULT_DATE"].describe(datetime_is_numeric=True))
 
     id_lab = defaultdict(list)
     n_no_dx = 0
@@ -139,6 +142,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     df_covid['n_test'] = df_covid['PATID'].apply(lambda x: len(id_lab[x]))
     df_covid['covid_positive'] = df_covid['PATID'].apply(lambda x: 'POSITIVE' in [a[2].upper() for a in id_lab[x]])
     # Do we need a better definition considering NI?
+    # yes. we should exclude NI from negative cases.
     if id_demo:
         df_covid['age'] = np.nan
         age_list = []
@@ -193,7 +197,7 @@ if __name__ == '__main__':
 
     id_lab, df_pcr, df = read_covid_lab_and_generate_label(args.input_file, args.output_file, id_demo)
     print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
-    print('PCR-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
-    print('PCR-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))
-    print('PCR-test #negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
+    print('PCR/Antigen-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
+    print('PCR/Antigen-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))
+    print('PCR/Antigen-test #negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
