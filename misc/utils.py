@@ -16,7 +16,7 @@ import argparse
 import csv
 import functools
 print = functools.partial(print, flush=True)
-import joblib
+# import joblib
 
 
 def check_and_mkdir(path):
@@ -34,13 +34,22 @@ def dump(data, filename):
     try:
         # MemoryError for pickle.dump for a large or complex file
         with open(filename, 'wb') as fo:
-            pickle.dump(data, fo, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(data, fo)
         print('Dump Done by pickle.dump! Saved as:', filename)
     except Exception as e:
         print(e)
-        print('Try to use joblib.dump(data, filename) and loading by joblib.load(filename)')
-        joblib.dump(data, filename + '.joblib')
-        print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
+        # print('Try to use joblib.dump(data, filename) and loading by joblib.load(filename)')
+        # joblib.dump(data, filename + '.joblib')
+        # print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
+        print('Try to split file into two and dump')
+        data1 = dict(list(data.items())[:len(data) // 2])
+        data2 = dict(list(data.items())[len(data) // 2:])
+        with open(filename+'-part1', 'wb') as fo:
+            pickle.dump(data1, fo)
+            print('Dump Done by pickle.dump! Saved as:', filename+'-part1')
+        with open(filename+'-part2', 'wb') as fo:
+            pickle.dump(data2, fo)
+            print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
 
 
 def load(filename):
@@ -54,10 +63,15 @@ def load(filename):
         return data
     except Exception as e:
         print(e)
-        print('Try to load by joblib.load({})'.format(filename + '.joblib'))
-        with open(filename + '.joblib', 'rb') as f:
-            data = joblib.load(f)
-        print('Load done by joblib.load! len(data):', len(data),
+        print('Try to load two parts:')
+        with open(filename + '-part1', 'rb') as f:
+            data = pickle.load(f)
+            print('load {}-part1 done, len:{}'.format(filename, len(data)))
+        with open(filename + '-part2', 'rb') as f:
+            data2 = pickle.load(f)
+            print('load {}-part1 done, len:{}'.format(filename, len(data2)))
+        data.update(data2)
+        print('Load and combine data done, len(data):', len(data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
 
