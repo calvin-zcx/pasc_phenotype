@@ -34,7 +34,7 @@ def dump(data, filename):
     try:
         # MemoryError for pickle.dump for a large or complex file
         with open(filename, 'wb') as fo:
-            pickle.dump(data, fo)
+            pickle.dump(data, fo, protocol=pickle.HIGHEST_PROTOCOL)
         print('Dump Done by pickle.dump! Saved as:', filename)
     except Exception as e:
         print(e)
