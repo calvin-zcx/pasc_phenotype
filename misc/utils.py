@@ -30,6 +30,7 @@ def check_and_mkdir(path):
 
 def dump(data, filename):
     print('Try to dump data to', filename)
+    check_and_mkdir(filename)
     try:
         # MemoryError for pickle.dump for a large or complex file
         with open(filename, 'wb') as fo:
