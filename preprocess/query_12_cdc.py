@@ -217,6 +217,7 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
     for records in obsgen_list:
         px_date, px, px_type, result_text, source, enc_id = records
         if ecs._is_in_ventilation_period(px_date, index_date):
+            # OBSGEN_TYPE=”PC_COVID” & OBSGEN_CODE = 3000 & OBSGEN_SOURCE=”DR” & RESULT_TEXT=”Y”
             if (px_type == 'PC_COVID') and (px == '3000') and (source == 'DR') and (result_text == 'Y'):
                 flag = True
                 break
