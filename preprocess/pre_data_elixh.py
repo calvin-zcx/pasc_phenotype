@@ -10,7 +10,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import seaborn as sns
-from collections import  Counter
+from collections import Counter
 import datetime
 from misc import utils
 from eligibility_setting_elixhauser import _is_in_baseline, _is_in_followup, _is_in_acute

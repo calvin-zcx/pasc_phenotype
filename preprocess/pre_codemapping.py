@@ -534,11 +534,22 @@ def ICD_to_PASC():
 
 def load_cdc_mapping():
     input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
-    df_all = pd.read_excel(input_file, sheet_name=None)  # read all sheets
+    df_all = pd.read_excel(input_file, sheet_name=None, dtype=str)  # read all sheets
+    print('len(df_all):', len(df_all))
 
     table_name = sorted(df_all.keys())
 
-    print('len(df_all):', len(df_all))
+    vent = df_all['MECHANICAL_VENT']
+    vent_dict = {}
+    for key, row in vent.iterrows():
+        code_raw = row[0]
+        code_type = row[1]
+        des = row[2]
+        code = code_raw.replace('.', '').upper()
+        vent_dict[code] = [code_raw, code_type, des]
+    print('MECHANICAL_VENT  len(vent_dict):', len(vent_dict))
+    utils.dump(vent_dict, r'../data/mapping/ventilation_codes.pkl')
+
     return df_all
 
 
