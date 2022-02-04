@@ -416,6 +416,7 @@ def build_query_1and2_matrix(args):
         data_all_sites.append(df_data)
 
         print('df_data.shape:', df_data.shape)
+        del id_data
         print('Done site:', site)
         # end iterate sites
 
