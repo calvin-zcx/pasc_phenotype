@@ -324,21 +324,21 @@ def build_query_1and2_matrix(args):
         hospitalized_list = []
         ventilation_list = []
 
-        age_array = np.zeros((n, 6), dtype='int')
+        age_array = np.zeros((n, 6), dtype='int16')
         age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
 
-        gender_array = np.zeros((n, 3), dtype='int')
+        gender_array = np.zeros((n, 3), dtype='int16')
         gender_column_names = ['Female', 'Male', 'Other/Missing']
 
-        race_array = np.zeros((n, 5), dtype='int')
+        race_array = np.zeros((n, 5), dtype='int16')
         race_column_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
         # Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5
         # Missing (No Information, Refuse to Answer, Unknown, Missing)4
 
-        hispanic_array = np.zeros((n, 3), dtype='int')
+        hispanic_array = np.zeros((n, 3), dtype='int16')
         hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
-        yearmonth_array = np.zeros((n, 23), dtype='int')
+        yearmonth_array = np.zeros((n, 23), dtype='int16')
         yearmonth_column_names = ["March 2020", "April 2020", "May 2020", "June 2020", "July 2020", "August 2020",
                                   "September 2020", "October 2020", "November 2020", "December 2020", "January 2021",
                                   "February 2021", "March 2021", "April 2021", "May 2021", "June 2021", "July 2021",
@@ -347,7 +347,7 @@ def build_query_1and2_matrix(args):
 
         # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards, due to threshold >= 2 issue
         # DX: End Stage Renal Disease on Dialysis   Both diagnosis and procedure codes used to define this condtion
-        dx_array = np.zeros((n, 32), dtype='int')
+        dx_array = np.zeros((n, 32), dtype='int16')
         dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                            "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
                            "DX: Coagulopathy", "DX: Congestive Heart Failure",
@@ -361,7 +361,7 @@ def build_query_1and2_matrix(args):
                            "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
                            "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss"]
         #
-        med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
+        med_array = np.zeros((n, 2), dtype='int16')  # atc level 3 category
         med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
         # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
 
