@@ -7,7 +7,7 @@ import time
 import pickle
 import argparse
 from misc import utils
-from eligibility_setting import _is_in_baseline, _is_in_followup, _is_in_index_period, INDEX_AGE_MINIMUM
+from eligibility_setting import _is_in_baseline, _is_in_followup, INDEX_AGE_MINIMUM
 import functools
 from collections import Counter
 print = functools.partial(print, flush=True)
