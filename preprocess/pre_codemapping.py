@@ -534,10 +534,35 @@ def ICD_to_PASC():
 
 def load_cdc_mapping():
     input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
+    mapping_file = r'../data/mapping/ventilation&comorbidity_sheetname.csv'
+    df_map = pd.read_csv(mapping_file, dtype=str)
     df_all = pd.read_excel(input_file, sheet_name=None, dtype=str)  # read all sheets
     print('len(df_all):', len(df_all))
+    print('len(df_map):', len(df_map))
 
     table_name = sorted(df_all.keys())
+    tailor_comorbidity = {}
+    for i, (key, row) in enumerate(df_map.iterrows()):
+        query_name = row[0]
+        sheet_name = row[1]
+        notes = row[2]
+        if (query_name.startswith('DX:') or query_name.startswith('MEDICATION:')) and \
+                (query_name != r'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis'):
+            df = df_all[sheet_name]
+            code_set = set()
+            code_set_wildchar = set()
+            for c in df.iloc[:, 0]:
+                c = c.replace('.', '').upper()
+                if '*' in c:
+                    code_set_wildchar.add(c)
+                else:
+                    code_set.add(c)
+
+            tailor_comorbidity[query_name] = [code_set, code_set_wildchar]
+            print('Done:', i, query_name, sheet_name)
+
+    print('tailor_commorbidity  len(tailor_comorbidity):', len(tailor_comorbidity))
+    utils.dump(tailor_comorbidity, r'../data/mapping/tailor_comorbidity_codes.pkl')
 
     vent = df_all['MECHANICAL_VENT']
     vent_dict = {}

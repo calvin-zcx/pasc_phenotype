@@ -1,3 +1,4 @@
+import fnmatch
 import sys
 
 # for linux env.
@@ -15,6 +16,7 @@ import datetime
 from misc import utils
 import eligibility_setting as ecs
 import functools
+import fnmatch
 
 print = functools.partial(print, flush=True)
 
@@ -22,14 +24,17 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid'],
-                        default='covid', help='cohorts')
+                        default='pasc_incidence', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_{}.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_cnt_{}.csv'.format(
+        args.cohorts,
+        args.dataset)
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_bool_{}.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -186,7 +191,7 @@ def _encoding_yearmonth(index_date):
     encoding = np.zeros((1, 23), dtype='int')
     year = index_date.year
     month = index_date.month
-    pos = (month-3) + (year - 2020)*12
+    pos = (month - 3) + (year - 2020) * 12
     encoding[0, pos] = 1
 
     return encoding
@@ -225,58 +230,60 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
     return flag
 
 
-def _encoding_dx(dx_list, icd_cmr, cmr_encoding, index_date, verbos=0):
-    # encoding 39 cmr comorbidity codes in the baseline
-    encoding = np.zeros((1, len(cmr_encoding)), dtype='float')
+def _is_in_code_set_with_wildchar(code, code_set, code_set_wild):
+    if code in code_set:
+        return True
+    for pattern in code_set_wild:
+        if fnmatch.fnmatchcase(code, pattern):
+            return True
+    return False
+
+
+def _encoding_dx(dx_list, dx_column_names, comorbidity_codes, index_date, pro_list):
+    # encoding 32 cmr comorbidity codes in the baseline
+    # deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"  separately later after encoding
+    # DX: End Stage Renal Disease on Dialysis   Both diagnosis and procedure codes used to define this condtion
+    encoding = np.zeros((1, len(dx_column_names)), dtype='int')
     for records in dx_list:
-        dx_date, icd = records[:2]
-        if _is_in_baseline(dx_date, index_date):
+        dx_date, icd, dx_type, enc_type = records
+        if ecs._is_in_comorbidity_period(dx_date, index_date):
             icd = icd.replace('.', '').upper()
-            if icd in icd_cmr:
-                cmr_list = icd_cmr[icd]  # one icd can mapping 1, 2, or 3 cmd categories
-                for cmr in cmr_list:
-                    rec = cmr_encoding[cmr]
-                    pos = rec[0]
-                    encoding[0, pos] += 1
-            else:
-                if verbos > 0:
-                    print('ERROR:', icd, 'not in icd to CMR dictionary!')
+            for pos, col_name in enumerate(dx_column_names):
+                if col_name in comorbidity_codes:
+                    code_set, code_set_wild = comorbidity_codes[col_name]
+                    if _is_in_code_set_with_wildchar(icd, code_set, code_set_wild):
+                        encoding[0, pos] += 1
+
+    # deal with DX: End Stage Renal Disease on Dialysis from procedure
+    pos = dx_column_names.index(r'DX: End Stage Renal Disease on Dialysis')
+    for records in pro_list:
+        px_date, px, px_type, enc_type, enc_id = records
+        if ecs._is_in_comorbidity_period(px_date, index_date):
+            px = px.replace('.', '').upper()
+            code_set, code_set_wild = comorbidity_codes[r'DX: End Stage Renal Disease on Dialysis']
+            if _is_in_code_set_with_wildchar(px, code_set, code_set_wild):
+                encoding[0, pos] += 1
+
     return encoding
 
 
-def _encoding_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=2, verbose=0):
-    # encoding 2 atc level 2 diagnoses codes H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS in the baseline
-    # mapping rxnorm_cui to its ingredient(s)
-    # for each ingredient, mapping to atc and thus atc[:3] is level three
-    # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
-    # med_column_names =   #
-    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
-    atc_n_chars = atclevel_chars.get(atc_level, 3)  # default level 2, using first 3 chars
-    encoding = np.zeros((1, 2), dtype='float')
-    _no_mapping_rxrnom = set([])
+def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
+    # encoding 2 medications:
+    # MEDICATION: Corticosteroids
+    # MEDICATION: Immunosuppressant drug
+    # ps: (H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS in the baseline)
+
+    encoding = np.zeros((1, len(med_column_names)), dtype='int')
     for records in med_list:
         med_date, rxnorm, supply_days = records
-        if _is_in_baseline(med_date, index_date):
-            if rxnorm in rxnorm_atc:
-                atcl_set = set([x[0][:atc_n_chars] for x in rxnorm_atc[rxnorm]])
-                pos_list = [atcl_encoding[x][0] for x in atcl_set if x in atcl_encoding]
-                for pos in pos_list:
-                    encoding[0, pos] += 1
-            elif rxnorm in rxnorm_ing:
-                ing_list = rxnorm_ing[rxnorm]
-                atcl_set = set([])
-                for ing in ing_list:
-                    if ing in rxnorm_atc:
-                        atcl_set.update([x[0][:atc_n_chars] for x in rxnorm_atc[ing]])
+        if ecs._is_in_comorbidity_period(med_date, index_date):
+            for pos, col_name in enumerate(med_column_names):
+                if col_name in comorbidity_codes:
+                    code_set, code_set_wild = comorbidity_codes[col_name]
+                    if _is_in_code_set_with_wildchar(rxnorm, code_set, code_set_wild):
+                        encoding[0, pos] += 1
 
-                pos_list = [atcl_encoding[x][0] for x in atcl_set if x in atcl_encoding]
-                for pos in pos_list:
-                    encoding[0, pos] += 1
-            else:
-                _no_mapping_rxrnom.add(rxnorm)
-                if verbose:
-                    print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
-    return encoding, _no_mapping_rxrnom
+    return encoding
 
 
 def build_query_1and2_matrix(args):
@@ -287,6 +294,7 @@ def build_query_1and2_matrix(args):
     # icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding = _load_mapping()
 
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
+    comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -335,16 +343,31 @@ def build_query_1and2_matrix(args):
                                   "September 2020", "October 2020", "November 2020", "December 2020", "January 2021",
                                   "February 2021", "March 2021", "April 2021", "May 2021", "June 2021", "July 2021",
                                   "August 2021", "September 2021", "October 2021", "November 2021", "December 2021",
-                                  "January 2022",]
+                                  "January 2022", ]
 
-        # dx_array = np.zeros((n, 39), dtype='int')  # 38 cmr , encoding both CBVD_POA CBVD_SQLA, thus 39
-        # dx_column_names = list(cmr_encoding.keys())
+        # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards, due to threshold >= 2 issue
+        # DX: End Stage Renal Disease on Dialysis   Both diagnosis and procedure codes used to define this condtion
+        dx_array = np.zeros((n, 32), dtype='int')
+        dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
+                           "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
+                           "DX: Coagulopathy", "DX: Congestive Heart Failure",
+                           "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
+                           "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                           "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                           "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
+                           "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
+                           "DX: Peripheral vascular disorders ", "DX: Pregnant",
+                           "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
+                           "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
+                           "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss"]
         #
-        # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
-        # med_column_names = ['H02', 'L04']  # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
+        med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
+        med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
+        # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
 
-        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation',] + age_column_names + \
-                       gender_column_names + race_column_names + hispanic_column_names + yearmonth_column_names
+        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', ] + age_column_names + \
+                       gender_column_names + race_column_names + hispanic_column_names + yearmonth_column_names + \
+                       dx_column_names + med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -356,9 +379,6 @@ def build_query_1and2_matrix(args):
             pid_list.append(pid)
             site_list.append(site)
             covid_list.append(flag)
-
-            if pid in ['1375116']:
-                print(pid)
 
             inpatient_flag = _encoding_inpatient(dx, index_date)
             vent_flag = _encoding_ventilation(procedure, obsgen, index_date, ventilation_codes)
@@ -372,11 +392,9 @@ def build_query_1and2_matrix(args):
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             yearmonth_array[i, :] = _encoding_yearmonth(index_date)
 
-            # dx_array[i, :] = _encoding_dx(dx, icd_cmr, cmr_encoding, index_date)
-            # med_array[i, :], _no_mapping_rxrnom = _encoding_med(med, rxnorm_ing, rxnorm_atc,
-            #                                                     {'H02': (0, "CORTICOSTEROIDS FOR SYSTEMIC USE"),
-            #                                                      'L04': (1, "IMMUNOSUPPRESSANTS")},
-            #                                                     index_date)
+            # encoding query 2 information
+            dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date, procedure)
+            med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -390,7 +408,9 @@ def build_query_1and2_matrix(args):
                                 gender_array,
                                 race_array,
                                 hispanic_array,
-                                yearmonth_array))
+                                yearmonth_array,
+                                dx_array,
+                                med_array))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)
@@ -401,19 +421,32 @@ def build_query_1and2_matrix(args):
 
     df_data_all_sites = pd.concat(data_all_sites)
     print('df_data_all_sites.shape:', df_data_all_sites.shape)
+
     utils.check_and_mkdir(args.output_file_query12)
     df_data_all_sites.to_csv(args.output_file_query12)
     print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12))
 
+    # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
+    df_bool = df_data_all_sites.copy()
+    selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
+    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+    df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+        (df_bool.loc[:, r'DX: Hypertension'] & (df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+    utils.check_and_mkdir(args.output_file_query12_bool)
+    df_bool.to_csv(args.output_file_query12_bool)
+    print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
+
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_data_all_sites
+    return df_data_all_sites, df_bool
 
 
 if __name__ == '__main__':
     # python query_12_cdc.py --dataset COL 2>&1 | tee  log/query_12_cdc_COL.txt
-    # python query_12_cdc.py --dataset ALL 2>&1 | tee  log/query_12_cdc_ALL.txt
+    # python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence.txt
+    # python query_12_cdc.py --dataset ALL --cohorts pasc_prevalence 2>&1 | tee  log/query_12_cdc_ALL_pasc_prevalence.txt
+    # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid.txt
 
     start_time = time.time()
     args = parse_args()
-    df_data = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
