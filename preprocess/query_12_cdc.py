@@ -711,6 +711,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
     except:
         HR = CI = None
 
+    print(pasc, cohorts, dataset, severity)
     print('Cox {}: HR: {} ({})'.format(pasc, HR, CI))
 
     col_in = list(df_data.columns)
