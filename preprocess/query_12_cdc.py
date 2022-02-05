@@ -706,7 +706,8 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
     try:
         cph.fit(df_data.loc[:, selected_cols], 't2e@' + pasc, 'flag@' + pasc)
         HR = cph.hazard_ratios_['covid']
-        CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
+        # CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
+        CI = cph.confidence_intervals_.apply(np.exp)
     except:
         HR = CI = None
 
