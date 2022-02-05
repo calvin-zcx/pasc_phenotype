@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid'],
                         default='pasc_incidence', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
-                        default='COL', help='site dataset')
+                        default='ALL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
@@ -441,6 +441,129 @@ def build_query_1and2_matrix(args):
     return df_data_all_sites, df_bool
 
 
+def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
+    # severity in 'hospitalized', 'ventilation', None
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_bool_{}.csv'.format(
+        cohorts, dataset)
+
+    print('Try to load:', in_file)
+    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2.xlsx',
+                                sheet_name=r'Table Shells - Adults')
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
+
+    if severity == '':
+        print('Not considering severity')
+        df_pos = df_data.loc[df_data["covid"], :]
+        df_neg = df_data.loc[~df_data["covid"], :]
+    elif severity == 'hospitalized':
+        print('Considering severity hospitalized cohorts')
+        df_pos = df_data.loc[df_data['hospitalized'] & df_data["covid"], :]
+        df_neg = df_data.loc[df_data['hospitalized'] & (~df_data["covid"]), :]
+    elif severity == 'not hospitalized':
+        print('Considering severity hospitalized cohorts')
+        df_pos = df_data.loc[(~df_data['hospitalized']) & df_data["covid"], :]
+        df_neg = df_data.loc[(~df_data['hospitalized']) & (~df_data["covid"]), :]
+    elif severity == 'ventilation':
+        print('Considering severity hospitalized ventilation cohorts')
+        df_pos = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & df_data["covid"], :]
+        df_neg = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & (~df_data["covid"]), :]
+    else:
+        raise ValueError
+
+    col_in = list(df_data.columns)
+    row_out = list(df_template.iloc[:, 0])
+
+    for pos in [True, False]:
+        # generate both positive and negative cohorts
+        df_out = pd.DataFrame(np.nan, index=row_out, columns=['N', '%'])
+
+        if pos:
+            df_in = df_pos
+        else:
+            df_in = df_neg
+
+        out_file = r'../data/V15_COVID19/output/character/results_query12_{}-{}-{}-{}.csv'.format(
+            cohorts,
+            dataset,
+            'POS' if pos else 'NEG',
+            severity)
+
+        df_out.loc['Number of Unique Patients', 'N'] = len(df_in)
+        df_out.loc['Number of Unique Patients', '%'] = 1.0
+
+        age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+        df_out.loc[age_col, 'N'] = df_in[age_col].sum().to_list()
+        df_out.loc[age_col, '%'] = df_in[age_col].mean().to_list()
+
+        sex_col_in = ['Female', 'Male', 'Other/Missing']
+        sex_col_out = ['   Female', '   Male', '   Other2 / Missing']
+        df_out.loc[sex_col_out, 'N'] = df_in[sex_col_in].sum().to_list()
+        df_out.loc[sex_col_out, '%'] = df_in[sex_col_in].mean().to_list()
+
+        race_col_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing', ]
+        race_col_out = ['Asian', 'Black or African American', 'White',
+                        'Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5',
+                        'Missing (No Information, Refuse to Answer, Unknown, Missing)4 ']
+        df_out.loc[race_col_out, 'N'] = df_in[race_col_in].sum().to_list()
+        df_out.loc[race_col_out, '%'] = df_in[race_col_in].mean().to_list()
+
+        ethnicity_col_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+        ethnicity_col_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
+        df_out.loc[ethnicity_col_out, 'N'] = df_in[ethnicity_col_in].sum().to_list()
+        df_out.loc[ethnicity_col_out, '%'] = df_in[ethnicity_col_in].mean().to_list()
+
+        date_col = ['March 2020', 'April 2020', 'May 2020', 'June 2020', 'July 2020',
+                    'August 2020', 'September 2020', 'October 2020', 'November 2020', 'December 2020',
+                    'January 2021', 'February 2021', 'March 2021', 'April 2021', 'May 2021',
+                    'June 2021', 'July 2021', 'August 2021', 'September 2021', 'October 2021',
+                    'November 2021', 'December 2021', 'January 2022']
+        df_out.loc[date_col, 'N'] = df_in[date_col].sum().to_list()
+        df_out.loc[date_col, '%'] = df_in[date_col].mean().to_list()
+
+        # date race
+        for d in date_col:
+            c_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+            c_out = ['Race: Asian', 'Race: Black or African American', 'Race: White', 'Race: Other5', 'Race: Missing4']
+            c_out = [d + ' - ' + x for x in c_out]
+            _df_select = df_in.loc[df_in[d]==1, c_in]
+            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+
+        # date ethnicity
+        for d in date_col:
+            c_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+            c_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
+            c_out = [d + ' - ' + x for x in c_out]
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
+            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+
+        # date age
+        for i, d in enumerate(date_col):
+            c_in = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+            c_out = [u'Age: 20-<40\xa0years', 'Age: 40-<55 years', 'Age: 55-<65 years', 'Age: 65-<75 years',
+                     'Age: 75-<85 years', 'Age: 85+ years']
+            # c_out = [d + ' - ' + x for x in c_out]
+            c_out_v2 = []
+            for x in c_out:
+                if (d in ['October 2020', 'November 2020', 'December 2020',
+                          'January 2021', 'February 2021', 'March 2021', 'April 2021']) and (x == 'Age: 40-<55 years'):
+                    c_out_v2.append(d + '- ' + x)
+                else:
+                    c_out_v2.append(d + ' - ' + x)
+
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
+            df_out.loc[c_out_v2, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out_v2, '%'] = _df_select.mean().to_list()
+
+        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer', 'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis', 'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD', 'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2', 'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension', 'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder', 'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders', 'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ', 'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)', 'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)', 'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
+        df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
+        df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
+
+        df_out.to_csv(out_file)
+        print('Dump done ', out_file)
+
+
 if __name__ == '__main__':
     # python query_12_cdc.py --dataset COL 2>&1 | tee  log/query_12_cdc_COL.txt
     # python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence.txt
@@ -449,5 +572,20 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
+    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
+    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='not hospitalized')
+    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation')
+
+    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='')
+    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='hospitalized')
+    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='not hospitalized')
+    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation')
+
+    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='')
+    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='hospitalized')
+    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
+    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
