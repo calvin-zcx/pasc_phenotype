@@ -26,7 +26,7 @@ def parse_args():
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid'],
                         default='pasc_incidence', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
-                        default='ALL', help='site dataset')
+                        default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
@@ -286,6 +286,43 @@ def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
     return encoding
 
 
+def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
+    # encoding 137 outcomes from our PASC list
+    # outcome_t2e = np.zeros((n, 137), dtype='int')
+    # outcome_flag = np.zeros((n, 137), dtype='int')
+    # outcome_baseline = np.zeros((n, 137), dtype='int')
+
+    outcome_t2e = np.zeros((1, len(pasc_encoding)), dtype='int')
+    outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    for records in dx_list:
+        dx_date, icd = records[:2]
+        icd = icd.replace('.', '').upper()
+        # build baseline
+        if ecs._is_in_baseline(dx_date, index_date):
+            if icd in icd_pasc:
+                pasc_info = icd_pasc[icd]
+                pasc = pasc_info[0]
+                rec = pasc_encoding[pasc]
+                pos = rec[0]
+                outcome_baseline[0, pos] += 1
+        # build outcome
+        if ecs._is_in_followup(dx_date, index_date):
+            days = (dx_date - index_date).days
+            if icd in icd_pasc:
+                pasc_info = icd_pasc[icd]
+                pasc = pasc_info[0]
+                rec = pasc_encoding[pasc]
+                pos = rec[0]
+                if outcome_flag[0, pos] == 0:
+                    # only records the first event and time
+                    outcome_t2e[0, pos] = days
+                    outcome_flag[0, pos] = 1
+
+    return outcome_flag, outcome_t2e, outcome_baseline
+
+
 def build_query_1and2_matrix(args):
     start_time = time.time()
     print('In build_query_1and2_matrix...')
@@ -295,6 +332,9 @@ def build_query_1and2_matrix(args):
 
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
     comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
+
+    icd_pasc = utils.load(r'../data/mapping/icd_pasc_mapping.pkl')
+    pasc_encoding = utils.load(r'../data/mapping/pasc_index_mapping.pkl')
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -365,9 +405,18 @@ def build_query_1and2_matrix(args):
         med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
         # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
 
+        # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
+        # in total, there are 137 PASC categories in our lists.
+        outcome_t2e = np.zeros((n, 137), dtype='int16')
+        outcome_flag = np.zeros((n, 137), dtype='int16')
+        outcome_baseline = np.zeros((n, 137), dtype='int16')
+        outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
+                               ['t2e@' + x for x in pasc_encoding.keys()] + \
+                               ['baseline@' + x for x in pasc_encoding.keys()]
+
         column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', ] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + yearmonth_column_names + \
-                       dx_column_names + med_column_names
+                       dx_column_names + med_column_names + outcome_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -396,6 +445,9 @@ def build_query_1and2_matrix(args):
             dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date, procedure)
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
+            # encoding pasc information in both baseline and followup
+            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
+
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
         #   step 4: build pandas, column, and dump
@@ -410,7 +462,10 @@ def build_query_1and2_matrix(args):
                                 hispanic_array,
                                 yearmonth_array,
                                 dx_array,
-                                med_array))
+                                med_array,
+                                outcome_flag,
+                                outcome_t2e,
+                                outcome_baseline))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)
@@ -569,23 +624,25 @@ if __name__ == '__main__':
     # python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence.txt
     # python query_12_cdc.py --dataset ALL --cohorts pasc_prevalence 2>&1 | tee  log/query_12_cdc_ALL_pasc_prevalence.txt
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid.txt
+    # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_withoutcome.txt
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
-    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
-    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
-    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='not hospitalized')
-    cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation')
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='')
-    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='hospitalized')
-    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='not hospitalized')
-    cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation')
-
-    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='')
-    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='hospitalized')
-    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
-    cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
+    # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
+    # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
+    # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='not hospitalized')
+    # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation')
+    #
+    # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='')
+    # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='hospitalized')
+    # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='not hospitalized')
+    # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation')
+    #
+    # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='')
+    # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='hospitalized')
+    # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
+    # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
