@@ -812,7 +812,7 @@ def screen_all_pasc_category():
     start_time = time.time()
     df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     for key, row in tqdm(df.iterrows(), total=len(df)):
-        print(key, row)
+        print('Screening pasc:', key, row)
         pasc = row[0][5:]
         # pasc = 'Respiratory signs and symptoms'
         pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc)
