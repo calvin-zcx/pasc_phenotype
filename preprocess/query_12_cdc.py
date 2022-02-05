@@ -319,6 +319,8 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
                     # only records the first event and time
                     outcome_t2e[0, pos] = days
                     outcome_flag[0, pos] = 1
+                else:
+                    outcome_flag[0, pos] += 1
 
     return outcome_flag, outcome_t2e, outcome_baseline
 
@@ -488,6 +490,11 @@ def build_query_1and2_matrix(args):
     df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
     df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
         (df_bool.loc[:, r'DX: Hypertension'] & (df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+
+    # keep the value of baseline count and outcome count in the file, filter later depends on the application
+    # selected_cols = [x for x in df_bool.columns if (x.startswith('flag@') or x.startswith('baseline@'))]
+    # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
     utils.check_and_mkdir(args.output_file_query12_bool)
     df_bool.to_csv(args.output_file_query12_bool)
     print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
@@ -624,7 +631,7 @@ if __name__ == '__main__':
     # python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence.txt
     # python query_12_cdc.py --dataset ALL --cohorts pasc_prevalence 2>&1 | tee  log/query_12_cdc_ALL_pasc_prevalence.txt
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid.txt
-    # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_withoutcome.txt
+    # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_withPASCoutcome.txt
 
     start_time = time.time()
     args = parse_args()
