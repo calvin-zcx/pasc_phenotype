@@ -17,6 +17,7 @@ from misc import utils
 import eligibility_setting as ecs
 import functools
 import fnmatch
+from lifelines import KaplanMeierFitter, CoxPHFitter
 
 print = functools.partial(print, flush=True)
 
@@ -626,16 +627,223 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
         print('Dump done ', out_file)
 
 
+def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', severity='',
+                                                   pasc='Respiratory signs and symptoms'):
+    # severity in 'hospitalized', 'ventilation', None
+    # build pasc specific cohorts from covid base cohorts!
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_query12_encoding_bool_{}.csv'.format(dataset)
+    print('In pasc_specific_cohorts_characterization_analyse, PASC: {}, Cohorts: {}, severity: {}'.format(
+        pasc, cohorts, severity))
+    print('Try to load:', in_file)
+    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2.xlsx',
+                                sheet_name=r'Table Shells - Adults')
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
+    print('df_data.shape:', df_data.shape)
+    # dump potentially significant PASC list for screening
+    # selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
+    # df_data.loc[:, selected_cols] = (df_data.loc[:, selected_cols] >= 1).astype('int')
+    # df_pos = df_data.loc[df_data["covid"], :]
+    # df_neg = df_data.loc[~df_data["covid"], :]
+    # df_m = pd.DataFrame({'pos_mean': df_pos.loc[:, selected_cols].mean(),
+    #                      'neg_mean': df_neg.loc[:, selected_cols].mean(),
+    #                      'pos-neg%': df_pos.loc[:, selected_cols].mean() - df_neg.loc[:, selected_cols].mean(),
+    #                      'pos_count': df_pos.loc[:, selected_cols].sum(),
+    #                      'neg_count': df_neg.loc[:, selected_cols].sum(),
+    #                      })
+    # df_m_sorted = df_m.sort_values(by=['pos-neg%'], ascending=False)
+    # df_m_sorted.to_csv('../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
+
+    if cohorts == 'pasc_prevalence':
+        print('Choose cohorts pasc_prevalence')
+        df_data = df_data.loc[df_data['flag@'+ pasc] >= 1, :]
+        print('df_data.shape:', df_data.shape)
+    elif cohorts == 'pasc_incidence':
+        print('Choose cohorts pasc_incidence')
+        df_data = df_data.loc[(df_data['flag@' + pasc] >= 1) & (df_data['baseline@' + pasc] == 0), :]
+        print('df_data.shape:', df_data.shape)
+    else:
+        raise ValueError
+
+    if severity == '':
+        print('Not considering severity')
+        df_pos = df_data.loc[df_data["covid"], :]
+        df_neg = df_data.loc[~df_data["covid"], :]
+    elif severity == 'hospitalized':
+        print('Considering severity hospitalized cohorts')
+        df_pos = df_data.loc[df_data['hospitalized'] & df_data["covid"], :]
+        df_neg = df_data.loc[df_data['hospitalized'] & (~df_data["covid"]), :]
+    elif severity == 'not hospitalized':
+        print('Considering severity NOT hospitalized cohorts')
+        df_pos = df_data.loc[(~df_data['hospitalized']) & df_data["covid"], :]
+        df_neg = df_data.loc[(~df_data['hospitalized']) & (~df_data["covid"]), :]
+    elif severity == 'ventilation':
+        print('Considering severity hospitalized ventilation cohorts')
+        df_pos = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & df_data["covid"], :]
+        df_neg = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & (~df_data["covid"]), :]
+    else:
+        raise ValueError
+    print('df_pos.shape:', df_pos.shape,'df_neg.shape:', df_neg.shape, )
+    pasc_cols = ['flag@' + pasc, 't2e@' + pasc, 'baseline@' + pasc]
+    print('pos:', df_pos[pasc_cols].mean())
+    print('neg:', df_neg[pasc_cols].mean())
+    kmf1 = KaplanMeierFitter(label='pos').fit(df_pos['t2e@' + pasc], event_observed=df_pos['flag@' + pasc],
+                                                label="pos")
+    kmf0 = KaplanMeierFitter(label='neg').fit(df_neg['t2e@' + pasc], event_observed=df_neg['flag@' + pasc],
+                                                label="neg")
+    ax = plt.subplot(111)
+    kmf1.plot_survival_function(ax=ax)
+    kmf0.plot_survival_function(ax=ax)
+    plt.title(pasc + '-' + cohorts + '-' + severity)
+    fig_outfile = r'../data/V15_COVID19/output/character/pasc/{}/results_query12_PASC-{}-{}-{}-{}.png'.format(
+        pasc, pasc, cohorts, dataset, severity)
+    utils.check_and_mkdir(fig_outfile)
+    plt.savefig(fig_outfile)
+    plt.close()
+
+    cph = CoxPHFitter()
+    selected_cols = ['covid', 'flag@' + pasc, 't2e@' + pasc] + \
+                    [x for x in df_data.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
+    try:
+        cph.fit(df_data.loc[:, selected_cols], 't2e@' + pasc, 'flag@' + pasc)
+        HR = cph.hazard_ratios_['covid']
+        CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
+    except:
+        HR = CI = None
+
+    print('Cox {}: HR: {} ({})'.format(pasc, HR, CI))
+
+    col_in = list(df_data.columns)
+    row_out = list(df_template.iloc[:, 0])
+
+    for pos in [True, False]:
+        # generate both positive and negative cohorts
+        df_out = pd.DataFrame(np.nan, index=row_out, columns=['N', '%'])
+
+        if pos:
+            df_in = df_pos
+        else:
+            df_in = df_neg
+
+        out_file = r'../data/V15_COVID19/output/character/pasc/{}/results_query12_PASC-{}-{}-{}-{}-{}.csv'.format(
+            pasc,
+            pasc,
+            cohorts,
+            dataset,
+            'POS' if pos else 'NEG',
+            severity)
+        utils.check_and_mkdir(out_file)
+        df_out.loc['Number of Unique Patients', 'N'] = len(df_in)
+        df_out.loc['Number of Unique Patients', '%'] = 1.0
+
+        age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+        df_out.loc[age_col, 'N'] = df_in[age_col].sum().to_list()
+        df_out.loc[age_col, '%'] = df_in[age_col].mean().to_list()
+
+        sex_col_in = ['Female', 'Male', 'Other/Missing']
+        sex_col_out = ['   Female', '   Male', '   Other2 / Missing']
+        df_out.loc[sex_col_out, 'N'] = df_in[sex_col_in].sum().to_list()
+        df_out.loc[sex_col_out, '%'] = df_in[sex_col_in].mean().to_list()
+
+        race_col_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing', ]
+        race_col_out = ['Asian', 'Black or African American', 'White',
+                        'Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5',
+                        'Missing (No Information, Refuse to Answer, Unknown, Missing)4 ']
+        df_out.loc[race_col_out, 'N'] = df_in[race_col_in].sum().to_list()
+        df_out.loc[race_col_out, '%'] = df_in[race_col_in].mean().to_list()
+
+        ethnicity_col_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+        ethnicity_col_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
+        df_out.loc[ethnicity_col_out, 'N'] = df_in[ethnicity_col_in].sum().to_list()
+        df_out.loc[ethnicity_col_out, '%'] = df_in[ethnicity_col_in].mean().to_list()
+
+        date_col = ['March 2020', 'April 2020', 'May 2020', 'June 2020', 'July 2020',
+                    'August 2020', 'September 2020', 'October 2020', 'November 2020', 'December 2020',
+                    'January 2021', 'February 2021', 'March 2021', 'April 2021', 'May 2021',
+                    'June 2021', 'July 2021', 'August 2021', 'September 2021', 'October 2021',
+                    'November 2021', 'December 2021', 'January 2022']
+        df_out.loc[date_col, 'N'] = df_in[date_col].sum().to_list()
+        df_out.loc[date_col, '%'] = df_in[date_col].mean().to_list()
+
+        # date race
+        for d in date_col:
+            c_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+            c_out = ['Race: Asian', 'Race: Black or African American', 'Race: White', 'Race: Other5', 'Race: Missing4']
+            c_out = [d + ' - ' + x for x in c_out]
+            _df_select = df_in.loc[df_in[d]==1, c_in]
+            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+
+        # date ethnicity
+        for d in date_col:
+            c_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+            c_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
+            c_out = [d + ' - ' + x for x in c_out]
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
+            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+
+        # date age
+        for i, d in enumerate(date_col):
+            c_in = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+            c_out = [u'Age: 20-<40\xa0years', 'Age: 40-<55 years', 'Age: 55-<65 years', 'Age: 65-<75 years',
+                     'Age: 75-<85 years', 'Age: 85+ years']
+            # c_out = [d + ' - ' + x for x in c_out]
+            c_out_v2 = []
+            for x in c_out:
+                if (d in ['October 2020', 'November 2020', 'December 2020',
+                          'January 2021', 'February 2021', 'March 2021', 'April 2021']) and (x == 'Age: 40-<55 years'):
+                    c_out_v2.append(d + '- ' + x)
+                else:
+                    c_out_v2.append(d + ' - ' + x)
+
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
+            df_out.loc[c_out_v2, 'N'] = _df_select.sum().to_list()
+            df_out.loc[c_out_v2, '%'] = _df_select.mean().to_list()
+
+        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer', 'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis', 'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD', 'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2', 'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension', 'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder', 'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders', 'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ', 'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)', 'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)', 'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
+        df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
+        df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
+
+        df_out.to_csv(out_file)
+        print('Dump done ', out_file)
+
+
+def screen_all_pasc_category():
+    start_time = time.time()
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
+    for key, row in tqdm(df.iterrows(), total=len(df)):
+        print(key, row)
+        pasc = row[0][5:]
+        # pasc = 'Respiratory signs and symptoms'
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='', pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized',
+                                                       pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL',
+                                                       severity='hospitalized', pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL',
+                                                       severity='not hospitalized', pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL',
+                                                       severity='not hospitalized', pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation',
+                                                       pasc=pasc)
+        pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation',
+                                                       pasc=pasc)
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
 if __name__ == '__main__':
     # python query_12_cdc.py --dataset COL 2>&1 | tee  log/query_12_cdc_COL.txt
     # python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence.txt
     # python query_12_cdc.py --dataset ALL --cohorts pasc_prevalence 2>&1 | tee  log/query_12_cdc_ALL_pasc_prevalence.txt
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid.txt
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_withPASCoutcome.txt
+    # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_screenAllPASC.txt
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
@@ -651,5 +859,20 @@ if __name__ == '__main__':
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
+
+    screen_all_pasc_category()
+    # df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
+    # for key, row in tqdm(df.iterrows(), total=len(df)):
+    #     print(key, row)
+    #     pasc = row[0][5:]
+    # # pasc = 'Respiratory signs and symptoms'
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='hospitalized', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='not hospitalized', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='not hospitalized', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation', pasc=pasc)
+    #     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation', pasc=pasc)
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
