@@ -449,7 +449,9 @@ def build_query_1and2_matrix(args):
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding pasc information in both baseline and followup
-            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
+            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc,
+                                                                                                 pasc_encoding,
+                                                                                                 index_date)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -490,7 +492,8 @@ def build_query_1and2_matrix(args):
     selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
     df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
     df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
-        (df_bool.loc[:, r'DX: Hypertension'] & (df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+        (df_bool.loc[:, r'DX: Hypertension'] & (
+                    df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
     # selected_cols = [x for x in df_bool.columns if (x.startswith('flag@') or x.startswith('baseline@'))]
@@ -588,7 +591,7 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
             c_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
             c_out = ['Race: Asian', 'Race: Black or African American', 'Race: White', 'Race: Other5', 'Race: Missing4']
             c_out = [d + ' - ' + x for x in c_out]
-            _df_select = df_in.loc[df_in[d]==1, c_in]
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
             df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
             df_out.loc[c_out, '%'] = _df_select.mean().to_list()
 
@@ -619,7 +622,17 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
             df_out.loc[c_out_v2, 'N'] = _df_select.sum().to_list()
             df_out.loc[c_out_v2, '%'] = _df_select.mean().to_list()
 
-        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer', 'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis', 'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD', 'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2', 'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension', 'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder', 'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders', 'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ', 'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)', 'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)', 'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
+        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer',
+                           'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis',
+                           'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD',
+                           'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2',
+                           'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension',
+                           'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder',
+                           'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders',
+                           'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ',
+                           'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)',
+                           'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)',
+                           'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
         df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
         df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
 
@@ -655,7 +668,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
 
     if cohorts == 'pasc_prevalence':
         print('Choose cohorts pasc_prevalence')
-        df_data = df_data.loc[df_data['flag@'+ pasc] >= 1, :]
+        df_data = df_data.loc[df_data['flag@' + pasc] >= 1, :]
         print('df_data.shape:', df_data.shape)
     elif cohorts == 'pasc_incidence':
         print('Choose cohorts pasc_incidence')
@@ -682,28 +695,31 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
         df_neg = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & (~df_data["covid"]), :]
     else:
         raise ValueError
-    print('df_pos.shape:', df_pos.shape,'df_neg.shape:', df_neg.shape, )
+    print('df_pos.shape:', df_pos.shape, 'df_neg.shape:', df_neg.shape, )
     pasc_cols = ['flag@' + pasc, 't2e@' + pasc, 'baseline@' + pasc]
     print('pos:', df_pos[pasc_cols].mean())
     print('neg:', df_neg[pasc_cols].mean())
-    kmf1 = KaplanMeierFitter(label='pos').fit(df_pos['t2e@' + pasc], event_observed=df_pos['flag@' + pasc],
-                                                label="pos")
-    kmf0 = KaplanMeierFitter(label='neg').fit(df_neg['t2e@' + pasc], event_observed=df_neg['flag@' + pasc],
-                                                label="neg")
-    ax = plt.subplot(111)
-    kmf1.plot_survival_function(ax=ax)
-    kmf0.plot_survival_function(ax=ax)
-    plt.title(pasc + '-' + cohorts + '-' + severity)
-    fig_outfile = r'../data/V15_COVID19/output/character/pasc/{}/results_query12_PASC-{}-{}-{}-{}.png'.format(
-        pasc, pasc, cohorts, dataset, severity)
-    utils.check_and_mkdir(fig_outfile)
-    plt.savefig(fig_outfile)
-    plt.close()
-
-    cph = CoxPHFitter()
-    selected_cols = ['covid', 'flag@' + pasc, 't2e@' + pasc] + \
-                    [x for x in df_data.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
     try:
+        kmf1 = KaplanMeierFitter(label='pos').fit(df_pos['t2e@' + pasc], event_observed=df_pos['flag@' + pasc],
+                                                  label="pos")
+        kmf0 = KaplanMeierFitter(label='neg').fit(df_neg['t2e@' + pasc], event_observed=df_neg['flag@' + pasc],
+                                                  label="neg")
+        ax = plt.subplot(111)
+        kmf1.plot_survival_function(ax=ax)
+        kmf0.plot_survival_function(ax=ax)
+        plt.title(pasc + '-' + cohorts + '-' + severity)
+        fig_outfile = r'../data/V15_COVID19/output/character/pasc/{}/results_query12_PASC-{}-{}-{}-{}.png'.format(
+            pasc, pasc, cohorts, dataset, severity)
+        utils.check_and_mkdir(fig_outfile)
+        plt.savefig(fig_outfile)
+        plt.close()
+    except:
+        print('No KM curve plots')
+
+    try:
+        cph = CoxPHFitter()
+        selected_cols = ['covid', 'flag@' + pasc, 't2e@' + pasc] + \
+                        [x for x in df_data.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
         cph.fit(df_data.loc[:, selected_cols], 't2e@' + pasc, 'flag@' + pasc)
         HR = cph.hazard_ratios_['covid']
         # CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
@@ -771,7 +787,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
             c_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
             c_out = ['Race: Asian', 'Race: Black or African American', 'Race: White', 'Race: Other5', 'Race: Missing4']
             c_out = [d + ' - ' + x for x in c_out]
-            _df_select = df_in.loc[df_in[d]==1, c_in]
+            _df_select = df_in.loc[df_in[d] == 1, c_in]
             df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
             df_out.loc[c_out, '%'] = _df_select.mean().to_list()
 
@@ -802,7 +818,17 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
             df_out.loc[c_out_v2, 'N'] = _df_select.sum().to_list()
             df_out.loc[c_out_v2, '%'] = _df_select.mean().to_list()
 
-        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer', 'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis', 'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD', 'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2', 'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension', 'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder', 'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders', 'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ', 'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)', 'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)', 'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
+        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer',
+                           'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis',
+                           'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD',
+                           'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2',
+                           'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension',
+                           'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder',
+                           'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders',
+                           'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ',
+                           'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)',
+                           'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)',
+                           'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
         df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
         df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
 
@@ -814,6 +840,8 @@ def screen_all_pasc_category():
     start_time = time.time()
     df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     for key, row in tqdm(df.iterrows(), total=len(df)):
+        if key < 93:
+            continue
         print('Screening pasc specific cohort:', key, row)
         pasc = row[0][5:]
         # pasc = 'Respiratory signs and symptoms'
