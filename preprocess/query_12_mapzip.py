@@ -497,8 +497,8 @@ def build_query_1and2_matrix(args):
                     df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    # selected_cols = [x for x in df_bool.columns if (x.startswith('flag@') or x.startswith('baseline@'))]
-    # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
+    selected_cols = [x for x in df_bool.columns if (x.startswith('flag@') )]  # or x.startswith('baseline@')
+    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
     utils.check_and_mkdir(args.output_file_query12_bool)
     df_bool.to_csv(args.output_file_query12_bool)
