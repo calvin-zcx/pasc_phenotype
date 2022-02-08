@@ -69,7 +69,7 @@ def load(filename):
             print('load {}-part1 done, len:{}'.format(filename, len(data)))
         with open(filename + '-part2', 'rb') as f:
             data2 = pickle.load(f)
-            print('load {}-part1 done, len:{}'.format(filename, len(data2)))
+            print('load {}-part2 done, len:{}'.format(filename, len(data2)))
         data.update(data2)
         print('Load and combine data done, len(data):', len(data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
