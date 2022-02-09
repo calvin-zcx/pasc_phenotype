@@ -7,7 +7,9 @@ sys.path.insert(0, '..')
 
 INDEX_AGE_MINIMUM = 20
 
-BASELINE_LEFT = -540
+# BASELINE_LEFT = -540
+# change at 2022-02-09 by Tom meeting
+BASELINE_LEFT = -1095
 BASELINE_RIGHT = -7
 
 FOLLOWUP_LEFT = 31
