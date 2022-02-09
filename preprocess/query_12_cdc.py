@@ -871,7 +871,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
@@ -888,7 +888,9 @@ if __name__ == '__main__':
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
 
-    screen_all_pasc_category()
+    # screen_all_pasc_category()
+
+
     # df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     # for key, row in tqdm(df.iterrows(), total=len(df)):
     #     print(key, row)
