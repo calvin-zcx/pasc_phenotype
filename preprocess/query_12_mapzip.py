@@ -413,8 +413,8 @@ def build_query_1and2_matrix(args):
         # in total, there are 137 PASC categories in our lists.
         # outcome_t2e = np.zeros((n, 137), dtype='int16')
         outcome_flag = np.zeros((n, 137), dtype='int16')
-        # outcome_baseline = np.zeros((n, 137), dtype='int16')
-        outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] #+ \
+        outcome_baseline = np.zeros((n, 137), dtype='int16')
+        outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + ['baseline@' + x for x in pasc_encoding.keys()] #+ \
         #                       ['t2e@' + x for x in pasc_encoding.keys()] + \
         #                       ['baseline@' + x for x in pasc_encoding.keys()]
 
@@ -453,7 +453,7 @@ def build_query_1and2_matrix(args):
 
             # encoding pasc information in both baseline and followup
             # outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :]
-            outcome_flag[i, :], _, _ = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
+            outcome_flag[i, :], _, outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -471,7 +471,8 @@ def build_query_1and2_matrix(args):
                                 yearmonth_array,
                                 dx_array,
                                 med_array,
-                                outcome_flag))
+                                outcome_flag,
+                                outcome_baseline))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)

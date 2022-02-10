@@ -3,6 +3,13 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
+        <entry key="\data\V15_COVID19\output\character\20220209_cohorts_baseline18months\pasc\Heart failure\results_query12_PASC-Heart failure-pasc_prevalence-ALL-NEG-ventilation.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\V15_COVID19\output\character\specificDX\61-Gangrene-covariates_balance_elixhauser.csv">
           <value>
             <Attribute>
