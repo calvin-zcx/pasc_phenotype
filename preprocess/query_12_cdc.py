@@ -513,7 +513,7 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
         cohorts, dataset)
 
     print('Try to load:', in_file)
-    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2.xlsx',
+    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2_with_PASC.xlsx',
                                 sheet_name=r'Table Shells - Adults')
     df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
 
@@ -636,6 +636,10 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
         df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
         df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
 
+        pasc_col = [x for x in df_in.columns if (x.startswith('flag@') )]
+        df_out.loc[pasc_col, 'N'] = df_in[pasc_col].sum()
+        df_out.loc[pasc_col, '%'] = df_in[pasc_col].sum() / len(df_in)
+
         df_out.to_csv(out_file)
         print('Dump done ', out_file)
 
@@ -648,11 +652,11 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
     print('In pasc_specific_cohorts_characterization_analyse, PASC: {}, Cohorts: {}, severity: {}'.format(
         pasc, cohorts, severity))
     print('Try to load:', in_file)
-    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2.xlsx',
+    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2_with_PASC.xlsx',
                                 sheet_name=r'Table Shells - Adults')
     df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
     print('df_data.shape:', df_data.shape)
-    # dump potentially significant PASC list for screening
+    # # dump potentially significant PASC list for screening
     # selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
     # df_data.loc[:, selected_cols] = (df_data.loc[:, selected_cols] >= 1).astype('int')
     # df_pos = df_data.loc[df_data["covid"], :]
@@ -832,6 +836,10 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
         df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
         df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
 
+        pasc_col = [x for x in df_in.columns if (x.startswith('flag@'))]
+        df_out.loc[pasc_col, 'N'] = df_in[pasc_col].sum()
+        df_out.loc[pasc_col, '%'] = df_in[pasc_col].sum() / len(df_in)
+
         df_out.to_csv(out_file)
         print('Dump done ', out_file)
 
@@ -871,25 +879,24 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='ventilation')
-    #
+    # #
     # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='hospitalized')
     # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='pasc_prevalence', dataset='ALL', severity='ventilation')
-    #
+    # #
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
 
-    # screen_all_pasc_category()
-
+    screen_all_pasc_category()
 
     # df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     # for key, row in tqdm(df.iterrows(), total=len(df)):
