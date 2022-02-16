@@ -407,12 +407,12 @@ def integrate_data_and_apply_eligibility(args):
     id_indexrecord = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM)
 
     # Step 3: Applying EC. Any diagnosis in the baseline period
-    print('Adult COVID cohorts:')
+    # print('Adult COVID cohorts:')
     id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
     data = _local_build_data(id_indexrecord)
 
     # Step 4: Applying EC. Any diagnosis in the follow-up period
-    print('Adult COVID cohorts:')
+    print('Adult COVID any dx in baseline and follow-up cohorts for pasc screening:')
     id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
     data = _local_build_data(id_indexrecord)
     utils.dump(data, args.output_file_covid)
