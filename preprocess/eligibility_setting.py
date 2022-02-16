@@ -47,7 +47,7 @@ def _is_in_baseline(event_time, index_time):
     # baseline: -18 months to -7 days prior to the index date
     # 2022-01-27 updates: align with CDC query and our morning discussion
     # However, in CDC excel, they use 570 = 19*30 days for 18 months? we use 540 = 18*30days.
-    # [-540, -7]
+    # [-3 years, -7]
     return BASELINE_LEFT <= (event_time - index_time).days <= BASELINE_RIGHT
 
 
