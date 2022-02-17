@@ -735,7 +735,7 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
 def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     # severity in 'hospitalized', 'ventilation', None
     # build pasc specific cohorts from covid base cohorts!
-    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_queryATCL3_encoding_bool_{}.csv'.format(dataset)
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_queryATCL4_encoding_bool_{}.csv'.format(dataset)
     print('In de_novo_medication_analyse,  Cohorts: {}, severity: {}'.format(cohorts, severity))
     print('Try to load:', in_file)
 
@@ -760,11 +760,19 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
         record_example = next(iter(atcl3_encoding.items()))
         print('e.g.:', record_example)
 
+    with open(r'../data/mapping/atcL4_index_mapping.pkl', 'rb') as f:
+        atcl4_encoding = pickle.load(f)
+        print('Load to ATC-Level-4 to encoding mapping done! len(atcl4_encoding):', len(atcl4_encoding))
+        record_example = next(iter(atcl4_encoding.items()))
+        print('e.g.:', record_example)
+
     selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
     df_data['any_pasc'] = df_data.loc[:, selected_cols].sum(axis=1)
     df_data = df_data.loc[df_data["covid"], :]
     df_pos = df_data.loc[df_data["any_pasc"] > 0, :]
     df_neg = df_data.loc[df_data["any_pasc"]==0, :]
+    print('df_pos.shape:', df_pos.shape)
+    print('df_neg.shape:', df_neg.shape)
 
     # # dump potentially significant PASC list for screening
     # selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
@@ -780,9 +788,9 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     # df_m_sorted = df_m.sort_values(by=['pos-neg%'], ascending=False)
     # df_m_sorted.to_csv('../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     records = []
-    for atc in atcl3_encoding.keys():
-        atc_cohort_exposed = df_data.loc[(df_data['atcl3@' + atc] >= 1) & (df_data['atcl3base@' + atc] == 0), :]
-        atc_cohort_not_exposed = df_data.loc[(df_data['atcl3@' + atc] == 0), :]
+    for atc in atcl4_encoding.keys():
+        atc_cohort_exposed = df_data.loc[(df_data['atc@' + atc] >= 1) & (df_data['atcbase@' + atc] == 0), :]
+        atc_cohort_not_exposed = df_data.loc[(df_data['atc@' + atc] == 0), :]
 
         atc_cohort_exposed_pasc = atc_cohort_exposed.loc[atc_cohort_exposed["any_pasc"] > 0, :]
         atc_cohort_exposed_nopasc = atc_cohort_exposed.loc[atc_cohort_exposed["any_pasc"] == 0, :]
@@ -790,12 +798,12 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
         atc_cohort_not_exposed_pasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] > 0, :]
         atc_cohort_not_exposed_nopasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] == 0, :]
 
-        records.append((atc, atcl3_encoding[atc][1], atcl3_encoding[atc][2],
+        records.append((atc, atcl4_encoding[atc][1], atcl4_encoding[atc][2],
                         len(atc_cohort_exposed_pasc), len(atc_cohort_exposed_nopasc),
                         len(atc_cohort_not_exposed_pasc), len(atc_cohort_not_exposed_nopasc),
                        ))
 
-    df = pd.DataFrame(records, columns=['atcl3', 'rxnorm', 'name',
+    df = pd.DataFrame(records, columns=['atcl4', 'rxnorm', 'name',
                                         'atc_exposed-pasc_case (a)', 'atc_exposed-nopasc_control (b)',
                                         'atc_unexposed-pasc_case (c)', 'atc_unexposed-nopasc_control (d)'])
 
@@ -803,7 +811,7 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     df['Odds control was exposed (b/d)'] = df['atc_exposed-nopasc_control (b)']/df['atc_unexposed-nopasc_control (d)']
     df['OR (ad/bc)'] = df['Odds case was exposed (a/c)'] / df['Odds control was exposed (b/d)']
 
-    df.to_csv(r'../data/V15_COVID19/output/character/summary_covid_4screen_queryATCL3_encoding_bool_{}.csv'.format(dataset))
+    df.to_csv(r'../data/V15_COVID19/output/character/summary_covid_4screen_queryATCL4_encoding_bool_{}.csv'.format(dataset))
 
     print('Dump done ')
 
@@ -1042,12 +1050,14 @@ if __name__ == '__main__':
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_screenAllPASC.txt
 
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl3.txt
+    # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl4.txt
+
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    # de_novo_medication_analyse(cohorts='covid_4screen', dataset='ALL', severity='')
+    de_novo_medication_analyse(cohorts='covid_4screen', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
