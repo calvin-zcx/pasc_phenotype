@@ -24,8 +24,8 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid', 'covid_4screen'],
-                        default='covid_4screen', help='cohorts')
+    parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid', 'covid_4screen', 'covid_4screen_Covid+'],
+                        default='covid_4screen_Covid+', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
@@ -33,10 +33,10 @@ def parse_args():
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_cnt_{}-Coivd+Only.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_cnt_{}.csv'.format(
         args.cohorts,
         args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_bool_{}-Coivd+Only.csv'.format(
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_bool_{}.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -1158,6 +1158,9 @@ if __name__ == '__main__':
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl4.txt
     # python query_medication.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_medication_screen_atcl4_nofollowEC.txt
     # python query_medication.py --dataset ALL --cohorts covid --positive_only 2>&1 | tee  log/query_medication_screen_atcl4_covid+only.txt
+
+    # python query_medication.py --dataset ALL --cohorts covid_4screen_Covid+ 2>&1 | tee  log/query_medication_screen_atcl4_covid_4screen_Covid+.txt
+
 
     start_time = time.time()
     args = parse_args()
