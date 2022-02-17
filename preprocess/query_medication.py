@@ -1052,13 +1052,14 @@ if __name__ == '__main__':
 
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl3.txt
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl4.txt
+    # python query_medication.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_medication_screen_atcl4_nofollowEC.txt
 
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    de_novo_medication_analyse(cohorts='covid_4screen', dataset='ALL', severity='')
+    # de_novo_medication_analyse(cohorts='covid_4screen', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
