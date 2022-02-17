@@ -769,6 +769,7 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
     df_data['any_pasc'] = df_data.loc[:, selected_cols].sum(axis=1)
     df_data = df_data.loc[df_data["covid"], :]
+    print('df_data.shape:', df_data.shape)
     df_pos = df_data.loc[df_data["any_pasc"] > 0, :]
     df_neg = df_data.loc[df_data["any_pasc"]==0, :]
     print('df_pos.shape:', df_pos.shape)
@@ -788,7 +789,7 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     # df_m_sorted = df_m.sort_values(by=['pos-neg%'], ascending=False)
     # df_m_sorted.to_csv('../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     records = []
-    for atc in atcl4_encoding.keys():
+    for atc in tqdm(atcl4_encoding.keys(), total=len(atcl4_encoding)):
         atc_cohort_exposed = df_data.loc[(df_data['atc@' + atc] >= 1) & (df_data['atcbase@' + atc] == 0), :]
         atc_cohort_not_exposed = df_data.loc[(df_data['atc@' + atc] == 0), :]
 
@@ -798,12 +799,12 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
         atc_cohort_not_exposed_pasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] > 0, :]
         atc_cohort_not_exposed_nopasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] == 0, :]
 
-        records.append((atc, atcl4_encoding[atc][1], atcl4_encoding[atc][2],
+        records.append((atc, atcl4_encoding[atc][1], atcl4_encoding[atc][2], atcl3_encoding[atc[:4]][2],
                         len(atc_cohort_exposed_pasc), len(atc_cohort_exposed_nopasc),
                         len(atc_cohort_not_exposed_pasc), len(atc_cohort_not_exposed_nopasc),
                        ))
 
-    df = pd.DataFrame(records, columns=['atcl4', 'rxnorm', 'name',
+    df = pd.DataFrame(records, columns=['atcl4', 'rxnorm', 'name', 'category',
                                         'atc_exposed-pasc_case (a)', 'atc_exposed-nopasc_control (b)',
                                         'atc_unexposed-pasc_case (c)', 'atc_unexposed-nopasc_control (d)'])
 

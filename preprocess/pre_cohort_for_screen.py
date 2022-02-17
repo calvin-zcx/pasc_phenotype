@@ -36,7 +36,7 @@ def parse_args():
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
 
-    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4screen_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4screenNoFollowEC_{}.pkl'.format(args.dataset, args.dataset)
     # args.output_file_pasc_incidence = r'../data/V15_COVID19/output/{}/cohorts_pasc_incidence_{}.pkl'.format(args.dataset, args.dataset)
     # args.output_file_pasc_prevalence = r'../data/V15_COVID19/output/{}/cohorts_pasc_prevalence_{}.pkl'.format(args.dataset, args.dataset)
 
@@ -412,9 +412,9 @@ def integrate_data_and_apply_eligibility(args):
     data = _local_build_data(id_indexrecord)
 
     # Step 4: Applying EC. Any diagnosis in the follow-up period
-    print('Adult COVID any dx in baseline and follow-up cohorts for pasc screening:')
-    id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
-    data = _local_build_data(id_indexrecord)
+    # print('Adult COVID any dx in baseline and follow-up cohorts for pasc screening:')
+    # id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
+    # data = _local_build_data(id_indexrecord)
     utils.dump(data, args.output_file_covid)
 
     # __step : save data structure for later encoding. save last cohort
