@@ -33,10 +33,10 @@ def parse_args():
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_cnt_{}.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_cnt_{}-Coivd+Only.csv'.format(
         args.cohorts,
         args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_bool_{}.csv'.format(
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL4_encoding_bool_{}-Coivd+Only.csv'.format(
         args.cohorts,
         args.dataset)
 
