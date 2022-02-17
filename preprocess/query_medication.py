@@ -373,7 +373,7 @@ def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index
             continue
 
         # build baseline
-        if ecs._is_in_baseline(med_date, index_date):
+        if ecs._is_in_medication_baseline(med_date, index_date):  # 2022-02-17 USE 1 YEAR FOR MEDICATION
             for pos in pos_list:
                 outcome_baseline[0, pos] += 1
 
