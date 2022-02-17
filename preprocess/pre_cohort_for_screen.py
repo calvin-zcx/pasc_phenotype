@@ -21,6 +21,7 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
+    parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
 
@@ -36,7 +37,7 @@ def parse_args():
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
 
-    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4screenNoFollowEC_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4screen_Covid+_{}.pkl'.format(args.dataset, args.dataset)
     # args.output_file_pasc_incidence = r'../data/V15_COVID19/output/{}/cohorts_pasc_incidence_{}.pkl'.format(args.dataset, args.dataset)
     # args.output_file_pasc_prevalence = r'../data/V15_COVID19/output/{}/cohorts_pasc_prevalence_{}.pkl'.format(args.dataset, args.dataset)
 
@@ -377,7 +378,8 @@ def integrate_data_and_apply_eligibility(args):
             n_neg += 1
             position = 0
             indexrecord = row[position]
-            id_indexrecord[pid] = [False, ] + list(indexrecord)
+            if not args.positive_only:
+                id_indexrecord[pid] = [False, ] + list(indexrecord)
         else:
             # ignore NI, because may leak presume positive to negative
             n_with_ni += 1
