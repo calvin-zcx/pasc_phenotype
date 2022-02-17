@@ -518,7 +518,9 @@ def build_query_1and2_matrix(args):
 
         print('len(column_names):', len(column_names), '\n', column_names)
 
-        for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+        i = -1
+        for pid, item in tqdm(id_data.items(), total=len(id_data)):
+        # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
@@ -526,6 +528,7 @@ def build_query_1and2_matrix(args):
             if args.positive_only:
                 if not flag:
                     continue
+            i += 1
 
             pid_list.append(pid)
             site_list.append(site)
