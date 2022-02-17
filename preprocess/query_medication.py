@@ -24,18 +24,18 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid'],
-                        default='pasc_incidence', help='cohorts')
+    parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid', 'covid_4screen'],
+                        default='covid_4screen', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_cnt_{}.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL3_encoding_cnt_{}.csv'.format(
         args.cohorts,
         args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_bool_{}.csv'.format(
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_queryATCL3_encoding_bool_{}.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -326,12 +326,72 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
+def _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level):
+    assert atc_level in [1,2,3,4,5]
+    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
+    atc_n_chars = atclevel_chars[atc_level]  # default level 2, using first 3 chars
+    if rxnorm in rxnorm_atc:
+        atcl_set = set([x[0][:atc_n_chars] for x in rxnorm_atc[rxnorm]])
+    elif rxnorm in rxnorm_ing:
+        ing_list = rxnorm_ing[rxnorm]
+        atcl_set = set([])
+        for ing in ing_list:
+            if ing in rxnorm_atc:
+                atcl_set.update([x[0][:atc_n_chars] for x in rxnorm_atc[ing]])
+    else:
+        atcl_set = set()
+    return atcl_set
+
+
+def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=3, verbose=0):
+    # mapping rxnorm_cui to its ingredient(s)
+    # for each ingredient, mapping to atc and thus atc[:3] is level three
+    # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
+    # atc l3, 269 codes
+    outcome_t2e = np.zeros((1, len(atcl_encoding)), dtype='float')
+    outcome_flag = np.zeros((1, len(atcl_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(atcl_encoding)), dtype='int')
+
+    _no_mapping_rxrnom = set([])
+    for records in med_list:
+        med_date, rxnorm, supply_days = records
+        atcl_set = _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level)
+
+        if len(atcl_set) > 0:
+            pos_list = [atcl_encoding[x][0] for x in atcl_set if x in atcl_encoding]
+        else:
+            _no_mapping_rxrnom.add(rxnorm)
+            if verbose:
+                print('ERROR:', rxnorm, 'not in rxnorm to atc dictionary or rxnorm-to-ing-to-atc!')
+            continue
+
+        # build baseline
+        if ecs._is_in_baseline(med_date, index_date):
+            for pos in pos_list:
+                outcome_baseline[0, pos] += 1
+
+        # build outcome
+        if ecs._is_in_followup(med_date, index_date):
+            days = (med_date - index_date).days
+            for pos in pos_list:
+                if outcome_flag[0, pos] == 0:
+                    outcome_t2e[0, pos] = days
+                    outcome_flag[0, pos] = 1
+                else:
+                    outcome_flag[0, pos] += 1
+
+    return outcome_flag, outcome_t2e, outcome_baseline
+
+
 def build_query_1and2_matrix(args):
     start_time = time.time()
     print('In build_query_1and2_matrix...')
     # step 1: load encoding dictionary
     # icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
     # icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding = _load_mapping()
+
+    icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
+    icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding = _load_mapping()
 
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
     comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
@@ -409,17 +469,29 @@ def build_query_1and2_matrix(args):
         # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
 
         # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
-        # in total, there are 137 PASC categories in our lists.
-        outcome_t2e = np.zeros((n, 137), dtype='int16')
+        # In total, there are 137 PASC categories in our lists. time 2 event is not good for censoring or negative. update later
+        # outcome_t2e = np.zeros((n, 137), dtype='int16')
         outcome_flag = np.zeros((n, 137), dtype='int16')
         outcome_baseline = np.zeros((n, 137), dtype='int16')
+        # outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
+        #                        ['t2e@' + x for x in pasc_encoding.keys()] + \
+        #                        ['baseline@' + x for x in pasc_encoding.keys()]
         outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
-                               ['t2e@' + x for x in pasc_encoding.keys()] + \
                                ['baseline@' + x for x in pasc_encoding.keys()]
+
+        # atcl2 outcome. time 2 event is not good for censoring or negative. update later
+        # outcome_med_t2e = np.zeros((n, 269), dtype='int16')
+        outcome_med_flag = np.zeros((n, 269), dtype='int16')
+        outcome_med_baseline = np.zeros((n, 269), dtype='int16')
+        # outcome_med_column_names = ['flag@' + x for x in atcl3_encoding.keys()] + \
+        #                            ['t2e@' + x for x in atcl3_encoding.keys()] + \
+        #                            ['baseline@' + x for x in atcl3_encoding.keys()]
+        outcome_med_column_names = ['atcl3@' + x for x in atcl3_encoding.keys()] + \
+                                   ['atcl3base@' + x for x in atcl3_encoding.keys()]
 
         column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', ] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + yearmonth_column_names + \
-                       dx_column_names + med_column_names + outcome_column_names
+                       dx_column_names + med_column_names + outcome_column_names + outcome_med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
 
@@ -449,9 +521,8 @@ def build_query_1and2_matrix(args):
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding pasc information in both baseline and followup
-            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc,
-                                                                                                 pasc_encoding,
-                                                                                                 index_date)
+            outcome_flag[i, :], _, outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
+            outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -469,8 +540,11 @@ def build_query_1and2_matrix(args):
                                 dx_array,
                                 med_array,
                                 outcome_flag,
-                                outcome_t2e,
-                                outcome_baseline))
+                                # outcome_t2e,
+                                outcome_baseline,
+                                outcome_med_flag,
+                                outcome_med_baseline
+                                ))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
         data_all_sites.append(df_data)
@@ -496,7 +570,9 @@ def build_query_1and2_matrix(args):
                     df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    selected_cols = [x for x in df_bool.columns if (x.startswith('flag@') or x.startswith('baseline@'))]
+    selected_cols = [x for x in df_bool.columns if
+                     (x.startswith('flag@') or x.startswith('baseline@') or
+                      x.startswith('atcl3@') or x.startswith('atcl3base@'))]
     df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
     utils.check_and_mkdir(args.output_file_query12_bool)
@@ -877,9 +953,11 @@ if __name__ == '__main__':
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_withPASCoutcome.txt
     # python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_screenAllPASC.txt
 
+    # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl3.txt
+
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
@@ -896,7 +974,7 @@ if __name__ == '__main__':
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='not hospitalized')
     # cohorts_characterization_analyse(cohorts='covid', dataset='ALL', severity='ventilation')
 
-    screen_all_pasc_category()
+    # screen_all_pasc_category()
 
     # df = pd.read_csv(r'../data/V15_COVID19/output/character/pasc_count_cohorts_covid_query12_ALL.csv')
     # for key, row in tqdm(df.iterrows(), total=len(df)):

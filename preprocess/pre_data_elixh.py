@@ -345,6 +345,8 @@ def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index
                     # only records the first event and time
                     outcome_t2e[0, pos] = days
                     outcome_flag[0, pos] = 1
+                else:
+                    outcome_flag[0, pos] += 1
 
     return outcome_flag, outcome_t2e, outcome_baseline
 
