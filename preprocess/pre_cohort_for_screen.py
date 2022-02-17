@@ -236,6 +236,61 @@ def _eligibility_followup_any_dx(id_indexrecord, id_dx, func_is_in_followup):
     return id_indexrecord
 
 
+def _eligibility_baseline_or_followup_any_dx(id_indexrecord, id_dx, func_is_in_baseline, func_is_in_followup):
+    print("Step: applying _eligibility_baseline_or_followup_any_dx",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            exclude_list.append(pid)
+            if covid_flag:
+                n_pos_exclude += 1
+            else:
+                n_neg_exclude += 1
+        else:
+            flag_baseline_or_followup = False
+            for r in v_dx:
+                dx_date = r[0]
+                if func_is_in_baseline(dx_date, index_date) or func_is_in_followup(dx_date, index_date):
+                    flag_baseline_or_followup = True
+                    break
+
+            if flag_baseline_or_followup:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+            else:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
 def _eligibility_followup_any_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is_in_followup):
     print("Step: applying _eligibility_followup_any_pasc",
           'input cohorts size:', len(id_indexrecord))
@@ -408,16 +463,22 @@ def integrate_data_and_apply_eligibility(args):
     # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
     id_indexrecord = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM)
 
-    # Step 3: Applying EC. Any diagnosis in the baseline period
-    # print('Adult COVID cohorts:')
-    id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
+    # step 3: Applying EC. Any diagnosis in the baseline period or in the follow-up
+    # updated in 2022-02-17
+    id_indexrecord = _eligibility_baseline_or_followup_any_dx(id_indexrecord, id_dx, _is_in_baseline, _is_in_followup)
     data = _local_build_data(id_indexrecord)
+    utils.dump(data, args.output_file_covid)
 
-    # Step 4: Applying EC. Any diagnosis in the follow-up period
+    # DELETE Step 3: Applying EC. Any diagnosis in the baseline period
+    # print('Adult COVID cohorts:')
+    # id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
+    # data = _local_build_data(id_indexrecord)
+
+    # DELETE Step 4: Applying EC. Any diagnosis in the follow-up period
     # print('Adult COVID any dx in baseline and follow-up cohorts for pasc screening:')
     # id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
     # data = _local_build_data(id_indexrecord)
-    utils.dump(data, args.output_file_covid)
+    # utils.dump(data, args.output_file_covid)
 
     # __step : save data structure for later encoding. save last cohort
     _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun]
