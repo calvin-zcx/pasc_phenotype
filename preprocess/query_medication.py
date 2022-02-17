@@ -29,6 +29,7 @@ def parse_args():
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
 
@@ -426,7 +427,18 @@ def build_query_1and2_matrix(args):
         id_data = utils.load(input_file)
 
         # step 3: encoding cohorts baseline covariates into matrix
-        n = len(id_data)
+        if args.positive_only:
+            n = 0
+            for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
+                flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
+                if flag:
+                    n += 1
+        else:
+            n = len(id_data)
+
+        print('args.positive_only:', args.positive_only, n)
+
         pid_list = []
         site_list = []
         covid_list = []
@@ -510,6 +522,10 @@ def build_query_1and2_matrix(args):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
+
+            if args.positive_only:
+                if not flag:
+                    continue
 
             pid_list.append(pid)
             site_list.append(site)
@@ -1138,6 +1154,7 @@ if __name__ == '__main__':
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl3.txt
     # python query_medication.py --dataset ALL --cohorts covid_4screen 2>&1 | tee  log/query_medication_screen_atcl4.txt
     # python query_medication.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_medication_screen_atcl4_nofollowEC.txt
+    # python query_medication.py --dataset ALL --cohorts covid --positive_only 2>&1 | tee  log/query_medication_screen_atcl4_covid+only.txt
 
     start_time = time.time()
     args = parse_args()
