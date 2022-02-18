@@ -1270,12 +1270,22 @@ def screen_all_pasc_category():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
-def cohorts_table_generatio(args):
-    df_data = pd.read_csv( r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_Covid+_queryATCL4_encoding_bool_ALL.csv')  #
+def cohorts_table_generation(args):
+    df_data = pd.read_csv( r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_Covid+_queryATCL4_encoding_bool_ALL.csv',
+                           dtype={'patid': str})  #
     print('df_data.shape:', df_data.shape)
+    df_data = df_data.drop(columns=['patid', 'site'])
+
+
+    df_data['Unnamed: 0'] = 1
+    df_data.rename(columns={'Unnamed: 0': 'No.'}, inplace=True)
     selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
     df_data['any_pasc'] = df_data.loc[:, selected_cols].sum(axis=1)
-    df_data = df_data.loc[df_data["covid"], :]
+    df_data['covid'] = df_data['covid'].apply(lambda x : int(x==True))
+    df_data['hospitalized'] = df_data['hospitalized'].apply(lambda x : int(x==True))
+    df_data['ventilation'] = df_data['ventilation'].apply(lambda x : int(x==True))
+
+    df_data = df_data.loc[df_data["covid"]==1, :]
     print('df_data.shape:', df_data.shape)
     df_pos = df_data.loc[df_data["any_pasc"] > 0, :]
     df_neg = df_data.loc[df_data["any_pasc"] == 0, :]
@@ -1298,171 +1308,9 @@ def cohorts_table_generatio(args):
                         'smd': smd(df_pos.mean(), df_neg.mean(), df_pos.var(), df_neg.var())
                       })
 
+    df.to_csv(
+        r'../data/V15_COVID19/output/character/table_matrix_cohorts_covid_4screen_Covid+_queryATCL4_encoding_bool_ALL.csv')
     # age
-    pos_age_iqr = df_pos['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
-    neg_age_iqr = df_neg['index_age_year'].quantile([0.25, 0.5, 0.75]).to_list()
-    print('pos:  {} ({}--{})'.format(pos_age_iqr[1], pos_age_iqr[0], pos_age_iqr[2]))
-    print('neg:  {} ({}--{})'.format(neg_age_iqr[1], neg_age_iqr[0], pos_age_iqr[2]))
-
-    pos_cnt, pos_interval = np.histogram(df_pos['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
-    neg_cnt, neg_interval = np.histogram(df_neg['index_age_year'], bins=[20, 40, 55, 65, 75, 85, np.inf])
-
-    def print_age_group(cnt):
-        tot = np.sum(cnt)
-        for c in cnt:
-            print('{} ({:.1f})'.format(c, c / tot * 100))
-
-    print('pos age group:')
-    print_age_group(pos_cnt)
-
-    print('neg age group:')
-    print_age_group(neg_cnt)
-
-    def print_series_group(cnt, vocab_dic={}):
-        tot = cnt.sum()
-        for index, value in cnt.items():
-            if not vocab_dic:
-                print('{}\t{} ({:.1f})'.format(index, value, value / tot * 100))
-            else:
-                print('{}\t{} ({:.1f})'.format(vocab_dic[index], value, value / tot * 100))
-
-    # gender
-    pos_female = df_pos['gender'].value_counts(dropna=False)
-    neg_female = df_neg['gender'].value_counts(dropna=False)
-    print('pos gender group:')
-    print_series_group(pos_female)
-    print('neg gender group:')
-    print_series_group(neg_female)
-
-    # race
-    race_dict = {"01": "American Indian or Alaska Native",
-                 "02": "Asian",
-                 "03": "Black or African American",
-                 "04": "Native Hawaiian or Other Pacific Islander",
-                 "05": "White",
-                 "06": "Multiple race",
-                 "07": "Refuse to answer",
-                 "NI": "No information",
-                 "UN": "Unknown",
-                 "OT": "Other"
-                 }
-    pos_race = df_pos['race'].value_counts(dropna=False)
-    neg_race = df_neg['race'].value_counts(dropna=False)
-    print('pos race group:')
-    print_series_group(pos_race, race_dict)
-    print('neg race group:')
-    print_series_group(neg_race, race_dict)
-
-    # hispanic
-    hispanic_dict = {"Y": "Yes",
-                     "N": "No",
-                     "R": "Refuse to answer",
-                     "NI": "No information",
-                     "UN": "Unknown",
-                     "OT": "Other"}
-
-    pos_hisp = df_pos['hispanic'].value_counts(dropna=False)
-    neg_hisp = df_neg['hispanic'].value_counts(dropna=False)
-    print('pos hispanic group:')
-    print_series_group(pos_hisp, hispanic_dict)
-    print('neg hispanic group:')
-    print_series_group(neg_hisp, hispanic_dict)
-
-    # ADI
-    pos_adi_iqr = df_pos['nation_adi'].quantile([0.25, 0.5, 0.75]).to_list()
-    neg_adi_iqr = df_neg['nation_adi'].quantile([0.25, 0.5, 0.75]).to_list()
-    print('adi pos:  {} ({} -- {})'.format(pos_adi_iqr[1], pos_adi_iqr[0], pos_adi_iqr[2]))
-    print('adi neg:  {} ({} -- {})'.format(neg_adi_iqr[1], neg_adi_iqr[0], neg_adi_iqr[2]))
-
-
-    # follow-up days
-    pos_followup_iqr = df_pos[r'followup_day'].quantile([0.25, 0.5, 0.75]).to_list()
-    neg_followup_iqr = df_neg[r'followup_day'].quantile([0.25, 0.5, 0.75]).to_list()
-    print('pos_followup_iqr:  {} ({}--{})'.format(pos_followup_iqr[1], pos_followup_iqr[0], pos_followup_iqr[2]))
-    print('neg_followup_iqr:  {} ({}--{})'.format(neg_followup_iqr[1], neg_followup_iqr[0], neg_followup_iqr[2]))
-
-    # index type:
-    def print_encounter(env_cnt):
-        tot = env_cnt.sum()
-        outpatient = env_cnt['AV'] + env_cnt['OA'] + env_cnt['TH']
-        emergency = env_cnt['ED']
-        inpatient = env_cnt['EI'] + env_cnt['IP']
-        other = env_cnt['OT']
-        norecord = env_cnt[np.nan]
-        v_list = [outpatient, emergency, inpatient, other, norecord]
-        v_list_name = ["outpatient", "emergency", "inpatient", "other", "norecord"]
-        for v, name in zip(v_list, v_list_name):
-            print('{}\t{} ({:.1f})'.format(name, v, v / tot * 100))
-
-    def count_multiple_enc(env_type):
-        l = []
-        for types in env_type:
-            if pd.notna(types) and ';' in types:
-                types_set = set(types.split(';'))
-                l.extend(types_set)
-            else:
-                l.append(types)
-        counts = pd.Series(l).value_counts(dropna=False)
-        return counts
-
-    pos_enc_type = df_pos.loc[~df_pos[r'index_enc_type'].str.contains(";", na=False), r'index_enc_type'].value_counts(dropna=False)
-    neg_enc_type = df_neg.loc[~df_neg[r'index_enc_type'].str.contains(";", na=False), r'index_enc_type'].value_counts(dropna=False)
-    print('pos_enc_type without multiple enc type visits:')
-    print_encounter(pos_enc_type)
-    print('neg_enc_type without multiple enc type visits:')
-    print_encounter(neg_enc_type)
-
-    pos_enc_type_multiple = count_multiple_enc(df_pos[r'index_enc_type'])
-    neg_enc_type_multiple = count_multiple_enc(df_neg[r'index_enc_type'])
-    print('pos_enc_type_multiple:')
-    print_encounter(pos_enc_type_multiple)
-    print('neg_enc_type_multiple:')
-    print_encounter(neg_enc_type_multiple)
-
-    # df_pos['index_date'] = df_pos['index_date'].astype("datetime64")
-    # df_pos['index_date'].groupby(df["index_date"].dt.month).count().plot(kind="bar")
-
-    # temporal dynamics
-    fig, ax = plt.subplots(figsize=(28, 18))
-    # Add x-axis and y-axis
-    hist = df_pos['index_date'].hist(bins=pd.date_range(start='1/1/2020', end='12/1/2021', freq='M'))
-    plt.xticks(fontsize=24)
-    plt.yticks(fontsize=24)
-    plt.xlabel('Date', fontsize=28)
-    plt.ylabel('Cases', fontsize=28)
-    plt.title("Monthly COVID-19 PCR positive cases, INSIGHT Data Warehouse, 2020/3 - 2021/11",
-              fontdict={'fontsize':28})
-    # Rotate tick marks on x-axis
-    plt.setp(ax.get_xticklabels(), rotation=45)
-    plt.show()
-
-    pos_month = pd.Series(index=df_pos['index_date'], data=1, name='positive cases').resample('1M').count()
-    neg_month = pd.Series(index=df_neg['index_date'], data=1, name='negative cases').resample('1M').count()
-    month_result = pos_month.to_frame().join(neg_month.to_frame(), how='outer')
-    month_result.to_excel('../data/V15_COVID19/output/character/positive_and_negative_monthly_counts.xlsx')
-
-    def count_time_period(date_series):
-        bins = [datetime.datetime(2020, 1, 1, 0, 0),
-                datetime.datetime(2020, 7, 1, 0, 0),
-                datetime.datetime(2020, 11, 1, 0, 0),
-                datetime.datetime(2021, 3, 1, 0, 0),
-                datetime.datetime(2021, 7, 1, 0, 0),
-                datetime.datetime(2021, 12, 30, 0, 0)]
-        results = []
-        for i in range(len(bins)-1):
-            tot = len(date_series)
-            cnt = ((bins[i] <= date_series) & (date_series < bins[i+1])).sum()
-            results.append((cnt, cnt/tot))
-        df = pd.DataFrame(results, columns=['count', 'fraction'])
-        for x in results:
-            print('{} ({:.1f})'.format(x[0], x[1]*100))
-        return df
-    print('positive_4monthly_counts:')
-    pos_time_period = count_time_period(df_pos['index_date'])
-    print('negative_4monthly_counts:')
-    neg_time_period = count_time_period(df_neg['index_date'])
-    pos_time_period.to_excel('../data/V15_COVID19/output/character/positive_4monthly_counts.xlsx')
-    neg_time_period.to_excel('../data/V15_COVID19/output/character/negative_4monthly_counts.xlsx')
 
     return df
 
@@ -1485,8 +1333,9 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
+    cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
