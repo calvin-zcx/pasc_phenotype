@@ -365,13 +365,14 @@ def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
     return encoding
 
 
-def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
+def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e):
     # encoding 137 outcomes from our PASC list
     # outcome_t2e = np.zeros((n, 137), dtype='int')
     # outcome_flag = np.zeros((n, 137), dtype='int')
     # outcome_baseline = np.zeros((n, 137), dtype='int')
 
-    outcome_t2e = np.zeros((1, len(pasc_encoding)), dtype='int')
+    # 2022-02-18 initialize t2e:  last encounter, event, end of followup, whichever happens first
+    outcome_t2e = np.ones((1, len(pasc_encoding)), dtype='float') * default_t2e
     outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
     outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
 
@@ -396,7 +397,8 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date):
                 pos = rec[0]
                 if outcome_flag[0, pos] == 0:
                     # only records the first event and time
-                    outcome_t2e[0, pos] = days
+                    if days < outcome_t2e[0, pos]:
+                        outcome_t2e[0, pos] = days
                     outcome_flag[0, pos] = 1
                 else:
                     outcome_flag[0, pos] += 1
@@ -421,12 +423,12 @@ def _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level):
     return atcl_set
 
 
-def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, atc_level=3, verbose=0):
+def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, default_t2e, atc_level=3, verbose=0):
     # mapping rxnorm_cui to its ingredient(s)
     # for each ingredient, mapping to atc and thus atc[:3] is level three
     # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
     # atc l3, 269 codes
-    outcome_t2e = np.zeros((1, len(atcl_encoding)), dtype='float')
+    outcome_t2e = np.ones((1, len(atcl_encoding)), dtype='float') * default_t2e
     outcome_flag = np.zeros((1, len(atcl_encoding)), dtype='int')
     outcome_baseline = np.zeros((1, len(atcl_encoding)), dtype='int')
 
@@ -453,7 +455,8 @@ def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index
             days = (med_date - index_date).days
             for pos in pos_list:
                 if outcome_flag[0, pos] == 0:
-                    outcome_t2e[0, pos] = days
+                    if days < outcome_t2e[0, pos]:
+                        outcome_t2e[0, pos] = days
                     outcome_flag[0, pos] = 1
                 else:
                     outcome_flag[0, pos] += 1
@@ -516,6 +519,8 @@ def build_query_1and2_matrix(args):
         hospitalized_list = []
         ventilation_list = []
 
+        maxfollowtime_list = []
+
         age_array = np.zeros((n, 6), dtype='int16')
         age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
 
@@ -575,14 +580,14 @@ def build_query_1and2_matrix(args):
 
         # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
         # In total, there are 137 PASC categories in our lists. time 2 event is not good for censoring or negative. update later
-        # outcome_t2e = np.zeros((n, 137), dtype='int16')
+        outcome_t2e = np.zeros((n, 137), dtype='int16')
         outcome_flag = np.zeros((n, 137), dtype='int16')
         outcome_baseline = np.zeros((n, 137), dtype='int16')
-        # outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
-        #                        ['t2e@' + x for x in pasc_encoding.keys()] + \
-        #                        ['baseline@' + x for x in pasc_encoding.keys()]
         outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
+                               ['t2e@' + x for x in pasc_encoding.keys()] + \
                                ['baseline@' + x for x in pasc_encoding.keys()]
+        # outcome_column_names = ['flag@' + x for x in pasc_encoding.keys()] + \
+        #                        ['baseline@' + x for x in pasc_encoding.keys()]
 
         # # atcl2 outcome. time 2 event is not good for censoring or negative. update later
         # # outcome_med_t2e = np.zeros((n, 269), dtype='int16')
@@ -594,12 +599,14 @@ def build_query_1and2_matrix(args):
         # outcome_med_column_names = ['atcl3@' + x for x in atcl3_encoding.keys()] + \
         #                            ['atcl3base@' + x for x in atcl3_encoding.keys()]
 
+        outcome_med_t2e = np.zeros((n, 909), dtype='int16')
         outcome_med_flag = np.zeros((n, 909), dtype='int16')
         outcome_med_baseline = np.zeros((n, 909), dtype='int16')
         outcome_med_column_names = ['atc@' + x for x in atcl4_encoding.keys()] + \
+                                   ['atct2e@' + x for x in atcl4_encoding.keys()] + \
                                    ['atcbase@' + x for x in atcl4_encoding.keys()]
 
-        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', ] + age_column_names + \
+        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', 'maxfollowup'] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
                        social_column_names + utilization_column_names + index_period_names + yearmonth_column_names + \
                        dx_column_names + med_column_names + outcome_column_names + outcome_med_column_names
@@ -610,8 +617,7 @@ def build_query_1and2_matrix(args):
         adi_value_default = np.nanmedian(adi_value_list)
         #
         i = -1
-        for pid, item in tqdm(id_data.items(), total=len(id_data)):
-        # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+        for pid, item in tqdm(id_data.items(), total=len(id_data)): # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
@@ -621,6 +627,19 @@ def build_query_1and2_matrix(args):
                     continue
             i += 1
 
+            # maxfollowtime
+            # gaurantee at least one encounter in baseline or followup. thus can be 0 if no followup
+            # later EC should be at lease one in follow-up
+
+            if enc:
+                maxfollowtime = (enc[-1][0] - index_date).days
+            elif dx:
+                maxfollowtime = (dx[-1][0] - index_date).days
+            elif med:
+                maxfollowtime = (med[-1][0] - index_date).days
+            else:
+                maxfollowtime = ecs.FOLLOWUP_LEFT
+
             pid_list.append(pid)
             site_list.append(site)
             covid_list.append(flag)
@@ -629,6 +648,7 @@ def build_query_1and2_matrix(args):
             vent_flag = _encoding_ventilation(procedure, obsgen, index_date, ventilation_codes)
             hospitalized_list.append(inpatient_flag)
             ventilation_list.append(vent_flag)
+            maxfollowtime_list.append(maxfollowtime)
 
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age_year)
@@ -647,10 +667,12 @@ def build_query_1and2_matrix(args):
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding pasc information in both baseline and followup
-            outcome_flag[i, :], _, outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
-            # outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3)
+            default_t2e = np.minimum(np.maximum(ecs.FOLLOWUP_LEFT, maxfollowtime), ecs.FOLLOWUP_RIGHT)
+
+            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
             # later use selected ATCl4, because too high dim
-            outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl4_encoding, index_date, atc_level=4)
+            outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl4_encoding, index_date, default_t2e, atc_level=4)
+            # outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -660,6 +682,7 @@ def build_query_1and2_matrix(args):
                                 np.array(covid_list).reshape(-1, 1),
                                 np.asarray(hospitalized_list).reshape(-1, 1),
                                 np.array(ventilation_list).reshape(-1, 1),
+                                np.array(maxfollowtime_list).reshape(-1, 1),
                                 age_array,
                                 gender_array,
                                 race_array,
@@ -671,9 +694,10 @@ def build_query_1and2_matrix(args):
                                 dx_array,
                                 med_array,
                                 outcome_flag,
-                                # outcome_t2e,
+                                outcome_t2e,
                                 outcome_baseline,
                                 outcome_med_flag,
+                                outcome_med_t2e,
                                 outcome_med_baseline
                                 ))
 
