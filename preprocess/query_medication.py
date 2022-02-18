@@ -238,6 +238,77 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
     return flag
 
 
+def _encoding_social(nation_adi, impute_value):
+    # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+    #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+    encoding = np.zeros((1, 10), dtype='float')
+    if pd.isna(nation_adi):
+        nation_adi = impute_value
+    if nation_adi >= 100:
+        nation_adi = 99
+    if nation_adi < 1:
+        nation_adi = 1
+    pos = int(nation_adi) // 10
+    encoding[0, pos] = 1
+    return encoding
+
+
+def _encoding_utilization(enc_list, index_date):
+    # encoding uitlization in the baseline
+    # ['inpatient visits', 'outpatient visits', 'emergency visits', 'other visits']
+    encoding = np.zeros((1, 4), dtype='float')
+    for records in enc_list:
+        enc_date, type, enc_id = records
+        if ecs._is_in_baseline(enc_date, index_date):
+            if type == 'EI' or type == 'IP' or type == 'OS':
+                encoding[0, 0] += 1
+            elif type == 'AV' or type == 'OA' or type == 'TH':
+                encoding[0, 1] += 1
+            elif type == 'ED':
+                encoding[0, 2] += 1
+            else:
+                encoding[0, 3] += 1
+    # ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
+    #  'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
+    #  'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
+    #
+    encoding_update = np.zeros((1, 12), dtype='float')
+    for i in [0, 1, 2]:
+        if encoding[0, i] <= 0:
+            encoding_update[0, 0 + i*4] = 1
+        elif encoding[0, i] <= 2:
+            encoding_update[0, 1 + i*4] = 1
+        elif encoding[0, i] <= 4:
+            encoding_update[0, 2 + i*4] = 1
+        else:
+            encoding_update[0, 3 + i*4] = 1
+
+    return encoding_update
+
+
+def _encoding_index_period(index_date):
+    # ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+    encoding = np.zeros((1, 5), dtype='float')
+    # datetime.datetime(2020, 1, 1, 0, 0),
+    # datetime.datetime(2020, 7, 1, 0, 0),
+    # datetime.datetime(2020, 11, 1, 0, 0),
+    # datetime.datetime(2021, 3, 1, 0, 0),
+    # datetime.datetime(2021, 7, 1, 0, 0),
+    # datetime.datetime(2021, 12, 30, 0, 0)
+    if index_date < datetime.datetime(2020, 7, 1, 0, 0):
+        encoding[0, 0] = 1
+    elif index_date < datetime.datetime(2020, 11, 1, 0, 0):
+        encoding[0, 1] = 1
+    elif index_date < datetime.datetime(2021, 3, 1, 0, 0):
+        encoding[0, 2] = 1
+    elif index_date < datetime.datetime(2021, 7, 1, 0, 0):
+        encoding[0, 3] = 1
+    else:
+        encoding[0, 4] = 1
+
+    return encoding
+
+
 def _is_in_code_set_with_wildchar(code, code_set, code_set_wild):
     if code in code_set:
         return True
@@ -459,6 +530,22 @@ def build_query_1and2_matrix(args):
         hispanic_array = np.zeros((n, 3), dtype='int16')
         hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
+        # newly added 2022-02-18
+        social_array = np.zeros((n, 10), dtype='int')
+        social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+                               'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+        utilization_array = np.zeros((n, 12), dtype='int')
+        utilization_column_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+                                    'inpatient visits >=5',
+                                    'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+                                    'outpatient visits >=5',
+                                    'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+                                    'emergency visits >=5']
+
+        index_period_array = np.zeros((n, 5), dtype='int')
+        index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+        #
+
         yearmonth_array = np.zeros((n, 23), dtype='int16')
         yearmonth_column_names = ["March 2020", "April 2020", "May 2020", "June 2020", "July 2020", "August 2020",
                                   "September 2020", "October 2020", "November 2020", "December 2020", "January 2021",
@@ -513,11 +600,15 @@ def build_query_1and2_matrix(args):
                                    ['atcbase@' + x for x in atcl4_encoding.keys()]
 
         column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', ] + age_column_names + \
-                       gender_column_names + race_column_names + hispanic_column_names + yearmonth_column_names + \
+                       gender_column_names + race_column_names + hispanic_column_names + \
+                       social_column_names + utilization_column_names + index_period_names + yearmonth_column_names + \
                        dx_column_names + med_column_names + outcome_column_names + outcome_med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
-
+        # impute adi value by median of site , per site:
+        adi_value_list = [v[1][7] for key, v in id_data.items()]
+        adi_value_default = np.nanmedian(adi_value_list)
+        #
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(id_data)):
         # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
@@ -544,6 +635,11 @@ def build_query_1and2_matrix(args):
             gender_array[i] = _encoding_gender(gender)
             race_array[i, :] = _encoding_race(race)
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
+            #
+            social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
+            utilization_array[i, :] = _encoding_utilization(enc, index_date)
+            index_period_array[i, :] = _encoding_index_period(index_date)
+            #
             yearmonth_array[i, :] = _encoding_yearmonth(index_date)
 
             # encoding query 2 information
@@ -553,6 +649,7 @@ def build_query_1and2_matrix(args):
             # encoding pasc information in both baseline and followup
             outcome_flag[i, :], _, outcome_baseline[i, :] = _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date)
             # outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, atc_level=3)
+            # later use selected ATCl4, because too high dim
             outcome_med_flag[i, :], _, outcome_med_baseline[i, :] = _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl4_encoding, index_date, atc_level=4)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -567,6 +664,9 @@ def build_query_1and2_matrix(args):
                                 gender_array,
                                 race_array,
                                 hispanic_array,
+                                social_array,
+                                utilization_array,
+                                index_period_array,
                                 yearmonth_array,
                                 dx_array,
                                 med_array,
@@ -754,7 +854,7 @@ def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
 def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     # severity in 'hospitalized', 'ventilation', None
     # build pasc specific cohorts from covid base cohorts!
-    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_queryATCL4_encoding_bool_{}.csv'.format(dataset)
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_Covid+_queryATCL4_encoding_bool_{}.csv'.format(dataset)
     print('In de_novo_medication_analyse,  Cohorts: {}, severity: {}'.format(cohorts, severity))
     print('Try to load:', in_file)
 
@@ -831,7 +931,7 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     df['Odds control was exposed (b/d)'] = df['atc_exposed-nopasc_control (b)']/df['atc_unexposed-nopasc_control (d)']
     df['OR (ad/bc)'] = df['Odds case was exposed (a/c)'] / df['Odds control was exposed (b/d)']
 
-    df.to_csv(r'../data/V15_COVID19/output/character/summary_covid_4screen_queryATCL4_encoding_bool_{}.csv'.format(dataset))
+    df.to_csv(r'../data/V15_COVID19/output/character/summary_covid+_screen_medication_queryATCL4_encoding_bool_{}.csv'.format(dataset))
 
     print('Dump done ')
 
@@ -1166,7 +1266,7 @@ if __name__ == '__main__':
     args = parse_args()
     df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    # de_novo_medication_analyse(cohorts='covid_4screen', dataset='ALL', severity='')
+    # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
