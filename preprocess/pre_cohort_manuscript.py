@@ -468,7 +468,8 @@ def integrate_data_and_apply_eligibility(args):
     # data = _local_build_data(id_indexrecord)
 
     # Step 4: Applying EC. Any diagnosis in the follow-up period
-    # goal: alive beyond acute phase, and have information for screening PASC
+    # goal: alive beyond acute phase, and have information for screening PASC,
+    # and capture baseline PASC-like diagnosis for  Non-Covid patients
     # Our cohort 1 for screening PASC
     id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
     data = _local_build_data(id_indexrecord)
@@ -477,14 +478,24 @@ def integrate_data_and_apply_eligibility(args):
     # # Notes for other potential cohorts:
     # #  Sensitivity 1: Applying EC. No PASC diagnoses in the baseline  --> healthy population
     # # Goal: screen PASC without baseline PASC
-    # # Move to matrix part to build cohorts dynamically with better flexibility
+    # # Move to matrix part to build cohorts dynamically with a better flexibility
     # # print('Adult PASC incidence cohorts:')
     # # id_indexrecord = _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_baseline)
     # # data = _local_build_data(id_indexrecord)
     # # utils.dump(data, args.output_file_pasc_incidence)
 
-    # # Sensitivity 2: for seprating recruiting window and observation window,
-    # # also move to matrix part for better flexibility
+    # # Sensitivity 2: for separating recruiting window and observation window,
+    # # also move to matrix part for a better flexibility
+
+    # # Sensitivity 3: for excluding covid diagnosis in follow-up for control
+    # # also move to matrix part for a better flexibility
+
+    # # Sensitivity 4:
+    # If using Dx to define Covid, we need to change initial inclusion list and rerun all the codes
+
+    # # Sensitivity 5:
+    # If using Flu or other viral codes to define control, we need to change initial inclusion list
+    # and rerun all the codes
 
     # __step : save data structure for later encoding. save last cohort
     _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun]
