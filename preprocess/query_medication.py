@@ -238,6 +238,19 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
     return flag
 
 
+def _encoding_critical_care(pro_list, index_date, cc_codes={"99291", "99292"}):
+    flag = False
+    for records in pro_list:
+        px_date, px, px_type, enc_type, enc_id = records
+        px = px.replace('.', '').upper()
+        if ecs._is_in_inpatient_period(px_date, index_date):
+            if px in cc_codes:
+                flag = True
+                break
+
+    return flag
+
+
 def _encoding_social(nation_adi, impute_value):
     # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
     #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
@@ -518,6 +531,7 @@ def build_query_1and2_matrix(args):
         covid_list = []
         hospitalized_list = []
         ventilation_list = []
+        criticalcare_list = []
 
         maxfollowtime_list = []
 
@@ -606,7 +620,7 @@ def build_query_1and2_matrix(args):
                                    ['atct2e@' + x for x in atcl4_encoding.keys()] + \
                                    ['atcbase@' + x for x in atcl4_encoding.keys()]
 
-        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', 'maxfollowup'] + age_column_names + \
+        column_names = ['patid', 'site', 'covid', 'hospitalized', 'ventilation', 'criticalcare', 'maxfollowup'] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
                        social_column_names + utilization_column_names + index_period_names + yearmonth_column_names + \
                        dx_column_names + med_column_names + outcome_column_names + outcome_med_column_names
@@ -646,9 +660,12 @@ def build_query_1and2_matrix(args):
 
             inpatient_flag = _encoding_inpatient(dx, index_date)
             vent_flag = _encoding_ventilation(procedure, obsgen, index_date, ventilation_codes)
+            criticalcare_flag = _encoding_critical_care(procedure, index_date)
+
             hospitalized_list.append(inpatient_flag)
             ventilation_list.append(vent_flag)
             maxfollowtime_list.append(maxfollowtime)
+            criticalcare_list.append(criticalcare_flag)
 
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age_year)
@@ -678,9 +695,10 @@ def build_query_1and2_matrix(args):
         #   step 4: build pandas, column, and dump
         data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                 np.asarray(site_list).reshape(-1, 1),
-                                np.array(covid_list).reshape(-1, 1),
-                                np.asarray(hospitalized_list).reshape(-1, 1),
-                                np.array(ventilation_list).reshape(-1, 1),
+                                np.array(covid_list).reshape(-1, 1).astype(int),
+                                np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
+                                np.array(ventilation_list).reshape(-1, 1).astype(int),
+                                np.array(criticalcare_list).reshape(-1, 1).astype(int),
                                 np.array(maxfollowtime_list).reshape(-1, 1),
                                 age_array,
                                 gender_array,
@@ -1333,9 +1351,9 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    cohorts_table_generation(args)
+    # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
