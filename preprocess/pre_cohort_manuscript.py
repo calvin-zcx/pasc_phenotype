@@ -502,7 +502,7 @@ def integrate_data_and_apply_eligibility(args):
     # and rerun all the codes
 
     # __step : save data structure for later encoding. save last cohort
-    _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun]
+    _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death]
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return data, _last_cohort_raw_data
