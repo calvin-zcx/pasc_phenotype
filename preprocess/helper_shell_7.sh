@@ -1,3 +1,5 @@
-python query_12_cdc.py --dataset ALL --cohorts pasc_incidence 2>&1 | tee  log/query_12_cdc_ALL_pasc_incidence_update3yrbase.txt
-python query_12_cdc.py --dataset ALL --cohorts pasc_prevalence 2>&1 | tee  log/query_12_cdc_ALL_pasc_prevalence_update3yrbase.txt
-python query_12_cdc.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_12_cdc_ALL_covid_update3yrbase.txt
+python pre_cohort.py --dataset COL 2>&1 | tee  log/pre_cohort_COL_3yrbase.txt
+python pre_cohort.py --dataset WCM 2>&1 | tee  log/pre_cohort_WCM_3yrbase.txt
+python pre_cohort.py --dataset NYU 2>&1 | tee  log/pre_cohort_NYU_3yrbase.txt
+python pre_cohort.py --dataset MONTE 2>&1 | tee  log/pre_cohort_MONTE_3yrbase.txt
+python pre_cohort.py --dataset MSHS 2>&1 | tee  log/pre_cohort_MSHS_3yrbase.txt
