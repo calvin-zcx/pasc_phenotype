@@ -44,8 +44,10 @@ def read_death(input_file, output_file=''):
     print('CDRN_FACILITYID:', df['CDRN_FACILITYID'].value_counts(dropna=False))
 
     print('df.shape', df.shape, 'df.columns:', df.columns)
-    df_sub = df
+    print('Time range of death table [DEATH_DATE]:',
+          df["DEATH_DATE"].describe(datetime_is_numeric=True))
 
+    df_sub = df
     records_list = df_sub.values.tolist()
     # 'PATID' -->['DEATH_DATE', 'DEATH_DATE_IMPUTE', 'DEATH_SOURCE', 'DEATH_MATCH_CONFIDENCE', 'CDRN_FACILITYID']
     id_death = {x[0]: x[1:] for x in records_list}
