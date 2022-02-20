@@ -21,6 +21,8 @@ from lifelines import KaplanMeierFitter, CoxPHFitter
 
 print = functools.partial(print, flush=True)
 
+from iptw.PSModels import ml
+from iptw.evaluation import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
@@ -978,6 +980,111 @@ def de_novo_medication_analyse(cohorts, dataset='ALL', severity=''):
     print('Dump done ')
 
 
+def de_novo_medication_analyse_selected_and_iptw(cohorts, dataset='ALL', severity=''):
+    # severity in 'hospitalized', 'ventilation', None
+    # build pasc specific cohorts from covid base cohorts!
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4screen_Covid+_queryATCL4_encoding_bool_{}.csv'.format(dataset)
+    print('In de_novo_medication_analyse,  Cohorts: {}, severity: {}'.format(cohorts, severity))
+    print('Try to load:', in_file)
+
+    df_drug = pd.read_csv(r'../data/V15_COVID19/output/character/summary_covid+_screen_medication_queryATCL4_encoding_bool_ALL.csv')
+    df_drug = df_drug.sort_values(by=['atc_exposed-pasc_case (a)'], ascending=False)
+    drug_list = df_drug.loc[df_drug['atc_exposed-pasc_case (a)']>=1000, 'atcl4']
+
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
+    print('df_data.shape:', df_data.shape)
+
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl', 'rb') as f:
+        rxnorm_ing = pickle.load(f)
+        print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
+        record_example = next(iter(rxnorm_ing.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/rxnorm_atc_mapping.pkl', 'rb') as f:
+        rxnorm_atc = pickle.load(f)
+        print('Load rxRNOM_CUI to ATC mapping done! len(rxnorm_atc):', len(rxnorm_atc))
+        record_example = next(iter(rxnorm_atc.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
+        atcl3_encoding = pickle.load(f)
+        print('Load to ATC-Level-3 to encoding mapping done! len(atcl3_encoding):', len(atcl3_encoding))
+        record_example = next(iter(atcl3_encoding.items()))
+        print('e.g.:', record_example)
+
+    with open(r'../data/mapping/atcL4_index_mapping.pkl', 'rb') as f:
+        atcl4_encoding = pickle.load(f)
+        print('Load to ATC-Level-4 to encoding mapping done! len(atcl4_encoding):', len(atcl4_encoding))
+        record_example = next(iter(atcl4_encoding.items()))
+        print('e.g.:', record_example)
+
+    selected_cols = [x for x in df_data.columns if x.startswith('flag@')]  # or x.startswith('baseline@')
+    df_data['any_pasc'] = df_data.loc[:, selected_cols].sum(axis=1)
+    df_data = df_data.loc[df_data["covid"], :]
+    print('df_data.shape:', df_data.shape)
+    df_pos = df_data.loc[df_data["any_pasc"] > 0, :]
+    df_neg = df_data.loc[df_data["any_pasc"]==0, :]
+    print('df_pos.shape:', df_pos.shape)
+    print('df_neg.shape:', df_neg.shape)
+
+
+    records = []
+    for atc in tqdm(drug_list, total=len(drug_list)):
+
+        atc_cohort_exposed = df_data.loc[(df_data['atc@' + atc] >= 1) & (df_data['atcbase@' + atc] == 0), :].copy()
+        atc_cohort_not_exposed = df_data.loc[(df_data['atc@' + atc] == 0), :].copy()
+
+        selected_colums = list(df_data.columns[7:51]) + list(df_data.columns[74:108])
+        df_covs_array = pd.concat([atc_cohort_exposed.loc[:, selected_colums], atc_cohort_not_exposed.loc[:, selected_colums]])
+        df_label = pd.concat([atc_cohort_exposed.loc[:, 'atc@' + atc], atc_cohort_not_exposed.loc[:, 'atc@' + atc]])
+        model = ml.PropensityEstimator(learner='LR', random_seed=0).cross_validation_fit(df_covs_array, df_label)
+        # , paras_grid = {
+        #     'penalty': 'l2',
+        #     'C': 0.03162277660168379,
+        #     'max_iter': 200,
+        #     'random_state': 0}
+        iptw = model.predict_inverse_weight(df_covs_array, df_label, stabilized=True, clip=False)
+
+        atc_cohort_exposed['iptw'] = iptw[:len(atc_cohort_exposed)]
+        atc_cohort_not_exposed['iptw'] = iptw[len(atc_cohort_exposed):]
+
+        atc_cohort_exposed_pasc = atc_cohort_exposed.loc[atc_cohort_exposed["any_pasc"] > 0, :]
+        atc_cohort_exposed_nopasc = atc_cohort_exposed.loc[atc_cohort_exposed["any_pasc"] == 0, :]
+
+        atc_cohort_not_exposed_pasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] > 0, :]
+        atc_cohort_not_exposed_nopasc = atc_cohort_not_exposed.loc[atc_cohort_not_exposed["any_pasc"] == 0, :]
+
+        records.append((atc, atcl4_encoding[atc][1], atcl4_encoding[atc][2], atcl3_encoding[atc[:4]][2],
+                        len(atc_cohort_exposed_pasc), len(atc_cohort_exposed_nopasc),
+                        len(atc_cohort_not_exposed_pasc), len(atc_cohort_not_exposed_nopasc),
+                        atc_cohort_exposed_pasc['iptw'].sum(), atc_cohort_exposed_nopasc['iptw'].sum(),
+                        atc_cohort_not_exposed_pasc['iptw'].sum(), atc_cohort_not_exposed_nopasc['iptw'].sum(),
+                        model.best_balance, model.best_balance_k_folds_detail,
+                        model.best_fit, model.best_fit_k_folds_detail,
+                        ))
+
+    df = pd.DataFrame(records, columns=['atcl4', 'rxnorm', 'name', 'category',
+                                        'atc_exposed-pasc_case (a)', 'atc_exposed-nopasc_control (b)',
+                                        'atc_unexposed-pasc_case (c)', 'atc_unexposed-nopasc_control (d)',
+                                        'atc_exposed-pasc_case (a) iptw', 'atc_exposed-nopasc_control (b) iptw',
+                                        'atc_unexposed-pasc_case (c) iptw', 'atc_unexposed-nopasc_control (d) iptw',
+                                        'best_balance', 'best_balance_k_folds_detail',
+                                        'best_fit', 'best_fit_k_folds_detail'
+                                        ])
+
+    df['Odds case was exposed (a/c)'] = df['atc_exposed-pasc_case (a)']/df['atc_unexposed-pasc_case (c)']
+    df['Odds control was exposed (b/d)'] = df['atc_exposed-nopasc_control (b)']/df['atc_unexposed-nopasc_control (d)']
+    df['OR (ad/bc)'] = df['Odds case was exposed (a/c)'] / df['Odds control was exposed (b/d)']
+
+    df['Odds case was exposed (a/c) iptw'] = df['atc_exposed-pasc_case (a) iptw'] / df['atc_unexposed-pasc_case (c) iptw']
+    df['Odds control was exposed (b/d) iptw'] = df['atc_exposed-nopasc_control (b) iptw'] / df['atc_unexposed-nopasc_control (d) iptw']
+    df['OR (ad/bc) iptw'] = df['Odds case was exposed (a/c) iptw'] / df['Odds control was exposed (b/d) iptw']
+
+    df.to_csv(r'../data/V15_COVID19/output/character/summary_covid+_screen_medication_queryATCL4_encoding_bool_{}-iptw.csv'.format(dataset))
+
+    print('Dump done ')
+
+
 def de_novo_medication_analyse_atcl3(cohorts, dataset='ALL', severity=''):
     # severity in 'hospitalized', 'ventilation', None
     # build pasc specific cohorts from covid base cohorts!
@@ -1351,10 +1458,11 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
+    de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='')
     # cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='hospitalized')
