@@ -34,6 +34,8 @@ def parse_args():
     args.pro_file = r'../data/V15_COVID19/output/{}/procedures_{}.pkl'.format(args.dataset, args.dataset)
     args.obsgen_file = r'../data/V15_COVID19/output/{}/obs_gen_{}.pkl'.format(args.dataset, args.dataset)
     args.immun_file = r'../data/V15_COVID19/output/{}/immunization_{}.pkl'.format(args.dataset, args.dataset)
+    # added 2022-02-20
+    args.death_file = r'../data/V15_COVID19/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
 
@@ -74,9 +76,10 @@ def read_preprocessed_data(args):
     id_pro = utils.load(args.pro_file)
     id_obsgen = utils.load(args.obsgen_file)
     id_immun = utils.load(args.immun_file)
+    id_death = utils.load(args.death_file)
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun
+    return df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death
 
 
 def _eligibility_age(id_indexrecord, age_minimum_criterion):
@@ -411,7 +414,7 @@ def _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
-    df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun = read_preprocessed_data(args)
+    df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death = read_preprocessed_data(args)
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
@@ -447,14 +450,15 @@ def integrate_data_and_apply_eligibility(args):
         for pid, row in _id_indexrecord.items():
             # (True/False, lab_date, lab_code, result_label, age, enc-id)
             lab = id_lab[pid]
-            demo = id_demo[pid]
+            demo = id_demo.get(pid, [])
             dx = id_dx[pid]
             med = id_med[pid]
             enc = id_enc[pid]
-            procedure = id_pro.get(pid, [])
-            obsgen = id_obsgen.get(pid, [])
-            immun = id_immun.get(pid, [])
-            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun]
+            procedure = id_pro[pid]
+            obsgen = id_obsgen[pid]
+            immun = id_immun[pid]
+            death = id_death.get(pid, [])
+            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death]
         print('building data done, len(id_indexrecord):', len(id_indexrecord), 'len(data) ', len(data))
         return data
 
