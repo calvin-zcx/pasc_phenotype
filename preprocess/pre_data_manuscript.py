@@ -639,7 +639,7 @@ def build_query_1and2_matrix(args):
         ]
         # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards, due to threshold >= 2 issue
         # DX: End Stage Renal Disease on Dialysis   Both diagnosis and procedure codes used to define this condtion
-        dx_array = np.zeros((n, 32), dtype='int16')
+        dx_array = np.zeros((n, 37), dtype='int16')
         dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                            "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
                            "DX: Coagulopathy", "DX: Congestive Heart Failure",
@@ -651,7 +651,10 @@ def build_query_1and2_matrix(args):
                            "DX: Peripheral vascular disorders ", "DX: Pregnant",
                            "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
                            "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
-                           "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss"]
+                           "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
+                           "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
+                           'DX: Autism', 'DX: Sickle Cell'
+                           ]
         #
         med_array = np.zeros((n, 2), dtype='int16')
         # atc level 3 category # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
