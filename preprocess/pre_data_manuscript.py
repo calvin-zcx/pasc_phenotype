@@ -219,12 +219,12 @@ def _encoding_yearmonth(index_date):
 
 def _encoding_inpatient(dx_list, index_date):
     # inpatient status in acute phase
-    flag = False
+    flag = 0  # False
     for records in dx_list:
         dx_date, icd, dx_type, enc_type = records
         if ecs._is_in_inpatient_period(dx_date, index_date):
             if (enc_type == 'EI') or (enc_type == 'IP') or (enc_type == 'OS'):
-                flag = True
+                flag = 1  # True
                 break
 
     return flag
@@ -232,13 +232,13 @@ def _encoding_inpatient(dx_list, index_date):
 
 def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
     # ventilation status in acute phase
-    flag = False
+    flag = 0  # False
     for records in pro_list:
         px_date, px, px_type, enc_type, enc_id = records
         px = px.replace('.', '').upper()
         if ecs._is_in_ventilation_period(px_date, index_date):
             if px in vent_codes:
-                flag = True
+                flag = 1  # True
                 break
 
     for records in obsgen_list:
@@ -246,7 +246,7 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
         if ecs._is_in_ventilation_period(px_date, index_date):
             # OBSGEN_TYPE=”PC_COVID” & OBSGEN_CODE = 3000 & OBSGEN_SOURCE=”DR” & RESULT_TEXT=”Y”
             if (px_type == 'PC_COVID') and (px == '3000') and (source == 'DR') and (result_text == 'Y'):
-                flag = True
+                flag = 1 # True
                 break
 
     return flag
@@ -254,13 +254,13 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
 
 def _encoding_critical_care(pro_list, index_date, cc_codes={"99291", "99292"}):
     # critical_care status in acute phase
-    flag = False
+    flag = 0  # False
     for records in pro_list:
         px_date, px, px_type, enc_type, enc_id = records
         px = px.replace('.', '').upper()
         if ecs._is_in_inpatient_period(px_date, index_date):
             if px in cc_codes:
-                flag = True
+                flag = 1  # True
                 break
 
     return flag
@@ -409,12 +409,12 @@ def _encoding_maxfollowtime(index_date, enc, dx, med):
     return maxfollowtime
 
 
-def _encoding_death(pid, death, index_date):
+def _encoding_death(death, index_date):
     # death flag, death time
     encoding = np.zeros((1, 2), dtype='int')
-    if pid in death:
+    if death:
         encoding[0, 0] = 1
-        ddate = death[pid][0]
+        ddate = death[0]
         if pd.notna(ddate):
             encoding[0, 1] = (ddate - index_date).days
         else:
@@ -462,7 +462,7 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
                     outcome_flag[0, pos] = 1
                 else:
                     outcome_flag[0, pos] += 1
-
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
@@ -521,7 +521,7 @@ def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index
                     outcome_flag[0, pos] = 1
                 else:
                     outcome_flag[0, pos] += 1
-
+    # debug # a = pd.DataFrame({'atc':atcl_encoding.keys(), 'name':atcl_encoding.values(), 'outcome_flag':outcome_flag.squeeze(), 'outcome_t2e':outcome_t2e.squeeze(), 'outcome_baseline':outcome_baseline.squeeze()})
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
@@ -551,8 +551,8 @@ def build_query_1and2_matrix(args):
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
     comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
 
-    icd_pasc = utils.load(r'../data/mapping/icd_pasc_mapping.pkl')
-    pasc_encoding = utils.load(r'../data/mapping/pasc_index_mapping.pkl')
+    # icd_pasc = utils.load(r'../data/mapping/icd_pasc_mapping.pkl')
+    # pasc_encoding = utils.load(r'../data/mapping/pasc_index_mapping.pkl')
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -578,7 +578,7 @@ def build_query_1and2_matrix(args):
         if args.positive_only:
             n = 0
             for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
+                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
                 flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
                 if flag:
                     n += 1
@@ -614,10 +614,10 @@ def build_query_1and2_matrix(args):
         hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
         # newly added 2022-02-18
-        social_array = np.zeros((n, 10), dtype='int')
+        social_array = np.zeros((n, 10), dtype='int16')
         social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                                'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
-        utilization_array = np.zeros((n, 12), dtype='int')
+        utilization_array = np.zeros((n, 12), dtype='int16')
         utilization_column_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
                                     'inpatient visits >=5',
                                     'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
@@ -625,7 +625,7 @@ def build_query_1and2_matrix(args):
                                     'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
                                     'emergency visits >=5']
 
-        index_period_array = np.zeros((n, 5), dtype='int')
+        index_period_array = np.zeros((n, 5), dtype='int16')
         index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
         #
 
@@ -698,7 +698,7 @@ def build_query_1and2_matrix(args):
 
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(
-                id_data)):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+                id_data), mininterval=10):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
@@ -730,7 +730,7 @@ def build_query_1and2_matrix(args):
             maxfollowtime_list.append(maxfollowtime)
 
             # encode death
-            death_array[i, :] = _encoding_death(pid, death, index_date)
+            death_array[i, :] = _encoding_death(death, index_date)
 
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age_year)
@@ -1563,6 +1563,9 @@ if __name__ == '__main__':
     start_time = time.time()
     args = parse_args()
     df_data, df_data_bool = build_query_1and2_matrix(args)
+
+    # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
+    # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
 
     # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
