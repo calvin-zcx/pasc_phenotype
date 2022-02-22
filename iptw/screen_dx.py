@@ -146,7 +146,7 @@ if __name__ == "__main__":
         # bulid specific cohorts:
         print('\n In screening:', i, pasc)
         pasc_flag = df['dx-out@' + pasc]
-        pasc_t2e = df['dx-t2e@' + pasc].astype('float')
+        pasc_t2e = df['dx-t2e@' + pasc]  # .astype('float')
         pasc_baseline = df['dx-base@' + pasc]
 
         # Select population free of outcome at baseline
@@ -167,18 +167,20 @@ if __name__ == "__main__":
         pasc_flag = pasc_flag[pos_neg_selected]
         pasc_t2e = pasc_t2e[pos_neg_selected]
 
+        pasc_t2e[pasc_t2e <= 30] = 30
+
         print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), covid pos:neg = {}:{} sample ratio -/+={}, pasc pos:neg '
                        '= {}:{}'.format(
             pos_neg_selected.sum(), len(df), pos_neg_selected.sum() / len(df) * 100,
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             pasc_flag.sum(), (pasc_flag == 0).sum()))
 
-        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, ).cross_validation_fit(covs_array, covid_label, verbose=0)
-        # paras_grid = {
-        #     'penalty': 'l2',
-        #     'C': 0.03162277660168379,
-        #     'max_iter': 200,
-        #     'random_state': 0}
+        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, paras_grid = {
+            'penalty': 'l2',
+            'C': 0.03162277660168379,
+            'max_iter': 200,
+            'random_state': 0}).cross_validation_fit(covs_array, covid_label, verbose=0)
+
 
         ps = model.predict_ps(covs_array)
         model.report_stats()
@@ -213,7 +215,7 @@ if __name__ == "__main__":
                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
-            print(causal_results[-1])
+            print('causal result:\n', causal_results[-1])
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=[
