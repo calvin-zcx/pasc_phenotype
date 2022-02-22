@@ -166,7 +166,7 @@ if __name__ == "__main__":
         covs_array = df_covs.loc[pos_neg_selected, :]
         pasc_flag = pasc_flag[pos_neg_selected]
         pasc_t2e = pasc_t2e[pos_neg_selected]
-
+        print('pasc_t2e.describe():', pasc_t2e.describe())
         pasc_t2e[pasc_t2e <= 30] = 30
 
         print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), covid pos:neg = {}:{} sample ratio -/+={}, pasc pos:neg '
