@@ -461,7 +461,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         kmf0.plot_survival_function(ax=ax)
         kmf0_w.plot_survival_function(ax=ax)
 
-        plt.title(title, fontsize=8)
+        plt.title(title, fontsize=12)
         plt.savefig(fig_outfile)
         plt.close()
 
