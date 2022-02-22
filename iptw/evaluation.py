@@ -434,7 +434,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
 
     # kmf = KaplanMeierFitter()
-    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e, event_observed=treated_flag, label="Exposed")
+    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e, event_observed=treated_flag, label="COVID+")
     kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e, event_observed=controlled_flag, label="Control")
 
     point_in_time = [60, 90, 120, 150, 180]
@@ -445,9 +445,9 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     ate = survival_1 - survival_0
 
     kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=treated_flag,
-                                                         label="Treated_IPTW", weights=treated_w)
+                                                         label="COVID+ Adjusted", weights=treated_w)
     kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=controlled_flag,
-                                                         label="Control_IPTW", weights=controlled_w)
+                                                         label="Control Adjusted", weights=controlled_w)
     results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
     # results_w.print_summary()
     survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
