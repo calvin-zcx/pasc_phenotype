@@ -91,7 +91,7 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
-    # python screen_dx.py --dataset ALL 2>&1 | tee  log/screen_dx.txt
+    # python screen_med.py --dataset ALL 2>&1 | tee  log/screen_med.txt
     start_time = time.time()
     args = parse_args()
 
