@@ -2,7 +2,7 @@ import sys
 # for linux env.
 sys.path.insert(0, '..')
 
-# Configure baseline and follow up setting here
+# Configure baseline and follow-up setting here
 # 2022-01-27 updates: align with CDC query and our morning discussion
 
 INDEX_AGE_MINIMUM = 20
@@ -18,7 +18,8 @@ FOLLOWUP_RIGHT = 180
 INPATIENT_LEFT = -1
 INPATIENT_RIGHT = 16
 
-VENTILATION_LEFT = 0
+# change at 2022-02-22 0 --> -1
+VENTILATION_LEFT = -1
 VENTILATION_RIGHT = 16
 
 COMMORBIDITY_LEFT = -1095
@@ -73,7 +74,7 @@ def _is_in_inpatient_period(event_time, index_time):
 
 def _is_in_ventilation_period(event_time, index_time):
     # 3 year prior to baseline
-    # [0, 16]
+    # [0, 16] --> [-1, 16]
     return VENTILATION_LEFT <= (event_time - index_time).days <= VENTILATION_RIGHT
 
 

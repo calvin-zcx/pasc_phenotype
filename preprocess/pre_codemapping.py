@@ -578,6 +578,19 @@ def load_cdc_mapping():
     return df_all
 
 
+def load_query3_mapping():
+    input_file = r'../data/mapping/RECOVER Query 3 Code List_2.17.22.xlsx'
+    mapping_file = r'../data/mapping/query3_sheet_mapping.xlsx'
+    df_map = pd.read_excel(mapping_file, sheet_name='Sheet1', dtype=str)
+    df_all = pd.read_excel(input_file, sheet_name=None, dtype=str)  # read all sheets
+    print('len(df_all):', len(df_all))
+    print('len(df_map):', len(df_map))
+
+    table_name = sorted(df_all.keys())
+
+    return df_all
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -602,5 +615,9 @@ if __name__ == '__main__':
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
 
     # 7. Load CDC code mapping:
-    df_all = load_cdc_mapping()
+    # df_all = load_cdc_mapping()
+
+    # 8. Load query 3 mapping:
+    df_all = load_query3_mapping()
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
