@@ -756,8 +756,8 @@ def build_query_1and2_matrix(args):
             # maximum follow-up, death-time, event, whichever comes first
             default_t2e = np.min([
                 np.maximum(ecs.FOLLOWUP_LEFT, maxfollowtime),
-                ecs.FOLLOWUP_RIGHT,
-                death_array[i, 1]
+                np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
+                np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
                 _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)

@@ -27,15 +27,15 @@ def parse_args():
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'], default='COL',
                         help='site dataset')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=5)
+    parser.add_argument('--negative_ratio', type=int, default=2)
     # parser.add_argument('--run_model', choices=['LSTM', 'LR', 'MLP', 'XGBOOST', 'LIGHTGBM'], default='MLP')
     args = parser.parse_args()
 
     # More args
-    args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_{}.csv'.format(
+    args.data_file = r'../data/V15_COVID19/output/character/pcr_cohorts_covariate_elixh_encoding_{}.csv'.format(
         args.dataset)
-    # args.data_file_outcome = r'../data/V15_COVID19/output/character/outcome-dx-matrix_cohorts_covid_4manuscript_bool_{}.csv'.format(
-    #     args.dataset)
+    args.data_file_outcome = r'../data/V15_COVID19/output/character/pcr_cohorts_outcome_atcl3_encoding_{}.csv'.format(
+        args.dataset)
 
     if args.random_seed < 0:
         from datetime import datetime
@@ -86,12 +86,11 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
         'SMD before re-weighting': smd,
         'SMD after re-weighting': smd_weighted,
     })
-    # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
 
 
 if __name__ == "__main__":
-    # python screen_dx.py --dataset ALL 2>&1 | tee  log/screen_dx.txt
+    # python screen_med.py --dataset ALL 2>&1 | tee  log/screen_med.txt
     start_time = time.time()
     args = parse_args()
 
@@ -105,27 +104,24 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     # Load Covariates Data
     print('Load data covariates file:', args.data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    df = pd.read_csv(args.data_file, dtype={'patid': str, 'covid': int})
     # because a patid id may occur in multiple sites. patid were site specific
 
-    df_info = df[['Unnamed: 0', 'patid', 'site', 'index date', 'hospitalized',
-                  'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e', 'YM: March 2020',
-                  'YM: April 2020', 'YM: May 2020', 'YM: June 2020', 'YM: July 2020', 'YM: August 2020',
-                  'YM: September 2020', 'YM: October 2020', 'YM: November 2020', 'YM: December 2020',
-                  'YM: January 2021', 'YM: February 2021', 'YM: March 2021', 'YM: April 2021', 'YM: May 2021',
-                  'YM: June 2021', 'YM: July 2021', 'YM: August 2021', 'YM: September 2021', 'YM: October 2021',
-                  'YM: November 2021', 'YM: December 2021', 'YM: January 2022', ]]
+    df_info = df[['Unnamed: 0', 'patid', 'site']]
     df_label = df['covid']
-    covs_columns = [x for x in
-                    list(df.columns)[
-                    df.columns.get_loc('20-<40 years'):(df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
-                    if not x.startswith('YM:')
-                    ]
-    print('len(covs_columns):', len(covs_columns))
-    df_covs = df.loc[:, covs_columns].astype('float')
-
+    df_covs = df.iloc[:, df.columns.get_loc('age20-39'):]
+    df_covs_array = df_covs.astype('float')
+    # Cormorbidities were set as true if at least 2 instances were found in the history
+    df_covs_array.iloc[:, df_covs_array.columns.get_loc('AIDS'):] = (
+            df_covs_array.iloc[:, df_covs_array.columns.get_loc('AIDS'):] >= 2).astype('float')
     print('df.shape:', df.shape)
-    print('df_covs.shape:', df_covs.shape)
+    print('df_covs_array.shape:', df_covs_array.shape)
+
+    # Load outcome Data
+    print('Load data outcome file:', args.data_file_outcome)
+    df_outcome = pd.read_csv(args.data_file_outcome)
+    df_outcome = df_outcome.iloc[:, 1:]
+    print('df_outcome.shape:', df_outcome.shape)
 
     # Load index information
     with open(r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl', 'rb') as f:
@@ -148,12 +144,12 @@ if __name__ == "__main__":
 
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
-    for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
+    for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1), total=len(atcl3_encoding)):
         # bulid specific cohorts:
         print('\n In screening:', i, pasc)
-        pasc_flag = df['med-out@' + pasc]
-        pasc_t2e = df['med-t2e@' + pasc]  # .astype('float')
-        pasc_baseline = df['med-base@' + pasc]
+        pasc_flag = df_outcome['flag@' + pasc]
+        pasc_t2e = df_outcome['t2e@' + pasc].astype('float')
+        pasc_baseline = df_outcome['baseline@' + pasc]
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
@@ -169,20 +165,18 @@ if __name__ == "__main__":
         pos_neg_selected[covid_label[covid_label == 1].index] = True
         #
         covid_label = df_label[pos_neg_selected]
-        covs_array = df_covs.loc[pos_neg_selected, :]
+        covs_array = df_covs_array.loc[pos_neg_selected, :]
         pasc_flag = pasc_flag[pos_neg_selected]
         pasc_t2e = pasc_t2e[pos_neg_selected]
-        print('pasc_t2e.describe():', pasc_t2e.describe())
-        pasc_t2e[pasc_t2e <= 30] = 30
 
         print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), covid pos:neg = {}:{} sample ratio -/+={}, pasc pos:neg '
                        '= {}:{}'.format(
-            pos_neg_selected.sum(), len(df), pos_neg_selected.sum() / len(df) * 100,
+            pos_neg_selected.sum(), len(df_outcome), pos_neg_selected.sum() / len(df_outcome) * 100,
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             pasc_flag.sum(), (pasc_flag == 0).sum()))
 
-        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array, covid_label, verbose=0)
-        # , paras_grid = {
+        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, ).cross_validation_fit(covs_array, covid_label, verbose=0)
+        # paras_grid = {
         #     'penalty': 'l2',
         #     'C': 0.03162277660168379,
         #     'max_iter': 200,
@@ -195,22 +189,23 @@ if __name__ == "__main__":
         # plt.scatter(range(len(smd)), smd)
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
+
         print('n unbalanced covariates before:after = {}:{}'.format(
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-results.csv'.format(i, pasc)
+        out_file_balance = r'../data/V15_COVID19/output/character/specificMed/{}-{}-{}-covariates_balance_elixhauser.csv'.format(i, pasc, atcl3_encoding[pasc][2])
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
-        df_summary.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-evaluation_balance.csv'.format(i, pasc))
+        df_summary.to_csv('../data/V15_COVID19/output/character/specificMed/{}-{}-{}-evaluation_elixhauser_encoding_balancing.csv'.format(i, pasc, atcl3_encoding[pasc][2]))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/specificMed/{}-{}-{}-km.png'.format(i, pasc, atcl3_encoding[pasc][2]))
 
         try:
-            _results = [i, pasc,
+            _results = [i, pasc, atcl3_encoding.get(pasc, ''),
                        covid_label.sum(), (covid_label == 0).sum(),
                        pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
@@ -221,11 +216,11 @@ if __name__ == "__main__":
                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
-            print('causal result:\n', causal_results[-1])
+            print(causal_results[-1])
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=[
-                'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                'i', 'pasc', 'pasc-med','covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. unbalance', 'no. unbalance iptw',
                 'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
@@ -233,15 +228,15 @@ if __name__ == "__main__":
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-ERRORSAVE.csv')
+            df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific_med-ERRORSAVE.csv')
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=[
-        'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+        'i', 'pasc', 'pasc-med', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
         'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
         'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med.csv')
+    df_causal.to_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific_med.csv')
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
