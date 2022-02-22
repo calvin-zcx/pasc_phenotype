@@ -224,6 +224,15 @@ if __name__ == "__main__":
                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
             print('causal result:\n', causal_results[-1])
+
+            if i % 50 == 0:
+                pd.DataFrame(causal_results, columns=[
+                    'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +',
+                    'mean pasc in -',
+                    'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
+                    'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']).\
+                    to_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-snapshot-{}.csv'.format(i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=[
