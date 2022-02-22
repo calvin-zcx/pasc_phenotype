@@ -150,6 +150,7 @@ if __name__ == "__main__":
     causal_results = []
     for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
         # bulid specific cohorts:
+        drugname = atcl3_encoding[pasc][2]
         print('\n In screening:', i, pasc)
         pasc_flag = df['med-out@' + pasc]
         pasc_t2e = df['med-t2e@' + pasc]  # .astype('float')
@@ -207,7 +208,8 @@ if __name__ == "__main__":
         df_summary.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-evaluation_balance.csv'.format(i, pasc))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-{}-km.png'.format(i, pasc, drugname),
+                                              title=pasc+'-'+drugname)
 
         try:
             _results = [i, pasc,

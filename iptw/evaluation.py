@@ -427,7 +427,7 @@ def cal_survival_KM(golds_treatment, logits_treatment, golds_outcome, normalized
            (HR, CI, cph)
 
 
-def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile=''):
+def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile='', title=''):
     ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
     treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
     treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
@@ -457,9 +457,11 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     if fig_outfile:
         ax = plt.subplot(111)
         kmf1.plot_survival_function(ax=ax)
-        kmf0.plot_survival_function(ax=ax)
         kmf1_w.plot_survival_function(ax=ax)
+        kmf0.plot_survival_function(ax=ax)
         kmf0_w.plot_survival_function(ax=ax)
+
+        plt.title(title, fontsize=8)
         plt.savefig(fig_outfile)
         plt.close()
 

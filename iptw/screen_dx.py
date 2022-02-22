@@ -201,7 +201,8 @@ if __name__ == "__main__":
         df_summary.to_csv('../data/V15_COVID19/output/character/outcome/DX/{}-{}-evaluation_balance.csv'.format(i, pasc))
 
         km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/DX/{}-{}-km.png'.format(i, pasc))
+                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/DX/{}-{}-km.png'.format(i, pasc),
+                                              title=pasc)
 
         try:
             _results = [i, pasc,
