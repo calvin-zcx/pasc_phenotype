@@ -29,6 +29,9 @@ COMMORBIDITY_RIGHT = 0
 BASELINE_MEDICATION_LEFT = -365
 BASELINE_MEDICATION_RIGHT = -7
 
+COVIDMED_LEFT = -14
+COVIDMED_RIGHT = 14
+
 print('Adopted Eligibility Setting:')
 print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
 
@@ -49,6 +52,9 @@ print("...COMMORBIDITY_RIGHT:", COMMORBIDITY_RIGHT)
 
 print("...BASELINE_MEDICATION_LEFT:", BASELINE_MEDICATION_LEFT)
 print("...BASELINE_MEDICATION_RIGHT:", BASELINE_MEDICATION_RIGHT)
+
+print("...COVIDMED_LEFT:", COVIDMED_LEFT)
+print("...COVIDMED_RIGHT:", COVIDMED_RIGHT)
 
 
 def _is_in_baseline(event_time, index_time):
@@ -87,3 +93,8 @@ def _is_in_comorbidity_period(event_time, index_time):
 def _is_in_medication_baseline(event_time, index_time):
     # 1 year prior to baseline
     return BASELINE_MEDICATION_LEFT <= (event_time - index_time).days <= BASELINE_MEDICATION_RIGHT
+
+
+def _is_in_covid_medication(event_time, index_time):
+    # 14 days before or after the index event
+    return COVIDMED_LEFT <= (event_time - index_time).days <= COVIDMED_RIGHT

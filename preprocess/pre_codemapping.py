@@ -551,7 +551,7 @@ def load_cdc_mapping():
             df = df_all[sheet_name]
             code_set = set()
             code_set_wildchar = set()
-            for c in df.iloc[:, 0]:
+            for c in df.loc[:, 'code1']:
                 c = c.replace('.', '').upper()
                 if '*' in c:
                     code_set_wildchar.add(c)
@@ -567,28 +567,81 @@ def load_cdc_mapping():
     vent = df_all['MECHANICAL_VENT']
     vent_dict = {}
     for key, row in vent.iterrows():
-        code_raw = row[0]
-        code_type = row[1]
-        des = row[2]
+        code_raw = row['code1']
+        code_type = row['codetype1']
+        des = row['descrip']
         code = code_raw.replace('.', '').upper()
         vent_dict[code] = [code_raw, code_type, des]
     print('MECHANICAL_VENT  len(vent_dict):', len(vent_dict))
     utils.dump(vent_dict, r'../data/mapping/ventilation_codes.pkl')
 
-    return df_all
+    return df_all, tailor_comorbidity, vent_dict
 
 
-def load_query3_mapping():
-    input_file = r'../data/mapping/RECOVER Query 3 Code List_2.17.22.xlsx'
-    mapping_file = r'../data/mapping/query3_sheet_mapping.xlsx'
-    df_map = pd.read_excel(mapping_file, sheet_name='Sheet1', dtype=str)
-    df_all = pd.read_excel(input_file, sheet_name=None, dtype=str)  # read all sheets
+def load_query3_vaccine_and_drug_mapping():
+    df_map_vac = pd.read_excel(r'../data/mapping/query3-vaccine_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
+    df_map_med = pd.read_excel(r'../data/mapping/query3-medication_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
+    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.17.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
     print('len(df_all):', len(df_all))
-    print('len(df_map):', len(df_map))
+    print('len(df_map_vac):', len(df_map_vac))
+    print('len(df_map_med):', len(df_map_med))
 
-    table_name = sorted(df_all.keys())
+    # table_name = sorted(df_all.keys())
 
-    return df_all
+    med_code = {}
+    for i, (key, row) in enumerate(df_map_med.iterrows()):
+        query_name = row[0]
+        sheet_name = row[1]
+        notes = row[2]
+        if sheet_name in df_all:
+            df = df_all[sheet_name]
+            code_dict = {}
+            for ikey, irow in df.iterrows():
+                code_raw = irow['code1']
+                code_type = irow['codetype1']
+                des = irow['descrip']
+                if '*' in code_raw:
+                    print(code_raw, sheet_name)
+                # code = code_raw.replace('.', '').upper()
+                code_dict[code_raw] = [code_raw, code_type, des]
+
+            med_code[query_name] = code_dict
+        else:
+            print('Not found sheet:', sheet_name)
+
+        print('Done:', i, query_name, sheet_name, len(df))
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/query3_medication_codes.pkl')
+
+    vac_code = {}
+    for i, (key, row) in enumerate(df_map_vac.iterrows()):
+        query_name = row[0]
+        sheet_name = row[1]
+        notes = row[2]
+        if sheet_name in df_all:
+            df = df_all[sheet_name]
+            code_dict = {}
+            for ikey, irow in df.iterrows():
+                code_raw = irow['code1']
+                code_type = irow['codetype1']
+                des = irow['descrip']
+                if '*' in code_raw:
+                    print(code_raw, sheet_name)
+                # code = code_raw.replace('.', '').upper()
+                code_dict[code_raw] = [code_raw, code_type, des]
+
+            vac_code[query_name] = code_dict
+
+        else:
+            print('Not found sheet:', sheet_name)
+
+        print('Done:', i, query_name, sheet_name, len(df))
+
+    print('vac_code done,  len(vac_code):', len(vac_code))
+    utils.dump(vac_code, r'../data/mapping/query3_vaccine_codes.pkl')
+
+    return df_all, med_code, vac_code
 
 
 if __name__ == '__main__':
@@ -615,9 +668,9 @@ if __name__ == '__main__':
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
 
     # 7. Load CDC code mapping:
-    # df_all = load_cdc_mapping()
+    # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
-    df_all = load_query3_mapping()
-
+    df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
+    #
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
