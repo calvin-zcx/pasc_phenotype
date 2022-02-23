@@ -429,18 +429,28 @@ def _encoding_vaccine(pro_list, immun_list, _vaccine_column_names, vaccine_codes
                     if px in vaccine_codes[col_name]:
                         encoding_post[0, pos] += 1
 
+    def _is_duplicate(px_date, codes_under_same_category):
+        # same date and same vaccine type, then treat as duplicate
+        for records in pro_list:
+            _px_date, _px, _px_type, _enc_type, _enc_id = records
+            if (_px_date == px_date) and (_px in codes_under_same_category):
+                return True
+        return False
+
     for records in immun_list:
         px_date, px, px_type, enc_id = records
         if px_date < index_date:
             for pos, col_name in enumerate(_vaccine_column_names):
                 if col_name in vaccine_codes:
-                    if px in vaccine_codes[col_name]:
-                        encoding_pre[0, pos] += 1
+                    if px in vaccine_codes[col_name]:  # should add de-duplicate codes
+                        if not _is_duplicate(px_date, vaccine_codes[col_name]):
+                            encoding_pre[0, pos] += 1
         else:
             for pos, col_name in enumerate(_vaccine_column_names):
                 if col_name in vaccine_codes:
                     if px in vaccine_codes[col_name]:
-                        encoding_post[0, pos] += 1
+                        if not _is_duplicate(px_date, vaccine_codes[col_name]):
+                            encoding_post[0, pos] += 1
 
     return encoding_pre, encoding_post
 
@@ -841,6 +851,8 @@ def build_query_1and2_matrix(args):
             # med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding query 3 covid medication
+            # if pid == '1043542':
+            #     print(pid)
             covidmed_array[i, :] = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date)
             vaccine_preindex_array[i, :], vaccine_postindex_array[i, :] = _encoding_vaccine(procedure, immun, _vaccine_column_names, vaccine_codes, index_date)
             # encoding pasc information in both baseline and followup
@@ -941,11 +953,11 @@ def build_query_1and2_matrix(args):
     # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
     # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
     df_bool = df_data_all_sites
-    selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
-    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
-    df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
-        (df_bool.loc[:, r'DX: Hypertension'] & (
-                df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+    # selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
+    # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+    # df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+    #     (df_bool.loc[:, r'DX: Hypertension'] & (
+    #             df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
     selected_cols = [x for x in df_bool.columns if
