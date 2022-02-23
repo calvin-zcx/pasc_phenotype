@@ -851,8 +851,8 @@ def build_query_1and2_matrix(args):
             # med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding query 3 covid medication
-            # if pid == '1043542':
-            #     print(pid)
+            if pid == '1043542':
+                print(pid)
             covidmed_array[i, :] = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date)
             vaccine_preindex_array[i, :], vaccine_postindex_array[i, :] = _encoding_vaccine(procedure, immun, _vaccine_column_names, vaccine_codes, index_date)
             # encoding pasc information in both baseline and followup
@@ -1081,10 +1081,10 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     pasc = 'Diabetes mellitus with complication'
-    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc) # ALL
+    # pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc) # ALL
     #
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])

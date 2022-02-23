@@ -27,9 +27,12 @@ random.seed(0)
 
 
 def plot_forest_for_dx():
-    df = pd.read_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-v2.csv')
+    # df = pd.read_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-v2.csv')
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific.csv')
     df_select = df.sort_values(by='hr-w', ascending=False)
-    df_select = df_select.loc[df_select['hr-w-p']<=0.05, :]
+    pvalue = 0.05 / 100
+    df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
+    df_select = df_select.loc[df_select['no. pasc in +'] >= 50, :]
     # df_select = df_select.loc[df_select['hr-w']>1, :]
 
     labs = []
@@ -59,7 +62,7 @@ def plot_forest_for_dx():
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(9, 10), t_adjuster=0.03, max_value=13, min_value=0.5, size=5, decimal=2)
+    ax = p.plot(figsize=(11, 18), t_adjuster=0.0108, max_value=5, min_value=0.3, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -69,10 +72,10 @@ def plot_forest_for_dx():
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/V15_COVID19/output/character/specificDX/'
+    output_dir = r'../data/V15_COVID19/output/character/outcome/DX/'
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'dx_hr_forest.png', bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'dx_hr_forest.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'dx_hr_forest-p{}.png'.format(pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'dx_hr_forest-p{}.pdf'.format(pvalue), bbox_inches='tight', transparent=True)
     plt.show()
     print()
     # plt.clf()
@@ -80,10 +83,18 @@ def plot_forest_for_dx():
 
 
 def plot_forest_for_med():
-    df = pd.read_csv(r'../data/V15_COVID19/output/character/specificMed/causal_effects_specific_med.csv')
+    with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
+        atcl3_encoding = pickle.load(f)
+        print('Load to ATC-Level-3 to encoding mapping done! len(atcl3_encoding):', len(atcl3_encoding))
+        record_example = next(iter(atcl3_encoding.items()))
+        print('e.g.:', record_example)
+
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-snapshot-150.csv')
     df_select = df.sort_values(by='hr-w', ascending=False)
-    df_select = df_select.loc[df_select['hr-w-p']<=0.05, :]
-    df_select = df_select.loc[df_select['no. pasc in +']>=10, :]
+    pvalue = 0.05 #/ 100
+    df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
+    df_select = df_select.loc[df_select['no. pasc in +'] >= 50, :]
+
     # df_select = df_select.loc[df_select['hr-w']>1, :]
 
     labs = []
@@ -93,8 +104,9 @@ def plot_forest_for_med():
     pval = []
     for key, row in df_select.iterrows():
         name = row['pasc']
-        name_label = row['pasc-med'].strip('][').split(',')
-        name_label = name_label[2].strip().strip(r'\'').lower()
+        # name_label = row['pasc-med'].strip('][').split(',')
+        name_label = atcl3_encoding.get(name, [])[2].strip().strip(r'\'').lower()
+        name_label = name_label.replace('<n>', ' ').replace('</n>', ' ')
         hr = row['hr-w']
         ci = stringlist_2_list(row['hr-w-CI'])
         p = row['hr-w-p']
@@ -115,7 +127,7 @@ def plot_forest_for_med():
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(10, 12.5), t_adjuster=0.015, max_value=5, min_value=0.4, size=5, decimal=2)
+    ax = p.plot(figsize=(11, 14), t_adjuster=0.015, max_value=5, min_value=0.4, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -125,10 +137,10 @@ def plot_forest_for_med():
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/V15_COVID19/output/character/specificMed/'
+    output_dir = r'../data/V15_COVID19/output/character/outcome/MED/'
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'med_hr_forest.png', bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'med_hr_forest.pdf', bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'med_hr_forest-p{}.png'.format(pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'med_hr_forest-p{}.pdf'.format(pvalue), bbox_inches='tight', transparent=True)
     plt.show()
     print()
     # plt.clf()
@@ -152,5 +164,5 @@ def combine_pasc_list():
 
 if __name__ == '__main__':
     # plot_forest_for_dx()
-    # plot_forest_for_med()
-    combine_pasc_list()
+    plot_forest_for_med()
+    # combine_pasc_list()
