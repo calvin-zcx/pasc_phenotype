@@ -149,6 +149,8 @@ if __name__ == "__main__":
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
     for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
+        if i < 31:
+            continue
         # bulid specific cohorts:
         drugname = atcl3_encoding[pasc][2]
         print('\n In screening:', i, pasc)
@@ -206,10 +208,15 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-evaluation_balance.csv'.format(i, pasc))
+        try:
+            km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
+                                                  fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-{}-km.png'.format(i, pasc, drugname),
+                                                  title=pasc+'-'+drugname)
+        except:
+            km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
+                                                  fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-km.png'.format(
+                                                      i, pasc), title=pasc + '-' + drugname)
 
-        km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
-                                              fig_outfile=r'../data/V15_COVID19/output/character/outcome/MED/{}-{}-{}-km.png'.format(i, pasc, drugname),
-                                              title=pasc+'-'+drugname)
 
         try:
             _results = [i, pasc,
