@@ -149,8 +149,8 @@ if __name__ == "__main__":
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
     for i, pasc in tqdm(enumerate(atcl3_encoding.keys(), start=1)):
-        if i < 31:
-            continue
+        # if i < 31:
+        #     continue
         # bulid specific cohorts:
         drugname = atcl3_encoding[pasc][2]
         print('\n In screening:', i, pasc)

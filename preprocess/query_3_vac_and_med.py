@@ -973,13 +973,119 @@ def build_query_1and2_matrix(args):
     return df_data_all_sites, df_bool
 
 
+def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', severity='',
+                                                   pasc='Respiratory signs and symptoms'):
+    # severity in 'hospitalized', 'ventilation', None
+    # build pasc specific cohorts from covid base cohorts!
+    in_file = r'../data/V15_COVID19/output/character/query3-covid-drug-and-vaccine-matrix_cohorts_covid_bool_{}.csv'.format(dataset)
+    print('In pasc_specific_cohorts_characterization_analyse, PASC: {}, Cohorts: {}, severity: {}'.format(
+        pasc, cohorts, severity))
+    print('Try to load:', in_file)
+    # df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2_with_PASC.xlsx',
+    #                             sheet_name=r'Table Shells - Adults')
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
+    print('df_data.shape:', df_data.shape)
+
+    #
+    covidmed_column_names = [
+        'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
+        'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+        'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+        'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)',
+        'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
+        'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
+        'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
+        'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
+
+    # add vaccine status
+    _vaccine_column_names = [
+        'pfizer_first', 'pfizer_second', 'pfizer_third', 'pfizer_booster',
+        'moderna_first', 'moderna_second', 'moderna_booster',
+        'janssen_first', 'janssen_booster',
+        'px_pfizer', 'imm_pfizer',
+        'px_moderna', 'imm_moderna',
+        'px_janssen', 'imm_janssen',
+        'vax_unspec',
+        'pfizer_any', 'moderna_any', 'janssen_any', 'any_mrna']
+    vaccine_preindex_column_names = ['pre_' + x for x in _vaccine_column_names]
+    vaccine_postindex_column_names = ['post_' + x for x in _vaccine_column_names]
+    df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+    selected_cols = [x for x in df_data.columns if
+                     (x.startswith('dx-out@') or x.startswith('dx-base@')) and (pasc not in x)]
+    df_data = df_data.drop(columns=['Unnamed: 0', 'patid', 'site', 'index date'] + selected_cols)
+
+    df_data['mRNA fully vaccinated - Pre-index'] = (df_data.loc[:, 'pre_any_mrna'] >= 2)
+    df_data['mRNA fully vaccinated - Post-index'] = (df_data.loc[:, 'post_any_mrna'] >= 2)
+    df_data['J&J fully vaccinated - Pre-index'] = (df_data.loc[:, 'pre_janssen_any'] >= 1)
+    df_data['J&J fully vaccinated - Post-index'] = (df_data.loc[:, 'post_janssen_any'] >= 1)
+    df_data['Not fully vaccinated - Pre-index'] = ~(df_data['mRNA fully vaccinated - Pre-index'] | df_data['J&J fully vaccinated - Pre-index'])
+    df_data['Not fully vaccinated - Post-index'] = ~(df_data['mRNA fully vaccinated - Post-index'] | df_data['J&J fully vaccinated - Post-index'])
+
+    df_data = df_data.astype('int')
+
+    if cohorts == 'pasc_prevalence':
+        print('Choose cohorts pasc_prevalence')
+        df_data = df_data.loc[df_data['dx-out@' + pasc] >= 1, :]
+        print('df_data.shape:', df_data.shape)
+    elif cohorts == 'pasc_incidence':
+        print('Choose cohorts pasc_incidence')
+        df_data = df_data.loc[(df_data['dx-out@' + pasc] >= 1) & (df_data['dx-base@' + pasc] == 0), :]
+        print('df_data.shape:', df_data.shape)
+    else:
+        raise ValueError
+
+    if severity == '':
+        print('Not considering severity')
+        df_pos = df_data.loc[df_data["covid"] > 0, :]
+        df_neg = df_data.loc[df_data["covid"] == 0, :]
+    elif severity == 'hospitalized':
+        print('Considering severity hospitalized cohorts')
+        df_pos = df_data.loc[(df_data['hospitalized']> 0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized']> 0) & (df_data["covid"] == 0), :]
+    elif severity == 'not hospitalized':
+        print('Considering severity NOT hospitalized cohorts')
+        df_pos = df_data.loc[(df_data['hospitalized']==0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized']==0) & (df_data["covid"] == 0), :]
+    elif severity == 'ventilation':
+        print('Considering severity hospitalized ventilation cohorts')
+        df_pos = df_data.loc[(df_data['hospitalized']> 0) & (df_data['ventilation']> 0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized']> 0) & (df_data['ventilation']> 0) & (df_data["covid"] == 0), :]
+    else:
+        raise ValueError
+    print('df_pos.shape:', df_pos.shape, 'df_neg.shape:', df_neg.shape, )
+
+    for pos in [True, False]:
+        # generate both positive and negative cohorts
+        if pos:
+            df_in = df_pos
+        else:
+            df_in = df_neg
+
+        out_file = r'../data/V15_COVID19/output/character/pasc/{}/results_query3_PASC-{}-{}-{}-{}-{}.csv'.format(
+            pasc,
+            pasc,
+            cohorts,
+            dataset,
+            'POS' if pos else 'NEG',
+            severity)
+        utils.check_and_mkdir(out_file)
+
+        df_out = pd.DataFrame({'sum':df_in.sum(), 'mean': df_in.mean()})
+
+        df_out.to_csv(out_file)
+        print('Dump done ', out_file)
+
+
 if __name__ == '__main__':
     # python query_3_vac_and_med.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_3_vac_and_med.txt
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
+    pasc = 'Diabetes mellitus with complication'
+    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc) # ALL
+    #
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
 
