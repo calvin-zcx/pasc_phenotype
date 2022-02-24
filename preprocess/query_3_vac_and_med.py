@@ -246,7 +246,7 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
         if ecs._is_in_ventilation_period(px_date, index_date):
             # OBSGEN_TYPE=”PC_COVID” & OBSGEN_CODE = 3000 & OBSGEN_SOURCE=”DR” & RESULT_TEXT=”Y”
             if (px_type == 'PC_COVID') and (px == '3000') and (source == 'DR') and (result_text == 'Y'):
-                flag = 1 # True
+                flag = 1  # True
                 break
 
     return flag
@@ -413,21 +413,77 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
     return encoding
 
 
-def _encoding_vaccine(pro_list, immun_list, _vaccine_column_names, vaccine_codes, index_date):
-    encoding_pre = np.zeros((1, len(_vaccine_column_names)), dtype='int')
-    encoding_post = np.zeros((1, len(_vaccine_column_names)), dtype='int')
+def _encoding_vaccine(pro_list, immun_list, vaccine_column_names, vaccine_codes, index_date):
+    # vaccine_column_names = ['mRNA fully vaccinated - Pre-index',
+    #                         'mRNA fully vaccinated - Post-index',
+    #                         'J&J fully vaccinated - Pre-index',
+    #                         'J&J fully vaccinated - Post-index',
+    #                         'Not fully vaccinated - Pre-index',
+    #                         'Not fully vaccinated - Post-index',
+    #                         'mRNA fully vaccinated - anytime',
+    #                         'J&J fully vaccinated - anytime',
+    #                         'Not fully vaccinated - anytime',
+    #                         ]
+    # vaccine_aux_column_names = [
+    #     'pfizer_first', 'pfizer_second', 'pfizer_third', 'pfizer_booster',
+    #     'moderna_first', 'moderna_second', 'moderna_booster',
+    #     'janssen_first', 'janssen_booster',
+    #     'px_pfizer', 'imm_pfizer',
+    #     'px_moderna', 'imm_moderna',
+    #     'px_janssen', 'imm_janssen',
+    #     'vax_unspec',
+    #     'pfizer_any', 'moderna_any', 'janssen_any', 'any_mrna']
+    mrna = []
+    jj = []
+    encoding = np.zeros((1, len(vaccine_column_names)), dtype='int')
     for records in pro_list:
         px_date, px, px_type, enc_type, enc_id = records
-        if px_date < index_date:
-            for pos, col_name in enumerate(_vaccine_column_names):
-                if col_name in vaccine_codes:
-                    if px in vaccine_codes[col_name]:
-                        encoding_pre[0, pos] += 1
+        if px in vaccine_codes['any_mrna']:
+            mrna.append((px_date, px))
+        elif px in vaccine_codes['janssen_any']:
+            jj.append((px_date, px))
+
+    for records in immun_list:
+        px_date, px, px_type, enc_id = records
+        if px in vaccine_codes['any_mrna']:
+            mrna.append((px_date, px))
+        elif px in vaccine_codes['janssen_any']:
+            jj.append((px_date, px))
+
+    mrna = sorted(set(mrna), key=lambda x: x[0])
+    jj = sorted(set(jj), key=lambda x: x[0])
+    mrna_pre = [x for x in mrna if x[0] < index_date]
+    mrna_post = [x for x in mrna if x[0] > index_date]
+    jj_pre = [x for x in jj if x[0] < index_date]
+    jj_post = [x for x in jj if x[0] > index_date]
+
+    def _fully_vaccined(vlist):
+        if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days >= 20):
+            return True
         else:
-            for pos, col_name in enumerate(_vaccine_column_names):
-                if col_name in vaccine_codes:
-                    if px in vaccine_codes[col_name]:
-                        encoding_post[0, pos] += 1
+            return False
+
+    encoding[0, 0] = int(_fully_vaccined(mrna_pre))  # 'mRNA fully vaccinated - Pre-index',
+    encoding[0, 1] = int(_fully_vaccined(mrna_post))  # 'mRNA fully vaccinated - Post-index'
+    encoding[0, 2] = int(_fully_vaccined(jj_pre))  # 'J&J fully vaccinated - Pre-index',
+    encoding[0, 3] = int(_fully_vaccined(jj_post))  # 'J&J fully vaccinated - Post-index',
+    encoding[0, 4] = int(not(_fully_vaccined(mrna_pre) or _fully_vaccined(mrna_pre)))  # 'Not fully vaccinated - Pre-index',
+    encoding[0, 5] = int(not(_fully_vaccined(mrna_post) or _fully_vaccined(jj_post)))  # 'Not fully vaccinated - Post-index',
+    encoding[0, 6] = int(_fully_vaccined(mrna))  # 'mRNA fully vaccinated - anytime'
+    encoding[0, 7] = int(_fully_vaccined(jj))  # 'J&J fully vaccinated - anytime'
+    encoding[0, 8] = int(not(_fully_vaccined(mrna) or _fully_vaccined(jj)))  # 'Not fully vaccinated - anytime'
+
+    return encoding
+
+
+def _encoding_vaccine_aux(pro_list, immun_list, _vaccine_column_names, vaccine_codes, index_date):
+    encoding = np.zeros((1, len(_vaccine_column_names)), dtype='int')
+    for records in pro_list:
+        px_date, px, px_type, enc_type, enc_id = records
+        for pos, col_name in enumerate(_vaccine_column_names):
+            if col_name in vaccine_codes:
+                if px in vaccine_codes[col_name]:
+                    encoding[0, pos] += 1
 
     def _is_duplicate(px_date, codes_under_same_category):
         # same date and same vaccine type, then treat as duplicate
@@ -439,20 +495,54 @@ def _encoding_vaccine(pro_list, immun_list, _vaccine_column_names, vaccine_codes
 
     for records in immun_list:
         px_date, px, px_type, enc_id = records
-        if px_date < index_date:
-            for pos, col_name in enumerate(_vaccine_column_names):
-                if col_name in vaccine_codes:
-                    if px in vaccine_codes[col_name]:  # should add de-duplicate codes
-                        if not _is_duplicate(px_date, vaccine_codes[col_name]):
-                            encoding_pre[0, pos] += 1
-        else:
-            for pos, col_name in enumerate(_vaccine_column_names):
-                if col_name in vaccine_codes:
-                    if px in vaccine_codes[col_name]:
-                        if not _is_duplicate(px_date, vaccine_codes[col_name]):
-                            encoding_post[0, pos] += 1
+        for pos, col_name in enumerate(_vaccine_column_names):
+            if col_name in vaccine_codes:
+                if px in vaccine_codes[col_name]:  # should add de-duplicate codes
+                    if not _is_duplicate(px_date, vaccine_codes[col_name]):
+                        encoding[0, pos] += 1
 
-    return encoding_pre, encoding_post
+    return encoding
+
+# def _encoding_vaccine(pro_list, immun_list, _vaccine_column_names, vaccine_codes, index_date):
+#     encoding_pre = np.zeros((1, len(_vaccine_column_names)), dtype='int')
+#     encoding_post = np.zeros((1, len(_vaccine_column_names)), dtype='int')
+#     for records in pro_list:
+#         px_date, px, px_type, enc_type, enc_id = records
+#         if px_date < index_date:
+#             for pos, col_name in enumerate(_vaccine_column_names):
+#                 if col_name in vaccine_codes:
+#                     if px in vaccine_codes[col_name]:
+#                         encoding_pre[0, pos] += 1
+#         else:
+#             for pos, col_name in enumerate(_vaccine_column_names):
+#                 if col_name in vaccine_codes:
+#                     if px in vaccine_codes[col_name]:
+#                         encoding_post[0, pos] += 1
+#
+#     def _is_duplicate(px_date, codes_under_same_category):
+#         # same date and same vaccine type, then treat as duplicate
+#         for records in pro_list:
+#             _px_date, _px, _px_type, _enc_type, _enc_id = records
+#             if (_px_date == px_date) and (_px in codes_under_same_category):
+#                 return True
+#         return False
+#
+#     for records in immun_list:
+#         px_date, px, px_type, enc_id = records
+#         if px_date < index_date:
+#             for pos, col_name in enumerate(_vaccine_column_names):
+#                 if col_name in vaccine_codes:
+#                     if px in vaccine_codes[col_name]:  # should add de-duplicate codes
+#                         if not _is_duplicate(px_date, vaccine_codes[col_name]):
+#                             encoding_pre[0, pos] += 1
+#         else:
+#             for pos, col_name in enumerate(_vaccine_column_names):
+#                 if col_name in vaccine_codes:
+#                     if px in vaccine_codes[col_name]:
+#                         if not _is_duplicate(px_date, vaccine_codes[col_name]):
+#                             encoding_post[0, pos] += 1
+#
+#     return encoding_pre, encoding_post
 
 
 def _encoding_maxfollowtime(index_date, enc, dx, med):
@@ -727,7 +817,8 @@ def build_query_1and2_matrix(args):
         covidmed_array = np.zeros((n, 25), dtype='int16')
         covidmed_column_names = [
             'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
-            'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',  'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+            'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+            'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
             'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)',
             'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
             'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
@@ -735,7 +826,19 @@ def build_query_1and2_matrix(args):
             'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
 
         # add vaccine status
-        _vaccine_column_names = [
+        vaccine_column_names = ['mRNA fully vaccinated - Pre-index',
+                                'mRNA fully vaccinated - Post-index',
+                                'J&J fully vaccinated - Pre-index',
+                                'J&J fully vaccinated - Post-index',
+                                'Not fully vaccinated - Pre-index',
+                                'Not fully vaccinated - Post-index',
+                                'mRNA fully vaccinated - anytime',
+                                'J&J fully vaccinated - anytime',
+                                'Not fully vaccinated - anytime',
+                                ]
+        vaccine_array = np.zeros((n, 9), dtype='int16')
+
+        vaccine_aux_column_names = [
             'pfizer_first', 'pfizer_second', 'pfizer_third', 'pfizer_booster',
             'moderna_first', 'moderna_second', 'moderna_booster',
             'janssen_first', 'janssen_booster',
@@ -744,12 +847,11 @@ def build_query_1and2_matrix(args):
             'px_janssen', 'imm_janssen',
             'vax_unspec',
             'pfizer_any', 'moderna_any', 'janssen_any', 'any_mrna']
-        vaccine_preindex_array = np.zeros((n, 20), dtype='int16')
-        vaccine_postindex_array = np.zeros((n, 20), dtype='int16')
-        vaccine_preindex_column_names = ['pre_' + x for x in _vaccine_column_names]
-        vaccine_postindex_column_names = ['post_' + x for x in _vaccine_column_names]
-
-
+        # vaccine_preindex_array = np.zeros((n, 20), dtype='int16')
+        # vaccine_postindex_array = np.zeros((n, 20), dtype='int16')
+        # vaccine_preindex_column_names = ['pre_' + x for x in vaccine_aux_column_names]
+        # vaccine_postindex_column_names = ['post_' + x for x in vaccine_aux_column_names]
+        vaccine_aux_array = np.zeros((n, 20), dtype='int16')
 
         # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
         # In total, there are 137 PASC categories in our lists. See T2E later
@@ -787,7 +889,7 @@ def build_query_1and2_matrix(args):
 
         column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                         'ventilation', 'criticalcare'] + \
-                       covidmed_column_names + vaccine_preindex_column_names + vaccine_postindex_column_names + \
+                       covidmed_column_names + vaccine_column_names + vaccine_aux_column_names + \
                        outcome_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
@@ -854,7 +956,13 @@ def build_query_1and2_matrix(args):
             if pid == '1043542':
                 print(pid)
             covidmed_array[i, :] = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date)
-            vaccine_preindex_array[i, :], vaccine_postindex_array[i, :] = _encoding_vaccine(procedure, immun, _vaccine_column_names, vaccine_codes, index_date)
+
+            vaccine_array[i, :] = _encoding_vaccine(procedure, immun, vaccine_column_names, vaccine_codes, index_date)
+
+            vaccine_aux_array[i, :] = _encoding_vaccine_aux(procedure, immun, vaccine_aux_column_names, vaccine_codes, index_date)
+            # vaccine_preindex_array[i, :], vaccine_postindex_array[i, :] = _encoding_vaccine(procedure, immun,
+            #                                                                                 _vaccine_column_names,
+            #                                                                                 vaccine_codes, index_date)
             # encoding pasc information in both baseline and followup
             # time 2 event: censoring in the database (should be >= followup start time),
             # maximum follow-up, death-time, event, whichever comes first
@@ -922,8 +1030,8 @@ def build_query_1and2_matrix(args):
                                 # dx_array,
                                 # med_array,
                                 covidmed_array,
-                                vaccine_preindex_array,
-                                vaccine_postindex_array,
+                                vaccine_array,
+                                vaccine_aux_array,
                                 outcome_flag,
                                 outcome_baseline,
                                 ))
@@ -977,7 +1085,8 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
                                                    pasc='Respiratory signs and symptoms'):
     # severity in 'hospitalized', 'ventilation', None
     # build pasc specific cohorts from covid base cohorts!
-    in_file = r'../data/V15_COVID19/output/character/query3-covid-drug-and-vaccine-matrix_cohorts_covid_bool_{}.csv'.format(dataset)
+    in_file = r'../data/V15_COVID19/output/character/query3-covid-drug-and-vaccine-matrix_cohorts_covid_bool_{}.csv'.format(
+        dataset)
     print('In pasc_specific_cohorts_characterization_analyse, PASC: {}, Cohorts: {}, severity: {}'.format(
         pasc, cohorts, severity))
     print('Try to load:', in_file)
@@ -1007,21 +1116,26 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
         'px_janssen', 'imm_janssen',
         'vax_unspec',
         'pfizer_any', 'moderna_any', 'janssen_any', 'any_mrna']
-    vaccine_preindex_column_names = ['pre_' + x for x in _vaccine_column_names]
-    vaccine_postindex_column_names = ['post_' + x for x in _vaccine_column_names]
+    # vaccine_preindex_column_names = ['pre_' + x for x in _vaccine_column_names]
+    # vaccine_postindex_column_names = ['post_' + x for x in _vaccine_column_names]
+
     df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+    df_data.loc[:, _vaccine_column_names] = (df_data.loc[:, _vaccine_column_names].astype('int') >= 1).astype('int')
+
     selected_cols = [x for x in df_data.columns if
                      (x.startswith('dx-out@') or x.startswith('dx-base@')) and (pasc not in x)]
     df_data = df_data.drop(columns=['Unnamed: 0', 'patid', 'site', 'index date'] + selected_cols)
 
-    df_data['mRNA fully vaccinated - Pre-index'] = (df_data.loc[:, 'pre_any_mrna'] >= 2)
-    df_data['mRNA fully vaccinated - Post-index'] = (df_data.loc[:, 'post_any_mrna'] >= 2)
-    df_data['J&J fully vaccinated - Pre-index'] = (df_data.loc[:, 'pre_janssen_any'] >= 1)
-    df_data['J&J fully vaccinated - Post-index'] = (df_data.loc[:, 'post_janssen_any'] >= 1)
-    df_data['Not fully vaccinated - Pre-index'] = ~(df_data['mRNA fully vaccinated - Pre-index'] | df_data['J&J fully vaccinated - Pre-index'])
-    df_data['Not fully vaccinated - Post-index'] = ~(df_data['mRNA fully vaccinated - Post-index'] | df_data['J&J fully vaccinated - Post-index'])
-
     df_data = df_data.astype('int')
+    df_out = pd.DataFrame({'pos sum': df_data.loc[df_data["covid"] > 0, :].sum(),
+                           'pos mean': df_data.loc[df_data["covid"] > 0, :].mean(),
+                           'neg sum': df_data.loc[df_data["covid"] == 0, :].sum(),
+                           'neg mean': df_data.loc[df_data["covid"] == 0, :].mean()
+                           })
+    out_file = r'../data/V15_COVID19/output/character/pasc/results_query3_covid-{}.csv'.format(dataset)
+    utils.check_and_mkdir(out_file)
+    df_out.to_csv(out_file)
+    print('Dump done ', out_file)
 
     if cohorts == 'pasc_prevalence':
         print('Choose cohorts pasc_prevalence')
@@ -1040,16 +1154,16 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
         df_neg = df_data.loc[df_data["covid"] == 0, :]
     elif severity == 'hospitalized':
         print('Considering severity hospitalized cohorts')
-        df_pos = df_data.loc[(df_data['hospitalized']> 0) & (df_data["covid"] > 0), :]
-        df_neg = df_data.loc[(df_data['hospitalized']> 0) & (df_data["covid"] == 0), :]
+        df_pos = df_data.loc[(df_data['hospitalized'] > 0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized'] > 0) & (df_data["covid"] == 0), :]
     elif severity == 'not hospitalized':
         print('Considering severity NOT hospitalized cohorts')
-        df_pos = df_data.loc[(df_data['hospitalized']==0) & (df_data["covid"] > 0), :]
-        df_neg = df_data.loc[(df_data['hospitalized']==0) & (df_data["covid"] == 0), :]
+        df_pos = df_data.loc[(df_data['hospitalized'] == 0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized'] == 0) & (df_data["covid"] == 0), :]
     elif severity == 'ventilation':
         print('Considering severity hospitalized ventilation cohorts')
-        df_pos = df_data.loc[(df_data['hospitalized']> 0) & (df_data['ventilation']> 0) & (df_data["covid"] > 0), :]
-        df_neg = df_data.loc[(df_data['hospitalized']> 0) & (df_data['ventilation']> 0) & (df_data["covid"] == 0), :]
+        df_pos = df_data.loc[(df_data['hospitalized'] > 0) & (df_data['ventilation'] > 0) & (df_data["covid"] > 0), :]
+        df_neg = df_data.loc[(df_data['hospitalized'] > 0) & (df_data['ventilation'] > 0) & (df_data["covid"] == 0), :]
     else:
         raise ValueError
     print('df_pos.shape:', df_pos.shape, 'df_neg.shape:', df_neg.shape, )
@@ -1070,7 +1184,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
             severity)
         utils.check_and_mkdir(out_file)
 
-        df_out = pd.DataFrame({'sum':df_in.sum(), 'mean': df_in.mean()})
+        df_out = pd.DataFrame({'sum': df_in.sum(), 'mean': df_in.mean()})
 
         df_out.to_csv(out_file)
         print('Dump done ', out_file)
@@ -1084,8 +1198,8 @@ if __name__ == '__main__':
     df_data, df_data_bool = build_query_1and2_matrix(args)
 
     pasc = 'Diabetes mellitus with complication'
-    # pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc) # ALL
-    #
+    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset='ALL', severity='', pasc=pasc)
+
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
 
