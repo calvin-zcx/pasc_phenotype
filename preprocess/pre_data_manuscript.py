@@ -566,6 +566,8 @@ def build_query_1and2_matrix(args):
     # outcome_med_all_sites = []
     # df_records_aux = []  # for double check, and get basic information
     # _no_mapping_rxrnom_all = set([])
+    med_count = {}
+    dx_count = {}
 
     print('Try to load: ', sites)
     for site in tqdm(sites):
@@ -696,8 +698,7 @@ def build_query_1and2_matrix(args):
         adi_value_list = [v[1][7] for key, v in id_data.items()]
         adi_value_default = np.nanmedian(adi_value_list)
 
-        med_count = {}
-        dx_count = {}
+
 
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(
