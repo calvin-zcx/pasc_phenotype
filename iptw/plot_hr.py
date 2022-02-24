@@ -89,9 +89,9 @@ def plot_forest_for_med():
         record_example = next(iter(atcl3_encoding.items()))
         print('e.g.:', record_example)
 
-    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-snapshot-150.csv')
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med.csv')
     df_select = df.sort_values(by='hr-w', ascending=False)
-    pvalue = 0.05 #/ 100
+    pvalue = 0.01 #/ 100
     df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
     df_select = df_select.loc[df_select['no. pasc in +'] >= 50, :]
 
@@ -127,7 +127,7 @@ def plot_forest_for_med():
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(11, 14), t_adjuster=0.015, max_value=5, min_value=0.4, size=5, decimal=2)
+    ax = p.plot(figsize=(11, 20), t_adjuster=0.015, max_value=5, min_value=0.4, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)

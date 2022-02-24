@@ -457,21 +457,27 @@ def _encoding_vaccine(pro_list, immun_list, vaccine_column_names, vaccine_codes,
     jj_pre = [x for x in jj if x[0] < index_date]
     jj_post = [x for x in jj if x[0] > index_date]
 
-    def _fully_vaccined(vlist):
+    def _fully_vaccined_mrna(vlist):
         if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days >= 20):
             return True
         else:
             return False
 
-    encoding[0, 0] = int(_fully_vaccined(mrna_pre))  # 'mRNA fully vaccinated - Pre-index',
-    encoding[0, 1] = int(_fully_vaccined(mrna_post))  # 'mRNA fully vaccinated - Post-index'
-    encoding[0, 2] = int(_fully_vaccined(jj_pre))  # 'J&J fully vaccinated - Pre-index',
-    encoding[0, 3] = int(_fully_vaccined(jj_post))  # 'J&J fully vaccinated - Post-index',
-    encoding[0, 4] = int(not(_fully_vaccined(mrna_pre) or _fully_vaccined(mrna_pre)))  # 'Not fully vaccinated - Pre-index',
-    encoding[0, 5] = int(not(_fully_vaccined(mrna_post) or _fully_vaccined(jj_post)))  # 'Not fully vaccinated - Post-index',
-    encoding[0, 6] = int(_fully_vaccined(mrna))  # 'mRNA fully vaccinated - anytime'
-    encoding[0, 7] = int(_fully_vaccined(jj))  # 'J&J fully vaccinated - anytime'
-    encoding[0, 8] = int(not(_fully_vaccined(mrna) or _fully_vaccined(jj)))  # 'Not fully vaccinated - anytime'
+    def _fully_vaccined_jj(vlist):
+        if len(vlist) >= 1:
+            return True
+        else:
+            return False
+
+    encoding[0, 0] = int(_fully_vaccined_mrna(mrna_pre))  # 'mRNA fully vaccinated - Pre-index',
+    encoding[0, 1] = int(_fully_vaccined_mrna(mrna_post))  # 'mRNA fully vaccinated - Post-index'
+    encoding[0, 2] = int(_fully_vaccined_jj(jj_pre))  # 'J&J fully vaccinated - Pre-index',
+    encoding[0, 3] = int(_fully_vaccined_jj(jj_post))  # 'J&J fully vaccinated - Post-index',
+    encoding[0, 4] = int(not(_fully_vaccined_mrna(mrna_pre) or _fully_vaccined_jj(jj_pre)))  # 'Not fully vaccinated - Pre-index',
+    encoding[0, 5] = int(not(_fully_vaccined_mrna(mrna_post) or _fully_vaccined_jj(jj_post)))  # 'Not fully vaccinated - Post-index',
+    encoding[0, 6] = int(_fully_vaccined_mrna(mrna))  # 'mRNA fully vaccinated - anytime'
+    encoding[0, 7] = int(_fully_vaccined_jj(jj))  # 'J&J fully vaccinated - anytime'
+    encoding[0, 8] = int(not(_fully_vaccined_mrna(mrna) or _fully_vaccined_jj(jj)))  # 'Not fully vaccinated - anytime'
 
     return encoding
 
@@ -1132,6 +1138,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
                            'neg sum': df_data.loc[df_data["covid"] == 0, :].sum(),
                            'neg mean': df_data.loc[df_data["covid"] == 0, :].mean()
                            })
+
     out_file = r'../data/V15_COVID19/output/character/pasc/results_query3_covid-{}.csv'.format(dataset)
     utils.check_and_mkdir(out_file)
     df_out.to_csv(out_file)

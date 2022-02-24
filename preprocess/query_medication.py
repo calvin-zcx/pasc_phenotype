@@ -1458,7 +1458,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
