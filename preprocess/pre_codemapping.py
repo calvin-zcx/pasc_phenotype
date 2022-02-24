@@ -9,6 +9,7 @@ import pandas as pd
 import requests
 import functools
 from misc import utils
+import re
 
 print = functools.partial(print, flush=True)
 import time
@@ -552,7 +553,9 @@ def load_cdc_mapping():
             code_set = set()
             code_set_wildchar = set()
             for c in df.loc[:, 'code1']:
-                c = c.replace('.', '').upper()
+                if bool(re.search(r"\s", c)):
+                    print(c)
+                c = c.replace('.', '').upper().strip()
                 if '*' in c:
                     code_set_wildchar.add(c)
                 else:
@@ -567,7 +570,9 @@ def load_cdc_mapping():
     vent = df_all['MECHANICAL_VENT']
     vent_dict = {}
     for key, row in vent.iterrows():
-        code_raw = row['code1']
+        if bool(re.search(r"\s", row['code1'])):
+            print(row['code1'])
+        code_raw = row['code1'].strip()
         code_type = row['codetype1']
         des = row['descrip']
         code = code_raw.replace('.', '').upper()
@@ -581,7 +586,7 @@ def load_cdc_mapping():
 def load_query3_vaccine_and_drug_mapping():
     df_map_vac = pd.read_excel(r'../data/mapping/query3-vaccine_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
     df_map_med = pd.read_excel(r'../data/mapping/query3-medication_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
-    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.17.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
+    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.24.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
     print('len(df_all):', len(df_all))
     print('len(df_map_vac):', len(df_map_vac))
     print('len(df_map_med):', len(df_map_med))
@@ -597,7 +602,9 @@ def load_query3_vaccine_and_drug_mapping():
             df = df_all[sheet_name]
             code_dict = {}
             for ikey, irow in df.iterrows():
-                code_raw = irow['code1']
+                if bool(re.search(r"\s", irow['code1'])):
+                    print(irow['code1'])
+                code_raw = irow['code1'].strip()
                 code_type = irow['codetype1']
                 des = irow['descrip']
                 if '*' in code_raw:
@@ -623,7 +630,9 @@ def load_query3_vaccine_and_drug_mapping():
             df = df_all[sheet_name]
             code_dict = {}
             for ikey, irow in df.iterrows():
-                code_raw = irow['code1']
+                if bool(re.search(r"\s", irow['code1'])):
+                    print(irow['code1'])
+                code_raw = irow['code1'].strip()
                 code_type = irow['codetype1']
                 des = irow['descrip']
                 if '*' in code_raw:
