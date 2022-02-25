@@ -15,6 +15,40 @@ print = functools.partial(print, flush=True)
 import time
 
 
+def build_rxnorm_or_atc_to_name():
+    print('In build_rxnorm_or_atc_to_name()...')
+    start_time = time.time()
+    node_df = pd.read_csv(r'../data/mapping/RXNCONSO.RRF', sep='|', header=None, dtype=str)
+
+    print('node_df.shape:', node_df.shape)  # node_df.shape: (1101174, 19)
+
+    rx_name_df = node_df.loc[(node_df[11] == 'RXNORM'), [0, 14]]
+    rx_name = defaultdict(list)
+    for index, row in rx_name_df.iterrows():
+        rx_name[row[0]].append(row[14])
+
+    print('rxnorm to name: len(rx_name):', len(rx_name))
+    output_file = r'../data/mapping/rxnorm_name.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(rx_name, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    atc_df = node_df.loc[node_df[11] == 'ATC', [13, 14]]
+    atc_name = defaultdict(list)
+    for index, row in atc_df.iterrows():
+        atc_name[row[13]].append(row[14])
+
+    print('atc to name: len(rx_name):', len(rx_name))
+    output_file = r'../data/mapping/atc_name.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(atc_name, open(output_file, 'wb'))
+
+    print('dump done to {}'.format(output_file))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return rx_name, atc_name
+
+
 def rxnorm_ingredient_from_NIH_UMLS():
     # To get code mapping from rxnorm_cui to ingredients.
     # for (Single Active) Ingredients
@@ -656,6 +690,9 @@ def load_query3_vaccine_and_drug_mapping():
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
+    # 0. rxnorm to name
+    rx_name, atc_name = build_rxnorm_or_atc_to_name()
+
     # 1. Build rxnorm to atc mapping:
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
 
@@ -680,6 +717,6 @@ if __name__ == '__main__':
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
-    df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
+    # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
     #
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

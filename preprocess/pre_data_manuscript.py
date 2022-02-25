@@ -1561,12 +1561,51 @@ def cohorts_table_generation(args):
     return df
 
 
+def enrich_dx_rwd_info():
+    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
+    rx_name = utils.load(r'../data/mapping/rxnorm_name.pkl')
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL.csv',
+                     dtype={'rxnorm':str})
+    df = df.sort_values(by=['no. in positive group'], ascending=False)
+
+    df['ratio'] = df['no. in positive group'] / df['no. in negative group']
+    df['name'] = df['rxnorm'].apply(lambda x: rx_name.get(x, [''])[0])
+    df['atc-l3'] = ''
+    df['atc-l4'] = ''
+
+    rx_atc = utils.load(r'../data/mapping/rxnorm_atc_mapping.pkl')
+    atc_name = utils.load(r'../data/mapping/atc_name.pkl')
+
+    for index, row in df.iterrows():
+        rx = row[0]
+        atcset = rx_atc.get(rx, [])
+
+        atc3_col = []
+        atc4_col = []
+        for _ra in atcset:
+            atc, name = _ra
+            atc3 = atc[:4]
+            atc3name = atc_name.get(atc3, [''])[0]
+            atc3_col.append(atc3 + ':' + atc3name)
+
+            atc4 = atc[:5]
+            atc4name = atc_name.get(atc4, [''])[0]
+            atc4_col.append(atc4 + ':' + atc4name)
+
+        atc3_col = '$'.join(atc3_col)
+        df.loc[index, 'atc-l3'] = atc3_col
+        atc4_col = '$'.join(atc4_col)
+        df.loc[index, 'atc-l4'] = atc4_col
+
+    df.to_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL_enriched.csv', index=False)
+
+
 if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1575,4 +1614,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
+    enrich_dx_rwd_info()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
