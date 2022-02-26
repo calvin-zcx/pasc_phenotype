@@ -38,8 +38,9 @@ def parse_args():
     args.death_file = r'../data/V15_COVID19/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
+    args.covid_list_file = r'../data/V15_COVID19/covid_phenotype/COVID_ICD.xlsx'
 
-    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuscript_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -59,12 +60,20 @@ def read_preprocessed_data(args):
 
     """
     start_time = time.time()
+    # Load covid list covid_list_file
+    df_covid_list = pd.read_excel(args.covid_list_file, sheet_name=r'Sheet1')
+    print('df_covid_list.shape', df_covid_list.shape)
+    covid_codes_set = set([x.upper().strip().replace('.', '') for x in df_covid_list['Code']])  # .to_list()
+    print('Load COVID phenotyping ICD codes list done from {}\nlen(pasc_codes)'.format(args.covid_list_file),
+          len(df_covid_list['Code']), 'len(covid_codes_set):', len(covid_codes_set))
+
     # Load pasc list
     df_pasc_list = pd.read_excel(args.pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
     print('df_pasc_list.shape', df_pasc_list.shape)
-    pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+    # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes = [x.upper().strip().replace('.', '') for x in df_pasc_list['ICD-10-CM Code']]  # .to_list()
     pasc_codes_set = set(pasc_codes)
-    print('0-Load compiled pasc list done from {}\nlen(pasc_codes)'.format(args.pasc_list_file),
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(args.pasc_list_file),
           len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
 
     # load pcr/antigen covid patients, and their corresponding infos
@@ -79,7 +88,7 @@ def read_preprocessed_data(args):
     id_death = utils.load(args.death_file)
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death
+    return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death
 
 
 def _eligibility_age(id_indexrecord, age_minimum_criterion):
@@ -206,7 +215,7 @@ def _eligibility_followup_any_dx(id_indexrecord, id_dx, func_is_in_followup):
             flag_followup = False
             for r in v_dx:
                 dx_date = r[0]
-                dx = r[1].replace('.', '').upper()
+                dx = r[1].replace('.', '').upper().strip()
                 dx_type = r[2]
                 # if int(dx_type) == 9:
                 #     print('icd code 9:', dx)
@@ -411,10 +420,69 @@ def _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is
     return id_indexrecord
 
 
+def _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_set, func_is_in_followup):
+    print("Step: applying _eligibility_negative_followup_no_covid",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            # include, because no pasc
+            if covid_flag:
+                n_pos_after += 1
+            else:
+                n_neg_after += 1
+        else:
+            flag_negative_has_followup_covid = False
+            for r in v_dx:
+                dx_date = r[0]
+                dx = r[1].replace('.', '').upper().strip()
+                dx_type = r[2]
+                # if int(dx_type) == 9:
+                #     print('icd code 9:', dx)
+                if func_is_in_followup(dx_date, index_date) and (dx in covid_codes_set) and (not covid_flag):
+                    flag_negative_has_followup_covid = True
+                    break
+
+            if flag_negative_has_followup_covid:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+            else:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
-    df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death = read_preprocessed_data(args)
+    covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death = read_preprocessed_data(args)
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
@@ -476,11 +544,15 @@ def integrate_data_and_apply_eligibility(args):
     # and capture baseline PASC-like diagnosis for  Non-Covid patients
     # Our cohort 1 for screening PASC
     id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
+
+    # Step 5: Applying EC. No COVID diagnosis in the follow-up period of Negative Cohorts, excluding Covid Leaking
+    id_indexrecord = _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_set, _is_in_followup)
+
     data = _local_build_data(id_indexrecord)
     utils.dump(data, args.output_file_covid)
 
     # # Notes for other potential cohorts:
-    # #  Sensitivity 1: Applying EC. No PASC diagnoses in the baseline  --> healthy population
+    # #  Sensitivity 1: Applying EC. No (initial, or screened) PASC diagnoses in the baseline  --> healthy population
     # # Goal: screen PASC without baseline PASC
     # # Move to matrix part to build cohorts dynamically with a better flexibility
     # # print('Adult PASC incidence cohorts:')
