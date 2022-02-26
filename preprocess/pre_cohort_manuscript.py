@@ -420,7 +420,7 @@ def _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, func_is
     return id_indexrecord
 
 
-def _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_set, func_is_in_followup):
+def _eligibility_negative_followup_no_covid_dx(id_indexrecord, id_dx, covid_codes_set, func_is_in_followup):
     print("Step: applying _eligibility_negative_followup_no_covid",
           'input cohorts size:', len(id_indexrecord))
     N = len(id_indexrecord)
@@ -457,6 +457,65 @@ def _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_s
                     break
 
             if flag_negative_has_followup_covid:
+                exclude_list.append(pid)
+                if covid_flag:
+                    n_pos_exclude += 1
+                else:
+                    n_neg_exclude += 1
+            else:
+                if covid_flag:
+                    n_pos_after += 1
+                else:
+                    n_neg_after += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    return id_indexrecord
+
+
+def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
+    print("Step: applying _eligibility_negative_no_covid_dx",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        v_dx = id_dx.get(pid, [])
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+
+        if not v_dx:
+            # include, because no dx.covid for negative
+            if covid_flag:
+                n_pos_after += 1
+            else:
+                n_neg_after += 1
+        else:
+            flag_negative_has_covid = False
+            for r in v_dx:
+                dx_date = r[0]
+                dx = r[1].replace('.', '').upper().strip()
+                dx_type = r[2]
+                # if int(dx_type) == 9:
+                #     print('icd code 9:', dx)
+                if (dx in covid_codes_set) and (not covid_flag):
+                    flag_negative_has_covid = True
+                    break
+
+            if flag_negative_has_covid:
                 exclude_list.append(pid)
                 if covid_flag:
                     n_pos_exclude += 1
@@ -545,8 +604,8 @@ def integrate_data_and_apply_eligibility(args):
     # Our cohort 1 for screening PASC
     id_indexrecord = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
 
-    # Step 5: Applying EC. No COVID diagnosis in the follow-up period of Negative Cohorts, excluding Covid Leaking
-    id_indexrecord = _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_set, _is_in_followup)
+    # Step 5: Applying EC. No COVID diagnosis in the Negative Cohorts, any records in any time, excluding Covid Leaking
+    id_indexrecord = _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set)
 
     data = _local_build_data(id_indexrecord)
     utils.dump(data, args.output_file_covid)
