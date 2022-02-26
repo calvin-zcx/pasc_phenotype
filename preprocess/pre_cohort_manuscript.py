@@ -439,7 +439,7 @@ def _eligibility_negative_followup_no_covid(id_indexrecord, id_dx, covid_codes_s
             n_neg_before += 1
 
         if not v_dx:
-            # include, because no pasc
+            # include, because no dx.covid for negative
             if covid_flag:
                 n_pos_after += 1
             else:
