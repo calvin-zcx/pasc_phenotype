@@ -687,11 +687,35 @@ def load_query3_vaccine_and_drug_mapping():
     return df_all, med_code, vac_code
 
 
+def build_icd9_to_icd10():
+
+    df = pd.read_csv(r'../data/mapping/icd9toicd10cmgem.csv', dtype=str)
+    print('df.shape:', df.shape)
+
+    icd9_icd10 = defaultdict(list)
+    for i, (key, row) in enumerate(df.iterrows()):
+        icd9 = row[0].strip()
+        icd10 = row[1].strip()
+        icd9_icd10[icd9].append(icd10)
+
+    print('len(icd9_icd10)', len(icd9_icd10))
+
+    for key, records in icd9_icd10.items():
+        # add a set operation to reduce duplicates
+        records_sorted_list = list(set(records))
+        icd9_icd10[key] = records_sorted_list
+
+    print('len(icd9_icd10)', len(icd9_icd10))
+    utils.dump(icd9_icd10, r'../data/mapping/icd9_icd10.pkl')
+
+    return icd9_icd10
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
     # 0. rxnorm to name
-    rx_name, atc_name = build_rxnorm_or_atc_to_name()
+    # rx_name, atc_name = build_rxnorm_or_atc_to_name()
 
     # 1. Build rxnorm to atc mapping:
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
@@ -719,4 +743,8 @@ if __name__ == '__main__':
     # 8. Load query 3 mapping:
     # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
     #
+
+    # 9 Load icd9 to icd10 mapping
+    icd9_icd10 = build_icd9_to_icd10()
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

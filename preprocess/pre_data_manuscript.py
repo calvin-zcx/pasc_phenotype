@@ -246,7 +246,7 @@ def _encoding_ventilation(pro_list, obsgen_list, index_date, vent_codes):
         if ecs._is_in_ventilation_period(px_date, index_date):
             # OBSGEN_TYPE=”PC_COVID” & OBSGEN_CODE = 3000 & OBSGEN_SOURCE=”DR” & RESULT_TEXT=”Y”
             if (px_type == 'PC_COVID') and (px == '3000') and (source == 'DR') and (result_text == 'Y'):
-                flag = 1 # True
+                flag = 1  # True
                 break
 
     return flag
@@ -525,6 +525,28 @@ def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
+def _dx_clean_and_translate_any_ICD9_to_ICD10(dx_list, icd9_icd10, icd_ccsr):
+    dx_list_new = []
+    n_icd9 = 0
+    for records in dx_list:
+        dx_t, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper().strip()
+        if ('9' in dx_type) or ((icd.isnumeric() or (icd[0] in ('E', 'V'))) and (icd not in icd_ccsr)):
+            icd10_translation = icd9_icd10.get(icd, [])
+            if len(icd10_translation) > 0:
+                n_icd9 += 1
+                for x in icd10_translation:
+                    new_records = (dx_t, x, 'from'+icd, enc_type)
+                    dx_list_new.append(new_records)
+                # print(icd, icd10_translation)
+            else:
+                dx_list_new.append((dx_t, icd, dx_type, enc_type))
+        else:
+            dx_list_new.append((dx_t, icd, dx_type, enc_type))
+
+    return dx_list_new
+
+
 def _update_counter(dict3, key, flag):
     if key in dict3:
         dict3[key][0] += 1
@@ -550,9 +572,7 @@ def build_query_1and2_matrix(args):
 
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
     comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
-
-    # icd_pasc = utils.load(r'../data/mapping/icd_pasc_mapping.pkl')
-    # pasc_encoding = utils.load(r'../data/mapping/pasc_index_mapping.pkl')
+    icd9_icd10 = utils.load(r'../data/mapping/icd9_icd10.pkl')
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -698,14 +718,15 @@ def build_query_1and2_matrix(args):
         adi_value_list = [v[1][7] for key, v in id_data.items()]
         adi_value_default = np.nanmedian(adi_value_list)
 
-
-
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(
-                id_data), mininterval=10):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+                id_data),
+                              mininterval=10):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
+
+            dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
 
             if args.positive_only:
                 if not flag:
@@ -772,6 +793,7 @@ def build_query_1and2_matrix(args):
             # in follow-up, each person count once
             _dx_set = set()
             for i_dx in dx:
+                dx_t, icd, dx_type, enc_type = i_dx
                 dx_t = i_dx[0]
                 icd = i_dx[1].replace('.', '').upper()
                 if ecs._is_in_followup(dx_t, index_date):
@@ -1561,11 +1583,11 @@ def cohorts_table_generation(args):
     return df
 
 
-def enrich_dx_rwd_info():
+def enrich_med_rwd_info():
     atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
     rx_name = utils.load(r'../data/mapping/rxnorm_name.pkl')
     df = pd.read_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL.csv',
-                     dtype={'rxnorm':str})
+                     dtype={'rxnorm': str})
     df = df.sort_values(by=['no. in positive group'], ascending=False)
 
     df['ratio'] = df['no. in positive group'] / df['no. in negative group']
@@ -1597,7 +1619,35 @@ def enrich_dx_rwd_info():
         atc4_col = '$'.join(atc4_col)
         df.loc[index, 'atc-l4'] = atc4_col
 
-    df.to_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL_enriched.csv', index=False)
+    df.to_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL_enriched.csv',
+              index=False)
+    return df
+
+
+def rwd_dx_and_pasc_comparison():
+    df_ccsr = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV', dtype=str)
+    df_ccsr["'ICD-10-CM CODE'"] = df_ccsr["'ICD-10-CM CODE'"].apply(lambda x : x.strip("'"))
+    df_ccsr_sub = df_ccsr[["'ICD-10-CM CODE'",
+                           "'ICD-10-CM CODE DESCRIPTION'",
+                           "'CCSR CATEGORY 1'",
+                           "'CCSR CATEGORY 1 DESCRIPTION'"
+                           ]]
+    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
+                            sheet_name=r'PASC Screening List',
+                            usecols="A:N")
+    print('df_pasc.shape', df_pasc.shape)
+    # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+
+    df_icd = pd.read_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuscript_ALL.csv',
+                         dtype={'rxnorm': str})
+    df_icd['ratio'] = df_icd['no. in positive group'] / df_icd['no. in negative group']
+
+    df_icd = pd.merge(df_icd, df_ccsr_sub, left_on='dx code', right_on="'ICD-10-CM CODE'", how='left')
+
+    df = pd.merge(df_icd, df_pasc, left_on='dx code', right_on='ICD-10-CM Code', how='outer')
+    df.to_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuscript_ALL_with_PASC.csv',
+              index=False)
+    return df
 
 
 if __name__ == '__main__':
@@ -1605,7 +1655,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1614,5 +1664,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
-    enrich_dx_rwd_info()
+    # df = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
