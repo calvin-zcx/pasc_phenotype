@@ -426,6 +426,14 @@ def _encoding_death(death, index_date):
     return encoding
 
 
+def _prefix_in_set(icd, icd_set):
+    for i in range(len(icd)):
+        pre = icd[:(len(icd)-i)]
+        if pre in icd_set:
+            return True, pre
+    return False, ''
+
+
 def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e):
     # encoding 137 outcomes from our PASC list
     # outcome_t2e = np.zeros((n, 137), dtype='int')
@@ -442,17 +450,23 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
         icd = icd.replace('.', '').upper()
         # build baseline
         if ecs._is_in_baseline(dx_date, index_date):
-            if icd in icd_pasc:
-                pasc_info = icd_pasc[icd]
+            # 2022-02-27, change exact match to prefix match of PASC codes
+            flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+            if flag:  # if icd in icd_pasc:
+                # if icdprefix != icd:
+                #     print(icd, icdprefix)
+                pasc_info = icd_pasc[icdprefix]
                 pasc = pasc_info[0]
                 rec = pasc_encoding[pasc]
                 pos = rec[0]
                 outcome_baseline[0, pos] += 1
+
         # build outcome
         if ecs._is_in_followup(dx_date, index_date):
             days = (dx_date - index_date).days
-            if icd in icd_pasc:
-                pasc_info = icd_pasc[icd]
+            flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+            if flag:  # if icd in icd_pasc:
+                pasc_info = icd_pasc[icdprefix]
                 pasc = pasc_info[0]
                 rec = pasc_encoding[pasc]
                 pos = rec[0]
