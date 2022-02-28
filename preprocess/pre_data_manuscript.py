@@ -96,7 +96,8 @@ def _load_mapping():
         record_example = next(iter(ccsr_encoding.items()))
         print('e.g.:', record_example)
 
-    with open(r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl', 'rb') as f:
+    # change 2022-02-28, previous ingredient first, current moiety first
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.pkl', 'rb') as f:
         rxnorm_ing = pickle.load(f)
         print('Load rxRNOM_CUI to ingredient mapping done! len(rxnorm_atc):', len(rxnorm_ing))
         record_example = next(iter(rxnorm_ing.items()))

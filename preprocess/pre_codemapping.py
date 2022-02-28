@@ -628,7 +628,7 @@ def load_cdc_mapping():
 def load_query3_vaccine_and_drug_mapping():
     df_map_vac = pd.read_excel(r'../data/mapping/query3-vaccine_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
     df_map_med = pd.read_excel(r'../data/mapping/query3-medication_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
-    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.24.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
+    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.28.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
     print('len(df_all):', len(df_all))
     print('len(df_map_vac):', len(df_map_vac))
     print('len(df_map_med):', len(df_map_med))
@@ -729,9 +729,9 @@ if __name__ == '__main__':
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
 
     # 2. Build rxnorm to ingredient(s) mapping
-    rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
-    rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
+    # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
+    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()
@@ -749,7 +749,7 @@ if __name__ == '__main__':
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
-    # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
+    df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
     #
 
     # 9 Load icd9 to icd10 mapping
