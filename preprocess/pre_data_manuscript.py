@@ -1650,11 +1650,12 @@ def rwd_dx_and_pasc_comparison():
     df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
                             sheet_name=r'PASC Screening List',
                             usecols="A:N")
+    df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x : x.strip().upper().replace('.', ''))
     print('df_pasc.shape', df_pasc.shape)
     # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
 
     df_icd = pd.read_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuscript_ALL.csv',
-                         dtype={'rxnorm': str})
+                         dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "dx code"})
     df_icd['ratio'] = df_icd['no. in positive group'] / df_icd['no. in negative group']
 
     df_icd = pd.merge(df_icd, df_ccsr_sub, left_on='dx code', right_on="'ICD-10-CM CODE'", how='left')
@@ -1662,7 +1663,12 @@ def rwd_dx_and_pasc_comparison():
     df = pd.merge(df_icd, df_pasc, left_on='dx code', right_on='ICD-10-CM Code', how='outer')
     df.to_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuscript_ALL_with_PASC.csv',
               index=False)
-    return df
+
+    df_pasc_withrwd = pd.merge(df_pasc, df_icd, left_on='ICD-10-CM Code', right_on='dx code', how='left')
+    df_pasc_withrwd.to_csv(r'../data/V15_COVID19/output/character/PASC_Adult_Combined_List_with_covid_4manuscript.csv',
+              index=False)
+
+    return df, df_pasc_withrwd
 
 
 if __name__ == '__main__':
@@ -1670,7 +1676,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1679,5 +1685,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
-    # df = rwd_dx_and_pasc_comparison()
+    df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

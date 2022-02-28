@@ -529,7 +529,8 @@ def ICD_to_PASC():
     pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
     df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
     print('df_pasc_list.shape', df_pasc_list.shape)
-    pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+    df_pasc_list['ICD-10-CM Code'] = df_pasc_list['ICD-10-CM Code'].apply(lambda x : x.strip().upper().replace('.', ''))
+    pasc_codes = df_pasc_list['ICD-10-CM Code'] #.str.upper().replace('.', '', regex=False)  # .to_list()
     pasc_codes_set = set(pasc_codes)
     print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
           len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
@@ -745,6 +746,6 @@ if __name__ == '__main__':
     #
 
     # 9 Load icd9 to icd10 mapping
-    icd9_icd10 = build_icd9_to_icd10()
+    # icd9_icd10 = build_icd9_to_icd10()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
