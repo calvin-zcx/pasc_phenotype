@@ -138,7 +138,9 @@ def rxnorm_ingredient_from_NIH_UMLS():
 # Data source 5: nih rxclass api https://rxnav.nlm.nih.gov/api-RxClass.getClassByRxNormDrugId.html
 def _parse_from_nih_rxnorm_api(rxcui):
     # Notice: Here we use Active_ingredient_RxCUI
-    r = requests.get('https://rxnav.nlm.nih.gov/REST/rxcui/{}/property.json?propName=Active_ingredient_RxCUI'.format(rxcui))
+    # r = requests.get('https://rxnav.nlm.nih.gov/REST/rxcui/{}/property.json?propName=Active_ingredient_RxCUI'.format(rxcui))
+    # change at 2022-02-28
+    r = requests.get('https://rxnav.nlm.nih.gov/REST/rxcui/{}/property.json?propName=Active_moiety_RxCUI'.format(rxcui))
     # Active_ingredient_RxCUI or use Active_moiety_RxCUI  ?  e.g. 1114700 different
     # moiety seems more low level
     # moiety: {"propConceptGroup":{"propConcept":
@@ -212,10 +214,13 @@ def add_rxnorm_ingredient_by_umls_api():
     records = sorted(records, key=lambda x: int(x[0]))
     df_rx_ing = pd.DataFrame(records, columns=['rxnorm_cui', 'name', 'num of ingredient(s)', 'ingredient(s)'])
     print('df_rx_ing.shape', df_rx_ing.shape)
-    df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api.csv')
+    # df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api.csv')
+    df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.csv')
+
 
     print('rxnorm to active ingredient(s): len(rx_ing_api):', len(rx_ing_api))
-    output_file = r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl'
+    # output_file = r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl'
+    output_file = r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.pkl'
     utils.check_and_mkdir(output_file)
     pickle.dump(rx_ing_api, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
@@ -237,7 +242,8 @@ def combine_rxnorm_ingredients_dicts():
         record_example = next(iter(rx_ing.items()))
         print('e.g.:', record_example)
 
-    with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl', 'rb') as f:
+    # rxnorm_ingredient_mapping_from_api_moiety
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.pkl', 'rb') as f: # with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl', 'rb') as f:
         rx_ing_api = pickle.load(f)
         print('Load rxRNOM_CUI to ingredient mapping generated from API done! len(rx_ing_api):', len(rx_ing_api))
         record_example = next(iter(rx_ing_api.items()))
@@ -253,8 +259,9 @@ def combine_rxnorm_ingredients_dicts():
     n_exist_but_different = 0
     i = 0
     # using UMLS file as default, api as aux, gave best coverage of atc
-    default_rx_ing = rx_ing
-    second_rx_ing = rx_ing_api
+    # change order 20022-02-28
+    default_rx_ing = rx_ing_api
+    second_rx_ing = rx_ing
 
     n_default = len(default_rx_ing)
     for key, val in second_rx_ing.items():
@@ -296,10 +303,10 @@ def combine_rxnorm_ingredients_dicts():
     records = sorted(records, key=lambda x: int(x[0]))
     df_records = pd.DataFrame(records, columns=['rxnorm_cui', 'name', 'num of ingredient(s)', 'ingredient(s)'])
     print('df_records.shape', df_records.shape)
-    df_records.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_combined.csv')
+    df_records.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.csv')
 
     print('rxnorm to active ingredient(s) COMBINED: ', len(rx_ing_api))
-    output_file = r'../data/mapping/rxnorm_ingredient_mapping_combined.pkl'
+    output_file = r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.pkl'
     utils.check_and_mkdir(output_file)
     pickle.dump(default_rx_ing, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
@@ -722,9 +729,9 @@ if __name__ == '__main__':
     # rxnorm_atcset, atc_rxnormset, atc3_index, df_rxrnom_atc = rxnorm_atc_from_NIH_UMLS()
 
     # 2. Build rxnorm to ingredient(s) mapping
-    # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
-    # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
+    rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
+    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()

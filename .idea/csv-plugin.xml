@@ -10,6 +10,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\V15_COVID19\output\character\info_dx_cohorts_covid_4manuNegNoCovid_ALL.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\V15_COVID19\output\character\info_dx_cohorts_covid_4manuscript_ALL.csv">
           <value>
             <Attribute>

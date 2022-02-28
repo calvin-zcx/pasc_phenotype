@@ -1602,7 +1602,7 @@ def enrich_med_rwd_info():
     atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
     rx_name = utils.load(r'../data/mapping/rxnorm_name.pkl')
     df = pd.read_csv(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuscript_ALL.csv',
-                     dtype={'rxnorm': str})
+                     dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "rxnorm"})
     df = df.sort_values(by=['no. in positive group'], ascending=False)
 
     df['ratio'] = df['no. in positive group'] / df['no. in negative group']
@@ -1700,6 +1700,7 @@ if __name__ == '__main__':
     # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
+    enrich_med_rwd_info()
 
-    df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    # df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
