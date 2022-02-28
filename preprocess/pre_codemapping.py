@@ -227,7 +227,7 @@ def add_rxnorm_ingredient_by_umls_api():
 def combine_rxnorm_ingredients_dicts():
     # compare, contrast, and update existing dictionary
     # if api exists, use api, then use my derived dictionary
-    # some times, our files give better results than api
+    # sometimes, our files give better results than api
 
     print('In combine_rxnorm_ingredients_dicts()...')
     start_time = time.time()

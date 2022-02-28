@@ -1665,8 +1665,24 @@ def rwd_dx_and_pasc_comparison():
               index=False)
 
     df_pasc_withrwd = pd.merge(df_pasc, df_icd, left_on='ICD-10-CM Code', right_on='dx code', how='left')
+
+    for index, row in df_pasc_withrwd.iterrows():
+        icd = row['ICD-10-CM Code']
+        if pd.isna(row['dx code']):
+            _df = df_icd.loc[df_icd['dx code'].str.startswith(icd), :]
+            dx_code = ';'.join(_df['dx code'])
+            total = _df['total'].sum()
+            npos = _df['no. in positive group'].sum()
+            nneg = _df['no. in negative group'].sum()
+            ratio = npos / nneg
+            df_pasc_withrwd.loc[index, 'dx code'] = dx_code
+            df_pasc_withrwd.loc[index, 'total'] = total
+            df_pasc_withrwd.loc[index, 'no. in positive group'] = npos
+            df_pasc_withrwd.loc[index, 'no. in negative group'] = nneg
+            df_pasc_withrwd.loc[index, 'ratio'] = ratio
+
     df_pasc_withrwd.to_csv(r'../data/V15_COVID19/output/character/PASC_Adult_Combined_List_with_covid_4manuscript.csv',
-              index=False)
+            index=False)
 
     return df, df_pasc_withrwd
 
@@ -1676,7 +1692,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1685,5 +1701,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
-    # df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
