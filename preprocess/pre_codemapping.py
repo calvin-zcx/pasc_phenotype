@@ -305,7 +305,10 @@ def combine_rxnorm_ingredients_dicts():
     print('df_records.shape', df_records.shape)
     df_records.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.csv')
 
-    print('rxnorm to active ingredient(s) COMBINED: ', len(rx_ing_api))
+    print('rxnorm to ingredients before add by hands: ', len(default_rx_ing))
+    default_rx_ing = _add_rxnorm_ing_by_hands(default_rx_ing)
+    print('rxnorm to ingredients after add by hands: ', len(default_rx_ing))
+
     output_file = r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.pkl'
     utils.check_and_mkdir(output_file)
     pickle.dump(default_rx_ing, open(output_file, 'wb'))
@@ -313,6 +316,49 @@ def combine_rxnorm_ingredients_dicts():
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     return default_rx_ing, df_records
+
+
+def _add_rxnorm_ing_by_hands(rx_ing):
+    rx_ing['1360201'] = ['435']  # albuterol 0.09 MG/ACTUAT Metered Dose Inhaler
+    rx_ing['1086966'] = ['612', '6581']
+    rx_ing['845494'] = ['8640']
+    rx_ing['845492'] = ['8640']
+    rx_ing['763179'] = ['8640']
+    rx_ing['763181'] = ['8640']
+    rx_ing['763185'] = ['8640']
+    rx_ing['763183'] = ['8640']
+    rx_ing['1659930'] = ['7242']
+    rx_ing['1359855'] = ['274783']
+    rx_ing['1658648'] = ['5224']
+    rx_ing['1362058'] = ['5224']
+    rx_ing['1362049'] = ['5224']
+    rx_ing['1657985'] = ['5224']
+    rx_ing['1362026'] = ['5224']
+
+    rx_ing['1150984'] = ['18631']
+    rx_ing['749783'] = ['18631']
+    rx_ing['749780'] = ['18631']
+    rx_ing['1656667'] = ['6585']
+    rx_ing['834023'] = ['6902']
+    rx_ing['762675'] = ['6902']
+    rx_ing['1435176'] = ['161']
+
+    rx_ing['1360330'] = ['8163']
+    rx_ing['1242903'] = ['8163']
+
+    rx_ing['1490492'] = ['5224']
+    rx_ing['1001690'] = ['36721', '6585']
+
+    rx_ing['1360509'] = ['19831', '25255', '389132']
+    rx_ing['1360402'] = ['19831']
+
+    rx_ing['1654007'] = ['4177']
+    rx_ing['1360463'] = ['4177']
+
+    rx_ing['748961'] = ['7514']
+    rx_ing['1539955'] = ['7514']
+
+    return rx_ing
 
 
 def rxnorm_atc_from_NIH_UMLS():
@@ -731,7 +777,7 @@ if __name__ == '__main__':
     # 2. Build rxnorm to ingredient(s) mapping
     # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()
@@ -749,7 +795,7 @@ if __name__ == '__main__':
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
-    df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
+    # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
     #
 
     # 9 Load icd9 to icd10 mapping
