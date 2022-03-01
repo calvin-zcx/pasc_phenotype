@@ -1022,7 +1022,8 @@ def build_query_1and2_matrix(args):
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
     selected_cols = [x for x in df_bool.columns if
                      (x.startswith('dx-out@') or x.startswith('dx-base@') or
-                      x.startswith('med-out@') or x.startswith('med-base@'))]
+                      x.startswith('med-out@') or x.startswith('med-base@') or
+                      x.startswith('covidmed-out@') or x.startswith('covidmed-base@'))]
     df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
     utils.check_and_mkdir(args.output_file_query12_bool)
