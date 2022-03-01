@@ -777,7 +777,7 @@ if __name__ == '__main__':
     # 2. Build rxnorm to ingredient(s) mapping
     # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()
