@@ -1701,6 +1701,6 @@ if __name__ == '__main__':
     # cohorts_table_generation(args)
     # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
-    # enrich_med_rwd_info()
-    # df, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    # df_med = enrich_med_rwd_info()
+    # df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
