@@ -571,6 +571,28 @@ def zip_aid_mapping():
     return zip_adi, zip5_df
 
 
+def selected_rxnorm_ingredient_to_index():
+    start_time = time.time()
+    rx_df = pd.read_csv(r'../data/mapping/info_medication_cohorts_covid_4manuNegNoCovid_ALL_enriched.csv',
+                        dtype={'rxnorm':str})
+    # ['rxnorm', 'total', 'no. in positive group', 'no. in negative group',
+    #        'ratio', 'name', 'atc-l3', 'atc-l4']
+    rx_df = rx_df.sort_values(by='ratio', ascending=False)
+    rx_df = rx_df.loc[rx_df.loc[:, 'no. in positive group'] >= 100, :]
+    print('rx_df.shape:', rx_df.shape)
+
+    rxnorm_index = {}
+    for i, (index, row) in enumerate(rx_df.iterrows()):
+        rx = row[0].strip()
+        rxnorm_index[rx] = [i, ] + row.tolist()
+
+    print('len(rxnorm_index):', len(rxnorm_index))
+    utils.dump(rxnorm_index, r'../data/mapping/selected_rxnorm_index.pkl')
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return rxnorm_index
+
+
 def ICD10_to_CCSR():
     # To get code mapping from icd10 to ccsr.
     # Data source: https://www.hcup-us.ahrq.gov/toolssoftware/ccsr/dxccsr.jsp
@@ -864,7 +886,8 @@ if __name__ == '__main__':
     # 2. Build rxnorm to ingredient(s) mapping
     # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
-    rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
+    ing_index = selected_rxnorm_ingredient_to_index()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()

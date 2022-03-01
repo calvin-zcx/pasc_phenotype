@@ -30,7 +30,7 @@ def parse_args():
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid',
                                               'covid_4screen', 'covid_4screen_Covid+',
                                               'covid_4manuscript', 'covid_4manuNegNoCovid'],
-                        default='covid_4manuNegNoCovid', help='cohorts')
+                        default='covid_4manuscript', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
@@ -132,16 +132,14 @@ def _load_mapping():
     #     print('Load ATC to rxRNOM_CUI mapping done! len(atc_rxnorm):', len(atc_rxnorm))
     #     record_example = next(iter(atc_rxnorm.items()))
     #     print('e.g.:', record_example)
-
     ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
     comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
     icd9_icd10 = utils.load(r'../data/mapping/icd9_icd10.pkl')
     rxing_index = utils.load(r'../data/mapping/selected_rxnorm_index.pkl')
-    covidmed_codes = utils.load(r'../data/mapping/query3_medication_codes.pkl')
 
     return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
            rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes
+           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index
 
 
 def _encoding_age(age):
@@ -402,69 +400,6 @@ def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
     return encoding
 
 
-def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes, index_date, default_t2e):
-    # in -14 -- 14 days
-    encoding = np.zeros((1, len(covidmed_column_names)), dtype='int')
-
-    # also consider these drugs as outcome setting
-    outcome_t2e = np.ones((1, len(covidmed_column_names)), dtype='float') * default_t2e
-    outcome_flag = np.zeros((1, len(covidmed_column_names)), dtype='int')
-    outcome_baseline = np.zeros((1, len(covidmed_column_names)), dtype='int')
-
-    for records in med_list:
-        med_date, rxnorm, supply_days = records
-        if ecs._is_in_covid_medication(med_date, index_date):
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if rxnorm in covidmed_codes[col_name]:
-                        encoding[0, pos] += 1
-
-        if ecs._is_in_medication_baseline(med_date, index_date):
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if rxnorm in covidmed_codes[col_name]:
-                        outcome_baseline[0, pos] += 1
-
-        if ecs._is_in_followup(med_date, index_date):
-            days = (med_date - index_date).days
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if rxnorm in covidmed_codes[col_name]:
-                        if outcome_flag[0, pos] == 0:
-                            if days < outcome_t2e[0, pos]:
-                                outcome_t2e[0, pos] = days
-                            outcome_flag[0, pos] = 1
-                        else:
-                            outcome_flag[0, pos] += 1
-
-    for records in pro_list:
-        px_date, px, px_type, enc_type, enc_id = records
-        if ecs._is_in_covid_medication(px_date, index_date):
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if px in covidmed_codes[col_name]:
-                        encoding[0, pos] += 1
-
-        if ecs._is_in_medication_baseline(px_date, index_date):
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if px in covidmed_codes[col_name]:
-                        outcome_baseline[0, pos] += 1
-
-        if ecs._is_in_followup(px_date, index_date):
-            days = (px_date - index_date).days
-            for pos, col_name in enumerate(covidmed_column_names):
-                if col_name in covidmed_codes:
-                    if px in covidmed_codes[col_name]:
-                        if outcome_flag[0, pos] == 0:
-                            if days < outcome_t2e[0, pos]:
-                                outcome_t2e[0, pos] = days
-                            outcome_flag[0, pos] = 1
-                        else:
-                            outcome_flag[0, pos] += 1
-    return encoding, outcome_flag, outcome_t2e, outcome_baseline
-
-
 def _encoding_maxfollowtime(index_date, enc, dx, med):
     # encode maximum followup in database
     if enc:
@@ -499,7 +434,7 @@ def _encoding_death(death, index_date):
 
 def _prefix_in_set(icd, icd_set):
     for i in range(len(icd)):
-        pre = icd[:(len(icd) - i)]
+        pre = icd[:(len(icd)-i)]
         if pre in icd_set:
             return True, pre
     return False, ''
@@ -552,45 +487,6 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
     return outcome_flag, outcome_t2e, outcome_baseline
 
 
-def _encoding_outcome_med_rxnorm_ingredient(med_list, rxnorm_ing, ing_encoding, index_date, default_t2e, verbose=0):
-    # encoding 434 top rxnorm ingredient drugs
-    # initialize t2e:  last encounter,  end of followup, death, event, whichever happens first
-    outcome_t2e = np.ones((1, len(ing_encoding)), dtype='float') * default_t2e
-    outcome_flag = np.zeros((1, len(ing_encoding)), dtype='int')
-    outcome_baseline = np.zeros((1, len(ing_encoding)), dtype='int')
-
-    _no_mapping_rxrnom = set([])
-    for records in med_list:
-        med_date, rxnorm, supply_days = records
-        ing_set = set(rxnorm_ing.get(rxnorm, []))
-
-        if len(ing_set) > 0:
-            pos_list = [ing_encoding[x][0] for x in ing_set if x in ing_encoding]
-        else:
-            _no_mapping_rxrnom.add(rxnorm)
-            if verbose:
-                print('Warning:', rxnorm, 'not in rxnorm to ingredeints dictionary!')
-            continue
-
-        # build baseline
-        if ecs._is_in_medication_baseline(med_date, index_date):  # 2022-02-17 USE 1 YEAR FOR MEDICATION
-            for pos in pos_list:
-                outcome_baseline[0, pos] += 1
-
-        # build outcome
-        if ecs._is_in_followup(med_date, index_date):
-            days = (med_date - index_date).days
-            for pos in pos_list:
-                if outcome_flag[0, pos] == 0:
-                    if days < outcome_t2e[0, pos]:
-                        outcome_t2e[0, pos] = days
-                    outcome_flag[0, pos] = 1
-                else:
-                    outcome_flag[0, pos] += 1
-    # debug # a = pd.DataFrame({'rxnorm':ing_encoding.keys(), 'name':ing_encoding.values(), 'outcome_flag':outcome_flag.squeeze(), 'outcome_t2e':outcome_t2e.squeeze(), 'outcome_baseline':outcome_baseline.squeeze()})
-    return outcome_flag, outcome_t2e, outcome_baseline
-
-
 def _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level):
     assert atc_level in [1, 2, 3, 4, 5]
     atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
@@ -608,8 +504,8 @@ def _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level):
     return atcl_set
 
 
-def _encoding_outcome_med_atc(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, default_t2e, atc_level=3,
-                              verbose=0):
+def _encoding_outcome_med(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, index_date, default_t2e, atc_level=3,
+                          verbose=0):
     # mapping rxnorm_cui to its ingredient(s)
     # for each ingredient, mapping to atc and thus atc[:3] is level three
     # med_array = np.zeros((n, 2), dtype='int')  # atc level 3 category
@@ -661,7 +557,7 @@ def _dx_clean_and_translate_any_ICD9_to_ICD10(dx_list, icd9_icd10, icd_ccsr):
             if len(icd10_translation) > 0:
                 n_icd9 += 1
                 for x in icd10_translation:
-                    new_records = (dx_t, x, 'from' + icd, enc_type)
+                    new_records = (dx_t, x, 'from'+icd, enc_type)
                     dx_list_new.append(new_records)
                 # print(icd, icd10_translation)
             else:
@@ -689,9 +585,16 @@ def build_query_1and2_matrix(args):
     start_time = time.time()
     print('In build_query_1and2_matrix...')
     # step 1: load encoding dictionary
+    # icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
+    # icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding = _load_mapping()
+
     icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
     icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes = _load_mapping()
+    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index = _load_mapping()
+
+    # ventilation_codes = utils.load(r'../data/mapping/ventilation_codes.pkl')
+    # comorbidity_codes = utils.load(r'../data/mapping/tailor_comorbidity_codes.pkl')
+    # icd9_icd10 = utils.load(r'../data/mapping/icd9_icd10.pkl')
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -770,18 +673,16 @@ def build_query_1and2_matrix(args):
         index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
         #
 
-        # yearmonth_array = np.zeros((n, 23), dtype='int16')
-        # yearmonth_column_names = [
-        #     "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
-        #     "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
-        #     "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
-        #     "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
-        #     "YM: November 2021", "YM: December 2021", "YM: January 2022"
-        # ]
-
-        # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards,
-        # due to threshold >= 2 issue
-        # DX: End Stage Renal Disease on Dialysis, Both diagnosis and procedure codes used to define this condtion
+        yearmonth_array = np.zeros((n, 23), dtype='int16')
+        yearmonth_column_names = [
+            "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
+            "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
+            "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
+            "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
+            "YM: November 2021", "YM: December 2021", "YM: January 2022"
+        ]
+        # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards, due to threshold >= 2 issue
+        # DX: End Stage Renal Disease on Dialysis   Both diagnosis and procedure codes used to define this condtion
         dx_array = np.zeros((n, 37), dtype='int16')
         dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                            "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
@@ -798,32 +699,11 @@ def build_query_1and2_matrix(args):
                            "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
                            'DX: Autism', 'DX: Sickle Cell'
                            ]
-
-        # Two selected baseline medication
+        #
         med_array = np.zeros((n, 2), dtype='int16')
         # atc level 3 category # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
         # --> detailed code list from CDC
         med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
-
-        # add covid medication
-        covidmed_array = np.zeros((n, 25), dtype='int16')
-        covidmed_column_names = [
-            'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
-            'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
-            'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
-            'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)',
-            'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
-            'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
-            'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
-            'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
-
-        # also these drug categories as outcomes in followup
-        outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-t2e@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-base@' + x for x in covidmed_column_names]
 
         # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
         # In total, there are 137 PASC categories in our lists. See T2E later
@@ -834,20 +714,26 @@ def build_query_1and2_matrix(args):
                                ['dx-t2e@' + x for x in pasc_encoding.keys()] + \
                                ['dx-base@' + x for x in pasc_encoding.keys()]
 
-        # rxing_encoding outcome.
-        outcome_med_flag = np.zeros((n, 434), dtype='int16')
-        outcome_med_t2e = np.zeros((n, 434), dtype='int16')
-        outcome_med_baseline = np.zeros((n, 434), dtype='int16')
-        outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-t2e@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-base@' + x for x in rxing_encoding.keys()]
+        # atcl2 outcome. time 2 event is not good for censoring or negative. update later
+        outcome_med_flag = np.zeros((n, 269), dtype='int16')
+        outcome_med_t2e = np.zeros((n, 269), dtype='int16')
+        outcome_med_baseline = np.zeros((n, 269), dtype='int16')
+        outcome_med_column_names = ['med-out@' + x for x in atcl3_encoding.keys()] + \
+                                   ['med-t2e@' + x for x in atcl3_encoding.keys()] + \
+                                   ['med-base@' + x for x in atcl3_encoding.keys()]
+
+        # outcome_med_t2e = np.zeros((n, 909), dtype='int16')
+        # outcome_med_flag = np.zeros((n, 909), dtype='int16')
+        # outcome_med_baseline = np.zeros((n, 909), dtype='int16')
+        # outcome_med_column_names = ['atc@' + x for x in atcl4_encoding.keys()] + \
+        #                            ['atct2e@' + x for x in atcl4_encoding.keys()] + \
+        #                            ['atcbase@' + x for x in atcl4_encoding.keys()]
 
         column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                         'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
-                       social_column_names + utilization_column_names + index_period_names + \
-                       dx_column_names + med_column_names + covidmed_column_names + \
-                       outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
+                       social_column_names + utilization_column_names + index_period_names + yearmonth_column_names + \
+                       dx_column_names + med_column_names + outcome_column_names + outcome_med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -856,8 +742,8 @@ def build_query_1and2_matrix(args):
 
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(
-                id_data), mininterval=10):
-            # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+                id_data),
+                              mininterval=10):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
             flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
@@ -903,7 +789,7 @@ def build_query_1and2_matrix(args):
             utilization_array[i, :] = _encoding_utilization(enc, index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             #
-            # yearmonth_array[i, :] = _encoding_yearmonth(index_date)
+            yearmonth_array[i, :] = _encoding_yearmonth(index_date)
 
             # encoding query 2 information
             dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date, procedure)
@@ -917,16 +803,13 @@ def build_query_1and2_matrix(args):
                 np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
                 np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
-
-            covidmed_array[i, :], \
-            outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :]\
-                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
-
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
                 _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
-
+            # later use selected ATCl4, because too high dim
+            # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] =
+            # _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl4_encoding, index_date, default_t2e, atc_level=4)
             outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
-                _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
+                _encoding_outcome_med(med, rxnorm_ing, rxnorm_atc, atcl3_encoding, index_date, default_t2e, atc_level=3)
 
             # count additional information
             # in follow-up, each person count once
@@ -974,12 +857,9 @@ def build_query_1and2_matrix(args):
                                 social_array,
                                 utilization_array,
                                 index_period_array,
+                                yearmonth_array,
                                 dx_array,
                                 med_array,
-                                covidmed_array,
-                                outcome_covidmed_flag,
-                                outcome_covidmed_t2e,
-                                outcome_covidmed_baseline,
                                 outcome_flag,
                                 outcome_t2e,
                                 outcome_baseline,
@@ -1768,7 +1648,7 @@ def enrich_med_rwd_info():
 
 def rwd_dx_and_pasc_comparison():
     df_ccsr = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV', dtype=str)
-    df_ccsr["'ICD-10-CM CODE'"] = df_ccsr["'ICD-10-CM CODE'"].apply(lambda x: x.strip("'"))
+    df_ccsr["'ICD-10-CM CODE'"] = df_ccsr["'ICD-10-CM CODE'"].apply(lambda x : x.strip("'"))
     df_ccsr_sub = df_ccsr[["'ICD-10-CM CODE'",
                            "'ICD-10-CM CODE DESCRIPTION'",
                            "'CCSR CATEGORY 1'",
@@ -1777,7 +1657,7 @@ def rwd_dx_and_pasc_comparison():
     df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
                             sheet_name=r'PASC Screening List',
                             usecols="A:N")
-    df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x : x.strip().upper().replace('.', ''))
     print('df_pasc.shape', df_pasc.shape)
     # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
 
@@ -1808,9 +1688,8 @@ def rwd_dx_and_pasc_comparison():
             df_pasc_withrwd.loc[index, 'no. in negative group'] = nneg
             df_pasc_withrwd.loc[index, 'ratio'] = ratio
 
-    df_pasc_withrwd.to_csv(
-        r'../data/V15_COVID19/output/character/PASC_Adult_Combined_List_with_covid_4manuNegNoCovid.csv',
-        index=False)
+    df_pasc_withrwd.to_csv(r'../data/V15_COVID19/output/character/PASC_Adult_Combined_List_with_covid_4manuNegNoCovid.csv',
+            index=False)
 
     return df, df_pasc_withrwd
 
