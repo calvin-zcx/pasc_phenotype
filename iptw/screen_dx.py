@@ -32,10 +32,8 @@ def parse_args():
     args = parser.parse_args()
 
     # More args
-    args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_{}.csv'.format(
+    args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovid_bool_{}.csv'.format(
         args.dataset)
-    # args.data_file_outcome = r'../data/V15_COVID19/output/character/outcome-dx-matrix_cohorts_covid_4manuscript_bool_{}.csv'.format(
-    #     args.dataset)
 
     if args.random_seed < 0:
         from datetime import datetime
@@ -109,12 +107,7 @@ if __name__ == "__main__":
     # because a patid id may occur in multiple sites. patid were site specific
 
     df_info = df[['Unnamed: 0', 'patid', 'site', 'index date', 'hospitalized',
-                  'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e', 'YM: March 2020',
-                  'YM: April 2020', 'YM: May 2020', 'YM: June 2020', 'YM: July 2020', 'YM: August 2020',
-                  'YM: September 2020', 'YM: October 2020', 'YM: November 2020', 'YM: December 2020',
-                  'YM: January 2021', 'YM: February 2021', 'YM: March 2021', 'YM: April 2021', 'YM: May 2021',
-                  'YM: June 2021', 'YM: July 2021', 'YM: August 2021', 'YM: September 2021', 'YM: October 2021',
-                  'YM: November 2021', 'YM: December 2021', 'YM: January 2022', ]]
+                  'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e']]
     df_label = df['covid']
     covs_columns = [x for x in
                     list(df.columns)[

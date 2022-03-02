@@ -933,8 +933,7 @@ def build_query_1and2_matrix(args):
             _dx_set = set()
             for i_dx in dx:
                 dx_t, icd, dx_type, enc_type = i_dx
-                dx_t = i_dx[0]
-                icd = i_dx[1].replace('.', '').upper()
+                icd = icd.replace('.', '').upper()
                 if ecs._is_in_followup(dx_t, index_date):
                     _dx_set.add(icd)
 
@@ -998,10 +997,10 @@ def build_query_1and2_matrix(args):
 
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
                                          columns=['total', 'no. in positive group', 'no. in negative group'])
-    dx_count_df.to_csv(args.output_dx_info)
+    # dx_count_df.to_csv(args.output_dx_info)
     med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
                                           columns=['total', 'no. in positive group', 'no. in negative group'])
-    med_count_df.to_csv(args.output_med_info)
+    # med_count_df.to_csv(args.output_med_info)
 
     df_data_all_sites = pd.concat(data_all_sites)
     print('df_data_all_sites.shape:', df_data_all_sites.shape)
