@@ -24,15 +24,16 @@ from zepid.graphics import EffectMeasurePlot
 import shlex
 np.random.seed(0)
 random.seed(0)
+from misc import utils
 
 
 def plot_forest_for_dx():
     # df = pd.read_csv(r'../data/V15_COVID19/output/character/specificDX/causal_effects_specific-v2.csv')
     df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific.csv')
     df_select = df.sort_values(by='hr-w', ascending=False)
-    pvalue = 0.05 / 100
+    pvalue = 0.05 / 137
     df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
-    df_select = df_select.loc[df_select['no. pasc in +'] >= 50, :]
+    df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
     # df_select = df_select.loc[df_select['hr-w']>1, :]
 
     labs = []
@@ -62,7 +63,7 @@ def plot_forest_for_dx():
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(11, 18), t_adjuster=0.0108, max_value=5, min_value=0.3, size=5, decimal=2)
+    ax = p.plot(figsize=(11, 18), t_adjuster=0.0108, max_value=60, min_value=0.3, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -82,7 +83,7 @@ def plot_forest_for_dx():
     # plt.close()
 
 
-def plot_forest_for_med():
+def plot_forest_for_med_atc():
     with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
         atcl3_encoding = pickle.load(f)
         print('Load to ATC-Level-3 to encoding mapping done! len(atcl3_encoding):', len(atcl3_encoding))
@@ -147,6 +148,74 @@ def plot_forest_for_med():
     # plt.close()
 
 
+def plot_forest_for_med():
+    rxing_index = utils.load(r'../data/mapping/selected_rxnorm_index.pkl')
+
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-snapshot-100.csv')
+    df_select = df.sort_values(by='hr-w', ascending=False)
+    pvalue = 0.05 / 100
+    df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
+    df_select = df_select.loc[df_select['no. pasc in +'] >= 300, :]
+
+    # df_select = df_select.loc[df_select['hr-w']>1, :]
+
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    for key, row in df_select.iterrows():
+        name = row['pasc']
+        # name_label = row['pasc-med'].strip('][').split(',')
+        if name in rxing_index:
+            name_label = rxing_index[name][6]
+            if pd.isna(name_label):
+                name_label = ''
+            else:
+                name_label = name_label.strip().strip(r'\'').lower()
+        else:
+            name_label = name
+        name_label = name_label.replace('<n>', ' ').replace('</n>', ' ')
+        hr = row['hr-w']
+        ci = stringlist_2_list(row['hr-w-CI'])
+        p = row['hr-w-p']
+
+        if len(name_label.split()) >= 7:
+            name_label = ' '.join(name_label.split()[:5]) + '\n' + ' '.join(name_label.split()[5:])
+
+        labs.append(name + '-' + name_label)
+        measure.append(hr)
+        lower.append(ci[0])
+        upper.append(ci[1])
+        pval.append(p)
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
+    p.labels(effectmeasure='aHR', scale='log')
+
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
+    ax = p.plot(figsize=(11, 20), t_adjuster=0.015, max_value=5, min_value=0.4, size=5, decimal=2)
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/MED/'
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'med_hr_forest-p{}.png'.format(pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'med_hr_forest-p{}.pdf'.format(pvalue), bbox_inches='tight', transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    # plt.close()
+
+
 def combine_pasc_list():
     df_icd = pd.read_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_followup-ALL.csv')
     print('df_icd.shape:', df_icd.shape)
@@ -163,6 +232,6 @@ def combine_pasc_list():
 
 
 if __name__ == '__main__':
-    # plot_forest_for_dx()
-    plot_forest_for_med()
+    plot_forest_for_dx()
+    # plot_forest_for_med()
     # combine_pasc_list()
