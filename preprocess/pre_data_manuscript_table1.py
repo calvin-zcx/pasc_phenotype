@@ -41,9 +41,9 @@ def parse_args():
     args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_cnt_{}_4table1.csv'.format(
         args.cohorts,
         args.dataset)
-    # args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_bool_{}.csv'.format(
-    #     args.cohorts,
-    #     args.dataset)
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_bool_{}.csv'.format(
+        args.cohorts,
+        args.dataset)
     #
     # args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}.csv'.format(
     #     args.cohorts,
@@ -833,9 +833,9 @@ def build_query_1and2_matrix(args):
                         'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
                        ['age'] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
-                       ["zipcode", "state", "city", "nation_adi", "state_adi"] + social_column_names + utilization_column_names + index_period_names + \
+                       ["zipcode", "state", "city", "nation_adi",
+                        "state_adi"] + social_column_names + utilization_column_names + index_period_names + \
                        dx_column_names + med_column_names + covidmed_column_names
-
 
         print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -908,7 +908,8 @@ def build_query_1and2_matrix(args):
                 np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
 
-            covidmed_array[i, :], _, _, _ = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
+            covidmed_array[i, :], _, _, _ = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes,
+                                                               index_date, default_t2e)
 
             # # count additional information
             # # in follow-up, each person count once
@@ -987,149 +988,180 @@ def build_query_1and2_matrix(args):
         (df_bool.loc[:, r'DX: Hypertension'] & (
                 df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
-    utils.check_and_mkdir(args.output_file_query12)
-    df_bool.to_csv(args.output_file_query12)
-    print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12))
+    utils.check_and_mkdir(args.output_file_query12_bool)
+    df_bool.to_csv(args.output_file_query12_bool)
+    print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12_bool))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_data_all_sites, df_bool
 
 
-def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
+def table1_cohorts_characterization_analyse(cohorts='covid_4manuNegNoCovid', dataset='ALL'):
     # severity in 'hospitalized', 'ventilation', None
-    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_query12_encoding_bool_{}.csv'.format(
+    in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_bool_{}_4table1.csv'.format(
+        cohorts, dataset)
+    out_file = r'../data/V15_COVID19/output/character/table1_of_matrix_cohorts_{}_bool_{}_4table1.xlsx'.format(
         cohorts, dataset)
 
     print('Try to load:', in_file)
-    df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2_with_PASC.xlsx',
-                                sheet_name=r'Table Shells - Adults')
     df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
 
-    if severity == '':
-        print('Not considering severity')
-        df_pos = df_data.loc[df_data["covid"], :]
-        df_neg = df_data.loc[~df_data["covid"], :]
-    elif severity == 'hospitalized':
-        print('Considering severity hospitalized cohorts')
-        df_pos = df_data.loc[df_data['hospitalized'] & df_data["covid"], :]
-        df_neg = df_data.loc[df_data['hospitalized'] & (~df_data["covid"]), :]
-    elif severity == 'not hospitalized':
-        print('Considering severity hospitalized cohorts')
-        df_pos = df_data.loc[(~df_data['hospitalized']) & df_data["covid"], :]
-        df_neg = df_data.loc[(~df_data['hospitalized']) & (~df_data["covid"]), :]
-    elif severity == 'ventilation':
-        print('Considering severity hospitalized ventilation cohorts')
-        df_pos = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & df_data["covid"], :]
-        df_neg = df_data.loc[df_data['hospitalized'] & df_data['ventilation'] & (~df_data["covid"]), :]
-    else:
-        raise ValueError
+    df_pos = df_data.loc[df_data["covid"] == 1, :]
+    df_neg = df_data.loc[df_data["covid"] == 0, :]
 
-    col_in = list(df_data.columns)
-    row_out = list(df_template.iloc[:, 0])
+    def _n_str(n):
+        return '{:,}'.format(n)
 
-    for pos in [True, False]:
-        # generate both positive and negative cohorts
-        df_out = pd.DataFrame(np.nan, index=row_out, columns=['N', '%'])
+    def _quantile_str(x):
+        v = x.quantile([0.25, 0.5, 0.75]).to_list()
+        return '{:.0f} ({:.0f}—{:.0f})'.format(v[1], v[0], v[2])
 
-        if pos:
-            df_in = df_pos
-        else:
-            df_in = df_neg
+    def _percentage_str(x):
+        n = x.sum()
+        per = x.mean()
+        return '{:,} ({:.1f})'.format(n, per * 100)
 
-        out_file = r'../data/V15_COVID19/output/character/results_query12_{}-{}-{}-{}.csv'.format(
-            cohorts,
-            dataset,
-            'POS' if pos else 'NEG',
-            severity)
+    def _smd(x1, x2):
+        m1 = x1.mean()
+        m2 = x2.mean()
+        v1 = x1.var()
+        v2 = x2.var()
 
-        df_out.loc['Number of Unique Patients', 'N'] = len(df_in)
-        df_out.loc['Number of Unique Patients', '%'] = 1.0
+        VAR = np.sqrt((v1 + v2) / 2)
+        smd = np.divide(
+            m1 - m2,
+            VAR, out=np.zeros_like(m1), where=VAR != 0)
+        return smd
 
-        age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-        df_out.loc[age_col, 'N'] = df_in[age_col].sum().to_list()
-        df_out.loc[age_col, '%'] = df_in[age_col].mean().to_list()
+    row_names = []
+    records = []
 
-        sex_col_in = ['Female', 'Male', 'Other/Missing']
-        sex_col_out = ['   Female', '   Male', '   Other2 / Missing']
-        df_out.loc[sex_col_out, 'N'] = df_in[sex_col_in].sum().to_list()
-        df_out.loc[sex_col_out, '%'] = df_in[sex_col_in].mean().to_list()
+    # N
+    row_names.append('N')
+    records.append([
+        _n_str(len(df_pos)),
+        _n_str(len(df_neg)),
+        np.nan
+    ])
 
-        race_col_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing', ]
-        race_col_out = ['Asian', 'Black or African American', 'White',
-                        'Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5',
-                        'Missing (No Information, Refuse to Answer, Unknown, Missing)4 ']
-        df_out.loc[race_col_out, 'N'] = df_in[race_col_in].sum().to_list()
-        df_out.loc[race_col_out, '%'] = df_in[race_col_in].mean().to_list()
+    # age
+    row_names.append('Median age (IQR) — yr')
+    records.append([
+        _quantile_str(df_pos['age']),
+        _quantile_str(df_neg['age']),
+        _smd(df_pos['age'], df_neg['age'])
+    ])
 
-        ethnicity_col_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-        ethnicity_col_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
-        df_out.loc[ethnicity_col_out, 'N'] = df_in[ethnicity_col_in].sum().to_list()
-        df_out.loc[ethnicity_col_out, '%'] = df_in[ethnicity_col_in].mean().to_list()
+    row_names.append('Age group — no. (%)')
+    records.append([])
+    age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+    row_names.extend(age_col)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in age_col])
 
-        date_col = ['March 2020', 'April 2020', 'May 2020', 'June 2020', 'July 2020',
-                    'August 2020', 'September 2020', 'October 2020', 'November 2020', 'December 2020',
-                    'January 2021', 'February 2021', 'March 2021', 'April 2021', 'May 2021',
-                    'June 2021', 'July 2021', 'August 2021', 'September 2021', 'October 2021',
-                    'November 2021', 'December 2021', 'January 2022']
-        df_out.loc[date_col, 'N'] = df_in[date_col].sum().to_list()
-        df_out.loc[date_col, '%'] = df_in[date_col].mean().to_list()
+    # Sex
+    row_names.append('Sex — no. (%)')
+    records.append([])
+    sex_col = ['Female', 'Male', 'Other/Missing']
+    row_names.extend(sex_col)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in sex_col])
 
-        # date race
-        for d in date_col:
-            c_in = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
-            c_out = ['Race: Asian', 'Race: Black or African American', 'Race: White', 'Race: Other5', 'Race: Missing4']
-            c_out = [d + ' - ' + x for x in c_out]
-            _df_select = df_in.loc[df_in[d] == 1, c_in]
-            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
-            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+    # Race
+    row_names.append('Race — no. (%)')
+    records.append([])
+    col_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-        # date ethnicity
-        for d in date_col:
-            c_in = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-            c_out = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other3/Missing4']
-            c_out = [d + ' - ' + x for x in c_out]
-            _df_select = df_in.loc[df_in[d] == 1, c_in]
-            df_out.loc[c_out, 'N'] = _df_select.sum().to_list()
-            df_out.loc[c_out, '%'] = _df_select.mean().to_list()
+    # Ethnic group
+    row_names.append('Ethnic group — no. (%)')
+    records.append([])
+    col_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-        # date age
-        for i, d in enumerate(date_col):
-            c_in = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-            c_out = [u'Age: 20-<40\xa0years', 'Age: 40-<55 years', 'Age: 55-<65 years', 'Age: 65-<75 years',
-                     'Age: 75-<85 years', 'Age: 85+ years']
-            # c_out = [d + ' - ' + x for x in c_out]
-            c_out_v2 = []
-            for x in c_out:
-                if (d in ['October 2020', 'November 2020', 'December 2020',
-                          'January 2021', 'February 2021', 'March 2021', 'April 2021']) and (x == 'Age: 40-<55 years'):
-                    c_out_v2.append(d + '- ' + x)
-                else:
-                    c_out_v2.append(d + ' - ' + x)
+    # ADI
+    row_names.append('Median area deprivation index (IQR) — rank')
+    records.append([
+        _quantile_str(df_pos['nation_adi']),
+        _quantile_str(df_neg['nation_adi']),
+        _smd(df_pos['nation_adi'], df_neg['nation_adi'])
+    ])
 
-            _df_select = df_in.loc[df_in[d] == 1, c_in]
-            df_out.loc[c_out_v2, 'N'] = _df_select.sum().to_list()
-            df_out.loc[c_out_v2, '%'] = _df_select.mean().to_list()
+    # utilization
+    row_names.append('No. of hospital visits in the past 3 yr — no. (%)')
+    records.append([])
+    col_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+                 'inpatient visits >=5',
+                 'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+                 'outpatient visits >=5',
+                 'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+                 'emergency visits >=5']
+    col_names_out = ['Inpatient 0', 'Inpatient 1-2', 'Inpatient 3-4', 'Inpatient >=5',
+                     'Outpatient 0', 'Outpatient 1-2', 'Outpatient 3-4', 'Outpatient >=5',
+                     'Emergency 0', 'Emergency 1-2', 'Emergency 3-4', 'Emergency >=5']
 
-        comorbidity_col = ['DX: Alcohol Abuse', 'DX: Anemia', 'DX: Arrythmia', 'DX: Asthma', 'DX: Cancer',
-                           'DX: Chronic Kidney Disease', 'DX: Chronic Pulmonary Disorders', 'DX: Cirrhosis',
-                           'DX: Coagulopathy', 'DX: Congestive Heart Failure', 'DX: COPD',
-                           'DX: Coronary Artery Disease', 'DX: Dementia', 'DX: Diabetes Type 1', 'DX: Diabetes Type 2',
-                           'DX: End Stage Renal Disease on Dialysis', 'DX: Hemiplegia', 'DX: HIV', 'DX: Hypertension',
-                           'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis', 'DX: Inflammatory Bowel Disorder',
-                           'DX: Lupus or Systemic Lupus Erythematosus', 'DX: Mental Health Disorders',
-                           'DX: Multiple Sclerosis', "DX: Parkinson's Disease", 'DX: Peripheral vascular disorders ',
-                           'DX: Pregnant', 'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)',
-                           'DX: Rheumatoid Arthritis', 'DX: Seizure/Epilepsy', 'DX: Severe Obesity  (BMI>=40 kg/m2)',
-                           'DX: Weight Loss', 'MEDICATION: Corticosteroids', 'MEDICATION: Immunosuppressant drug']
-        df_out.loc[comorbidity_col, 'N'] = df_in[comorbidity_col].sum()
-        df_out.loc[comorbidity_col, '%'] = df_in[comorbidity_col].sum() / len(df_in)
+    row_names.extend(col_names_out)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-        pasc_col = [x for x in df_in.columns if (x.startswith('flag@'))]
-        df_out.loc[pasc_col, 'N'] = df_in[pasc_col].sum()
-        df_out.loc[pasc_col, '%'] = df_in[pasc_col].sum() / len(df_in)
+    # time of index period
+    row_names.append('Index time period of patients — no. (%)')
+    records.append([])
+    col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-        df_out.to_csv(out_file)
-        print('Dump done ', out_file)
+    df = pd.DataFrame(records, columns=['Covid+', 'Covid-', 'SMD'], index=row_names)
+
+    # Coexisting coditions
+    row_names.append('Coexisting conditions — no. (%)')
+    records.append([])
+    col_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
+                 "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
+                 "DX: Coagulopathy", "DX: Congestive Heart Failure",
+                 "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
+                 "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                 "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                 "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
+                 "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
+                 "DX: Peripheral vascular disorders ", "DX: Pregnant",
+                 "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
+                 "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
+                 "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
+                 "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
+                 'DX: Autism', 'DX: Sickle Cell',
+                 "MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"
+                 ]
+    col_names_out = ["Alcohol Abuse", "Anemia", "Arrythmia", "Asthma", "Cancer",
+                     "Chronic Kidney Disease", "Chronic Pulmonary Disorders", "Cirrhosis",
+                     "Coagulopathy", "Congestive Heart Failure",
+                     "COPD", "Coronary Artery Disease", "Dementia", "Diabetes Type 1",
+                     "Diabetes Type 2", "End Stage Renal Disease on Dialysis", "Hemiplegia",
+                     "HIV", "Hypertension", "Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                     "Inflammatory Bowel Disorder", "Lupus or Systemic Lupus Erythematosus",
+                     "Mental Health Disorders", "Multiple Sclerosis", "Parkinson's Disease",
+                     "Peripheral vascular disorders ", "Pregnant",
+                     "Pulmonary Circulation Disorder",
+                     "Rheumatoid Arthritis", "Seizure/Epilepsy",
+                     "Severe Obesity  (BMI>=40 kg/m2)", "Weight Loss",
+                     "Down's Syndrome", 'Other Substance Abuse', 'Cystic Fibrosis',
+                     'Autism', 'Sickle Cell',
+                     "Prescription of Corticosteroids", "Prescription of Immunosuppressant drug"
+                     ]
+    row_names.extend(col_names_out)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
+
+    df = pd.DataFrame(records, columns=['COVID Positive', 'COVID Negative', 'SMD'], index=row_names)
+    df['SMD'] = df['SMD'].astype(float)
+    df.to_excel(out_file)
+    print('Dump done ', df)
+    return df, df_data
 
 
 def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', severity='',
@@ -1404,9 +1436,8 @@ def cohorts_table_generation(args):
 
 if __name__ == '__main__':
     # python pre_data_manuscript_table1.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_table1_covid_4manuNegNoCovid.txt
-
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
-
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_table1, df_data = table1_cohorts_characterization_analyse(cohorts='covid_4manuNegNoCovid', dataset='ALL')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

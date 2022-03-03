@@ -28,7 +28,7 @@ def parse_args():
                         help='site dataset')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
-    # parser.add_argument('--run_model', choices=['LSTM', 'LR', 'MLP', 'XGBOOST', 'LIGHTGBM'], default='MLP')
+    parser.add_argument('--severity', choices=['all', 'outpatient', 'inpatient', 'icu'], default='all')
     args = parser.parse_args()
 
     # More args
@@ -105,6 +105,18 @@ if __name__ == "__main__":
     print('Load data covariates file:', args.data_file)
     df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
     # because a patid id may occur in multiple sites. patid were site specific
+    print('df.shape:', df.shape)
+    if args.severity == 'inpatient':
+        print('Considering  inpatient/hospitalized cohorts')
+        df = df.loc[df['hospitalized'] == 1, :].copy()
+    elif args.severity == 'icu':
+        print('Considering ICU (hospitalized ventilation or critical care) cohorts')
+        df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation']==1)) | (df['criticalcare']==1)), :].copy()
+    elif args.severity == 'outpatient':
+        print('Considering outpatient cohorts')
+        df = df.loc[df['hospitalized'] == 0, :].copy()
+    else:
+        print('Considering ALL cohorts')
 
     df_info = df[['Unnamed: 0', 'patid', 'site', 'index date', 'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e']]
