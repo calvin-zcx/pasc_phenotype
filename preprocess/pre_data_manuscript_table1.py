@@ -1091,6 +1091,14 @@ def table1_cohorts_characterization_analyse(cohorts='covid_4manuNegNoCovid', dat
         _smd(df_pos['nation_adi'], df_neg['nation_adi'])
     ])
 
+    # follow-up
+    row_names.append('Follow-up days (IQR)')
+    records.append([
+        _quantile_str(df_pos['maxfollowup']),
+        _quantile_str(df_neg['maxfollowup']),
+        _smd(df_pos['maxfollowup'], df_neg['maxfollowup'])
+    ])
+
     # utilization
     row_names.append('No. of hospital visits in the past 3 yr — no. (%)')
     records.append([])

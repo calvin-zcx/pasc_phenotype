@@ -18,10 +18,12 @@ import itertools
 import functools
 import random
 import seaborn as sns
+
 print = functools.partial(print, flush=True)
 import zepid
 from zepid.graphics import EffectMeasurePlot
 import shlex
+
 np.random.seed(0)
 random.seed(0)
 from misc import utils
@@ -92,7 +94,7 @@ def plot_forest_for_med_atc():
 
     df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med.csv')
     df_select = df.sort_values(by='hr-w', ascending=False)
-    pvalue = 0.01 #/ 100
+    pvalue = 0.01  # / 100
     df_select = df_select.loc[df_select['hr-w-p'] < pvalue, :]  #
     df_select = df_select.loc[df_select['no. pasc in +'] >= 50, :]
 
@@ -227,11 +229,52 @@ def combine_pasc_list():
     df_icd_combined = pd.merge(df_icd, df_pasc_list, left_on='ICD', right_on='ICD-10-CM Code', how='left')
     df_icd_combined.to_csv('../data/V15_COVID19/output/character/pcr_cohorts_ICD_cnts_followup-ALL-combined_PASC.csv')
 
-    df_pasc_combined = pd.merge(df_pasc_list, df_icd,  left_on='ICD-10-CM Code', right_on='ICD', how='left')
-    df_pasc_combined.to_csv('../data/V15_COVID19/output/character/PASC_Adult_Combined_List_20220127_v3_combined_RWD.csv')
+    df_pasc_combined = pd.merge(df_pasc_list, df_icd, left_on='ICD-10-CM Code', right_on='ICD', how='left')
+    df_pasc_combined.to_csv(
+        '../data/V15_COVID19/output/character/PASC_Adult_Combined_List_20220127_v3_combined_RWD.csv')
+
+
+def add_pasc_domain_to_causal_results():
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific.csv')
+    print('df.shape:', df.shape)
+    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
+                            sheet_name=r'PASC Screening List',
+                            usecols="A:N")
+    print('df_pasc.shape', df_pasc.shape)
+    pasc_domain = defaultdict(set)
+    for key, row in df_pasc.iterrows():
+        hd_domain = row['HD Domain (Defined by Nature paper)']
+        # ccsr_code = row['CCSR CATEGORY 1']
+        pasc = row['CCSR CATEGORY 1 DESCRIPTION']
+        # icd = row['ICD-10-CM Code']
+        # icd_name = row['ICD-10-CM Code Description']
+        if pd.notna(hd_domain):
+            pasc_domain[pasc].add(hd_domain)
+
+    pasc_domain['Anemia'].add('Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism')
+    pasc_domain['PASC-General'].add('Certain Infectious and Parasitic Diseases')
+
+    df['ccsr domain'] = df['pasc'].apply(lambda x : '$'.join(pasc_domain.get(x, [])))
+    df.to_csv(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific_withDomain.csv')
+
+    return pasc_domain
+
+
+def add_drug_name():
+    rxing_index = utils.load(r'../data/mapping/selected_rxnorm_index.pkl')
+
+    df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med.csv')
+    df_name = pd.read_excel(r'../data/V15_COVID19/output/character/info_medication_cohorts_covid_4manuNegNoCovid_ALL_enriched_round3.xlsx',
+                            dtype={'rxnorm': str})
+
+    df_combined = pd.merge(df, df_name, left_on='pasc', right_on='rxnorm', how='left')
+    df_combined.to_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med-withName.csv')
+    return df_combined
 
 
 if __name__ == '__main__':
-    plot_forest_for_dx()
+    # plot_forest_for_dx()
     # plot_forest_for_med()
     # combine_pasc_list()
+    # pasc_domain = add_pasc_domain_to_causal_results()
+    df_med = add_drug_name()
