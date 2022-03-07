@@ -1018,7 +1018,11 @@ def build_query_1and2_matrix(args):
         (df_bool.loc[:, r'DX: Hypertension'] & (
                 df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
+    # Warning: the covid medication part is not boolean
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
+    # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+    # can be done later
+
     selected_cols = [x for x in df_bool.columns if
                      (x.startswith('dx-out@') or x.startswith('dx-base@') or
                       x.startswith('med-out@') or x.startswith('med-base@') or
