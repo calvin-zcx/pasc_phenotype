@@ -122,6 +122,10 @@ def read_demo(args, output_file=''):
     n_has_adi = 0
     for x in records_list:
         pid = x[0]
+        if '--' in pid:
+            print(pid, x)
+            continue
+
         zipcode = x[-1]
         if pd.notna(zipcode) and (zipcode in zip_adi):
             adi = zip_adi[zipcode]
