@@ -114,6 +114,7 @@ def read_covid_lab_and_generate_label(args, output_file='', id_demo={}):
         patid = row['PATID']
         lab_date = row["RESULT_DATE"]
         specimen_date = row['SPECIMEN_DATE']
+        order_date = row['LAB_ORDER_DATE']
         lab_code = row['LAB_LOINC']
         result_label = row['RESULT_QUAL'].upper()
         enc_id = row['ENCOUNTERID']
@@ -123,10 +124,18 @@ def read_covid_lab_and_generate_label(args, output_file='', id_demo={}):
 
         # If there is no lab_date, using specimen_date, if also no specimen date, not recording
         if pd.isna(lab_date):
-            if pd.isna(specimen_date):
-                n_no_date += 1
-            else:
+            if pd.notna(specimen_date):
                 lab_date = specimen_date
+            elif pd.notna(order_date):
+                lab_date = order_date
+            else:
+                n_no_date += 1
+                continue
+
+            # if pd.isna(specimen_date):
+            #     n_no_date += 1
+            # else:
+            #     lab_date = specimen_date
 
         if pd.isna(lab_code) or pd.isna(lab_date):
             n_discard_row += 1

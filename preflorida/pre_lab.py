@@ -48,6 +48,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     print('read:', args.input_file)
     sasds = pd.read_csv(args.input_file,
                         encoding='utf-8',
+                        dtype=str,
                         chunksize=chunksize,
                         iterator=True)  # 'iso-8859-1' (LATIN1) and Windows cp1252 (WLATIN1)
     # sasds = pyreadstat.read_file_in_chunks(pyreadstat.read_sas7bdat,
@@ -56,6 +57,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     dfs = []  # holds data chunks
     dfs_covid = []
     cnt = Counter([])
+    cnt_code = Counter([])
     i = 0
     n_rows = 0
     n_covid_rows = 0
@@ -87,6 +89,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
         n_covid_rows += len(chunk_covid_records)
 
         cnt.update(chunk_covid_records['RESULT_QUAL'])
+        cnt_code.update(chunk_covid_records['LAB_LOINC'])
 
         if i % 10 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -102,6 +105,8 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     print('len(patid_covid_set):', len(patid_covid_set))
     print('#chunk: ', i, 'chunk size:', chunksize)
     print('Counter:', cnt)
+    print('Loinc Counter:', cnt_code)
+
     dfs_covid_all = pd.concat(dfs_covid)
     print('dfs_covid_all.shape', dfs_covid_all.shape)
     print('dfs_covid_all.columns', dfs_covid_all.columns)

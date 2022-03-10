@@ -28,7 +28,7 @@ def check_and_mkdir(path):
         print(dirname, 'exists, no change made')
 
 
-def dump(data, filename):
+def dump(data, filename, chunk=2):
     print('Try to dump data to', filename)
     check_and_mkdir(filename)
     try:
@@ -41,15 +41,25 @@ def dump(data, filename):
         # print('Try to use joblib.dump(data, filename) and loading by joblib.load(filename)')
         # joblib.dump(data, filename + '.joblib')
         # print('Dump done by joblib.dump! Saved as:', filename + '.joblib')
-        print('Try to split file into two and dump')
-        data1 = dict(list(data.items())[:len(data) // 2])
-        data2 = dict(list(data.items())[len(data) // 2:])
-        with open(filename+'-part1', 'wb') as fo:
-            pickle.dump(data1, fo)
-            print('Dump Done by pickle.dump! Saved as:', filename+'-part1')
-        with open(filename+'-part2', 'wb') as fo:
-            pickle.dump(data2, fo)
-            print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
+        print('Try to split file into chunk={} and dump'.format(chunk))
+        step = len(data) // chunk
+        for i in range(chunk):
+            left = i*step
+            right = (i+1)*step
+            if i == (chunk-1):
+                right = len(data)
+            data_part = dict(list(data.items())[left:right])
+            with open(filename + '-part{}'.format(i+1), 'wb') as fo:
+                pickle.dump(data_part, fo)
+                print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i+1))
+        # data1 = dict(list(data.items())[:len(data) // 2])
+        # data2 = dict(list(data.items())[len(data) // 2:])
+        # with open(filename+'-part1', 'wb') as fo:
+        #     pickle.dump(data1, fo)
+        #     print('Dump Done by pickle.dump! Saved as:', filename+'-part1')
+        # with open(filename+'-part2', 'wb') as fo:
+        #     pickle.dump(data2, fo)
+        #     print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
 
 
 def load(filename):
