@@ -3,13 +3,6 @@
   <component name="CsvFileAttributes">
     <option name="attributeMap">
       <map>
-        <entry key="\data\V15_COVID19\output\character\20220209_cohorts_baseline18months\pasc\Heart failure\results_query12_PASC-Heart failure-pasc_prevalence-ALL-NEG-ventilation.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\data\V15_COVID19\output\character\info_dx_cohorts_covid_4manuNegNoCovid_ALL.csv">
           <value>
             <Attribute>
@@ -53,13 +46,6 @@
           </value>
         </entry>
         <entry key="\data\mapping\rxnorm_atc_mapping_from_NIH_UMLS_full_01032022.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\iptw\evaluation_ALL-model-select.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />

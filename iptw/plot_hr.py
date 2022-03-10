@@ -85,6 +85,69 @@ def plot_forest_for_dx():
     # plt.close()
 
 
+def plot_forest_for_dx_organ():
+    df = pd.read_excel(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific_Diagnosis_withDomain-simple-4plot.xlsx')
+    df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
+    pvalue = 0.01 #0.05 / 137
+    df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
+    df_select = df_select.loc[df_select['Hazard Ratio, Adjusted']>1, :]
+    # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+
+    organ_list = df_select['CCSR Domain'].unique()
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    for i, organ in enumerate(organ_list):
+        print(i+1, 'organ', organ)
+
+        for key, row in df_select.iterrows():
+            name = row['PASC']
+            hr = row['Hazard Ratio, Adjusted']
+            ci = stringlist_2_list(row['Hazard Ratio, Adjusted, Confidence Interval'])
+            p = row['Hazard Ratio, Adjusted, P-Value']
+            domain = row['CCSR Domain']
+            if domain == organ:
+                if len(name.split()) >= 6:
+                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+                labs.append(name)
+                measure.append(hr)
+                lower.append(ci[0])
+                upper.append(ci[1])
+                pval.append(p)
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
+    p.labels(scale='log')
+
+    organ = 'ALL'
+
+    p.labels(effectmeasure='')  # aHR
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    c = '#5494DA'
+    # p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
+    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=60, min_value=0.8, size=5, decimal=2)
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/DX/organ/'
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}.png'.format(organ, pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}.pdf'.format(organ, pvalue), bbox_inches='tight', transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    plt.close()
+
+
 def plot_forest_for_med_atc():
     with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
         atcl3_encoding = pickle.load(f)
@@ -277,4 +340,5 @@ if __name__ == '__main__':
     # plot_forest_for_med()
     # combine_pasc_list()
     # pasc_domain = add_pasc_domain_to_causal_results()
-    df_med = add_drug_name()
+    # df_med = add_drug_name()
+    plot_forest_for_dx_organ()
