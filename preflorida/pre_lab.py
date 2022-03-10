@@ -12,7 +12,8 @@ from collections import Counter
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess-count pos and negative from lab file in OneFlorida Data')
-    parser.add_argument('--dataset', choices=['covid_database', 'main_database'], default='covid_database', help='two datasets')
+    parser.add_argument('--dataset', choices=['covid_database', 'main_database'], default='covid_database',
+                        help='two datasets, then merge at pre covid lab file')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
 

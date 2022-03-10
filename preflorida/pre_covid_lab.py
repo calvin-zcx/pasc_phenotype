@@ -32,7 +32,7 @@ def parse_args():
     return args
 
 
-def read_covid_lab_and_generate_label(output_file='', id_demo={}):
+def read_covid_lab_and_generate_label(args, output_file='', id_demo={}):
     """
     1. scan date range of all covid-related tests
     2. selected only PCR-tested records
@@ -211,7 +211,7 @@ if __name__ == '__main__':
         id_demo = pickle.load(f)
         print('load', args.demo_file, 'demo information: len(id_demo):', len(id_demo))
 
-    id_lab, df_pcr, df = read_covid_lab_and_generate_label(args.output_file, id_demo)
+    id_lab, df_pcr, df = read_covid_lab_and_generate_label(args, args.output_file, id_demo)
     print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
     print('PCR/Antigen-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
     print('PCR/Antigen-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))

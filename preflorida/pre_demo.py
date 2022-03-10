@@ -29,7 +29,7 @@ def parse_args():
     return args
 
 
-def read_demo(output_file=''):
+def read_demo(args, output_file=''):
     """
     :param data_file: input demographics file with std format, id and zipcode mapping
     :param out_file: output id_demo[patid] = (sex, bdate, race, zipcode) pickle
@@ -81,23 +81,27 @@ def read_demo(output_file=''):
     print('df1.shape', df1.shape)
     print('df1.columns', df1.columns)
     print('Unique patid:', len(df1['PATID'].unique()))
+    print('nan zip:', df1['ZIP_CODE'].isna().sum())
 
     df2 = pd.read_csv(args.demo_file2, dtype=str, parse_dates=['BIRTH_DATE'])
     df2.rename(columns=lambda x: x.upper(), inplace=True)
     print('df2.shape', df2.shape)
     print('df2.columns', df2.columns)
     print('Unique patid:', len(df2['PATID'].unique()))
+    print('nan zip:', df2['ZIP_CODE'].isna().sum())
 
     df = pd.concat([df1, df2])
     print('df.shape', df.shape)
     print('df.columns', df.columns)
     print('Unique patid:', len(df['PATID'].unique()))
+    print('nan zip:', df['ZIP_CODE'].isna().sum())
 
     df = df.drop_duplicates(subset=['PATID'])
     print('drop_duplicates df.shape', df.shape)
     print('drop_duplicates df.columns', df.columns)
     print('drop_duplicates Unique patid:', len(df['PATID'].unique()))
-    df.loc[:, 'ZIP_CODE'] = df['ZIP_CODE'].apply(lambda x: x.replace('-', ''))
+    df.loc[:, 'ZIP_CODE'] = df['ZIP_CODE'].apply(lambda x: x.replace('-', '') if isinstance(x, str) else x)
+    print('nan zip:', df['ZIP_CODE'].isna().sum())
 
     print('SEX:', df['SEX'].value_counts(dropna=False))
     print('RACE:', df['RACE'].value_counts(dropna=False))
@@ -144,5 +148,5 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    id_demo, df_sub = read_demo(args.output_file)
+    id_demo, df_sub = read_demo(args, args.output_file)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
