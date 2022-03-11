@@ -62,7 +62,7 @@ def dump(data, filename, chunk=2):
         #     print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
 
 
-def load(filename):
+def load(filename, chunk=2):
     start_time = time.time()
     print('Try to load data file', filename)
     try:
@@ -77,10 +77,11 @@ def load(filename):
         with open(filename + '-part1', 'rb') as f:
             data = pickle.load(f)
             print('load {}-part1 done, len:{}'.format(filename, len(data)))
-        with open(filename + '-part2', 'rb') as f:
-            data2 = pickle.load(f)
-            print('load {}-part2 done, len:{}'.format(filename, len(data2)))
-        data.update(data2)
+        for i in range(1, chunk):
+            with open(filename + '-part{}'.format(i+1), 'rb') as f:
+                data_part = pickle.load(f)
+                print('load {}-part{} done, len:{}'.format(filename, i+1, len(data_part)))
+                data.update(data_part)
         print('Load and combine data done, len(data):', len(data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
