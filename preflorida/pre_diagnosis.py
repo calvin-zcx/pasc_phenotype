@@ -132,7 +132,7 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
     if output_file:
         print('Dump id_dx to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
-        utils.dump(id_dx, output_file)
+        utils.dump(id_dx, output_file, chunk=4)
         # utils.dump follows below logics:
         # try:
         #     # MemoryError for pickle.dump for a large or complex file
