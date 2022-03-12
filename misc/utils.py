@@ -32,7 +32,10 @@ def check_and_mkdir(path):
 
 def split_dict_data_and_dump(infile, chunk=4):
     start_time = time.time()
-    data = load(infile)
+    with open(infile, 'rb') as f:
+        data = pickle.load(f)
+    print('Load done by pickle.load! len(data):', len(data),
+          'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     print('Try to split file into chunk={} and dump'.format(chunk))
     step = len(data) // chunk
     for i in range(chunk):
