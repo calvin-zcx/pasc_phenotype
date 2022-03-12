@@ -47,6 +47,7 @@ def split_dict_data_and_dump(infile, chunk=4):
         with open(infile + '-part{}'.format(i + 1), 'wb') as fo:
             pickle.dump(data_part, fo)
             print('Dump Done by pickle.dump! Saved as:', infile + '-part{}'.format(i + 1))
+            del data_part
 
     print('Split dict into pieces done!')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
