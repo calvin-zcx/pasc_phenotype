@@ -30,6 +30,25 @@ def check_and_mkdir(path):
         print(dirname, 'exists, no change made')
 
 
+def split_dict_data_and_dump(infile, chunk=4):
+    start_time = time.time()
+    data = load(infile)
+    print('Try to split file into chunk={} and dump'.format(chunk))
+    step = len(data) // chunk
+    for i in range(chunk):
+        left = i * step
+        right = (i + 1) * step
+        if i == (chunk - 1):
+            right = len(data)
+        data_part = dict(list(data.items())[left:right])
+        with open(infile + '-part{}'.format(i + 1), 'wb') as fo:
+            pickle.dump(data_part, fo)
+            print('Dump Done by pickle.dump! Saved as:', infile + '-part{}'.format(i + 1))
+
+    print('Split dict into pieces done!')
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
 def dump(data, filename, chunk=2):
     print('Try to dump data to', filename)
     check_and_mkdir(filename)
