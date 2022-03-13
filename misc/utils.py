@@ -1,4 +1,5 @@
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import scipy
@@ -15,10 +16,52 @@ from sas7bdat import SAS7BDAT
 import argparse
 import csv
 import functools
+
 print = functools.partial(print, flush=True)
 # import joblib
 import re
 from datetime import datetime
+from collections import Counter
+
+
+def ndc_normalization(x):
+    # https://www.nlm.nih.gov/research/umls/rxnorm/docs/techdoc.html#s6_0
+    # "You can download the algorithm used for normalizing NDC codes (RTF document)."
+    # https://www.nlm.nih.gov/research/umls/rxnorm/docs/techdoc.html#sat
+    if len(x) - len(x.replace('-', '')) == 2:  # If NDC string contains 2 dashes
+        a, b, c = x.split('-')
+        na, nb, nc = [len(t) for t in x.split('-')]  # a-b-c format
+        if (na == 6) and (nb == 4) and (nc == 2):
+            ndc = a[1:] + b + c
+        elif (na == 6) and (nb == 4) and (nc == 1):
+            ndc = a[1:] + b + '0' + c
+        elif (na == 6) and (nb == 3) and (nc == 2):
+            ndc = a[1:] + '0' + b + c
+        elif (na == 6) and (nb == 3) and (nc == 1):
+            ndc = a[1:] + '0' + b + '0' + c
+        elif (na == 5) and (nb == 4) and (nc == 2):  # MMX, GS, CVX
+            ndc = a + b + c
+        elif (na == 5) and (nb == 4) and (nc == 1):
+            ndc = a + b + '0' + c
+        elif (na == 5) and (nb == 3) and (nc == 2): # MTHSPL
+            ndc = a + '0' + b + c
+        elif (na == 4) and (nb == 4) and (nc == 2):
+            ndc = '0' + a + b + c
+        else:
+            ndc = ''
+    elif (len(x) == 11) and ('-' not in x):  # rxnorm, NDDF, MMSL
+        ndc = x
+    elif (len(x) == 12) and ('-' not in x):  # and (x[0] == '0'): #VANDF, some initial with 9
+        ndc = x[1:]
+    else:
+        ndc = ''
+
+    ndc = ndc.replace('*', '0')
+
+    if re.sub(r"[0123456789]", '', ndc):
+        ndc = ''
+
+    return ndc
 
 
 def check_and_mkdir(path):
@@ -69,14 +112,14 @@ def dump(data, filename, chunk=2):
         print('Try to split file into chunk={} and dump'.format(chunk))
         step = len(data) // chunk
         for i in range(chunk):
-            left = i*step
-            right = (i+1)*step
-            if i == (chunk-1):
+            left = i * step
+            right = (i + 1) * step
+            if i == (chunk - 1):
                 right = len(data)
             data_part = dict(list(data.items())[left:right])
-            with open(filename + '-part{}'.format(i+1), 'wb') as fo:
+            with open(filename + '-part{}'.format(i + 1), 'wb') as fo:
                 pickle.dump(data_part, fo)
-                print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i+1))
+                print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i + 1))
         # data1 = dict(list(data.items())[:len(data) // 2])
         # data2 = dict(list(data.items())[len(data) // 2:])
         # with open(filename+'-part1', 'wb') as fo:
@@ -103,9 +146,9 @@ def load(filename, chunk=2):
             data = pickle.load(f)
             print('load {}-part1 done, len:{}'.format(filename, len(data)))
         for i in range(1, chunk):
-            with open(filename + '-part{}'.format(i+1), 'rb') as f:
+            with open(filename + '-part{}'.format(i + 1), 'rb') as f:
                 data_part = pickle.load(f)
-                print('load {}-part{} done, len:{}'.format(filename, i+1, len(data_part)))
+                print('load {}-part{} done, len:{}'.format(filename, i + 1, len(data_part)))
                 data.update(data_part)
         print('Load and combine data done, len(data):', len(data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -152,10 +195,10 @@ def read_sas_2_df(infile, chunksize=100000, encoding='WINDOWS-1252', column_name
     print('df.shape:', df.shape)
     print('df.columns:', df.columns)
     if column_name == 'upper':
-        df.rename(columns=lambda x : x.upper(), inplace=True)
+        df.rename(columns=lambda x: x.upper(), inplace=True)
         print('df.columns:', df.columns)
     elif column_name == 'lower':
-        df.rename(columns=lambda x : x.lower(), inplace=True)
+        df.rename(columns=lambda x: x.lower(), inplace=True)
         print('df.columns:', df.columns)
     else:
         print('keep original column name')
@@ -208,5 +251,5 @@ def str_to_datetime(s):
 
 if __name__ == '__main__':
     start_time = time.time()
-    df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')
+    # df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -10,6 +10,7 @@ import requests
 import functools
 from misc import utils
 import re
+from tqdm import tqdm
 
 print = functools.partial(print, flush=True)
 import time
@@ -47,6 +48,35 @@ def build_rxnorm_or_atc_to_name():
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     return rx_name, atc_name
+
+
+def build_NDC_to_rxnorm():
+    # Data source: RxNorm_full_01032022.zip, RxNorm_full_01032022\rrf\RXNSAT.RRF
+    # MD5 checksum: 8c8c0267fb2e09232fb852f7500c5b18, Release Notes 01/03/2022
+    print('In build_NDC_to_rxnorm()...')
+    start_time = time.time()
+    df = pd.read_csv(r'../data/mapping/RXNSAT.RRF', sep='|', header=None, dtype=str)
+    df_ndc = df.loc[df[8] == 'NDC', :]
+    print('df.shape:', df.shape)
+    print('df_ndc.shape:', df_ndc.shape)
+
+    ndc_rx = defaultdict(set)
+    for index, row in tqdm(df_ndc.iterrows(), total=len(df_ndc)):
+        rxnorm = row[0]
+        ndc = row[10]
+        ndc_normalized = utils.ndc_normalization(ndc)
+        ndc_rx[ndc].add(rxnorm)
+        if ndc_normalized:
+            ndc_rx[ndc_normalized].add(rxnorm)
+
+    print('ndc to rxnorm mapping: len(ndc_rx):', len(ndc_rx))
+    output_file = r'../data/mapping/ndc_rxnorm_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(ndc_rx, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return ndc_rx
 
 
 def rxnorm_ingredient_from_NIH_UMLS():
@@ -887,7 +917,8 @@ if __name__ == '__main__':
     # rx_ing, df_rx_ing = rxnorm_ingredient_from_NIH_UMLS()
     # rx_ing_api, df_rx_ing_api = add_rxnorm_ingredient_by_umls_api()
     # rx_ing_combined, df_records_combined = combine_rxnorm_ingredients_dicts()
-    ing_index = selected_rxnorm_ingredient_to_index()
+    # ing_index = selected_rxnorm_ingredient_to_index()
+    ndc_rx = build_NDC_to_rxnorm()
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_aid_mapping()

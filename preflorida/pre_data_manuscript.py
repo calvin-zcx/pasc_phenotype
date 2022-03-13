@@ -1824,7 +1824,9 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
+    utils.split_dict_data_and_dump(r'../data/V15_COVID19/output/COL/cohorts_covid_4manuNegNoCovid_col.pkl', chunk=3)
+
+    # utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
 
     # df_data, df_data_bool = build_query_1and2_matrix(args)
 
