@@ -138,9 +138,11 @@ def _load_mapping():
     rxing_index = utils.load(r'../data/mapping/selected_rxnorm_index.pkl')
     covidmed_codes = utils.load(r'../data/mapping/query3_medication_codes.pkl')
 
+    ndc_rxnorm = utils.load(r'../data/mapping/ndc_rxnorm_mapping.pkl')
+
     return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
            rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes
+           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, ndc_rxnorm
 
 
 def _encoding_age(age):
@@ -690,12 +692,12 @@ def build_query_1and2_matrix(args):
     # step 1: load encoding dictionary
     icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
     icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes = _load_mapping()
+    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, ndc_rxnorm = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
-    if args.dataset == 'ALL':
-        sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
+    if args.dataset == 'all':
+        sites = ['part9']
     else:
         sites = [args.dataset, ]
 
@@ -710,10 +712,16 @@ def build_query_1and2_matrix(args):
     print('Try to load: ', sites)
     for site in tqdm(sites):
         print('Loading: ', site)
-        input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
+        input_file = r'../data/oneflorida/output/{}/cohorts_{}_{}.pkl-{}'.format(
+            args.dataset, args.cohorts, args.dataset, site)
         print('Load cohorts pickle data file:', input_file)
-        id_data = utils.load(input_file)
+        # id_data = utils.load(input_file)
+        with open(input_file, 'rb') as f:
+            id_data = pickle.load(f)
+        print('Load done by pickle.load! len(data):', len(id_data),
+              'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
+        return id_data
         # step 3: encoding cohorts baseline covariates into matrix
         if args.positive_only:
             n = 0
@@ -996,10 +1004,10 @@ def build_query_1and2_matrix(args):
 
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
                                          columns=['total', 'no. in positive group', 'no. in negative group'])
-    # dx_count_df.to_csv(args.output_dx_info)
+    dx_count_df.to_csv(args.output_dx_info)
     med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
                                           columns=['total', 'no. in positive group', 'no. in negative group'])
-    # med_count_df.to_csv(args.output_med_info)
+    med_count_df.to_csv(args.output_med_info)
 
     df_data_all_sites = pd.concat(data_all_sites)
     print('df_data_all_sites.shape:', df_data_all_sites.shape)
@@ -1824,11 +1832,11 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    utils.split_dict_data_and_dump(r'../data/V15_COVID19/output/COL/cohorts_covid_4manuNegNoCovid_col.pkl', chunk=3)
+    # utils.split_dict_data_and_dump(r'../data/V15_COVID19/output/COL/cohorts_covid_4manuNegNoCovid_col.pkl', chunk=3)
 
     # utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
 
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
