@@ -32,23 +32,15 @@ def parse_args():
                                               'covid_4manuscript', 'covid_4manuNegNoCovid'],
                         default='covid_4manuNegNoCovid', help='cohorts')
     parser.add_argument('--dataset', choices=['all'], default='all', help='combined dataset')
+
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
-
-    args.output_file_query12 = r'../data/oneflorida/output/character/matrix_cohorts_{}_cnt_{}.csv'.format(
-        args.cohorts,
-        args.dataset)
-    args.output_file_query12_bool = r'../data/oneflorida/output/character/matrix_cohorts_{}_bool_{}.csv'.format(
-        args.cohorts,
-        args.dataset)
-
-    args.output_med_info = r'../data/oneflorida/output/character/info_medication_cohorts_{}_{}.csv'.format(
-        args.cohorts,
-        args.dataset)
-
-    args.output_dx_info = r'../data/oneflorida/output/character/info_dx_cohorts_{}_{}.csv'.format(
+    # args.output_file_query12 = r'../data/oneflorida/output/character/matrix_cohorts_{}_cnt_{}_4table1.csv'.format(
+    #     args.cohorts,
+    #     args.dataset)
+    args.output_file_query12_bool = r'../data/oneflorida/output/character/matrix_cohorts_{}_bool_{}_4table1.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -137,7 +129,6 @@ def _load_mapping():
     icd9_icd10 = utils.load(r'../data/mapping/icd9_icd10.pkl')
     rxing_index = utils.load(r'../data/mapping/selected_rxnorm_index.pkl')
     covidmed_codes = utils.load(r'../data/mapping/query3_medication_codes.pkl')
-
     ndc_rxnorm = utils.load(r'../data/mapping/ndc_rxnorm_mapping.pkl')
 
     return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
@@ -692,7 +683,6 @@ def _med_translate_any_NDC_to_rxnorm(med_list, ndc_rxnorm):
 
     return med_list_new
 
-
 def _update_counter(dict3, key, flag):
     if key in dict3:
         dict3[key][0] += 1
@@ -766,6 +756,8 @@ def build_query_1and2_matrix(args):
         death_array = np.zeros((n, 2), dtype='int16')  # newly add 2022-02-20
         death_column_names = ['death', 'death t2e']
 
+        age_list = []
+
         age_array = np.zeros((n, 6), dtype='int16')
         age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
 
@@ -781,6 +773,8 @@ def build_query_1and2_matrix(args):
         hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
         # newly added 2022-02-18
+        social_list = []
+
         social_array = np.zeros((n, 10), dtype='int16')
         social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                                'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
@@ -844,36 +838,20 @@ def build_query_1and2_matrix(args):
             'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
 
         # also these drug categories as outcomes in followup
-        outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-t2e@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-base@' + x for x in covidmed_column_names]
-
-        # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
-        # In total, there are 137 PASC categories in our lists. See T2E later
-        outcome_flag = np.zeros((n, 137), dtype='int16')
-        outcome_t2e = np.zeros((n, 137), dtype='int16')
-        outcome_baseline = np.zeros((n, 137), dtype='int16')
-        outcome_column_names = ['dx-out@' + x for x in pasc_encoding.keys()] + \
-                               ['dx-t2e@' + x for x in pasc_encoding.keys()] + \
-                               ['dx-base@' + x for x in pasc_encoding.keys()]
-
-        # rxing_encoding outcome.
-        outcome_med_flag = np.zeros((n, 434), dtype='int16')
-        outcome_med_t2e = np.zeros((n, 434), dtype='int16')
-        outcome_med_baseline = np.zeros((n, 434), dtype='int16')
-        outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-t2e@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-base@' + x for x in rxing_encoding.keys()]
+        # outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
+        #                                 ['covidmed-t2e@' + x for x in covidmed_column_names] + \
+        #                                 ['covidmed-base@' + x for x in covidmed_column_names]
 
         column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
-                        'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + age_column_names + \
+                        'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
+                       ['age'] + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
-                       social_column_names + utilization_column_names + index_period_names + \
-                       dx_column_names + med_column_names + covidmed_column_names + \
-                       outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
+                       ["zipcode", "state", "city", "nation_adi",
+                        "state_adi"] + social_column_names + utilization_column_names + index_period_names + \
+                       dx_column_names + med_column_names + covidmed_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -889,7 +867,6 @@ def build_query_1and2_matrix(args):
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
-            med_translate_ndc = _med_translate_any_NDC_to_rxnorm(med, ndc_rxnorm)
 
             if args.positive_only:
                 if not flag:
@@ -921,11 +898,13 @@ def build_query_1and2_matrix(args):
             death_array[i, :] = _encoding_death(death, index_date)
 
             # encoding query 1 information
+            age_list.append(index_age)
             age_array[i, :] = _encoding_age(index_age)
             gender_array[i] = _encoding_gender(gender)
             race_array[i, :] = _encoding_race(race)
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             #
+            social_list.append([zipcode, state, city, nation_adi, state_adi])
             social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
             utilization_array[i, :] = _encoding_utilization(enc, index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
@@ -945,54 +924,34 @@ def build_query_1and2_matrix(args):
                 np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
 
-            covidmed_array[i, :], \
-            outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :]\
-                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
+            covidmed_array[i, :], _, _, _ = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes,
+                                                               index_date, default_t2e)
 
-            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
-                _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
-
-            # 2022-03-13: use rxnorm translated verison for drug outcome, because there are NDC in oneFlorida.
-            # baseline med and covid med contains NDC codes. Only for outcomes!
-            outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
-                _encoding_outcome_med_rxnorm_ingredient(med_translate_ndc, rxnorm_ing, rxing_encoding, index_date, default_t2e)
-
-            # count additional information
-            # in follow-up, each person count once
-            _dx_set = set()
-            for i_dx in dx:
-                dx_t, icd, dx_type, enc_type = i_dx
-                icd = icd.replace('.', '').upper()
-                if ecs._is_in_followup(dx_t, index_date):
-                    _dx_set.add(icd)
-
-            for i_dx in _dx_set:
-                _update_counter(dx_count, i_dx, flag)
-
-            _med_set = set()
-            for i_med in med:
-                t = i_med[0]
-                rx = i_med[1]
-                if ecs._is_in_followup(t, index_date):
-                    if rx in rxnorm_ing:
-                        _added = rxnorm_ing[rx]
-                        _med_set.update(_added)
-                    elif rx in ndc_rxnorm:
-                        _rxset = ndc_rxnorm[rx]
-                        _rxingset = set()
-                        for _rxfromndc in _rxset:
-                            if _rxfromndc in rxnorm_ing:
-                                _added = rxnorm_ing[_rxfromndc]
-                                _rxingset.update(_added)
-                        if _rxingset:
-                            _med_set.update(_rxingset)
-                        else:
-                            _med_set.add(rx)
-                    else:
-                        _med_set.add(rx)
-
-            for i_med in _med_set:
-                _update_counter(med_count, i_med, flag)
+            # # count additional information
+            # # in follow-up, each person count once
+            # _dx_set = set()
+            # for i_dx in dx:
+            #     dx_t, icd, dx_type, enc_type = i_dx
+            #     icd = icd.replace('.', '').upper()
+            #     if ecs._is_in_followup(dx_t, index_date):
+            #         _dx_set.add(icd)
+            #
+            # for i_dx in _dx_set:
+            #     _update_counter(dx_count, i_dx, flag)
+            #
+            # _med_set = set()
+            # for i_med in med:
+            #     t = i_med[0]
+            #     rx = i_med[1]
+            #     if ecs._is_in_followup(t, index_date):
+            #         if rx in rxnorm_ing:
+            #             _added = rxnorm_ing[rx]
+            #             _med_set.update(_added)
+            #         else:
+            #             _med_set.add(rx)
+            #
+            # for i_med in _med_set:
+            #     _update_counter(med_count, i_med, flag)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -1006,25 +965,18 @@ def build_query_1and2_matrix(args):
                                 np.array(criticalcare_list).reshape(-1, 1).astype(int),
                                 np.array(maxfollowtime_list).reshape(-1, 1),
                                 death_array,
+                                np.asarray(age_list).reshape(-1, 1),
                                 age_array,
                                 gender_array,
                                 race_array,
                                 hispanic_array,
+                                np.asarray(social_list),
                                 social_array,
                                 utilization_array,
                                 index_period_array,
                                 dx_array,
                                 med_array,
                                 covidmed_array,
-                                outcome_covidmed_flag,
-                                outcome_covidmed_t2e,
-                                outcome_covidmed_baseline,
-                                outcome_flag,
-                                outcome_t2e,
-                                outcome_baseline,
-                                outcome_med_flag,
-                                outcome_med_t2e,
-                                outcome_med_baseline
                                 ))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
@@ -1035,25 +987,16 @@ def build_query_1and2_matrix(args):
         print('Done site:', site)
         # end iterate sites
 
-    dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
-                                         columns=['total', 'no. in positive group', 'no. in negative group'],
-                                         dtype=str)
-    utils.check_and_mkdir(args.output_dx_info)
-    dx_count_df.to_csv(args.output_dx_info)
-    med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
-                                          columns=['total', 'no. in positive group', 'no. in negative group'],
-                                          dtype=str)
-    med_count_df.to_csv(args.output_med_info)
+    # dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
+    #                                      columns=['total', 'no. in positive group', 'no. in negative group'])
+    # # dx_count_df.to_csv(args.output_dx_info)
+    # med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
+    #                                       columns=['total', 'no. in positive group', 'no. in negative group'])
+    # # med_count_df.to_csv(args.output_med_info)
 
     df_data_all_sites = pd.concat(data_all_sites)
     print('df_data_all_sites.shape:', df_data_all_sites.shape)
 
-    utils.check_and_mkdir(args.output_file_query12)
-    df_data_all_sites.to_csv(args.output_file_query12)
-    print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12))
-
-    # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
-    # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
     df_bool = df_data_all_sites
     selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
     df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
@@ -1061,132 +1004,195 @@ def build_query_1and2_matrix(args):
         (df_bool.loc[:, r'DX: Hypertension'] & (
                 df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
-    # Warning: the covid medication part is not boolean
-    # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    # add boolean operation 2022-03-13
-    df_bool.loc[:, covidmed_column_names] = (df_bool.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
-    # can be done later
-
-    selected_cols = [x for x in df_bool.columns if
-                     (x.startswith('dx-out@') or x.startswith('dx-base@') or
-                      x.startswith('med-out@') or x.startswith('med-base@') or
-                      x.startswith('covidmed-out@') or x.startswith('covidmed-base@'))]
-    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
-
     utils.check_and_mkdir(args.output_file_query12_bool)
     df_bool.to_csv(args.output_file_query12_bool)
-    print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
+    print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12_bool))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_data_all_sites, df_bool
 
 
-def enrich_med_rwd_info():
-    atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
-    rx_name = utils.load(r'../data/mapping/rxnorm_name.pkl')
-    df = pd.read_csv(r'../data/oneflorida/output/character/info_medication_cohorts_covid_4manuNegNoCovid_all.csv',
-                     dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "rxnorm"})
-    df = df.sort_values(by=['no. in positive group'], ascending=False)
+def table1_cohorts_characterization_analyse(cohorts='covid_4manuNegNoCovid', dataset='all'):
+    # severity in 'hospitalized', 'ventilation', None
+    in_file = r'../data/oneflorida/output/character/matrix_cohorts_{}_bool_{}_4table1.csv'.format(
+        cohorts, dataset)
+    out_file = r'../data/oneflorida/output/character/table1_of_matrix_cohorts_{}_bool_{}_4table1.xlsx'.format(
+        cohorts, dataset)
 
-    df['ratio'] = df['no. in positive group'] / df['no. in negative group']
-    df['name'] = df['rxnorm'].apply(lambda x: rx_name.get(x, [''])[0])
-    df['atc-l3'] = ''
-    df['atc-l4'] = ''
+    print('Try to load:', in_file)
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
 
-    rx_atc = utils.load(r'../data/mapping/rxnorm_atc_mapping.pkl')
-    atc_name = utils.load(r'../data/mapping/atc_name.pkl')
+    df_pos = df_data.loc[df_data["covid"] == 1, :]
+    df_neg = df_data.loc[df_data["covid"] == 0, :]
 
-    for index, row in df.iterrows():
-        rx = row[0]
-        atcset = rx_atc.get(rx, [])
+    def _n_str(n):
+        return '{:,}'.format(n)
 
-        atc3_col = []
-        atc4_col = []
-        for _ra in atcset:
-            atc, name = _ra
-            atc3 = atc[:4]
-            atc3name = atc_name.get(atc3, [''])[0]
-            atc3_col.append(atc3 + ':' + atc3name)
+    def _quantile_str(x):
+        v = x.quantile([0.25, 0.5, 0.75]).to_list()
+        return '{:.0f} ({:.0f}—{:.0f})'.format(v[1], v[0], v[2])
 
-            atc4 = atc[:5]
-            atc4name = atc_name.get(atc4, [''])[0]
-            atc4_col.append(atc4 + ':' + atc4name)
+    def _percentage_str(x):
+        n = x.sum()
+        per = x.mean()
+        return '{:,} ({:.1f})'.format(n, per * 100)
 
-        atc3_col = '$'.join(atc3_col)
-        df.loc[index, 'atc-l3'] = atc3_col
-        atc4_col = '$'.join(atc4_col)
-        df.loc[index, 'atc-l4'] = atc4_col
+    def _smd(x1, x2):
+        m1 = x1.mean()
+        m2 = x2.mean()
+        v1 = x1.var()
+        v2 = x2.var()
 
-    df.to_csv(r'../data/oneflorida/output/character/info_medication_cohorts_covid_4manuNegNoCovid_all_enriched.csv',
-              index=False)
-    return df
+        VAR = np.sqrt((v1 + v2) / 2)
+        smd = np.divide(
+            m1 - m2,
+            VAR, out=np.zeros_like(m1), where=VAR != 0)
+        return smd
 
+    row_names = []
+    records = []
 
-def rwd_dx_and_pasc_comparison():
-    df_ccsr = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV', dtype=str)
-    df_ccsr["'ICD-10-CM CODE'"] = df_ccsr["'ICD-10-CM CODE'"].apply(lambda x: x.strip("'"))
-    df_ccsr_sub = df_ccsr[["'ICD-10-CM CODE'",
-                           "'ICD-10-CM CODE DESCRIPTION'",
-                           "'CCSR CATEGORY 1'",
-                           "'CCSR CATEGORY 1 DESCRIPTION'"
-                           ]]
-    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
-                            sheet_name=r'PASC Screening List',
-                            usecols="A:N")
-    df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
-    print('df_pasc.shape', df_pasc.shape)
-    # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+    # N
+    row_names.append('N')
+    records.append([
+        _n_str(len(df_pos)),
+        _n_str(len(df_neg)),
+        np.nan
+    ])
 
-    df_icd = pd.read_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovid_all.csv',
-                         dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "dx code"})
-    df_icd['ratio'] = df_icd['no. in positive group'] / df_icd['no. in negative group']
+    # age
+    row_names.append('Median age (IQR) — yr')
+    records.append([
+        _quantile_str(df_pos['age']),
+        _quantile_str(df_neg['age']),
+        _smd(df_pos['age'], df_neg['age'])
+    ])
 
-    df_icd = pd.merge(df_icd, df_ccsr_sub, left_on='dx code', right_on="'ICD-10-CM CODE'", how='left')
+    row_names.append('Age group — no. (%)')
+    records.append([])
+    age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+    row_names.extend(age_col)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in age_col])
 
-    df = pd.merge(df_icd, df_pasc, left_on='dx code', right_on='ICD-10-CM Code', how='outer')
-    df.to_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovid_all_with_PASC.csv',
-              index=False)
+    # Sex
+    row_names.append('Sex — no. (%)')
+    records.append([])
+    sex_col = ['Female', 'Male', 'Other/Missing']
+    row_names.extend(sex_col)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in sex_col])
 
-    df_pasc_withrwd = pd.merge(df_pasc, df_icd, left_on='ICD-10-CM Code', right_on='dx code', how='left')
+    # Race
+    row_names.append('Race — no. (%)')
+    records.append([])
+    col_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-    for index, row in df_pasc_withrwd.iterrows():
-        icd = row['ICD-10-CM Code']
-        if pd.isna(row['dx code']):
-            _df = df_icd.loc[df_icd['dx code'].str.startswith(icd), :]
-            dx_code = ';'.join(_df['dx code'])
-            total = _df['total'].sum()
-            npos = _df['no. in positive group'].sum()
-            nneg = _df['no. in negative group'].sum()
-            ratio = npos / nneg
-            df_pasc_withrwd.loc[index, 'dx code'] = dx_code
-            df_pasc_withrwd.loc[index, 'total'] = total
-            df_pasc_withrwd.loc[index, 'no. in positive group'] = npos
-            df_pasc_withrwd.loc[index, 'no. in negative group'] = nneg
-            df_pasc_withrwd.loc[index, 'ratio'] = ratio
+    # Ethnic group
+    row_names.append('Ethnic group — no. (%)')
+    records.append([])
+    col_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
 
-    df_pasc_withrwd.to_csv(
-        r'../data/oneflorida/output/character/PASC_Adult_Combined_List_with_covid_4manuNegNoCovid.csv',
-        index=False)
+    # ADI
+    row_names.append('Median area deprivation index (IQR) — rank')
+    records.append([
+        _quantile_str(df_pos['nation_adi']),
+        _quantile_str(df_neg['nation_adi']),
+        _smd(df_pos['nation_adi'], df_neg['nation_adi'])
+    ])
 
-    return df, df_pasc_withrwd
+    # follow-up
+    row_names.append('Follow-up days (IQR)')
+    records.append([
+        _quantile_str(df_pos['maxfollowup']),
+        _quantile_str(df_neg['maxfollowup']),
+        _smd(df_pos['maxfollowup'], df_neg['maxfollowup'])
+    ])
+
+    # utilization
+    row_names.append('No. of hospital visits in the past 3 yr — no. (%)')
+    records.append([])
+    col_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+                 'inpatient visits >=5',
+                 'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+                 'outpatient visits >=5',
+                 'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+                 'emergency visits >=5']
+    col_names_out = ['Inpatient 0', 'Inpatient 1-2', 'Inpatient 3-4', 'Inpatient >=5',
+                     'Outpatient 0', 'Outpatient 1-2', 'Outpatient 3-4', 'Outpatient >=5',
+                     'Emergency 0', 'Emergency 1-2', 'Emergency 3-4', 'Emergency >=5']
+
+    row_names.extend(col_names_out)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
+
+    # time of index period
+    row_names.append('Index time period of patients — no. (%)')
+    records.append([])
+    col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
+
+    df = pd.DataFrame(records, columns=['Covid+', 'Covid-', 'SMD'], index=row_names)
+
+    # Coexisting coditions
+    row_names.append('Coexisting conditions — no. (%)')
+    records.append([])
+    col_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
+                 "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
+                 "DX: Coagulopathy", "DX: Congestive Heart Failure",
+                 "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
+                 "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                 "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                 "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
+                 "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
+                 "DX: Peripheral vascular disorders ", "DX: Pregnant",
+                 "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
+                 "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
+                 "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
+                 "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
+                 'DX: Autism', 'DX: Sickle Cell',
+                 "MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"
+                 ]
+    col_names_out = ["Alcohol Abuse", "Anemia", "Arrythmia", "Asthma", "Cancer",
+                     "Chronic Kidney Disease", "Chronic Pulmonary Disorders", "Cirrhosis",
+                     "Coagulopathy", "Congestive Heart Failure",
+                     "COPD", "Coronary Artery Disease", "Dementia", "Diabetes Type 1",
+                     "Diabetes Type 2", "End Stage Renal Disease on Dialysis", "Hemiplegia",
+                     "HIV", "Hypertension", "Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                     "Inflammatory Bowel Disorder", "Lupus or Systemic Lupus Erythematosus",
+                     "Mental Health Disorders", "Multiple Sclerosis", "Parkinson's Disease",
+                     "Peripheral vascular disorders ", "Pregnant",
+                     "Pulmonary Circulation Disorder",
+                     "Rheumatoid Arthritis", "Seizure/Epilepsy",
+                     "Severe Obesity  (BMI>=40 kg/m2)", "Weight Loss",
+                     "Down's Syndrome", 'Other Substance Abuse', 'Cystic Fibrosis',
+                     'Autism', 'Sickle Cell',
+                     "Prescription of Corticosteroids", "Prescription of Immunosuppressant drug"
+                     ]
+    row_names.extend(col_names_out)
+    records.extend(
+        [[_percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in col_names])
+
+    df = pd.DataFrame(records, columns=['COVID Positive', 'COVID Negative', 'SMD'], index=row_names)
+    df['SMD'] = df['SMD'].astype(float)
+    df.to_excel(out_file)
+    print('Dump done ', df)
+    return df, df_data
 
 
 if __name__ == '__main__':
-    # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
-    # python pre_data_manuscript.py --dataset all --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid_all1-10parts.txt
+    # python pre_data_manuscript_table1.py --dataset all --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_table1_covid_4manuNegNoCovid.txt
 
     start_time = time.time()
     args = parse_args()
-    # utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
-
     df_data, df_data_bool = build_query_1and2_matrix(args)
-
-    # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
-    # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
-
-    # cohorts_table_generation(args)
-    # de_novo_medication_analyse(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
-    # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
-    # df_med = enrich_med_rwd_info()
-    # df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    df_table1, df_data = table1_cohorts_characterization_analyse(cohorts='covid_4manuNegNoCovid', dataset='all')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

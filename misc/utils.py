@@ -16,7 +16,7 @@ from sas7bdat import SAS7BDAT
 import argparse
 import csv
 import functools
-
+import requests
 print = functools.partial(print, flush=True)
 # import joblib
 import re
@@ -247,6 +247,18 @@ def str_to_datetime(s):
     elif len(ymd) == 1:
         ymd = ymd + [1, 1]  # If only year, set to Year-Jan.-1st
     return datetime(*ymd)
+
+
+def _parse_ndc_rxnorm_api(ndc):
+    # Notice: https://rxnav.nlm.nih.gov/REST/ndcstatus.json?ndc=00071015723
+    # change at 2022-02-28
+    r = requests.get('https://rxnav.nlm.nih.gov/REST/ndcstatus.json?ndc={}'.format(ndc))
+    data = r.json()
+    rx = name = ''
+    if ('ndcStatus' in data) and ('rxcui' in data['ndcStatus']) and ('conceptName' in data['ndcStatus']):
+        rx = data['ndcStatus']['rxcui']
+        name = data['ndcStatus']['conceptName']
+    return rx, name
 
 
 if __name__ == '__main__':
