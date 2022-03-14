@@ -673,6 +673,26 @@ def _dx_clean_and_translate_any_ICD9_to_ICD10(dx_list, icd9_icd10, icd_ccsr):
     return dx_list_new
 
 
+def _med_translate_any_NDC_to_rxnorm(med_list, ndc_rxnorm):
+    med_list_new = []
+    n_ndc2rxnorm = 0
+    for records in med_list:
+        med_date, rxnorm, supply_days, codetype = records
+        if codetype != 'RX':  # ND, NI, OT, RX, UN
+            ndc_translation = ndc_rxnorm.get(rxnorm, [])
+            if len(ndc_translation) > 0:
+                n_ndc2rxnorm += 1
+                for x in ndc_translation:
+                    new_records = (med_date, x, supply_days, 'from' + codetype)
+                    med_list_new.append(new_records)
+            else:
+                med_list_new.append((med_date, rxnorm, supply_days, codetype))
+        else:
+            med_list_new.append((med_date, rxnorm, supply_days, codetype))
+
+    return med_list_new
+
+
 def _update_counter(dict3, key, flag):
     if key in dict3:
         dict3[key][0] += 1
@@ -697,7 +717,7 @@ def build_query_1and2_matrix(args):
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     if args.dataset == 'all':
-        sites = ['part9']
+        sites = ['part{}'.format(i) for i in range(1,11)]
     else:
         sites = [args.dataset, ]
 
@@ -721,7 +741,6 @@ def build_query_1and2_matrix(args):
         print('Load done by pickle.load! len(data):', len(id_data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-        return id_data
         # step 3: encoding cohorts baseline covariates into matrix
         if args.positive_only:
             n = 0
@@ -870,6 +889,7 @@ def build_query_1and2_matrix(args):
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
+            med_translate_ndc = _med_translate_any_NDC_to_rxnorm(med, ndc_rxnorm)
 
             if args.positive_only:
                 if not flag:
@@ -932,8 +952,10 @@ def build_query_1and2_matrix(args):
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
                 _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
 
+            # 2022-03-13: use rxnorm translated verison for drug outcome, because there are NDC in oneFlorida.
+            # baseline med and covid med contains NDC codes. Only for outcomes!
             outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
-                _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
+                _encoding_outcome_med_rxnorm_ingredient(med_translate_ndc, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
             # count additional information
             # in follow-up, each person count once
@@ -1002,8 +1024,10 @@ def build_query_1and2_matrix(args):
         print('Done site:', site)
         # end iterate sites
 
+
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
                                          columns=['total', 'no. in positive group', 'no. in negative group'])
+    utils.check_and_mkdir(args.output_dx_info)
     dx_count_df.to_csv(args.output_dx_info)
     med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
                                           columns=['total', 'no. in positive group', 'no. in negative group'])
@@ -1027,7 +1051,8 @@ def build_query_1and2_matrix(args):
 
     # Warning: the covid medication part is not boolean
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+    # add boolean operation 2022-03-13
+    df_bool.loc[:, covidmed_column_names] = (df_bool.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
     # can be done later
 
     selected_cols = [x for x in df_bool.columns if
