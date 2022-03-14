@@ -169,9 +169,18 @@ if __name__ == "__main__":
         covid_label = df_label[idx]
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
-        sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-                                                                   replace=False,
-                                                                   random_state=args.random_seed).index
+
+        if args.negative_ratio * n_covid_pos < n_covid_neg:
+            print('replace=False')
+            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+                                                                       replace=False,
+                                                                       random_state=args.random_seed).index
+        else:
+            print('replace=True')
+            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+                                                                       replace=True,
+                                                                       random_state=args.random_seed).index
+
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
         pos_neg_selected[covid_label[covid_label == 1].index] = True
