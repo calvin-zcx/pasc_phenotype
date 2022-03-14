@@ -717,7 +717,7 @@ def build_query_1and2_matrix(args):
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     if args.dataset == 'all':
-        sites = ['part{}'.format(i) for i in range(1,11)]
+        sites = ['part{}'.format(i) for i in range(1, 11)]
     else:
         sites = [args.dataset, ]
 
@@ -1853,7 +1853,7 @@ def rwd_dx_and_pasc_comparison():
 
 if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
-    # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
+    # python pre_data_manuscript.py --dataset all --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid_all1-10parts.txt
 
     start_time = time.time()
     args = parse_args()
