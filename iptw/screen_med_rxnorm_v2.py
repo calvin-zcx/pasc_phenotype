@@ -25,7 +25,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
     parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='oneflorida',
-                        help='datasetbases')
+                        help='data bases')
     parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='all',
                         help='site dataset')
     parser.add_argument('--severity', choices=['all', 'outpatient', 'inpatient', 'icu'], default='all')
@@ -94,6 +94,9 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
+    # python screen_med_rxnorm_v2.py --dataset V15_COVID19 --site ALL --severity icu 2>&1 | tee  log/screen_med_rxnorm_insight_ALL_icu.txt
+    # python screen_med_rxnorm_v2.py --dataset V15_COVID19 --site ALL --severity inpatient 2>&1 | tee  log/screen_med_rxnorm_insight_ALL_inpatient.txt
+    # python screen_med_rxnorm_v2.py --dataset V15_COVID19 --site ALL --severity outpatient 2>&1 | tee  log/screen_med_rxnorm_insight_ALL_outpatient.txt
     # python screen_med_rxnorm_v2.py --dataset oneflorida --site all --severity all 2>&1 | tee  log/screen_med_rxnorm_oneflorida_all_all.txt
     start_time = time.time()
     args = parse_args()

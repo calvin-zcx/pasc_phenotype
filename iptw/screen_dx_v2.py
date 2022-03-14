@@ -93,7 +93,11 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
+    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity icu 2>&1 | tee  log/screen_dx_insight_ALL_icu.txt
+    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity inpatient 2>&1 | tee  log/screen_dx_insight_ALL_inpatient.txt
+    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity outpatient 2>&1 | tee  log/screen_dx_insight_ALL_outpatient.txt
     # python screen_dx_v2.py --dataset oneflorida --site all --severity all 2>&1 | tee  log/screen_dx_oneflorida_all_all.txt
+
     start_time = time.time()
     args = parse_args()
 
