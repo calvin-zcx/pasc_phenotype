@@ -126,8 +126,8 @@ def plot_forest_for_dx_organ():
             ci = stringlist_2_list(row['Hazard Ratio, Adjusted, Confidence Interval'])
             p = row['Hazard Ratio, Adjusted, P-Value']
             domain = row['Organ Domain']
-            if name == 'General PASC':
-                continue
+            # if name == 'General PASC':
+            #     continue
             if domain == organ:
                 if len(name.split()) >= 5:
                     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
@@ -146,9 +146,9 @@ def plot_forest_for_dx_organ():
     # p.colors(pointcolor='r')
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
-    c = '#9783AD'
+    c = '#A986B5'
     p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=4, min_value=0.9, size=5, decimal=2)
+    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=3, min_value=0.9, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
