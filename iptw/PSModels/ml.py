@@ -30,7 +30,7 @@ class PropensityEstimator:
                     'C': 10 ** np.arange(-2, 2.5, 0.5),
                     'max_iter': [200],  # [100, 200, 500],
                     'random_state': [random_seed],
-                    'n_job': [4],
+                    'n_jobs': [4],
                 }
             elif self.learner == 'LIGHTGBM':
                 self.paras_grid = {
