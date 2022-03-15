@@ -28,7 +28,11 @@ def parse_args():
                         help='data bases')
     parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='all',
                         help='site dataset')
-    parser.add_argument('--severity', choices=['all', 'outpatient', 'inpatient', 'icu'], default='all')
+    parser.add_argument('--severity', choices=['all',
+                                               'outpatient', 'inpatient', 'icu',
+                                               'female', 'male',
+                                               'white', 'black',
+                                               'less65', '65to75', '75above'], default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
@@ -123,6 +127,27 @@ if __name__ == "__main__":
     elif args.severity == 'outpatient':
         print('Considering outpatient cohorts')
         df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare']==0), :].copy()
+    elif args.severity == 'female':
+        print('Considering female cohorts')
+        df = df.loc[(df['Female'] == 1), :].copy()
+    elif args.severity == 'male':
+        print('Considering male cohorts')
+        df = df.loc[(df['Male'] == 1), :].copy()
+    elif args.severity == 'white':
+        print('Considering white cohorts')
+        df = df.loc[(df['White'] == 1), :].copy()
+    elif args.severity == 'black':
+        print('Considering black cohorts')
+        df = df.loc[(df['Black or African American'] == 1), :].copy()
+    elif args.severity == 'less65':
+        print('Considering less65 cohorts')
+        df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
+    elif args.severity == '65to75':
+        print('Considering 65to75 cohorts')
+        df = df.loc[(df['65-<75 years'] == 1), :].copy()
+    elif args.severity == '75above':
+        print('Considering 75above cohorts')
+        df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
 
