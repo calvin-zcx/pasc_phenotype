@@ -30,7 +30,6 @@ class PropensityEstimator:
                     'C': 10 ** np.arange(-2, 2.5, 0.5),
                     'max_iter': [200],  # [100, 200, 500],
                     'random_state': [random_seed],
-                    'n_jobs': [1],
                 }
             elif self.learner == 'LIGHTGBM':
                 self.paras_grid = {
@@ -56,7 +55,7 @@ class PropensityEstimator:
             self.paras_names = paras_names
             self.paras_list = [{self.paras_names[i]: para[i] for i in range(len(para))} for para in paras_list]
             if self.learner == 'LR':
-                no_penalty_case = {'penalty': 'none', 'max_iter': 200, 'random_state': random_seed, 'n_jobs': 1}
+                no_penalty_case = {'penalty': 'none', 'max_iter': 200, 'random_state': random_seed}
                 if (no_penalty_case not in self.paras_list) and (len(self.paras_list) > 1):
                     self.paras_list.append(no_penalty_case)
                     print('Add no penalty case to logistic regression model:', no_penalty_case)
