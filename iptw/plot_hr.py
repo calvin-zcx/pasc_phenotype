@@ -96,22 +96,125 @@ def plot_forest_for_dx_organ():
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
     # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    print('df_select.shape:', df_select.shape)
 
     organ_list = df_select['Organ Domain'].unique()
     print(organ_list)
     organ_list = [
         'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
         'Diseases of the Respiratory System',
         'Diseases of the Circulatory System',
         'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
         'Diseases of the Digestive System',
         'Diseases of the Genitourinary System',
         'Diseases of the Musculoskeletal System and Connective Tissue',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General']
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+    organ_n = np.zeros(len(organ_list))
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    pasc_row = []
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple']
+            hr = row['Hazard Ratio, Adjusted']
+            ci = stringlist_2_list(row['Hazard Ratio, Adjusted, Confidence Interval'])
+            p = row['Hazard Ratio, Adjusted, P-Value']
+            domain = row['Organ Domain']
+            if name == 'General PASC':
+                pasc_row = [name, hr, ci, p, domain]
+                continue
+            if domain == organ:
+                organ_n[i] += 1
+                if len(name.split()) >= 5:
+                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+                labs.append(name)
+                measure.append(hr)
+                lower.append(ci[0])
+                upper.append(ci[1])
+                pval.append(p)
+
+    # add pasc at last
+    organ_n[-1] += 1
+    labs.append(pasc_row[0])
+    measure.append(pasc_row[1])
+    lower.append(pasc_row[2][0])
+    upper.append(pasc_row[2][1])
+    pval.append(pasc_row[3])
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
+    p.labels(scale='log')
+
+    # organ = 'ALL'
+    p.labels(effectmeasure='aHR')  # aHR
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    c = '#F65453'
+    p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)  #, linecolor='#fcb2ab')
+    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+
+    organ_n = np.cumsum(organ_n)
+    for i in range(len(organ_n) - 1):
+        ax.axhline(y=organ_n[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/DX/organ/'
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    plt.close()
+
+
+def plot_forest_for_med_organ():
+    # df = pd.read_excel(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific_Diagnosis_withDomain-simple-4plot.xlsx')
+    df = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/DX/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
+        sheet_name='med')
+
+    df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
+    pvalue = 0.05 / 459  # 0.05 / 137
+    # df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
+    # df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
+    # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    # df_select = df
+    print('df_select.shape:', df_select.shape)
+
+    organ_list = df_select['Organ Domain'].unique()
+    print(organ_list)
+    organ_list = [
+        # 'Diseases of the Nervous System',
+        # 'Diseases of the Eye and Adnexa',
         'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
         'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
         'Certain Infectious and Parasitic Diseases',
-        'General',
-        'Injury, Poisoning and Certain Other Consequences of External Causes']
+    ]
+    organ_n = np.zeros( len(organ_list) )
     labs = []
     measure = []
     lower = []
@@ -129,7 +232,8 @@ def plot_forest_for_dx_organ():
             # if name == 'General PASC':
             #     continue
             if domain == organ:
-                if len(name.split()) >= 5:
+                organ_n[i] += 1
+                if len(name.split()) >= 4:
                     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
                 labs.append(name)
                 measure.append(hr)
@@ -140,19 +244,23 @@ def plot_forest_for_dx_organ():
     p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
     p.labels(scale='log')
 
-    organ = 'ALL'
-
+    # organ = 'ALL'
     p.labels(effectmeasure='aHR')  # aHR
     # p.colors(pointcolor='r')
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     c = '#A986B5'
-    p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)
-    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=3, min_value=0.9, size=5, decimal=2)
+    p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)  #, linecolor='#fcb2ab')
+    ax = p.plot(figsize=(10, .38775 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
     # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+
+    organ_n = np.cumsum(organ_n)
+    for i in range(len(organ_n) - 1):
+        ax.axhline(y=organ_n[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
@@ -160,8 +268,8 @@ def plot_forest_for_dx_organ():
     plt.tight_layout()
     output_dir = r'../data/V15_COVID19/output/character/outcome/DX/organ/'
     check_and_mkdir(output_dir)
-    # plt.savefig(output_dir + 'dx_hr_{}-p{}.png'.format(organ, pvalue), bbox_inches='tight', dpi=900)
-    # plt.savefig(output_dir + 'dx_hr_{}-p{}.pdf'.format(organ, pvalue), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'med_hr_{}-p{}.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'med_hr_{}-p{}.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
     plt.show()
     print()
     # plt.clf()
@@ -364,3 +472,4 @@ if __name__ == '__main__':
     # pasc_domain = add_pasc_domain_to_causal_results()
     # df_med = add_drug_name()
     plot_forest_for_dx_organ()
+    plot_forest_for_med_organ()

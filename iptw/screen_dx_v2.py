@@ -32,7 +32,10 @@ def parse_args():
                                                'outpatient', 'inpatient', 'icu',
                                                'female', 'male',
                                                'white', 'black',
-                                               'less65', '65to75', '75above'], default='all')
+                                               'less65', '65to75', '75above',
+                                               'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
+                                               'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'],
+                        default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
@@ -148,9 +151,36 @@ if __name__ == "__main__":
     elif args.severity == '75above':
         print('Considering 75above cohorts')
         df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+    elif args.severity == 'Anemia':
+        print('Considering Anemia cohorts')
+        df = df.loc[(df["DX: Anemia"] == 1), :].copy()
+    elif args.severity == 'Arrythmia':
+        print('Considering Arrythmia cohorts')
+        df = df.loc[(df["DX: Arrythmia"] == 1), :].copy()
+    elif args.severity == 'CKD':
+        print('Considering CKD cohorts')
+        df = df.loc[(df["DX: Chronic Kidney Disease"] == 1), :].copy()
+    elif args.severity == 'CPD-COPD':
+        print('Considering CPD-COPD cohorts')
+        df = df.loc[(df["DX: Chronic Pulmonary Disorders"] == 1) | (df["DX: COPD"] == 1), :].copy()
+    elif args.severity == 'CAD':
+        print('Considering CAD cohorts')
+        df = df.loc[(df["DX: Coronary Artery Disease"] == 1), :].copy()
+    elif args.severity == 'T2D-Obesity':
+        print('Considering T2D-Obesity cohorts')
+        df = df.loc[(df["DX: Diabetes Type 2"] == 1) | (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] == 1), :].copy()
+    elif args.severity == 'Hypertension':
+        print('Considering Hypertension cohorts')
+        df = df.loc[(df["DX: Hypertension"] == 1), :].copy()
+    elif args.severity == 'Mental-substance':
+        print('Considering Mental-substance cohorts')
+        df = df.loc[(df["DX: Mental Health Disorders"] == 1) | (df['DX: Other Substance Abuse'] == 1), :].copy()
+    elif args.severity == 'Corticosteroids':
+        print('Considering Corticosteroids cohorts')
+        df = df.loc[(df["MEDICATION: Corticosteroids"] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
-
+    # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
     print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
     df_info = df[['Unnamed: 0', 'patid', 'site', 'index date', 'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e']]

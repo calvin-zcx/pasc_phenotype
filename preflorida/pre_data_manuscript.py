@@ -933,6 +933,8 @@ def build_query_1and2_matrix(args):
             # yearmonth_array[i, :] = _encoding_yearmonth(index_date)
 
             # encoding query 2 information
+            # because CDC codes cover both ICD-9/10, thus, can use original codes before translated into ICD-10
+            # after translated to ICD-10 should also be OK
             dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date, procedure)
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
