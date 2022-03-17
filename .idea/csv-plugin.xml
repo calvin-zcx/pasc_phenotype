@@ -59,6 +59,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\oneflorida\output\character\outcome\DX-inpatient\122-Allergic reactions, subsequent encounter-evaluation_balance.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\iptw\old\evaluation_ALL-model-select2.csv">
           <value>
             <Attribute>
