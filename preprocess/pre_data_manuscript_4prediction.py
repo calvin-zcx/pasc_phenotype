@@ -737,7 +737,7 @@ def build_query_1and2_matrix(args):
     print('Try to load: ', sites)
     for site in tqdm(sites):
         print('Loading: ', site)
-        input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
+        input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site.split('-')[0], args.cohorts, site)
         print('Load cohorts pickle data file:', input_file)
         id_data = utils.load(input_file)
 
