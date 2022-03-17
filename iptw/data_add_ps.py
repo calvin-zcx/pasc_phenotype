@@ -198,11 +198,7 @@ if __name__ == "__main__":
     print('df.shape:', df.shape)
     print('df_covs.shape:', df_covs.shape)
 
-    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, paras_grid = {
-        'penalty': 'l2',
-        'C': 0.03162277660168379,
-        'max_iter': 200,
-        'random_state': 0}).cross_validation_fit(df_covs, df_label, verbose=0)
+    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(df_covs, df_label, verbose=0)
     #
     # , paras_grid = {
     #     'penalty': 'l2',
