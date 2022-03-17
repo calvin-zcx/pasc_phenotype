@@ -749,6 +749,11 @@ def build_query_1and2_matrix(args):
             flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
+            if args.positive_only:
+                if not flag:
+                    continue
+            i += 1
+
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
 
             id_data4pre[site+pid] = [index_info, demo, dx, med]
@@ -765,7 +770,7 @@ def build_query_1and2_matrix(args):
 
 
 if __name__ == '__main__':
-    # python pre_data_manuscript_4prediction.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_4prediction_covid_4manuNegNoCovid.txt
+    # python pre_data_manuscript_4prediction.py --positive_only --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_4prediction_covid_4manuNegNoCovid.txt
     start_time = time.time()
     args = parse_args()
     id_data4pre = build_query_1and2_matrix(args)
