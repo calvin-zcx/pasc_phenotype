@@ -721,7 +721,7 @@ def build_query_1and2_matrix(args):
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     if args.dataset == 'ALL':
-        sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
+        sites = ['NYU', 'MONTE-part1', 'MONTE-part2', 'COL', 'MSHS', 'WCM']
     else:
         sites = [args.dataset, ]
 
