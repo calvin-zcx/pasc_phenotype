@@ -24,9 +24,9 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='V15_COVID19',
+    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='oneflorida',
                         help='data bases')
-    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='ALL',
+    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='all',
                         help='site dataset')
     parser.add_argument('--severity', choices=['all',
                                                'outpatient', 'inpatient', 'icu',
@@ -198,14 +198,19 @@ if __name__ == "__main__":
     print('df.shape:', df.shape)
     print('df_covs.shape:', df_covs.shape)
 
-    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(df_covs, df_label, verbose=0)
-    #
+    # model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(df_covs, df_label, verbose=0)
+    model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed, paras_grid = {
+        'penalty': 'l2',
+        'C': 0.03162277660168379,
+        'max_iter': 200,
+        'random_state': 0}).cross_validation_fit(df_covs, df_label, verbose=0)
+
+    # #
     # , paras_grid = {
     #     'penalty': 'l2',
     #     'C': 0.03162277660168379,
     #     'max_iter': 200,
     #     'random_state': 0}
-
     ps = model.predict_ps(df_covs)
     model.report_stats()
     iptw = model.predict_inverse_weight(df_covs, df_label, stabilized=True, clip=False)
@@ -213,6 +218,7 @@ if __name__ == "__main__":
     plt.scatter(range(len(smd)), smd)
     plt.scatter(range(len(smd)), smd_weighted)
     plt.show()
+
     print('n unbalanced covariates before:after = {}:{}'.format(
         (smd > SMD_THRESHOLD).sum(),
         (smd_weighted > SMD_THRESHOLD).sum())
