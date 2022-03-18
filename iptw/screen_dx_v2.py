@@ -34,8 +34,9 @@ def parse_args():
                                                'white', 'black',
                                                'less65', '65to75', '75above',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
-                                               'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'],
-                        default='all')
+                                               'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
+                                               'healthy'],
+                        default='healthy')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
@@ -123,13 +124,13 @@ if __name__ == "__main__":
     print('df.shape:', df.shape)
     if args.severity == 'inpatient':
         print('Considering inpatient/hospitalized cohorts but not ICU')
-        df = df.loc[(df['hospitalized'] == 1) & (df['ventilation']==0) & (df['criticalcare']==0), :].copy()
+        df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
     elif args.severity == 'icu':
         print('Considering ICU (hospitalized ventilation or critical care) cohorts')
-        df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation']==1)) | (df['criticalcare']==1)), :].copy()
+        df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)), :].copy()
     elif args.severity == 'outpatient':
         print('Considering outpatient cohorts')
-        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare']==0), :].copy()
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
     elif args.severity == 'female':
         print('Considering female cohorts')
         df = df.loc[(df['Female'] == 1), :].copy()
@@ -178,6 +179,15 @@ if __name__ == "__main__":
     elif args.severity == 'Corticosteroids':
         print('Considering Corticosteroids cohorts')
         df = df.loc[(df["MEDICATION: Corticosteroids"] == 1), :].copy()
+    elif args.severity == 'healthy':
+        # no comorbidity and no PASC?
+        print('Considering baseline totally healthy cohorts')
+        selected_cols = [x for x in df.columns if
+                         (x.startswith('dx-base@')
+                          or x.startswith('DX:')
+                          or x.startswith('MEDICATION:'))]
+        flag = df[selected_cols].sum(axis=1)
+        df = df.loc[(flag == 0), :].copy()
     else:
         print('Considering ALL cohorts')
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
@@ -253,7 +263,9 @@ if __name__ == "__main__":
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             pasc_flag.sum(), (pasc_flag == 0).sum()))
 
-        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array, covid_label, verbose=0)
+        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array,
+                                                                                                        covid_label,
+                                                                                                        verbose=0)
         # , paras_grid = {
         #     'penalty': 'l2',
         #     'C': 0.03162277660168379,
@@ -271,29 +283,33 @@ if __name__ == "__main__":
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/{}/output/character/outcome/DX-{}/{}-{}-results.csv'.format(args.dataset, args.severity, i, pasc)
+        out_file_balance = r'../data/{}/output/character/outcome/DX-{}/{}-{}-results.csv'.format(args.dataset,
+                                                                                                 args.severity, i, pasc)
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
-        df_summary.to_csv('../data/{}/output/character/outcome/DX-{}/{}-{}-evaluation_balance.csv'.format(args.dataset, args.severity, i, pasc))
+        df_summary.to_csv(
+            '../data/{}/output/character/outcome/DX-{}/{}-{}-evaluation_balance.csv'.format(args.dataset, args.severity,
+                                                                                            i, pasc))
 
         km, km_w, cox, cox_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/{}/output/character/outcome/DX-{}/{}-{}-km.png'.format(args.dataset, args.severity, i, pasc),
+            fig_outfile=r'../data/{}/output/character/outcome/DX-{}/{}-{}-km.png'.format(args.dataset, args.severity, i,
+                                                                                         pasc),
             title=pasc)
 
         try:
             _results = [i, pasc,
-                       covid_label.sum(), (covid_label == 0).sum(),
-                       pasc_flag[covid_label==1].sum(), pasc_flag[covid_label==0].sum(),
-                       pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
-                       (smd > SMD_THRESHOLD).sum(),  (smd_weighted > SMD_THRESHOLD).sum(),
-                       np.abs(smd).max(), np.abs(smd_weighted).max(),
-                       km[2], km[3], km[6].p_value,
-                       km_w[2], km_w[3], km_w[6].p_value,
-                       cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
-                       cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
+                        covid_label.sum(), (covid_label == 0).sum(),
+                        pasc_flag[covid_label == 1].sum(), pasc_flag[covid_label == 0].sum(),
+                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
+                        (smd > SMD_THRESHOLD).sum(), (smd_weighted > SMD_THRESHOLD).sum(),
+                        np.abs(smd).max(), np.abs(smd_weighted).max(),
+                        km[2], km[3], km[6].p_value,
+                        km_w[2], km_w[3], km_w[6].p_value,
+                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
+                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
             print('causal result:\n', causal_results[-1])
 
@@ -303,8 +319,9 @@ if __name__ == "__main__":
                     'mean pasc in -',
                     'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                     'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']).\
-                    to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(args.dataset, args.severity, i))
+                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']). \
+                    to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    args.dataset, args.severity, i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=[
@@ -316,7 +333,9 @@ if __name__ == "__main__":
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-            df_causal.to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-ERRORSAVE.csv'.format(args.dataset, args.severity))
+            df_causal.to_csv(
+                r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-ERRORSAVE.csv'.format(args.dataset,
+                                                                                                          args.severity))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -326,5 +345,6 @@ if __name__ == "__main__":
         'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
-    df_causal.to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(args.dataset, args.severity))
+    df_causal.to_csv(
+        r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(args.dataset, args.severity))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
