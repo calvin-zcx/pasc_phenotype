@@ -161,16 +161,25 @@ def plot_heatmap_for_dx_subgroup():
     print()
 
 
-def plot_heatmap_for_dx_subgroup_split():
-    df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
-        sheet_name='diagnosis').set_index('i')
+def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
+
+    if database == 'oneflorida':
+        df = pd.read_excel(
+            r'../data/oneflorida/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-oneflorida-4plot.xlsx',
+            sheet_name='diagnosis').set_index('i')
+        pvalue = 0.01
+    elif database =='V15_COVID19':
+        df = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
+            sheet_name='diagnosis').set_index('i')
+        pvalue = 0.01  # 0.05 / 137
+    else:
+        raise ValueError
 
     df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
-    pvalue = 0.01  # 0.05 / 137
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
-    # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    df_select = df_select.loc[df_select['no. pasc in covid +'] >= 100, :]
     print('df_select.shape:', df_select.shape)
 
     organ_list = df_select['Organ Domain'].unique()
@@ -212,6 +221,11 @@ def plot_heatmap_for_dx_subgroup_split():
                 organ_n[i] += 1
                 if len(name.split()) >= 5:
                     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+
+                name = name.strip('*')
+                if (p > 0.05/137) and (p < 0.01):
+                    name += '*'
+
                 labs.append(name)
                 measure.append(hr)
                 lower.append(ci[0])
@@ -219,7 +233,7 @@ def plot_heatmap_for_dx_subgroup_split():
                 pval.append(p)
                 key_list.append(key)
 
-    # add pasc at last
+    # # add pasc at last
     # organ_n[-1] += 1
     # labs.append(pasc_row[0])
     # measure.append(pasc_row[1])
@@ -238,8 +252,7 @@ def plot_heatmap_for_dx_subgroup_split():
                      'healthy'
                      ]:
         _df = pd.read_csv(
-            r'../data/V15_COVID19/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(
-                severity)).set_index('i')
+            r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(database, severity)).set_index('i')
         _df_selected = _df.loc[key_list, :]
         _hr = _df_selected.loc[:, 'hr-w']
         heat_value[severity] = _hr.tolist()
@@ -263,9 +276,9 @@ def plot_heatmap_for_dx_subgroup_split():
                                           'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
 
     data = df_heat_value
-    asp = data.shape[0] / float(data.shape[1])
+    asp = data.shape[0] / float(data.shape[1]) / 1.6
     figw = 14  # 8
-    figh = 15  # * asp
+    figh = figw * asp
 
     cmap = sns.cm.rocket_r
     norm = Normalize(vmin=data.min().min(), vmax=data.max().max())
@@ -276,11 +289,11 @@ def plot_heatmap_for_dx_subgroup_split():
 
     left = 0.22
     # right = 0.87
-    # bottom = 0.1
-    # top = 0.9
+    bottom = 0.1
+    top = 0.85
     fig, axes = plt.subplots(ncols=6, nrows=1, figsize=(figw, figh), gridspec_kw=gridspec_kw)
-    plt.subplots_adjust(left=left, wspace=0.08, hspace=0.08 * asp)
-    sns.heatmap(data.iloc[:, 0:1], ax=axes[0],  yticklabels=[x.strip('*') for x in labs], annot=True, fmt=".1f", **heatmapkws)
+    plt.subplots_adjust(left=left, bottom=bottom, top=top, wspace=0.08, hspace=0.08 * asp)
+    sns.heatmap(data.iloc[:, 0:1], ax=axes[0],  yticklabels=labs, annot=True, fmt=".1f", **heatmapkws)
     sns.heatmap(data.iloc[:, 1:4], ax=axes[1], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
     sns.heatmap(data.iloc[:, 4:7], ax=axes[2], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
     sns.heatmap(data.iloc[:, 7:9], ax=axes[3], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
@@ -295,7 +308,7 @@ def plot_heatmap_for_dx_subgroup_split():
     # axes[1, 1].set_xticklabels([4, 5, 6, 7, 8])
     # axes[1, 2].set_xticklabels([9, 10, 11])
 
-    cax = fig.add_axes([0.92, 0.15, 0.025, 0.7])
+    cax = fig.add_axes([0.92, 0.12, 0.025, 0.7]) #  [left, bottom, width, height]
     sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     fig.colorbar(sm, cax=cax)
@@ -311,4 +324,5 @@ if __name__ == '__main__':
     # pasc_domain = add_pasc_domain_to_causal_results()
     # df_med = add_drug_name()
     # plot_heatmap_for_dx_subgroup()
-    plot_heatmap_for_dx_subgroup_split()
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19')
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida')
