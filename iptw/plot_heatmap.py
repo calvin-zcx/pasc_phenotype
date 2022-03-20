@@ -122,31 +122,33 @@ def plot_heatmap_for_dx_subgroup():
 
     df_heat_value = pd.DataFrame(heat_value)
     df_heat_value = df_heat_value.rename(columns={'all': 'Overall',
-                                          'outpatient': 'Outpatient',
-                                          'inpatient': 'Inpatient',
-                                          'icu': 'ICU',
-                                          'less65': '<65', '65to75': '65-<75', '75above': '>=75',
-                                          'female': 'Female', 'male': 'Male', 'white': 'White', 'black': 'Black',
-                                          'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD', 'CPD-COPD': 'CPD',
-                                          'CAD': 'CAD',
-                                          'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
-                                          'Mental-substance': 'Mental',
-                                          'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
+                                                  'outpatient': 'Outpatient',
+                                                  'inpatient': 'Inpatient',
+                                                  'icu': 'ICU',
+                                                  'less65': '<65', '65to75': '65-<75', '75above': '>=75',
+                                                  'female': 'Female', 'male': 'Male', 'white': 'White',
+                                                  'black': 'Black',
+                                                  'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD',
+                                                  'CPD-COPD': 'CPD',
+                                                  'CAD': 'CAD',
+                                                  'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
+                                                  'Mental-substance': 'Mental',
+                                                  'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
 
     ax = sns.heatmap(df_heat_value,  # np.array(measure).reshape(-1,1),
-                # ax = ax,
-                # cbar_ax = cbar_ax,
-                annot=True,
-                fmt=".1f",
-                # norm=Normalize(vmin=0.7, vmax=5, clip=True),
-                yticklabels=labs,
-                # center=1,
-                # square=True,
-                linewidths=0.3,
-                linecolor='white',
-                cmap=sns.cm.rocket_r,
-                cbar_kws={"shrink": .7},
-                )
+                     # ax = ax,
+                     # cbar_ax = cbar_ax,
+                     annot=True,
+                     fmt=".1f",
+                     # norm=Normalize(vmin=0.7, vmax=5, clip=True),
+                     yticklabels=labs,
+                     # center=1,
+                     # square=True,
+                     linewidths=0.3,
+                     linecolor='white',
+                     cmap=sns.cm.rocket_r,
+                     cbar_kws={"shrink": .7},
+                     )
     # ax.axvline(1, color='white', lw=10)
     plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
              rotation_mode="anchor")
@@ -161,14 +163,17 @@ def plot_heatmap_for_dx_subgroup():
     print()
 
 
-def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
+def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6):
+    month_id = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4}
+    monthid = month_id.get(month, -1)
+    print('month:', month, 'id:', monthid)
 
     if database == 'oneflorida':
         df = pd.read_excel(
             r'../data/oneflorida/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-oneflorida-4plot.xlsx',
             sheet_name='diagnosis').set_index('i')
         pvalue = 0.01
-    elif database =='V15_COVID19':
+    elif database == 'V15_COVID19':
         df = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
             sheet_name='diagnosis').set_index('i')
@@ -210,9 +215,15 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
 
         for key, row in df_select.iterrows():
             name = row['PASC Name Simple']
-            hr = row['Hazard Ratio, Adjusted']
-            ci = stringlist_2_list(row['Hazard Ratio, Adjusted, Confidence Interval'])
-            p = row['Hazard Ratio, Adjusted, P-Value']
+            if type == 'hr':
+                hr = row['Hazard Ratio, Adjusted']
+                ci = stringlist_2_list(row['Hazard Ratio, Adjusted, Confidence Interval'])
+                p = row['Hazard Ratio, Adjusted, P-Value']
+            elif type == 'km':
+                hr = stringlist_2_list(row['km-w-diff'])[monthid] * (-1000)
+                ci = [np.nan, np.nan]  #
+                p = stringlist_2_list(row['km-w-diff-p'])[monthid]
+
             domain = row['Organ Domain']
             if name == 'General PASC':
                 pasc_row = [name, hr, ci, p, domain, key]
@@ -223,7 +234,7 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
                     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
 
                 name = name.strip('*')
-                if (p > 0.05/137) and (p < 0.01):
+                if (p > 0.05 / 137) and (p <= 0.01):
                     name += '*'
 
                 labs.append(name)
@@ -247,14 +258,19 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
     for severity in ['outpatient', 'inpatient', 'icu',
                      'less65', '65to75', '75above',
                      'female', 'male', 'white', 'black',
-                     'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
-                     'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
+                     'CPD-COPD', 'Anemia', 'Arrythmia', 'CAD', 'Hypertension',
+                     'T2D-Obesity', 'CKD', 'Mental-substance', 'Corticosteroids',
                      'healthy'
                      ]:
         _df = pd.read_csv(
-            r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(database, severity)).set_index('i')
+            r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(database,
+                                                                                            severity)).set_index('i')
         _df_selected = _df.loc[key_list, :]
-        _hr = _df_selected.loc[:, 'hr-w']
+        if type == 'hr':
+            _hr = _df_selected.loc[:, 'hr-w']
+        elif type == 'km':
+            _hr = _df_selected.loc[:, 'km-w-diff'].apply(lambda x: stringlist_2_list(x)[monthid] * (-1000))
+
         heat_value[severity] = _hr.tolist()
     plt.rcParams['xtick.bottom'] = plt.rcParams['xtick.labelbottom'] = False
     plt.rcParams['xtick.top'] = plt.rcParams['xtick.labeltop'] = True
@@ -264,26 +280,31 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
 
     df_heat_value = pd.DataFrame(heat_value)
     df_heat_value = df_heat_value.rename(columns={'all': 'Overall',
-                                          'outpatient': 'Outpatient',
-                                          'inpatient': 'Inpatient',
-                                          'icu': 'ICU',
-                                          'less65': '<65', '65to75': '65-<75', '75above': '75+',
-                                          'female': 'Female', 'male': 'Male', 'white': 'White', 'black': 'Black',
-                                          'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD', 'CPD-COPD': 'CPD',
-                                          'CAD': 'CAD',
-                                          'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
-                                          'Mental-substance': 'Mental',
-                                          'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
+                                                  'outpatient': 'Outpatient',
+                                                  'inpatient': 'Inpatient',
+                                                  'icu': 'ICU',
+                                                  'less65': '<65', '65to75': '65-<75', '75above': '75+',
+                                                  'female': 'Female', 'male': 'Male', 'white': 'White',
+                                                  'black': 'Black',
+                                                  'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD',
+                                                  'CPD-COPD': 'CPD',
+                                                  'CAD': 'CAD',
+                                                  'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
+                                                  'Mental-substance': 'Mental',
+                                                  'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
 
     data = df_heat_value
     asp = data.shape[0] / float(data.shape[1]) / 1.6
     figw = 14  # 8
     figh = figw * asp
 
-    cmap = sns.cm.rocket_r
-    norm = Normalize(vmin=data.min().min(), vmax=data.max().max())
+    cmap = sns.cm.icefire_r
+    # cmap = sns.cm.rocket_r
 
-    gridspec_kw = {"width_ratios": [1,3,3,2,2,10]}
+    norm = Normalize(vmin=data.min().min(), vmax=data.max().max())
+    # norm = Normalize(vmin=1, vmax=5, clip=True)
+
+    gridspec_kw = {"width_ratios": [1, 3, 3, 2, 2, 10]}
     heatmapkws = dict(square=False, cbar=False, cmap=cmap, linewidths=0.3, vmin=data.min().min(), vmax=data.max().max())
     tickskw = dict(xticklabels=False, yticklabels=False)
 
@@ -293,12 +314,12 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
     top = 0.85
     fig, axes = plt.subplots(ncols=6, nrows=1, figsize=(figw, figh), gridspec_kw=gridspec_kw)
     plt.subplots_adjust(left=left, bottom=bottom, top=top, wspace=0.08, hspace=0.08 * asp)
-    sns.heatmap(data.iloc[:, 0:1], ax=axes[0],  yticklabels=labs, annot=True, fmt=".1f", **heatmapkws)
-    sns.heatmap(data.iloc[:, 1:4], ax=axes[1], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
-    sns.heatmap(data.iloc[:, 4:7], ax=axes[2], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
-    sns.heatmap(data.iloc[:, 7:9], ax=axes[3], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
-    sns.heatmap(data.iloc[:, 9:11], ax=axes[4], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
-    sns.heatmap(data.iloc[:, 11:], ax=axes[5], yticklabels=False, annot=True, fmt=".1f",  **heatmapkws)
+    sns.heatmap(data.iloc[:, 0:1], ax=axes[0], yticklabels=labs, annot=True, fmt=".1f", **heatmapkws)
+    sns.heatmap(data.iloc[:, 1:4], ax=axes[1], yticklabels=False, annot=True, fmt=".1f", **heatmapkws)
+    sns.heatmap(data.iloc[:, 4:7], ax=axes[2], yticklabels=False, annot=True, fmt=".1f", **heatmapkws)
+    sns.heatmap(data.iloc[:, 7:9], ax=axes[3], yticklabels=False, annot=True, fmt=".1f", **heatmapkws)
+    sns.heatmap(data.iloc[:, 9:11], ax=axes[4], yticklabels=False, annot=True, fmt=".1f", **heatmapkws)
+    sns.heatmap(data.iloc[:, 11:], ax=axes[5], yticklabels=False, annot=True, fmt=".1f", **heatmapkws)
 
     for ax in axes:
         plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
@@ -308,10 +329,18 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19'):
     # axes[1, 1].set_xticklabels([4, 5, 6, 7, 8])
     # axes[1, 2].set_xticklabels([9, 10, 11])
 
-    cax = fig.add_axes([0.92, 0.12, 0.025, 0.7]) #  [left, bottom, width, height]
+    cax = fig.add_axes([0.92, 0.12, 0.025, 0.7])  # [left, bottom, width, height]
     sm = mpl.cm.ScalarMappable(cmap=cmap, norm=norm)
     sm.set_array([])
     fig.colorbar(sm, cax=cax)
+    output_dir = r'../data/{}/output/character/outcome/figure/'.format(database)
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}-rocket_r.png'.format(database,
+                                                                    type,
+                                                                    month), bbox_inches='tight', dpi=700)
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}-rocket_r.pdf'.format(database,
+                                                                    type,
+                                                                    month), bbox_inches='tight', transparent=True)
 
     plt.show()
     print()
@@ -324,5 +353,15 @@ if __name__ == '__main__':
     # pasc_domain = add_pasc_domain_to_causal_results()
     # df_med = add_drug_name()
     # plot_heatmap_for_dx_subgroup()
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19')
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida')
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='hr', month=6)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=6)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=6)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=5)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=5)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=4)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=4)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=3)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=3)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=2)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=2)
