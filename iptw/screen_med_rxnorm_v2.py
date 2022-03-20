@@ -243,14 +243,14 @@ if __name__ == "__main__":
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(r'../data/{}/output/character/outcome/MED-{}/{}-{}-evaluation_balance.csv'.format(args.dataset, args.severity, i, pasc))
         try:
-            km, km_w, cox, cox_w = weighted_KM_HR(
+            km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
                 covid_label, iptw, pasc_flag, pasc_t2e,
                 fig_outfile=r'../data/{}/output/character/outcome/MED-{}/{}-{}-{}-km.png'.format(args.dataset, i, args.severity, pasc, drugname),
                 title=pasc+'-'+drugname)
         except:
             # there are fig file name errors due to drugname
             plt.close()
-            km, km_w, cox, cox_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
+            km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(covid_label, iptw, pasc_flag, pasc_t2e,
                                                   fig_outfile=r'../data/{}/output/character/outcome/MED-{}/{}-{}-km.png'.format(
                                                       args.dataset, args.severity, i, pasc), title=pasc + '-' + drugname)
 
@@ -262,8 +262,8 @@ if __name__ == "__main__":
                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
                        (smd > SMD_THRESHOLD).sum(),  (smd_weighted > SMD_THRESHOLD).sum(),
                        np.abs(smd).max(), np.abs(smd_weighted).max(),
-                       km[2], km[3], km[6].p_value,
-                       km_w[2], km_w[3], km_w[6].p_value,
+                       km[2], km[3], km[6].p_value, cif[2],
+                       km_w[2], km_w[3], km_w[6].p_value, cif_w[2],
                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
@@ -274,7 +274,8 @@ if __name__ == "__main__":
                     'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +',
                     'mean pasc in -',
                     'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-                    'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                    'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+                    'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
                     'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']).\
                     to_csv(r'../data/{}/output/character/outcome/MED-{}/causal_effects_specific_med-snapshot-{}.csv'.format(args.dataset, args.severity, i))
         except:
@@ -283,8 +284,8 @@ if __name__ == "__main__":
                 'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. unbalance', 'no. unbalance iptw',
                 'max smd', 'max smd iptw',
-                'km-diff', 'km-diff-time', 'km-diff-p',
-                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
@@ -295,7 +296,8 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=[
         'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
         'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-        'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+        'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+        'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
     df_causal.to_csv(r'../data/{}/output/character/outcome/MED-{}/causal_effects_specific_med.csv'.format(args.dataset, args.severity))

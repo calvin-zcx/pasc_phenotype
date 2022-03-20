@@ -163,7 +163,7 @@ def plot_heatmap_for_dx_subgroup():
     print()
 
 
-def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6):
+def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6, pasc=False):
     month_id = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4}
     monthid = month_id.get(month, -1)
     print('month:', month, 'id:', monthid)
@@ -244,14 +244,15 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=
                 pval.append(p)
                 key_list.append(key)
 
-    # # add pasc at last
-    # organ_n[-1] += 1
-    # labs.append(pasc_row[0])
-    # measure.append(pasc_row[1])
-    # lower.append(pasc_row[2][0])
-    # upper.append(pasc_row[2][1])
-    # pval.append(pasc_row[3])
-    # key_list.append(pasc_row[5])
+    if pasc:
+        # add pasc at last
+        organ_n[-1] += 1
+        labs.append(pasc_row[0])
+        measure.append(pasc_row[1])
+        lower.append(pasc_row[2][0])
+        upper.append(pasc_row[2][1])
+        pval.append(pasc_row[3])
+        key_list.append(pasc_row[5])
 
     # load other
     heat_value = {'all': measure, }
@@ -335,10 +336,10 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=
     fig.colorbar(sm, cax=cax)
     output_dir = r'../data/{}/output/character/outcome/figure/'.format(database)
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}-rocket_r.png'.format(database,
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}.png'.format(database,
                                                                     type,
                                                                     month), bbox_inches='tight', dpi=700)
-    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}-rocket_r.pdf'.format(database,
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}.pdf'.format(database,
                                                                     type,
                                                                     month), bbox_inches='tight', transparent=True)
 
@@ -355,13 +356,13 @@ if __name__ == '__main__':
     # plot_heatmap_for_dx_subgroup()
     plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6)
     plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='hr', month=6)
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=6)
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=6)
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=5)
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=5)
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=4)
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=4)
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=3)
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=3)
-    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=2)
-    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=2)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=6, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=6, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=5, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=5, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=4, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=4, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=3, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=3, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='km', month=2, pasc=True)
+    plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='km', month=2, pasc=True)

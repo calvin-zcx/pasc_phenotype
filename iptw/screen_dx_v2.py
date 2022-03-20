@@ -236,15 +236,20 @@ if __name__ == "__main__":
         n_covid_neg = (covid_label == 0).sum()
 
         if args.negative_ratio * n_covid_pos < n_covid_neg:
-            print('replace=False')
+            print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
+                  'n_covid_neg:', n_covid_neg)
             sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
                                                                        replace=False,
                                                                        random_state=args.random_seed).index
         else:
-            print('replace=True')
-            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-                                                                       replace=True,
-                                                                       random_state=args.random_seed).index
+            # print('replace=True')
+            # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+            #                                                            replace=True,
+            #                                                            random_state=args.random_seed).index
+            print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+                  args.negative_ratio * n_covid_pos,
+                  'n_covid_neg:', n_covid_neg)
+            sampled_neg_index = covid_label[(covid_label == 0)].index
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
@@ -293,7 +298,7 @@ if __name__ == "__main__":
             '../data/{}/output/character/outcome/DX-{}/{}-{}-evaluation_balance.csv'.format(args.dataset, args.severity,
                                                                                             i, pasc))
 
-        km, km_w, cox, cox_w = weighted_KM_HR(
+        km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
             fig_outfile=r'../data/{}/output/character/outcome/DX-{}/{}-{}-km.png'.format(args.dataset, args.severity, i,
                                                                                          pasc),
@@ -306,8 +311,8 @@ if __name__ == "__main__":
                         pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
                         (smd > SMD_THRESHOLD).sum(), (smd_weighted > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
-                        km[2], km[3], km[6].p_value,
-                        km_w[2], km_w[3], km_w[6].p_value,
+                        km[2], km[3], km[6].p_value, cif[2],
+                        km_w[2], km_w[3], km_w[6].p_value, cif_w[2],
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
@@ -318,7 +323,8 @@ if __name__ == "__main__":
                     'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +',
                     'mean pasc in -',
                     'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-                    'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                    'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+                    'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
                     'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']). \
                     to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.dataset, args.severity, i))
@@ -328,8 +334,8 @@ if __name__ == "__main__":
                 'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. unbalance', 'no. unbalance iptw',
                 'max smd', 'max smd iptw',
-                'km-diff', 'km-diff-time', 'km-diff-p',
-                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
@@ -342,7 +348,8 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=[
         'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
         'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-        'km-diff', 'km-diff-time', 'km-diff-p', 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+        'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+        'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
         'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
 
     df_causal.to_csv(

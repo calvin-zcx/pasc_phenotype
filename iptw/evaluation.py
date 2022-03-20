@@ -6,12 +6,13 @@ from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 from scipy import stats
 from scipy.special import softmax
-from lifelines import KaplanMeierFitter, CoxPHFitter
+from lifelines import KaplanMeierFitter, CoxPHFitter, AalenJohansenFitter
 from lifelines.statistics import survival_difference_at_fixed_point_in_time_test, proportional_hazard_test, logrank_test
 import pandas as pd
 from misc.utils import check_and_mkdir
 import pickle
 import os
+from lifelines.plotting import add_at_risk_counts
 
 # Define unbalanced threshold, where SMD > SMD_THRESHOLD are defined as unbalanced features
 SMD_THRESHOLD = 0.1
@@ -465,6 +466,39 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         plt.savefig(fig_outfile)
         plt.close()
 
+    # cumulative incidence for competing risks
+    ajf1 = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
+                                                            event_of_interest=1,
+                                                            label="COVID+")
+    ajf0 = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
+                                                            event_of_interest=1,
+                                                            label="Control")
+    cif_1 = ajf1.predict(point_in_time).to_numpy()
+    cif_0 = ajf0.predict(point_in_time).to_numpy()
+    cifdiff = cif_1 - cif_0
+
+    ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
+                                                             event_of_interest=1,
+                                                             label="COVID+ Adjusted", weights=treated_w)
+    ajf0w = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
+                                                             event_of_interest=1,
+                                                             label="Control Adjusted", weights=controlled_w)
+    cif_1_w = ajf1w.predict(point_in_time).to_numpy()
+    cif_0_w = ajf0w.predict(point_in_time).to_numpy()
+    cifdiff_w = cif_1_w - cif_0_w
+
+    if fig_outfile:
+        ax = plt.subplot(111)
+        # ajf1.plot(ax=ax)
+        ajf1w.plot(ax=ax)
+        # ajf0.plot(ax=ax)
+        ajf0w.plot(ax=ax)
+        add_at_risk_counts(ajf1w, ajf0w, ax=ax)
+        plt.tight_layout()
+
+        plt.title(title, fontsize=12)
+        plt.savefig(fig_outfile.replace('-km.png', '-cumulativeIncidence.png'))
+        plt.close()
 
     # cox for hazard ratio
     cph = CoxPHFitter()
@@ -491,4 +525,6 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
            (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
            (HR_ori, CI_ori, test_p_ori, cph_ori), \
-           (HR, CI, test_p, cph)
+           (HR, CI, test_p, cph), \
+           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0), \
+           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w)
