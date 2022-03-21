@@ -252,14 +252,17 @@ if __name__ == "__main__":
                                                                        replace=False,
                                                                        random_state=args.random_seed).index
         else:
-            # print('replace=True')
-            # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-            #                                                            replace=True,
-            #                                                            random_state=args.random_seed).index
-            print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+            print('replace=True')
+            print('Using sample with replacement. Use negative patients, args.negative_ratio * n_covid_pos:',
                   args.negative_ratio * n_covid_pos,
                   'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].index
+            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+                                                                       replace=True,
+                                                                       random_state=args.random_seed).index
+            # print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+            #       args.negative_ratio * n_covid_pos,
+            #       'n_covid_neg:', n_covid_neg)
+            # sampled_neg_index = covid_label[(covid_label == 0)].index
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
