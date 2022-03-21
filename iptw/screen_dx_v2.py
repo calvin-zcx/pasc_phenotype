@@ -253,7 +253,7 @@ if __name__ == "__main__":
                                                                        random_state=args.random_seed).index
         else:
             print('replace=True')
-            print('Using sample with replacement. Use negative patients, args.negative_ratio * n_covid_pos:',
+            print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
                   args.negative_ratio * n_covid_pos,
                   'n_covid_neg:', n_covid_neg)
             sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
