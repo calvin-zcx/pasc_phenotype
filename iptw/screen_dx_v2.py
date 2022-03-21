@@ -36,7 +36,7 @@ def parse_args():
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                                                'healthy'],
-                        default='healthy')
+                        default='icu')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
@@ -221,12 +221,20 @@ if __name__ == "__main__":
 
     # %% 2. PASC specific cohorts for causal inference
     causal_results = []
+    results_columns_name = []
     for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
         # bulid specific cohorts:
         print('\n In screening:', i, pasc)
-        pasc_flag = df['dx-out@' + pasc]
+        pasc_flag = df['dx-out@' + pasc].copy()
         pasc_t2e = df['dx-t2e@' + pasc]  # .astype('float')
         pasc_baseline = df['dx-base@' + pasc]
+
+        # considering competing risks
+        death_flag = df['death']
+        death_t2e = df['death t2e']
+        pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
+        print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
+              'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
@@ -234,6 +242,8 @@ if __name__ == "__main__":
         covid_label = df_label[idx]
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
+
+        print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
 
         if args.negative_ratio * n_covid_pos < n_covid_neg:
             print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
@@ -262,11 +272,13 @@ if __name__ == "__main__":
         print('pasc_t2e.describe():', pasc_t2e.describe())
         pasc_t2e[pasc_t2e <= 30] = 30
 
-        print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), covid pos:neg = {}:{} sample ratio -/+={}, pasc pos:neg '
-                       '= {}:{}'.format(
+        print('pasc_flag.value_counts():\n', pasc_flag.value_counts())
+        print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), covid pos:neg = {}:{} sample ratio -/+={}, '
+                       'Overall pasc events pos:neg:death '
+                       '= {}:{}:{}'.format(
             pos_neg_selected.sum(), len(df), pos_neg_selected.sum() / len(df) * 100,
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
-            pasc_flag.sum(), (pasc_flag == 0).sum()))
+            (pasc_flag == 1).sum(), (pasc_flag == 0).sum(), (pasc_flag == 2).sum()))
 
         model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array,
                                                                                                         covid_label,
@@ -305,10 +317,13 @@ if __name__ == "__main__":
             title=pasc)
 
         try:
+            # change 2022-03-20 considering competing risk 2
             _results = [i, pasc,
                         covid_label.sum(), (covid_label == 0).sum(),
-                        pasc_flag[covid_label == 1].sum(), pasc_flag[covid_label == 0].sum(),
-                        pasc_flag[covid_label == 1].mean(), pasc_flag[covid_label == 0].mean(),
+                        (pasc_flag[covid_label == 1] == 1).sum(), (pasc_flag[covid_label == 0] == 1).sum(),
+                        (pasc_flag[covid_label == 1] == 1).mean(), (pasc_flag[covid_label == 0] == 1).mean(),
+                        (pasc_flag[covid_label == 1] == 2).sum(), (pasc_flag[covid_label == 0] == 2).sum(),
+                        (pasc_flag[covid_label == 1] == 2).mean(), (pasc_flag[covid_label == 0] == 2).mean(),
                         (smd > SMD_THRESHOLD).sum(), (smd_weighted > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value, cif[2],
@@ -316,28 +331,23 @@ if __name__ == "__main__":
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
             causal_results.append(_results)
-            print('causal result:\n', causal_results[-1])
-
-            if i % 50 == 0:
-                pd.DataFrame(causal_results, columns=[
-                    'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +',
-                    'mean pasc in -',
+            results_columns_name = [
+                    'i', 'pasc', 'covid+', 'covid-',
+                    'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                    'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                     'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                     'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
                     'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
-                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']). \
+                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']
+            print('causal result:\n', causal_results[-1])
+
+            if i % 50 == 0:
+                pd.DataFrame(causal_results, columns=results_columns_name).\
                     to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.dataset, args.severity, i))
         except:
             print('Error in ', i, pasc)
-            df_causal = pd.DataFrame(causal_results, columns=[
-                'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
-                'no. unbalance', 'no. unbalance iptw',
-                'max smd', 'max smd iptw',
-                'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
-                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
-                'hr', 'hr-CI', 'hr-p', 'hr-logrank-p',
-                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
+            df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
                 r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-ERRORSAVE.csv'.format(args.dataset,
@@ -345,12 +355,7 @@ if __name__ == "__main__":
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    df_causal = pd.DataFrame(causal_results, columns=[
-        'i', 'pasc', 'covid+', 'covid-', 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
-        'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-        'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
-        'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
-        'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p'])
+    df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
         r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(args.dataset, args.severity))

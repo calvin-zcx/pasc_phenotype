@@ -497,7 +497,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         plt.tight_layout()
 
         plt.title(title, fontsize=12)
-        plt.savefig(fig_outfile.replace('-km.png', '-cumulativeIncidence.png'))
+        plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'))
         plt.close()
 
     # cox for hazard ratio
