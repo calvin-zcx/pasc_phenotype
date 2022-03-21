@@ -31,7 +31,7 @@ def parse_args():
                                               'covid_4screen', 'covid_4screen_Covid+', 'covid_4manuscript'],
                         default='covid', help='cohorts')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL'],
-                        default='COL', help='site dataset')
+                        default='ALL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
 
@@ -1273,7 +1273,7 @@ def build_query_1and2_matrix(args):
 
 
 def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', severity='',
-                                                   pasc='Respiratory signs and symptoms'):
+                                                   pasc='Respiratory signs and symptoms', after=True):
     # severity in 'hospitalized', 'ventilation', None
     # build pasc specific cohorts from covid base cohorts!
     in_file = r'../data/V15_COVID19/output/character/query4-covid-drug-and-vaccine-matrix_cohorts_covid_bool_{}-ProImmun.csv'.format(
@@ -1283,9 +1283,15 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
     print('Try to load:', in_file)
     # df_template = pd.read_excel(r'../data/V15_COVID19/output/character/RECOVER_Adults_Queries 1-2_with_PASC.xlsx',
     #                             sheet_name=r'Table Shells - Adults')
-    df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index_date'])  # , parse_dates=['index_date', 'birth_date']
+    df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])  # , parse_dates=['index_date', 'birth_date']
     print('df_data.shape:', df_data.shape)
     #
+    df_data.insert(0, column='Cnt', value=1)
+
+    if after:
+        print('Selected patients after 2020-12-1')
+        df_data = df_data.loc[df_data['index date'] >= datetime.datetime(2020, 12, 1, 0, 0), :]
+
     covidmed_column_names = [
         'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
         'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
@@ -1317,13 +1323,18 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
     df_data = df_data.drop(columns=['Unnamed: 0', 'patid', 'site', 'index date'] + selected_cols)
 
     df_data = df_data.astype('int')
+
     df_out = pd.DataFrame({'pos sum': df_data.loc[df_data["covid"] > 0, :].sum(),
                            'pos mean': df_data.loc[df_data["covid"] > 0, :].mean(),
                            'neg sum': df_data.loc[df_data["covid"] == 0, :].sum(),
-                           'neg mean': df_data.loc[df_data["covid"] == 0, :].mean()
+                           'neg mean': df_data.loc[df_data["covid"] == 0, :].mean(),
+                           'All Sum': df_data.sum(),
+                           'All mean': df_data.mean(),
                            })
 
-    out_file = r'../data/V15_COVID19/output/character/pasc/results_query4_covid-{}-ProImmun.csv'.format(dataset)
+    out_file = r'../data/V15_COVID19/output/character/pasc/results_query4_covid-{}-ProImmun{}.csv'.format(
+        dataset, '-after' if after else '')
+
     utils.check_and_mkdir(out_file)
     df_out.to_csv(out_file)
     print('Dump done ', out_file)
@@ -1366,13 +1377,14 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
         else:
             df_in = df_neg
 
-        out_file = r'../data/V15_COVID19/output/character/pasc/{}/results_query4_PASC-{}-{}-{}-{}-{}-ProImmun.csv'.format(
+        out_file = r'../data/V15_COVID19/output/character/pasc/{}/results_query4_PASC-{}-{}-{}-{}-{}-ProImmun{}.csv'.format(
             pasc,
             pasc,
             cohorts,
             dataset,
             'POS' if pos else 'NEG',
-            severity)
+            severity,
+            '-after' if after else '')
         utils.check_and_mkdir(out_file)
 
         df_out = pd.DataFrame({'sum': df_in.sum(), 'mean': df_in.mean()})
@@ -1386,11 +1398,13 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     pasc = 'Diabetes mellitus with complication'
     pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
-                                                   pasc=pasc)
+                                                   pasc=pasc, after=True)
+    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
+                                                   pasc=pasc, after=False)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
