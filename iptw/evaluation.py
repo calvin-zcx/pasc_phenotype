@@ -171,7 +171,8 @@ def final_eval_ml(model, args, train_x, train_t, train_y, val_x, val_t, val_y, t
                                                        'EY1_IPTW', 'EY0_IPTW', 'ATE_IPTW',
                                                        'KM_time_points',
                                                        'KM1_original', 'KM0_original', 'KM1-0_original',
-                                                       'KM1_IPTW', 'KM0_IPTW', 'KM1-0_IPTW', 'HR_ori', 'HR_ori_CI', 'HR_IPTW', 'HR_IPTW_CI',
+                                                       'KM1_IPTW', 'KM0_IPTW', 'KM1-0_IPTW', 'HR_ori', 'HR_ori_CI',
+                                                       'HR_IPTW', 'HR_IPTW_CI',
                                                        'n_treat_IPTW', 'n_ctrl_IPTW',
                                                        'treat_IPTW_stats', 'ctrl_IPTW_stats',
                                                        'treat_PS_stats', 'ctrl_PS_stats',
@@ -248,11 +249,11 @@ def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True, 
     if stabilized:
         # stabilized weights:   treated_w.sum() + controlled_w.sum() ~ N
         treated_w, controlled_w = p_T / logits_treatment[ones_idx], (1 - p_T) / (
-                    1. - logits_treatment[zeros_idx])  # why *p_T here?
+                1. - logits_treatment[zeros_idx])  # why *p_T here?
     else:
         # standard IPTW:  treated_w.sum() + controlled_w.sum() > N
         treated_w, controlled_w = 1. / logits_treatment[ones_idx], 1. / (
-                    1. - logits_treatment[zeros_idx])  # why *p_T here? my added test
+                1. - logits_treatment[zeros_idx])  # why *p_T here? my added test
 
     if clip:
         treated_w = np.clip(treated_w, a_min=1e-06, a_max=100)
@@ -295,9 +296,11 @@ def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, ver
     covariates_treated, covariates_controlled = covariates[ones_idx], covariates[zeros_idx]
 
     # Original SMD
-    covariates_treated_mu, covariates_treated_var = np.mean(covariates_treated, axis=0), np.var(covariates_treated, axis=0, ddof=1)
-    covariates_controlled_mu, covariates_controlled_var = np.mean(covariates_controlled, axis=0), np.var(covariates_controlled, axis=0,
-                                                                                             ddof=1)
+    covariates_treated_mu, covariates_treated_var = np.mean(covariates_treated, axis=0), np.var(covariates_treated,
+                                                                                                axis=0, ddof=1)
+    covariates_controlled_mu, covariates_controlled_var = np.mean(covariates_controlled, axis=0), np.var(
+        covariates_controlled, axis=0,
+        ddof=1)
     VAR = np.sqrt((covariates_treated_var + covariates_controlled_var) / 2)
     # covariates_deviation = np.abs(covariates_treated_mu - covariates_controlled_mu) / VAR
     # covariates_deviation[np.isnan(covariates_deviation)] = 0  # -1  # 0  # float('-inf') represent VAR is 0
@@ -310,9 +313,11 @@ def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, ver
     max_unbalanced_original = np.max(np.abs(covariates_deviation))
 
     # Weighted SMD
-    covariates_treated_w_mu, covariates_treated_w_var = weighted_mean(covariates_treated, treated_w), weighted_var(covariates_treated,
-                                                                                                       treated_w)
-    covariates_controlled_w_mu, covariates_controlled_w_var = weighted_mean(covariates_controlled, controlled_w), weighted_var(
+    covariates_treated_w_mu, covariates_treated_w_var = weighted_mean(covariates_treated, treated_w), weighted_var(
+        covariates_treated,
+        treated_w)
+    covariates_controlled_w_mu, covariates_controlled_w_var = weighted_mean(covariates_controlled,
+                                                                            controlled_w), weighted_var(
         covariates_controlled, controlled_w)
     VAR_w = np.sqrt((covariates_treated_w_var + covariates_controlled_w_var) / 2)
     # covariates_deviation_w = np.abs(covariates_treated_w_mu - covariates_controlled_w_mu) / VAR_w
@@ -325,8 +330,8 @@ def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, ver
 
     max_unbalanced_weighted = np.max(np.abs(covariates_deviation_w))
 
-    return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w,\
-           (covariates_treated_mu, covariates_treated_var,covariates_controlled_mu, covariates_controlled_var), \
+    return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w, \
+           (covariates_treated_mu, covariates_treated_var, covariates_controlled_mu, covariates_controlled_var), \
            (covariates_treated_w_mu, covariates_treated_w_var, covariates_controlled_w_mu, covariates_controlled_w_var)
 
 
@@ -403,11 +408,11 @@ def cal_survival_KM(golds_treatment, logits_treatment, golds_outcome, normalized
     # cox for hazard ratio
     cph = CoxPHFitter()
     event = golds_outcome[:, 0]
-    event[event==-1] = 0
+    event[event == -1] = 0
     weight = np.zeros(len(golds_treatment))
     weight[ones_idx] = treated_w.squeeze()
     weight[zeros_idx] = controlled_w.squeeze()
-    cox_data = pd.DataFrame({'T': T, 'event': event, 'treatment': golds_treatment, 'weights':weight})
+    cox_data = pd.DataFrame({'T': T, 'event': event, 'treatment': golds_treatment, 'weights': weight})
     try:
         cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True)
         HR = cph.hazard_ratios_['treatment']
@@ -428,15 +433,28 @@ def cal_survival_KM(golds_treatment, logits_treatment, golds_outcome, normalized
            (HR, CI, cph)
 
 
+def flag_2binary(label):
+    if isinstance(label, pd.core.series.Series):
+        return label.where(label == 1, 0)
+    elif isinstance(label, (list, np.ndarray)):
+        return np.where(label == 1, 1, 0)
+    else:
+        raise ValueError
+
+
 def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile='', title=''):
+    # considering competing risk in this version, 2022-03-20
+    #
     ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
     treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
     treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
     treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
 
-    # kmf = KaplanMeierFitter()
-    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e, event_observed=treated_flag, label="COVID+")
-    kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e, event_observed=controlled_flag, label="Control")
+    # Part-1. https://lifelines.readthedocs.io/en/latest/fitters/univariate/KaplanMeierFitter.html
+    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e,
+                                                 event_observed=flag_2binary(treated_flag), label="COVID+")
+    kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e,
+                                                  event_observed=flag_2binary(controlled_flag), label="Control")
 
     point_in_time = [60, 90, 120, 150, 180]
     results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
@@ -445,10 +463,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     survival_0 = kmf0.predict(point_in_time).to_numpy()
     ate = survival_1 - survival_0
 
-    kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=treated_flag,
-                                                         label="COVID+ Adjusted", weights=treated_w)
-    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=controlled_flag,
-                                                         label="Control Adjusted", weights=controlled_w)
+    kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=flag_2binary(treated_flag),
+                                                            label="COVID+ Adjusted", weights=treated_w)
+    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
+                                                             label="Control Adjusted", weights=controlled_w)
     results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
     # results_w.print_summary()
     survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
@@ -466,7 +484,9 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         plt.savefig(fig_outfile)
         plt.close()
 
-    # cumulative incidence for competing risks
+    # Part-2, cumulative incidence for competing risks
+    # 0: censoring, 1: event of interest, 2: competing risk, e.g. death
+    # https://lifelines.readthedocs.io/en/latest/fitters/univariate/AalenJohansenFitter.html
     ajf1 = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                             event_of_interest=1,
                                                             label="COVID+")
@@ -500,31 +520,41 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'))
         plt.close()
 
-    # cox for hazard ratio
+    # Part-3: Cox for hazard ratio
+    # https://lifelines.readthedocs.io/en/latest/fitters/regression/CoxPHFitter.html
+    # Competing risk sceneriao: 0 for censoring, 1 for target event, 2 for competing risk death
+    # --> competing risk 2, death, as censoring in cox model. Only caring event 1
+    # https://github.com/CamDavidsonPilon/lifelines/issues/619
     cph = CoxPHFitter()
-    cox_data = pd.DataFrame({'T': events_t2e, 'event': events_flag, 'treatment': golds_treatment, 'weights':weights})
+    cox_data = pd.DataFrame(
+        {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights})
     try:
         cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True)
         HR = cph.hazard_ratios_['treatment']
         CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
-        test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=treated_flag, event_observed_B=controlled_flag, weights_A=treated_w, weights_B=controlled_w,)
+        test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
+                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w, weights_B=controlled_w, )
         test_p = test_results.p_value
+        hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
 
         cph_ori = CoxPHFitter()
-        cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': events_flag, 'treatment': golds_treatment})
+        cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
         cph_ori.fit(cox_data_ori, 'T', 'event')
         HR_ori = cph_ori.hazard_ratios_['treatment']
         CI_ori = np.exp(cph_ori.confidence_intervals_.values.reshape(-1))
-        test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=treated_flag, event_observed_B=controlled_flag)
+        test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
+                                        event_observed_B=flag_2binary(controlled_flag))
         test_p_ori = test_results_ori.p_value
+        hr_different_time_ori = cph_ori.compute_followup_hazard_ratios(cox_data, point_in_time)
 
     except:
         cph = HR = CI = test_p_ori = None
         cph_ori = HR_ori = CI_ori = test_p = None
+        hr_different_time = hr_different_time_ori = [np.nan]*len(point_in_time)
 
     return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
            (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
-           (HR_ori, CI_ori, test_p_ori, cph_ori), \
-           (HR, CI, test_p, cph), \
+           (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
+           (HR, CI, test_p, cph, hr_different_time), \
            (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0), \
            (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w)

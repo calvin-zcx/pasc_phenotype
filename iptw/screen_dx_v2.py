@@ -303,7 +303,7 @@ if __name__ == "__main__":
         out_file_balance = r'../data/{}/output/character/outcome/DX-{}/{}-{}-results.csv'.format(args.dataset,
                                                                                                  args.severity, i, pasc)
         utils.check_and_mkdir(out_file_balance)
-        model.results.to_csv(out_file_balance)  # args.save_model_filename +
+        # model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
@@ -328,21 +328,23 @@ if __name__ == "__main__":
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value, cif[2],
                         km_w[2], km_w[3], km_w[6].p_value, cif_w[2],
-                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2],
-                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2]]
+                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
+                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
+                        cox_w[4]]
             causal_results.append(_results)
             results_columns_name = [
-                    'i', 'pasc', 'covid+', 'covid-',
-                    'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
-                    'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
-                    'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-                    'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
-                    'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
-                    'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p']
+                'i', 'pasc', 'covid+', 'covid-',
+                'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
+                'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
+                'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
+                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
+                'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
+                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time"]
             print('causal result:\n', causal_results[-1])
 
             if i % 50 == 0:
-                pd.DataFrame(causal_results, columns=results_columns_name).\
+                pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.dataset, args.severity, i))
         except:
