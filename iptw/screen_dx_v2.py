@@ -24,9 +24,9 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='oneflorida',
+    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='V15_COVID19',
                         help='data bases')
-    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='all',
+    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='ALL',
                         help='site dataset')
     parser.add_argument('--severity', choices=['all',
                                                'outpatient', 'inpatient', 'icu',
@@ -36,7 +36,7 @@ def parse_args():
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                                                'healthy'],
-                        default='icu')
+                        default='healthy')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)

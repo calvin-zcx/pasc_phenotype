@@ -510,11 +510,13 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     if fig_outfile:
         ax = plt.subplot(111)
         # ajf1.plot(ax=ax)
-        ajf1w.plot(ax=ax)
+        ajf1w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))  # 0, 180
         # ajf0.plot(ax=ax)
-        ajf0w.plot(ax=ax)
+        ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
         add_at_risk_counts(ajf1w, ajf0w, ax=ax)
         plt.tight_layout()
+
+        # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
 
         plt.title(title, fontsize=12)
         plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'))
@@ -536,6 +538,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
                                     event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w, weights_B=controlled_w, )
         test_p = test_results.p_value
         hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time = hr_different_time['treatment'].to_numpy()
 
         cph_ori = CoxPHFitter()
         cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
@@ -546,6 +549,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
                                         event_observed_B=flag_2binary(controlled_flag))
         test_p_ori = test_results_ori.p_value
         hr_different_time_ori = cph_ori.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time_ori = hr_different_time_ori['treatment'].to_numpy()
 
     except:
         cph = HR = CI = test_p_ori = None
