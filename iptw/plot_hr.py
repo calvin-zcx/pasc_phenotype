@@ -88,14 +88,14 @@ def plot_forest_for_dx():
 def plot_forest_for_dx_organ():
     # df = pd.read_excel(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific_Diagnosis_withDomain-simple-4plot.xlsx')
     df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/outcome/DX/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
+        r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
         sheet_name='diagnosis')
 
     df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
     pvalue = 0.01  # 0.05 / 137
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
-    # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    df_select = df_select.loc[df_select['no. pasc in covid +'] >= 100, :]
     print('df_select.shape:', df_select.shape)
 
     organ_list = df_select['Organ Domain'].unique()
@@ -160,25 +160,27 @@ def plot_forest_for_dx_organ():
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     c = '#F65453'
     p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)  #, linecolor='#fcb2ab')
-    ax = p.plot(figsize=(10, .5 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
+    ax = p.plot(figsize=(8, .42 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
     # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
 
-    organ_n = np.cumsum(organ_n)
+    organ_n_cumsum = np.cumsum(organ_n)
     for i in range(len(organ_n) - 1):
-        ax.axhline(y=organ_n[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+        ax.axhline(y=organ_n_cumsum[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+
+    ax.set_yticklabels(labs, fontsize=13)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/V15_COVID19/output/character/outcome/DX/organ/'
+    output_dir = r'../data/V15_COVID19/output/character/outcome/DX-all/organ/'
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'dx_hr_{}-p{}.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
-    plt.savefig(output_dir + 'dx_hr_{}-p{}.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}-hrGe1-nGe100.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'dx_hr_{}-p{}-hrGe1-nGe100.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
     plt.show()
     print()
     # plt.clf()
@@ -188,21 +190,21 @@ def plot_forest_for_dx_organ():
 def plot_forest_for_med_organ():
     # df = pd.read_excel(r'../data/V15_COVID19/output/character/outcome/DX/causal_effects_specific_Diagnosis_withDomain-simple-4plot.xlsx')
     df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/outcome/DX/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
+        r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
         sheet_name='med')
 
     df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
     pvalue = 0.05 / 459  # 0.05 / 137
-    # df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
-    # df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
-    # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
+    df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
+    df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
     # df_select = df
     print('df_select.shape:', df_select.shape)
 
     organ_list = df_select['Organ Domain'].unique()
     print(organ_list)
     organ_list = [
-        # 'Diseases of the Nervous System',
+        'Diseases of the Nervous System',
         # 'Diseases of the Eye and Adnexa',
         'Diseases of the Skin and Subcutaneous Tissue',
         'Diseases of the Respiratory System',
@@ -234,7 +236,7 @@ def plot_forest_for_med_organ():
             if domain == organ:
                 organ_n[i] += 1
                 if len(name.split()) >= 4:
-                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+                    name = ' '.join(name.split()[:3]) + '\n' + ' '.join(name.split()[3:])
                 labs.append(name)
                 measure.append(hr)
                 lower.append(ci[0])
@@ -249,27 +251,29 @@ def plot_forest_for_med_organ():
     # p.colors(pointcolor='r')
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
-    c = '#A986B5'
+    c = '#5494DA'  #  '#A986B5'
     p.colors(pointshape="s", errorbarcolor=c,  pointcolor=c)  #, linecolor='#fcb2ab')
-    ax = p.plot(figsize=(10, .38775 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
+    ax = p.plot(figsize=(8, 0.4*37/49 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
     # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
 
-    organ_n = np.cumsum(organ_n)
+    organ_n_cumsum = np.cumsum(organ_n)
     for i in range(len(organ_n) - 1):
-        ax.axhline(y=organ_n[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+        ax.axhline(y=organ_n_cumsum[i]-.5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')
+
+    ax.set_yticklabels(labs, fontsize=13)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/V15_COVID19/output/character/outcome/DX/organ/'
+    output_dir = r'../data/V15_COVID19/output/character/outcome/DX-all/organ/'
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'med_hr_{}-p{}.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
-    plt.savefig(output_dir + 'med_hr_{}-p{}.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'med_hr_{}-p{}-hrGe1-nGe100.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'med_hr_{}-p{}-hrGe1-nGe100.pdf'.format('all', pvalue), bbox_inches='tight', transparent=True)
     plt.show()
     print()
     # plt.clf()
