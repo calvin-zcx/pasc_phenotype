@@ -498,10 +498,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cifdiff = cif_1 - cif_0
     ajf1_CI = ajf1.confidence_interval_cumulative_density_
     ajf0_CI = ajf0.confidence_interval_cumulative_density_
-    cif_1_CILower = ajf1_CI.loc[point_in_time, ajf1_CI.columns[0]].to_numpy()
-    cif_1_CIUpper = ajf1_CI.loc[point_in_time, ajf1_CI.columns[1]].to_numpy()
-    cif_0_CILower = ajf0_CI.loc[point_in_time, ajf0_CI.columns[0]].to_numpy()
-    cif_0_CIUpper = ajf0_CI.loc[point_in_time, ajf0_CI.columns[1]].to_numpy()
+    cif_1_CILower = ajf1_CI[ajf1_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_1_CIUpper = ajf1_CI[ajf1_CI.columns[1]].asof(point_in_time).to_numpy()
+    cif_0_CILower = ajf0_CI[ajf0_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_0_CIUpper = ajf0_CI[ajf0_CI.columns[1]].asof(point_in_time).to_numpy()
 
     ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                              event_of_interest=1,
@@ -515,10 +515,14 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
 
     ajf1w_CI = ajf1w.confidence_interval_cumulative_density_
     ajf0w_CI = ajf0w.confidence_interval_cumulative_density_
-    cif_1_w_CILower = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[0]].to_numpy()
-    cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
-    cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
-    cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
+    cif_1_w_CILower = ajf1w_CI[ajf1w_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_1_w_CIUpper = ajf1w_CI[ajf1w_CI.columns[1]].asof(point_in_time).to_numpy()
+    cif_0_w_CILower = ajf0w_CI[ajf0w_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_0_w_CIUpper = ajf0w_CI[ajf0w_CI.columns[1]].asof(point_in_time).to_numpy()
+    # cif_1_w_CILower = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[0]].to_numpy()
+    # cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
+    # cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
+    # cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
 
     if fig_outfile:
         ax = plt.subplot(111)
