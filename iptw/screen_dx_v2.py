@@ -24,9 +24,9 @@ print = functools.partial(print, flush=True)
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='V15_COVID19',
+    parser.add_argument('--dataset', choices=['oneflorida', 'V15_COVID19'], default='oneflorida',
                         help='data bases')
-    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='ALL',
+    parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='all',
                         help='site dataset')
     parser.add_argument('--severity', choices=['all',
                                                'outpatient', 'inpatient', 'icu',
@@ -40,6 +40,8 @@ def parse_args():
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
+    parser.add_argument('--selectpasc', action='store_true')
+
     args = parser.parse_args()
 
     # More args
@@ -220,10 +222,24 @@ if __name__ == "__main__":
         print('e.g.:', record_example)
 
     # %% 2. PASC specific cohorts for causal inference
+    if args.selectpasc:
+        df_select = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
+            sheet_name='diagnosis').set_index('i')
+        df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= 0.05, :]  #
+        df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
+        selected_list = df_select.index.tolist()
+        print('Selected: len(selected_list):', len(selected_list))
+        print(df_select['PASC Name Simple'])
+
     causal_results = []
     results_columns_name = []
     for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
         # bulid specific cohorts:
+        if args.selectpasc:
+            if i not in selected_list:
+                print('Skip:', i, pasc, 'because args.selectpasc, p<=0.05, hr > 1 in Insight')
+                continue
         print('\n In screening:', i, pasc)
         pasc_flag = df['dx-out@' + pasc].copy()
         pasc_t2e = df['dx-t2e@' + pasc]  # .astype('float')
@@ -303,20 +319,30 @@ if __name__ == "__main__":
             (smd > SMD_THRESHOLD).sum(),
             (smd_weighted > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/{}/output/character/outcome/DX-{}/{}-{}-results.csv'.format(args.dataset,
-                                                                                                 args.severity, i, pasc)
+        out_file_balance = r'../data/{}/output/character/outcome/DX-{}{}/{}-{}-results.csv'.format(
+            args.dataset,
+            args.severity,
+            '-select' if args.selectpasc else '',
+            i,
+            pasc)
         utils.check_and_mkdir(out_file_balance)
         # model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/{}/output/character/outcome/DX-{}/{}-{}-evaluation_balance.csv'.format(args.dataset, args.severity,
-                                                                                            i, pasc))
+            '../data/{}/output/character/outcome/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
+                args.dataset,
+                args.severity,
+                '-select' if args.selectpasc else '',
+                i, pasc))
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/{}/output/character/outcome/DX-{}/{}-{}-km.png'.format(args.dataset, args.severity, i,
-                                                                                         pasc),
+            fig_outfile=r'../data/{}/output/character/outcome/DX-{}{}/{}-{}-km.png'.format(
+                args.dataset,
+                args.severity,
+                '-select' if args.selectpasc else '',
+                i, pasc),
             title=pasc)
 
         try:
@@ -329,8 +355,10 @@ if __name__ == "__main__":
                         (pasc_flag[covid_label == 1] == 2).mean(), (pasc_flag[covid_label == 0] == 2).mean(),
                         (smd > SMD_THRESHOLD).sum(), (smd_weighted > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
-                        km[2], km[3], km[6].p_value, cif[2],
-                        km_w[2], km_w[3], km_w[6].p_value, cif_w[2],
+                        km[2], km[3], km[6].p_value,
+                        cif[2], cif[4], cif[5], cif[6], cif[7], cif[8], cif[9],
+                        km_w[2], km_w[3], km_w[6].p_value,
+                        cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
                         cox_w[4]]
@@ -340,28 +368,35 @@ if __name__ == "__main__":
                 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-                'km-diff', 'km-diff-time', 'km-diff-p', 'cif-diff',
-                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p', 'cif-w-diff',
+                'km-diff', 'km-diff-time', 'km-diff-p',
+                'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
+                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower", "cif_0_w_CIUpper",
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time"]
             print('causal result:\n', causal_results[-1])
 
             if i % 50 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-snapshot-{}.csv'.format(
-                    args.dataset, args.severity, i))
+                    to_csv(r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    args.dataset, args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific-ERRORSAVE.csv'.format(args.dataset,
-                                                                                                          args.severity))
+                r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                    args.dataset,
+                    args.severity,
+                    '-select' if args.selectpasc else '',))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(args.dataset, args.severity))
+        r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific.csv'.format(
+            args.dataset,
+            args.severity,
+            '-select' if args.selectpasc else ''))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

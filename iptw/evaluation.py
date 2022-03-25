@@ -496,6 +496,12 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cif_1 = ajf1.predict(point_in_time).to_numpy()
     cif_0 = ajf0.predict(point_in_time).to_numpy()
     cifdiff = cif_1 - cif_0
+    ajf1_CI = ajf1.confidence_interval_cumulative_density_
+    ajf0_CI = ajf0.confidence_interval_cumulative_density_
+    cif_1_CILower = ajf1_CI.loc[point_in_time, ajf1_CI.columns[0]].to_numpy()
+    cif_1_CIUpper = ajf1_CI.loc[point_in_time, ajf1_CI.columns[1]].to_numpy()
+    cif_0_CILower = ajf0_CI.loc[point_in_time, ajf0_CI.columns[0]].to_numpy()
+    cif_0_CIUpper = ajf0_CI.loc[point_in_time, ajf0_CI.columns[1]].to_numpy()
 
     ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                              event_of_interest=1,
@@ -506,6 +512,13 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cif_1_w = ajf1w.predict(point_in_time).to_numpy()
     cif_0_w = ajf0w.predict(point_in_time).to_numpy()
     cifdiff_w = cif_1_w - cif_0_w
+
+    ajf1w_CI = ajf1w.confidence_interval_cumulative_density_
+    ajf0w_CI = ajf0w.confidence_interval_cumulative_density_
+    cif_1_w_CILower = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[0]].to_numpy()
+    cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
+    cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
+    cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
 
     if fig_outfile:
         ax = plt.subplot(111)
@@ -560,5 +573,5 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
            (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
            (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
            (HR, CI, test_p, cph, hr_different_time), \
-           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0), \
-           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w)
+           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
+           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower, cif_0_w_CIUpper)
