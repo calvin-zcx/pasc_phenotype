@@ -1,9 +1,9 @@
 mkdir log
-taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity less65 --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_less65-selectpasc.txt
-taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity 65to75 --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_65to75-selectpasc.txt
-taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity 75above --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_75above-selectpasc.txt
-taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity male --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_male-selectpasc.txt
-taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity female --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_female-selectpasc.txt
+#taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity less65 --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_less65-selectpasc.txt
+#taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity 65to75 --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_65to75-selectpasc.txt
+#taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity 75above --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_75above-selectpasc.txt
+#taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity male --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_male-selectpasc.txt
+#taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity female --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_female-selectpasc.txt
 taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity white --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_white-selectpasc.txt
 taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity black --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_black-selectpasc.txt
 taskset --cpu-list 4-7 python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity T2D-Obesity --selectpasc 2>&1 | tee  log/screen_dx_insight_ALL_T2D-Obesity-selectpasc.txt
