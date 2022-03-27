@@ -522,7 +522,8 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     # norm = Normalize(vmin=1, vmax=5, clip=True)
 
     gridspec_kw = {"width_ratios": [1, 3, 3, 2, 2, 10]}
-    heatmapkws = dict(square=False, cbar=False, cmap=cmap, linewidths=0.3, vmin=data.min().min(), vmax=data.max().max())
+    heatmapkws = dict(square=False, cbar=False, cmap=cmap, linewidths=0.3,
+                      vmin=data.min().min(), vmax=data.max().max())
     tickskw = dict(xticklabels=False, yticklabels=False)
 
     left = 0.22
@@ -572,7 +573,8 @@ if __name__ == '__main__':
     # plot_heatmap_for_dx_subgroup()
 
     # types: hr   km   cif   cifdiff
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cif', month=6, pasc=True)
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cif', month=6, pasc=True)
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff', month=6, pasc=True)
 
     # plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=6)
     # plot_heatmap_for_dx_subgroup_split(database='oneflorida', type='hr', month=6)
