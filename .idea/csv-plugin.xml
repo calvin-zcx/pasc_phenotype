@@ -24,20 +24,6 @@
             </Attribute>
           </value>
         </entry>
-        <entry key="\data\V15_COVID19\output\character\outcome\DX-inpatient\128-Mediastinal disorders-results.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
-        <entry key="\data\V15_COVID19\output\character\outcome\DX_OLD_missingPASCPrefixCodes\18-Musculoskeletal pain, not low back pain-evaluation_balance.csv">
-          <value>
-            <Attribute>
-              <option name="separator" value="," />
-            </Attribute>
-          </value>
-        </entry>
         <entry key="\data\V15_COVID19\output\character\specificDX\61-Gangrene-covariates_balance_elixhauser.csv">
           <value>
             <Attribute>

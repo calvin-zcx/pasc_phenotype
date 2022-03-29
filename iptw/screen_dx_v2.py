@@ -32,7 +32,7 @@ def parse_args():
                                                'outpatient', 'inpatient', 'icu',
                                                'female', 'male',
                                                'white', 'black',
-                                               'less65', '65to75', '75above',
+                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                                                'healthy'],
@@ -145,6 +145,15 @@ if __name__ == "__main__":
     elif args.severity == 'black':
         print('Considering black cohorts')
         df = df.loc[(df['Black or African American'] == 1), :].copy()
+    elif args.severity == '20to40':
+        print('Considering 20to40 cohorts')
+        df = df.loc[(df['20-<40 years'] == 1), :].copy()
+    elif args.severity == '40to55':
+        print('Considering 40to55 cohorts')
+        df = df.loc[(df['40-<55 years'] == 1), :].copy()
+    elif args.severity == '55to65':
+        print('Considering 55to65 cohorts')
+        df = df.loc[(df['55-<65 years'] == 1), :].copy()
     elif args.severity == 'less65':
         print('Considering less65 cohorts')
         df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
