@@ -123,12 +123,13 @@ if __name__ == "__main__":
 
     # %% 1. Load  Data
     # Load Covariates Data
-    print('Load data covariates file:', args.data_file)
+    print('Load data covariates file:', args.data_file, args.data_file2)
     df1 = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
     df2 = pd.read_csv(args.data_file2, dtype={'patid': str}, parse_dates=['index date'])
     df1['database'] = 0
     df2['database'] = 1
     df = pd.concat([df1, df2], ignore_index=True, sort=False)
+    del df1, df2
     # because a patid id may occur in multiple sites. patid were site specific
     print('df.shape:', df.shape)
     if args.severity == 'inpatient':
