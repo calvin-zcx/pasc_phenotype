@@ -280,6 +280,155 @@ def plot_forest_for_med_organ():
     plt.close()
 
 
+def plot_forest_for_dx_organ_compare2data():
+    df1 = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v2.xlsx',
+        sheet_name='diagnosis')
+    df2 = pd.read_excel(
+        r'../data/oneflorida/output/character/outcome/DX-all/causal_effects_specific_v2.xlsx',
+        sheet_name='diagnosis')
+
+    df_aux = df2.rename(columns=lambda x: x + '_aux')
+    df = pd.merge(df1, df_aux, left_on='pasc', right_on='pasc_aux', how='left').set_index('i')
+
+    pvalue = 0.05/137  # 0.01  #
+    def select_criteria(_df):
+        _df_select = _df.sort_values(by='hr-w', ascending=False)
+        _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc']=='Muscle disorders'), :]  #
+        _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc']=='Muscle disorders'), :]
+        _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc']=='Muscle disorders'), :]
+        print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+        return _df_select
+
+    df_select = select_criteria(df)
+
+    organ_list = [
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        'General'
+    ]
+    # 'Certain Infectious and Parasitic Diseases',
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+    organ_n = np.zeros(len(organ_list))
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    pasc_row = []
+    pasc_row2 = []
+    color_list = []
+
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple']
+            hr = row['hr-w']
+            ci = stringlist_2_list(row['hr-w-CI'])
+            p = row['hr-w-p']
+            domain = row['Organ Domain']
+
+            hr2 = row['hr-w_aux']
+            ci2 = stringlist_2_list(row['hr-w-CI_aux'])
+            p2 = row['hr-w-p_aux']
+
+            if name == 'General PASC':
+                pasc_row = [name, hr, ci, p, domain]
+                pasc_row2 = [name, hr2, ci2, p2, domain]
+                continue
+            if domain == organ:
+                organ_n[i] += 2
+                # if len(name.split()) == 4:
+                #     name = ' '.join(name.split()[:2]) + '\n' + ' '.join(name.split()[2:])
+                if len(name.split()) >= 5:
+                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+
+                labs.append(name)
+                labs.append('')
+                measure.append(hr)
+                measure.append(hr2)
+                lower.append(ci[0])
+                upper.append(ci[1])
+                lower.append(ci2[0])
+                upper.append(ci2[1])
+                pval.append(p)
+                pval.append(p2)
+                color_list.append('#ed6766')
+                color_list.append('#A986B5') #'#A986B5')
+        if len(measure) == 0:
+            continue
+
+    # add pasc at last
+    organ_n[-1] += 2
+    labs.append(pasc_row[0])
+    measure.append(pasc_row[1])
+    lower.append(pasc_row[2][0])
+    upper.append(pasc_row[2][1])
+    pval.append(pasc_row[3])
+    labs.append('')
+    measure.append(pasc_row2[1])
+    lower.append(pasc_row2[2][0])
+    upper.append(pasc_row2[2][1])
+    pval.append(pasc_row2[3])
+    color_list.append('#ed6766')
+    color_list.append('#A986B5')  # '#A986B5')
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
+    p.labels(scale='log')
+
+    # organ = 'ALL'
+    p.labels(effectmeasure='aHR')  # aHR
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    c = '#F65453'
+    p.colors(pointshape="s", errorbarcolor=color_list, pointcolor=color_list)  # , linecolor='#fcb2ab')
+    width = 9
+    height = .28 * len(labs)
+    if len(labs) == 2:
+        height = .3 * (len(labs) + 1)
+    ax = p.plot(figsize=(width, height), t_adjuster=0.010, max_value=3, min_value=0.7, size=5, decimal=2) # 0.02
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+
+    organ_n_cumsum = np.cumsum(organ_n)
+    for i in range(len(organ_n) - 1):
+        ax.axhline(y=organ_n_cumsum[i] - .5, xmin=0.0, color=p.linec, zorder=1, linestyle='--')
+
+    ax.set_yticklabels(labs, fontsize=11.5)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/figure/figure2Compare/'
+    check_and_mkdir(output_dir)
+    organ = 'all'
+    i = 0
+    plt.savefig(output_dir + '{}-{}_hr_{}-p{}-hrGe1-nGe100.png'.format(i, organ, 'all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + '{}-{}_hr_{}-p{}-hrGe1-nGe100.pdf'.format(i, organ, 'all', pvalue), bbox_inches='tight',
+                transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    plt.close()
+
+
+
+
+
+
 def plot_forest_for_med_atc():
     with open(r'../data/mapping/atcL3_index_mapping.pkl', 'rb') as f:
         atcl3_encoding = pickle.load(f)
@@ -475,5 +624,7 @@ if __name__ == '__main__':
     # combine_pasc_list()
     # pasc_domain = add_pasc_domain_to_causal_results()
     # df_med = add_drug_name()
-    plot_forest_for_dx_organ()
-    plot_forest_for_med_organ()
+    # plot_forest_for_dx_organ()
+    # plot_forest_for_med_organ()
+
+    plot_forest_for_dx_organ_compare2data()
