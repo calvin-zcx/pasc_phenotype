@@ -29,7 +29,7 @@ def parse_args():
     parser.add_argument('--site', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM', 'ALL', 'all'], default='ALL',
                         help='site dataset')
     parser.add_argument('--severity', choices=['all',
-                                               'outpatient', 'inpatient', 'icu',
+                                               'outpatient', 'inpatient', 'icu', 'inpatienticu',
                                                'female', 'male',
                                                'white', 'black',
                                                'less65', '65to75', '75above', '20to40', '40to55', '55to65',
@@ -130,6 +130,9 @@ if __name__ == "__main__":
     elif args.severity == 'icu':
         print('Considering ICU (hospitalized ventilation or critical care) cohorts')
         df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)), :].copy()
+    if args.severity == 'inpatienticu':
+        print('Considering inpatient/hospitalized including icu cohorts')
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
     elif args.severity == 'outpatient':
         print('Considering outpatient cohorts')
         df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
