@@ -124,8 +124,8 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     # Load Covariates Data
     print('Load data covariates file:', args.data_file)
-    df1 = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'], nrows=50000)
-    df2 = pd.read_csv(args.data_file2, dtype={'patid': str}, parse_dates=['index date'], nrows=50000)
+    df1 = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    df2 = pd.read_csv(args.data_file2, dtype={'patid': str}, parse_dates=['index date'])
     df1['database'] = 0
     df2['database'] = 1
     df = pd.concat([df1, df2], ignore_index=True, sort=False)
