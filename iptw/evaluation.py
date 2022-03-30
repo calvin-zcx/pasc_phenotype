@@ -731,6 +731,7 @@ def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, dat
         cph = HR = CI = test_p_ori = None
         cph_ori = HR_ori = CI_ori = test_p = None
         hr_different_time = hr_different_time_ori = [np.nan]*len(point_in_time)
+        HR_inter_treat = CI_inter_treat = HR_inter = CI_inter = HR_inter_database = CI_inter_database = cph_inter = None
 
     return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
            (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
