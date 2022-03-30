@@ -579,3 +579,163 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
            (HR, CI, test_p, cph, hr_different_time), \
            (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
            (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower, cif_0_w_CIUpper)
+
+
+def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, database_flag, fig_outfile='', title=''):
+    # considering competing risk in this version, 2022-03-20
+    #
+    ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
+    treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
+    treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
+    treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
+
+    treatd_database_flag, controlled_database_flag = database_flag[ones_idx], events_flag[zeros_idx]
+
+    # Part-1. https://lifelines.readthedocs.io/en/latest/fitters/univariate/KaplanMeierFitter.html
+    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e,
+                                                 event_observed=flag_2binary(treated_flag), label="COVID+")
+    kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e,
+                                                  event_observed=flag_2binary(controlled_flag), label="Control")
+
+    point_in_time = [60, 90, 120, 150, 180]
+    results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
+    # results.print_summary()
+    survival_1 = kmf1.predict(point_in_time).to_numpy()
+    survival_0 = kmf0.predict(point_in_time).to_numpy()
+    ate = survival_1 - survival_0
+
+    kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=flag_2binary(treated_flag),
+                                                            label="COVID+ Adjusted", weights=treated_w)
+    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
+                                                             label="Control Adjusted", weights=controlled_w)
+    results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
+    # results_w.print_summary()
+    survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
+    survival_0_w = kmf0_w.predict(point_in_time).to_numpy()
+    ate_w = survival_1_w - survival_0_w
+
+    if fig_outfile:
+        ax = plt.subplot(111)
+        kmf1.plot_survival_function(ax=ax)
+        kmf1_w.plot_survival_function(ax=ax)
+        kmf0.plot_survival_function(ax=ax)
+        kmf0_w.plot_survival_function(ax=ax)
+
+        plt.title(title, fontsize=12)
+        plt.savefig(fig_outfile)
+        plt.close()
+
+    # Part-2, cumulative incidence for competing risks
+    # 0: censoring, 1: event of interest, 2: competing risk, e.g. death
+    # https://lifelines.readthedocs.io/en/latest/fitters/univariate/AalenJohansenFitter.html
+    ajf1 = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
+                                                            event_of_interest=1,
+                                                            label="COVID+")
+    ajf0 = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
+                                                            event_of_interest=1,
+                                                            label="Control")
+    cif_1 = ajf1.predict(point_in_time).to_numpy()
+    cif_0 = ajf0.predict(point_in_time).to_numpy()
+    cifdiff = cif_1 - cif_0
+    ajf1_CI = ajf1.confidence_interval_cumulative_density_
+    ajf0_CI = ajf0.confidence_interval_cumulative_density_
+    cif_1_CILower = ajf1_CI[ajf1_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_1_CIUpper = ajf1_CI[ajf1_CI.columns[1]].asof(point_in_time).to_numpy()
+    cif_0_CILower = ajf0_CI[ajf0_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_0_CIUpper = ajf0_CI[ajf0_CI.columns[1]].asof(point_in_time).to_numpy()
+
+    ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
+                                                             event_of_interest=1,
+                                                             label="COVID+ Adjusted", weights=treated_w)
+    ajf0w = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
+                                                             event_of_interest=1,
+                                                             label="Control Adjusted", weights=controlled_w)
+    cif_1_w = ajf1w.predict(point_in_time).to_numpy()
+    cif_0_w = ajf0w.predict(point_in_time).to_numpy()
+    cifdiff_w = cif_1_w - cif_0_w
+
+    ajf1w_CI = ajf1w.confidence_interval_cumulative_density_
+    ajf0w_CI = ajf0w.confidence_interval_cumulative_density_
+    cif_1_w_CILower = ajf1w_CI[ajf1w_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_1_w_CIUpper = ajf1w_CI[ajf1w_CI.columns[1]].asof(point_in_time).to_numpy()
+    cif_0_w_CILower = ajf0w_CI[ajf0w_CI.columns[0]].asof(point_in_time).to_numpy()
+    cif_0_w_CIUpper = ajf0w_CI[ajf0w_CI.columns[1]].asof(point_in_time).to_numpy()
+    # cif_1_w_CILower = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[0]].to_numpy()
+    # cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
+    # cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
+    # cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
+
+    if fig_outfile:
+        ax = plt.subplot(111)
+        # ajf1.plot(ax=ax)
+        ajf1w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))  # 0, 180
+        # ajf0.plot(ax=ax)
+        ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
+        add_at_risk_counts(ajf1w, ajf0w, ax=ax)
+        plt.tight_layout()
+
+        # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
+
+        plt.title(title, fontsize=12)
+        plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'))
+        plt.close()
+
+    # Part-3: Cox for hazard ratio
+    # https://lifelines.readthedocs.io/en/latest/fitters/regression/CoxPHFitter.html
+    # Competing risk sceneriao: 0 for censoring, 1 for target event, 2 for competing risk death
+    # --> competing risk 2, death, as censoring in cox model. Only caring event 1
+    # https://github.com/CamDavidsonPilon/lifelines/issues/619
+    cph = CoxPHFitter()
+    cox_data = pd.DataFrame(
+        {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights})
+    try:
+        cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True)
+        HR = cph.hazard_ratios_['treatment']
+        CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
+        test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
+                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w, weights_B=controlled_w, )
+        test_p = test_results.p_value
+        hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time = hr_different_time['treatment'].to_numpy()
+
+        cph_ori = CoxPHFitter()
+        cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
+        cph_ori.fit(cox_data_ori, 'T', 'event')
+        HR_ori = cph_ori.hazard_ratios_['treatment']
+        CI_ori = np.exp(cph_ori.confidence_intervals_.values.reshape(-1))
+        test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
+                                        event_observed_B=flag_2binary(controlled_flag))
+        test_p_ori = test_results_ori.p_value
+        hr_different_time_ori = cph_ori.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time_ori = hr_different_time_ori['treatment'].to_numpy()
+
+        cph_inter = CoxPHFitter()
+        cox_data_inter = pd.DataFrame(
+            {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights,
+             'database': database_flag, 'inter': database_flag * golds_treatment})
+        cph_inter.fit(cox_data_inter, 'T', 'event', weights_col='weights', robust=True)
+        HR_inter_treat = cph_inter.hazard_ratios_['treatment']
+        CI_inter_treat = np.exp(cph_inter.confidence_intervals_.loc["treatment", :].values.reshape(-1))
+        HR_inter = cph_inter.hazard_ratios_['inter']
+        CI_inter = np.exp(cph_inter.confidence_intervals_.loc["inter", :].values.reshape(-1))
+        HR_inter_database = cph_inter.hazard_ratios_['database']
+        CI_inter_database = np.exp(cph_inter.confidence_intervals_.loc["database", :].values.reshape(-1))
+        # test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
+        #                             event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w,
+        #                             weights_B=controlled_w, )
+        # test_p = test_results.p_value
+        # hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
+        # hr_different_time = hr_different_time['treatment'].to_numpy()
+
+    except:
+        cph = HR = CI = test_p_ori = None
+        cph_ori = HR_ori = CI_ori = test_p = None
+        hr_different_time = hr_different_time_ori = [np.nan]*len(point_in_time)
+
+    return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
+           (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
+           (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
+           (HR, CI, test_p, cph, hr_different_time), \
+           (HR_inter_treat, CI_inter_treat, HR_inter, CI_inter, HR_inter_database, CI_inter_database, cph_inter), \
+           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
+           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower, cif_0_w_CIUpper)
