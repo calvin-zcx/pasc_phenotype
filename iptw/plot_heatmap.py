@@ -450,6 +450,8 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
 
             if star:
                 if (hrp > 0.05 / 137) and (hrp <= 0.01):
+                    name += '**'
+                elif (hrp > 0.01) and (hrp <= 0.05):
                     name += '*'
 
             if type == 'hr':
@@ -578,7 +580,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
 
     data = df_heat_value
     asp = data.shape[0] / float(data.shape[1]) / 1.6
-    figw = 15  # 8
+    figw = 12  # 8
     figh = figw * asp
 
     # cmap = sns.cm.icefire_r
@@ -587,7 +589,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
         # norm = LogNorm(vmin=data.min().min(), vmax=data.max().max())
         norm = LogNorm(vmin=0.05 / 137, vmax=1)
         fmt = ".1g"
-        figw = 15.5  # 8
+        figw = 15  # 8
         figh = figw * asp
     elif type == 'cifdiff':
         norm = Normalize(vmin=0, vmax=100, clip=True)
@@ -638,10 +640,10 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
         fig.colorbar(sm, cax=cax)
     output_dir = r'../data/{}/output/character/outcome/figure/{}/'.format(database, type)
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}{}.png'.format(
-        database, type, month, select_criteria), bbox_inches='tight', dpi=700)
-    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}{}.pdf'.format(
-        database, type, month, select_criteria), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}{}-{:.3f}.png'.format(
+        database, type, month, select_criteria, pvalue), bbox_inches='tight', dpi=700)
+    plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-{}{}-{:.3f}.pdf'.format(
+        database, type, month, select_criteria, pvalue), bbox_inches='tight', transparent=True)
 
     plt.show()
     print()
@@ -908,7 +910,12 @@ if __name__ == '__main__':
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=6, pasc=True,
     #                                                    star=True, select_criteria='insight')
 
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff', month=6, pasc=True, star=True)
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff',
+                                                       month=6, pasc=True, star=True, pvalue=0.05/137)
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff',
+                                                       month=6, pasc=True, star=True, pvalue=0.05)
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff',
+                                                       month=6, pasc=True, star=True, pvalue=0.01)
 
     # for dataset in ['oneflorida', 'V15_COVID19']:
     #     for month in [2, 3, 4, 5, 6]:
