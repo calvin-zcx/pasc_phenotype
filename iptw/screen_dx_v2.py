@@ -32,7 +32,7 @@ def parse_args():
                                                'outpatient', 'inpatient', 'icu', 'inpatienticu',
                                                'female', 'male',
                                                'white', 'black',
-                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65',
+                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                                                'healthy'],
@@ -166,6 +166,9 @@ if __name__ == "__main__":
     elif args.severity == '75above':
         print('Considering 75above cohorts')
         df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+    elif args.severity == 'above65':
+        print('Considering above65 cohorts')
+        df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
     elif args.severity == 'Anemia':
         print('Considering Anemia cohorts')
         df = df.loc[(df["DX: Anemia"] == 1), :].copy()

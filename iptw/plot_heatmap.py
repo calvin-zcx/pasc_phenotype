@@ -101,10 +101,14 @@ def plot_heatmap_for_dx_subgroup():
 
     # load other
     heat_value = {'all': measure, }
-    for severity in ['outpatient', 'inpatient', 'icu',
+    for severity in ['outpatient',  'inpatienticu', #'inpatient', 'icu',
                      'less65', '65to75', '75above',
                      'female', 'male', 'white', 'black',
-                     'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
+                     #'Anemia',
+                     'Arrythmia',
+                     'CKD',
+                     'CPD-COPD',
+                     'CAD',
                      'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                      'healthy'
                      ]:
@@ -124,12 +128,14 @@ def plot_heatmap_for_dx_subgroup():
     df_heat_value = pd.DataFrame(heat_value)
     df_heat_value = df_heat_value.rename(columns={'all': 'Overall',
                                                   'outpatient': 'Outpatient',
-                                                  'inpatient': 'Inpatient',
-                                                  'icu': 'ICU',
+                                                  #'inpatient': 'Inpatient',
+                                                  #'icu': 'ICU',
+                                                  'inpatienticu': 'Inpatient',
                                                   'less65': '<65', '65to75': '65-<75', '75above': '>=75',
                                                   'female': 'Female', 'male': 'Male', 'white': 'White',
                                                   'black': 'Black',
-                                                  'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD',
+                                                  #'Anemia': 'Anemia',
+                                                  'Arrythmia': 'Arrythmia', 'CKD': 'CKD',
                                                   'CPD-COPD': 'CPD',
                                                   'CAD': 'CAD',
                                                   'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
@@ -349,7 +355,7 @@ def plot_heatmap_for_dx_subgroup_split(database='V15_COVID19', type='hr', month=
 
 
 def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cif', month=6, pasc=False,
-                                                       star=False, select_criteria=''):
+                                                       star=False, select_criteria='', pvalue = 0.05/137):
     month_id = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4}
     monthid = month_id.get(month, -1)
     print('month:', month, 'id:', monthid)
@@ -358,7 +364,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
         # df_aux = pd.read_excel(
         #     r'../data/oneflorida/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-oneflorida-4plot.xlsx',
         #     sheet_name='diagnosis')
-        pvalue = 0.01
+        # pvalue = 0.01
         # df = pd.read_csv(r'../data/oneflorida/output/character/outcome/DX-all/causal_effects_specific.csv',)
         # df_aux.rename(columns=lambda x: x + '_aux', inplace=True)
         # df = pd.merge(df, df_aux, left_on='pasc', right_on='pasc_aux', how='left').set_index(
@@ -370,13 +376,13 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
         # df_aux = pd.read_excel(
         #     r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
         #     sheet_name='diagnosis')
-        pvalue = 0.01  # 0.05 / 137
+        # pvalue = 0.01  # 0.05 / 137
         # df = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific.csv',)
         # df_aux.rename(columns=lambda x: x + '_aux', inplace=True)
         # df = pd.merge(df, df_aux, left_on='pasc', right_on='PASC_aux', how='left').set_index(
         #     'i')  # left_on='State_abr', right_on='address_state',
         df = pd.read_excel(
-            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v2.xlsx',
+            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
             sheet_name='diagnosis').set_index('i')
     else:
         raise ValueError
@@ -438,7 +444,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
 
         for key, row in df_select.iterrows():
             name = row['PASC Name Simple']
-
+            pasc = row['pasc']
             hrp = row['hr-w-p']
             name = name.strip('*')
 
@@ -460,6 +466,12 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
                       stringlist_2_list(row['cif_1_w_CIUpper'])[monthid]]
                 p = np.nan
                 # has Confidence interval, but not test, no p-value
+            elif type == 'cifneg':
+                hr = stringlist_2_list(row['cif_0_w'])[monthid] * 1000
+                ci = [stringlist_2_list(row['cif_0_w_CILower'])[monthid],
+                      stringlist_2_list(row['cif_0_w_CIUpper'])[monthid]]
+                p = np.nan
+                # has Confidence interval, but not test, no p-value
             elif type == 'cifdiff' or type == 'cifdiff-pvalue':
                 hr = stringlist_2_list(row['cif-w-diff'])[monthid] * 1000
                 ci = [np.nan, np.nan]  #
@@ -467,7 +479,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
                 # don't have CI, but has p-value for difference.
 
             domain = row['Organ Domain']
-            if name == 'General PASC':
+            if pasc == 'PASC-General':
                 pasc_row = [name, hr, ci, p, domain, key]
                 continue
             if domain == organ:
@@ -502,11 +514,16 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     else:
         heat_value = {'all': measure, }
 
-    for severity in ['outpatient', 'inpatient', 'icu',
+    for severity in ['outpatient',
+                     #'inpatient', 'icu',
+                     'inpatienticu',
                      'less65', '65to75', '75above',
                      'female', 'male', 'white', 'black',
-                     'CPD-COPD', 'Anemia', 'Arrythmia', 'CAD', 'Hypertension',
-                     'T2D-Obesity', 'CKD', 'Mental-substance', 'Corticosteroids',
+                     'CPD-COPD',
+                     #'Anemia',
+                     'Arrythmia', 'CAD', 'Hypertension',
+                     'T2D-Obesity', 'CKD', 'Mental-substance',
+                     #'Corticosteroids',
                      'healthy'
                      ]:
         _df = pd.read_csv(
@@ -523,6 +540,8 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
             #       stringlist_2_list(row['cif_1_w_CIUpper'])[monthid]]
             # p = np.nan
             # has Confidence interval, but not test, no p-value
+        elif type == 'cifneg':
+            _hr = _df_selected.loc[:, 'cif_0_w'].apply(lambda x: stringlist_2_list(x)[monthid] * (1000))
         elif type == 'cifdiff':
             _hr = _df_selected.loc[:, 'cif-w-diff'].apply(lambda x: stringlist_2_list(x)[monthid] * (1000))
             # ci = [np.nan, np.nan]  #
@@ -541,25 +560,29 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     df_heat_value = pd.DataFrame(heat_value)
     df_heat_value = df_heat_value.rename(columns={'all': 'Overall',
                                                   'outpatient': 'Outpatient',
-                                                  'inpatient': 'Inpatient',
-                                                  'icu': 'ICU',
+                                                  #'inpatient': 'Inpatient',
+                                                  #'icu': 'ICU',
+                                                  'inpatienticu': 'Inpatient',
                                                   'less65': '<65', '65to75': '65-<75', '75above': '75+',
                                                   'female': 'Female', 'male': 'Male', 'white': 'White',
                                                   'black': 'Black',
-                                                  'Anemia': 'Anemia', 'Arrythmia': 'Arrythmia', 'CKD': 'CKD',
+                                                  # 'Anemia': 'Anemia',
+                                                  'Arrythmia': 'Arrythmia',
+                                                  'CKD': 'CKD',
                                                   'CPD-COPD': 'CPD',
                                                   'CAD': 'CAD',
                                                   'T2D-Obesity': 'T2D', 'Hypertension': 'Hypertension',
                                                   'Mental-substance': 'Mental',
-                                                  'Corticosteroids': 'Steroids history', 'healthy': 'Healthy'})
+                                                  #'Corticosteroids': 'Steroids history',
+                                                  'healthy': 'Healthy'})
 
     data = df_heat_value
     asp = data.shape[0] / float(data.shape[1]) / 1.6
     figw = 15  # 8
     figh = figw * asp
 
-    cmap = sns.cm.icefire_r
-    # cmap = sns.cm.rocket_r
+    # cmap = sns.cm.icefire_r
+    cmap = sns.cm.rocket_r
     if type == 'cifdiff-pvalue':
         # norm = LogNorm(vmin=data.min().min(), vmax=data.max().max())
         norm = LogNorm(vmin=0.05 / 137, vmax=1)
@@ -569,7 +592,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     elif type == 'cifdiff':
         norm = Normalize(vmin=0, vmax=100, clip=True)
         fmt = ".1f"
-    elif type == 'cif':
+    elif (type == 'cif') or (type == 'cifneg'):
         # 256.8 for Insight
         # ? for florida?
         norm = Normalize(vmin=data.min().min(), vmax=256.8)  # data.max().max()
@@ -579,7 +602,8 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
         fmt = ".1f"
     # norm = Normalize(vmin=1, vmax=5, clip=True)
 
-    gridspec_kw = {"width_ratios": [1, 3, 3, 2, 2, 10]}
+    # gridspec_kw = {"width_ratios": [1, 3, 3, 2, 2, 10]}
+    gridspec_kw = {"width_ratios": [1, 2, 3, 2, 2, 8]}
     heatmapkws = dict(square=False, cbar=False, cmap=cmap, linewidths=0.3,
                       vmin=data.min().min(), vmax=data.max().max(), fmt=fmt, norm=norm)
     tickskw = dict(xticklabels=False, yticklabels=False)
@@ -591,11 +615,11 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     fig, axes = plt.subplots(ncols=6, nrows=1, figsize=(figw, figh), gridspec_kw=gridspec_kw)
     plt.subplots_adjust(left=left, bottom=bottom, top=top, wspace=0.08, hspace=0.08 * asp)
     sns.heatmap(data.iloc[:, 0:1], ax=axes[0], yticklabels=labs, annot=True, **heatmapkws)
-    sns.heatmap(data.iloc[:, 1:4], ax=axes[1], yticklabels=False, annot=True, **heatmapkws)
-    sns.heatmap(data.iloc[:, 4:7], ax=axes[2], yticklabels=False, annot=True, **heatmapkws)
-    sns.heatmap(data.iloc[:, 7:9], ax=axes[3], yticklabels=False, annot=True, **heatmapkws)
-    sns.heatmap(data.iloc[:, 9:11], ax=axes[4], yticklabels=False, annot=True, **heatmapkws)
-    sns.heatmap(data.iloc[:, 11:], ax=axes[5], yticklabels=False, annot=True, **heatmapkws)
+    sns.heatmap(data.iloc[:, 1:3], ax=axes[1], yticklabels=False, annot=True, **heatmapkws)
+    sns.heatmap(data.iloc[:, 3:6], ax=axes[2], yticklabels=False, annot=True, **heatmapkws)
+    sns.heatmap(data.iloc[:, 6:8], ax=axes[3], yticklabels=False, annot=True, **heatmapkws)
+    sns.heatmap(data.iloc[:, 8:10], ax=axes[4], yticklabels=False, annot=True, **heatmapkws)
+    sns.heatmap(data.iloc[:, 10:], ax=axes[5], yticklabels=False, annot=True, **heatmapkws)
 
     for ax in axes:
         plt.setp(ax.get_xticklabels(), rotation=-30, ha="right",
@@ -877,17 +901,24 @@ if __name__ == '__main__':
     # plot_heatmap_for_dx_subgroup()
 
     # # types: hr   km   cif   cifdiff
-    dataset = 'oneflorida'  #  'V15_COVID19'   #
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=6, pasc=True,
-                                                       star=True, select_criteria='insight')
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=6, pasc=True,
-                                                       star=True, select_criteria='insight')
-    # for month in [2, 3, 4, 5, 6]:
-    #     plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True, star=True)
-    #     plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff-pvalue', month=month, pasc=True, star=True)
-    #     plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cif', month=month, pasc=True, star=True)
-    #     plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=month, pasc=True, star=True)
-    #
+    # dataset = 'oneflorida'  #  'V15_COVID19'   #
+    # dataset = 'V15_COVID19'
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=6, pasc=True,
+    #                                                    star=True, select_criteria='insight')
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=6, pasc=True,
+    #                                                    star=True, select_criteria='insight')
+
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', type='cifdiff', month=6, pasc=True, star=True)
+
+    # for dataset in ['oneflorida', 'V15_COVID19']:
+    #     for month in [2, 3, 4, 5, 6]:
+    #         # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True, star=True)
+    #         # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff-pvalue', month=month, pasc=True, star=True)
+    #         # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cif', month=month, pasc=True, star=True)
+    #         # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=month, pasc=True, star=True)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifneg', month=month, pasc=True,
+    #                                                            star=True)
+    # #
 
     # plot_heatmap_for_dx_subgroup_compare2data(database='V15_COVID19', type='cifdiff', month=6, pasc=True, star=True)
     # plot_heatmap_for_dx_subgroup_compare2data(database='V15_COVID19', type='cifdiff-pvalue', month=6, pasc=True,
