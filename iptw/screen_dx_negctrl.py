@@ -39,7 +39,7 @@ def parse_args():
                         default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=5)
+    parser.add_argument('--negative_ratio', type=int, default=2)
     parser.add_argument('--selectpasc', action='store_true')
 
     args = parser.parse_args()
@@ -269,7 +269,7 @@ if __name__ == "__main__":
               'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
         # Select population free of outcome at baseline
-        idx = (pasc_baseline < 1)
+        idx = (pasc_baseline < 1) | (pasc_baseline >= 1)
         # Select negative: pos : neg = 1:2 for IPTW
         covid_label = df_label[idx]
         n_covid_pos = covid_label.sum()
