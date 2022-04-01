@@ -731,7 +731,7 @@ def ICD_to_negative_control_pasc():
     pasc_index = {}
 
     def select_negative_control_ccsr_category(x):
-        if pd.notna(x) and ((x in ['FAC003', 'FAC006', 'FAC008']) or x.startswith('NEO')):
+        if pd.notna(x) and ((x in ['FAC003', 'FAC006', 'FAC008']) or x.startswith('NEO') or x.startswith('EXT')):
             return True
         else:
             return False
@@ -744,14 +744,15 @@ def ICD_to_negative_control_pasc():
         ccsr_category = row['CCSR CATEGORY 1 DESCRIPTION']
         icd = row['ICD-10-CM Code']
         icd_name = row['ICD-10-CM Code Description']
-        icd_pasc[icd] = [ccsr_category, ccsr_code, hd_domain, icd_name]
+        icd_pasc[icd] = [ccsr_code+'='+ccsr_category, ccsr_code, hd_domain, icd_name]
 
-    df_dim = df_pasc_list_neg['CCSR CATEGORY 1 DESCRIPTION'].value_counts().reset_index()
+    df_dim = df_pasc_list_neg[['CCSR CATEGORY 1 DESCRIPTION', 'CCSR CATEGORY 1']].value_counts().reset_index()
+    df_dim = df_dim.sort_values(by='CCSR CATEGORY 1').reset_index() #, ascending=False)
     for index, row in df_dim.iterrows():
-        ccsr_category = row[0]
-        cnt = row[1]
-        codes = set(df_pasc_list_neg.loc[df_pasc_list_neg['CCSR CATEGORY 1 DESCRIPTION']==ccsr_category, 'CCSR CATEGORY 1'])
-        pasc_index[ccsr_category] = [index, cnt, codes]
+        ccsr_category = row['CCSR CATEGORY 1 DESCRIPTION']
+        cnt = row[0]
+        codes = row['CCSR CATEGORY 1']  # set(df_pasc_list_neg.loc[df_pasc_list_neg['CCSR CATEGORY 1 DESCRIPTION']==ccsr_category, 'CCSR CATEGORY 1'])
+        pasc_index[codes +'='+ ccsr_category] = [index, cnt, codes]
 
     print('len(icd_pasc):', len(icd_pasc))
     output_file = r'../data/mapping/icd_negative-outcome-control_mapping.pkl'
