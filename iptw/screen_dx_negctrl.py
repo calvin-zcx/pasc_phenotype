@@ -103,10 +103,8 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 
 
 if __name__ == "__main__":
-    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity icu 2>&1 | tee  log/screen_dx_insight_ALL_icu.txt
-    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity inpatient 2>&1 | tee  log/screen_dx_insight_ALL_inpatient.txt
-    # python screen_dx_v2.py --dataset V15_COVID19 --site ALL --severity outpatient 2>&1 | tee  log/screen_dx_insight_ALL_outpatient.txt
-    # python screen_dx_v2.py --dataset oneflorida --site all --severity all 2>&1 | tee  log/screen_dx_oneflorida_all_all.txt
+    # taskset --cpu-list 12-15 python screen_dx_negctrl.py --dataset V15_COVID19 --site ALL --severity all 2>&1 | tee  log/screen_dx_negctrl_insight_ALL_all.txt
+    # python screen_dx_negctrl.py --dataset oneflorida --site all --severity all 2>&1 | tee  log/screen_dx_negctrl_oneflorida_all_all.txt
 
     start_time = time.time()
     args = parse_args()
@@ -394,7 +392,7 @@ if __name__ == "__main__":
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time"]
             print('causal result:\n', causal_results[-1])
 
-            if i % 10 == 0:
+            if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(r'../data/{}/output/character/outcome/negctrl/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.dataset, args.severity, '-select' if args.selectpasc else '', i))
