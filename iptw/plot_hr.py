@@ -283,7 +283,7 @@ def plot_forest_for_med_organ():
     plt.close()
 
 
-def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
+def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=True, select_criteria='', pvalue=0.05 / 137):
     if severity == 'all':
         df1 = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
@@ -318,18 +318,34 @@ def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
     df_aux = df2.rename(columns=lambda x: x + '_aux')
     df = pd.merge(df1, df_aux, left_on='pasc', right_on='pasc_aux', how='left').set_index('i')
 
-    pvalue = 0.05 / 137  # 0.01  #
+    # pvalue = 0.05 / 137  # 0.01  #
 
-    def select_criteria(_df):
+    if select_criteria == 'insight':
+        print('select_critera:', select_criteria)
+        _df = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+            sheet_name='diagnosis').set_index('i')
+        pvalue = 0.01  # 0.05 / 137
         _df_select = _df.sort_values(by='hr-w', ascending=False)
-        _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc'] == 'Muscle disorders'), :]  #
-        _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc'] == 'Muscle disorders'), :]
-        _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc'] == 'Muscle disorders'),
-                     :]
-        print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
-        return _df_select
+        _df_select = _df_select.loc[_df_select['hr-w-p'] <= pvalue, :]  #
+        _df_select = _df_select.loc[_df_select['hr-w'] > 1, :]
+        _df_select = _df_select.loc[_df_select['no. pasc in +'] >= 100, :]
 
-    df_select = select_criteria(df)
+        print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+
+        df_select = df.loc[df['pasc'].isin(_df_select['pasc']), :]
+        df_select = df_select.sort_values(by='hr-w', ascending=False)
+    else:
+        def select_criteria_func(_df):
+            _df_select = _df.sort_values(by='hr-w', ascending=False)
+            _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc'] == 'Muscle disorders'), :]  #
+            _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc'] == 'Muscle disorders'), :]
+            _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc'] == 'Muscle disorders'),
+                         :]
+            print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+            return _df_select
+
+        df_select = select_criteria_func(df)
 
     organ_list = [
         'Diseases of the Nervous System',
@@ -359,7 +375,7 @@ def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
         print(i + 1, 'organ', organ)
 
         for key, row in df_select.iterrows():
-            name = row['PASC Name Simple']
+            name = row['PASC Name Simple'].strip('*')
             hr = row['hr-w']
             ci = stringlist_2_list(row['hr-w-CI'])
             p = row['hr-w-p']
@@ -369,6 +385,12 @@ def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
             hr2 = row['hr-w_aux']
             ci2 = stringlist_2_list(row['hr-w-CI_aux'])
             p2 = row['hr-w-p_aux']
+
+            if star:
+                if (p > 0.05 / 137) and (p <= 0.01):
+                    name += '**'
+                elif (p > 0.01) and (p <= 0.05):
+                    name += '*'
 
             if pasc == 'PASC-General':
                 pasc_row = [name, hr, ci, p, domain]
@@ -424,7 +446,7 @@ def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     c = '#F65453'
     p.colors(pointshape="s", errorbarcolor=color_list, pointcolor=color_list)  # , linecolor='#fcb2ab')
-    width = 9
+    width = 9.
     height = .28 * len(labs)
     if len(labs) == 2:
         height = .3 * (len(labs) + 1)
@@ -449,10 +471,10 @@ def plot_forest_for_dx_organ_compare2data(add_name=True, severity="above65"):
     check_and_mkdir(output_dir)
     organ = 'all'
     i = 0
-    plt.savefig(output_dir + '{}-{}_hr_{}-p{:3f}-hrGe1-nGe100-{}v2.png'.format(i, organ, 'all', pvalue, severity),
+    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}.png'.format(severity, pvalue, select_criteria),
                 bbox_inches='tight',
-                dpi=900)
-    plt.savefig(output_dir + '{}-{}_hr_{}-p{}-hrGe1-nGe100-{}v2.pdf'.format(i, organ, 'all', pvalue, severity),
+                dpi=650)
+    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}.pdf'.format(severity, pvalue, select_criteria),
                 bbox_inches='tight',
                 transparent=True)
     plt.show()
@@ -659,7 +681,12 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ()
     # plot_forest_for_med_organ()
     #
-    # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all')
-    # plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65')
-    # plot_forest_for_dx_organ_compare2data(add_name=True, severity='above65')
+    plot_forest_for_dx_organ_compare2data(add_name=False, severity='all')
+    plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.01)
+    plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.05)
+    plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65', select_criteria='insight')
+    plot_forest_for_dx_organ_compare2data(add_name=True, severity='above65', select_criteria='insight')
+    plot_forest_for_dx_organ_compare2data(add_name=True, severity='65to75', select_criteria='insight')
+    plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65')
+    plot_forest_for_dx_organ_compare2data(add_name=True, severity='above65')
     plot_forest_for_dx_organ_compare2data(add_name=True, severity='65to75')
