@@ -238,24 +238,25 @@ if __name__ == "__main__":
     pasc_encoding = utils.load(r'../data/mapping/negative-outcome-control_index_mapping.pkl')
 
     # %% 2. PASC specific cohorts for causal inference
-    if args.selectpasc:
-        df_select = pd.read_excel(
-            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
-            sheet_name='diagnosis').set_index('i')
-        df_select = df_select.loc[df_select['hr-w-p'] <= 0.05, :]  #
-        df_select = df_select.loc[df_select['hr-w'] > 1, :]
-        selected_list = df_select.index.tolist()
-        print('Selected: len(selected_list):', len(selected_list))
-        print(df_select['PASC Name Simple'])
+    # if args.selectpasc:
+    #     df_select = pd.read_excel(
+    #         r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+    #         sheet_name='diagnosis').set_index('i')
+    #     df_select = df_select.loc[df_select['hr-w-p'] <= 0.05, :]  #
+    #     df_select = df_select.loc[df_select['hr-w'] > 1, :]
+    #     selected_list = df_select.index.tolist()
+    #     print('Selected: len(selected_list):', len(selected_list))
+    #     print(df_select['PASC Name Simple'])
 
     causal_results = []
     results_columns_name = []
     for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
         # bulid specific cohorts:
-        if args.selectpasc:
-            if i not in selected_list:
-                print('Skip:', i, pasc, 'because args.selectpasc, p<=0.05, hr > 1 in Insight')
-                continue
+        # if args.selectpasc:
+        #     if i not in selected_list:
+        #         print('Skip:', i, pasc, 'because args.selectpasc, p<=0.05, hr > 1 in Insight')
+        #         continue
+
         print('\n In screening:', i, pasc)
         pasc_flag = df['dx-out@' + pasc].copy()
         pasc_t2e = df['dx-t2e@' + pasc]  # .astype('float')
