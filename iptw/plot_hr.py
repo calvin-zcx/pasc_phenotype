@@ -139,17 +139,28 @@ def plot_forest_for_dx_organ(pvalue=0.05/137, star=True):
     plt.close()
 
 
-def plot_forest_for_med_organ(pvalue=0.05/459, star=True):
+def plot_forest_for_med_organ(pvalue=0.05/459, star=True, datasite='insight'):
+    if datasite == 'oneflorida':
+        df = pd.read_excel(
+            r'../data/oneflorida/output/character/outcome/MED-all/causal_effects_specific_med.xlsx',
+            sheet_name='med_selected')
+        df = df.rename(columns={'hr-w-p':'Hazard Ratio, Adjusted, P-Value',
+                                'hr-w': 'Hazard Ratio, Adjusted',
+                                'hr-w-CI':'Hazard Ratio, Adjusted, Confidence Interval'
+                                })
+        n_threshold = 66
+    else:
 
-    df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
-        sheet_name='med')
+        df = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+            sheet_name='med')
+        n_threshold = 100
 
     df_select = df.sort_values(by='Hazard Ratio, Adjusted', ascending=False)
     # pvalue = 0.05 / 459  # 0.05 / 137
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= pvalue, :]  #
     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
-    df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
+    df_select = df_select.loc[df_select['no. pasc in +'] >= n_threshold, :]
     # df_select = df
     print('df_select.shape:', df_select.shape)
 
@@ -203,10 +214,16 @@ def plot_forest_for_med_organ(pvalue=0.05/459, star=True):
     # p.colors(pointcolor='r')
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
-    c = '#5494DA'  # '#A986B5'
-    p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='#fcb2ab')
-    ax = p.plot(figsize=(8, 0.42 * 27 / 45 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5,
-                decimal=2)
+    if datasite == 'oneflorida':
+        c = '#A986B5'  # '#A986B5'
+        p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='#fcb2ab')
+        ax = p.plot(figsize=(8, 0.42 * len(labs)), t_adjuster=0.026, max_value=3.5, min_value=0.9, size=5,
+                    decimal=2)  # * 27 / 45 *
+    else:
+        c = '#5494DA'  # '#A986B5'
+        p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='#fcb2ab')
+        ax = p.plot(figsize=(8, 0.42* 27 / 45 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5,
+                    decimal=2) #
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -223,9 +240,13 @@ def plot_forest_for_med_organ(pvalue=0.05/459, star=True):
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/V15_COVID19/output/character/outcome/figure/organ/med/'
+    if datasite == 'oneflorida':
+        output_dir = r'../data/oneflorida/output/character/outcome/figure/organ/med/'
+    else:
+        output_dir = r'../data/V15_COVID19/output/character/outcome/figure/organ/med/'
+
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'med_hr_{}-p{:.3f}-hrGe1-nGe100.png'.format('all', pvalue), bbox_inches='tight', dpi=900)
+    plt.savefig(output_dir + 'med_hr_{}-p{:.3f}-hrGe1-nGe100.png'.format('all', pvalue), bbox_inches='tight', dpi=600)
     plt.savefig(output_dir + 'med_hr_{}-p{:.3f}-hrGe1-nGe100.pdf'.format('all', pvalue), bbox_inches='tight',
                 transparent=True)
     plt.show()
@@ -499,7 +520,8 @@ if __name__ == '__main__':
 
     # plot_forest_for_dx_organ(pvalue=0.05/137)
     # plot_forest_for_dx_organ(pvalue=0.05)
-    plot_forest_for_med_organ(pvalue=0.05/459)
+    # plot_forest_for_med_organ(pvalue=0.05/459)
+    plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='oneflorida')
 
     #
     # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all')

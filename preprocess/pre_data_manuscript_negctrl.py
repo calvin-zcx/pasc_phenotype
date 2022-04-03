@@ -1823,6 +1823,55 @@ def rwd_dx_and_pasc_comparison():
     return df, df_pasc_withrwd
 
 
+def rwd_dx_and_pascnegativecontrol_comparison():
+    df_ccsr = pd.read_csv(r'../data/mapping/DXCCSR_v2022-1/DXCCSR_v2022-1.CSV', dtype=str)
+    df_ccsr["'ICD-10-CM CODE'"] = df_ccsr["'ICD-10-CM CODE'"].apply(lambda x: x.strip("'"))
+    df_ccsr_sub = df_ccsr[["'ICD-10-CM CODE'",
+                           "'ICD-10-CM CODE DESCRIPTION'",
+                           "'CCSR CATEGORY 1'",
+                           "'CCSR CATEGORY 1 DESCRIPTION'"
+                           ]]
+    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_submit_withRWEV2.xlsx',
+                            sheet_name=r'code_list',
+                            usecols="A:N")
+    df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    print('df_pasc.shape', df_pasc.shape)
+    # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
+
+    df_icd = pd.read_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuNegNoCovid_ALL-4negctrl.csv',
+                         dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "dx code"})
+    df_icd['ratio'] = df_icd['no. in positive group'] / df_icd['no. in negative group']
+
+    df_icd = pd.merge(df_icd, df_ccsr_sub, left_on='dx code', right_on="'ICD-10-CM CODE'", how='left')
+
+    df = pd.merge(df_icd, df_pasc, left_on='dx code', right_on='ICD-10-CM Code', how='outer')
+    df.to_csv(r'../data/V15_COVID19/output/character/info_dx_cohorts_covid_4manuNegNoCovid_ALL_with_PASC-4negctrl.csv',
+              index=False)
+
+    df_pasc_withrwd = pd.merge(df_pasc, df_icd, left_on='ICD-10-CM Code', right_on='dx code', how='left')
+
+    for index, row in df_pasc_withrwd.iterrows():
+        icd = row['ICD-10-CM Code']
+        if pd.isna(row['dx code']):
+            _df = df_icd.loc[df_icd['dx code'].str.startswith(icd), :]
+            dx_code = ';'.join(_df['dx code'])
+            total = _df['total'].sum()
+            npos = _df['no. in positive group'].sum()
+            nneg = _df['no. in negative group'].sum()
+            ratio = npos / nneg
+            df_pasc_withrwd.loc[index, 'dx code'] = dx_code
+            df_pasc_withrwd.loc[index, 'total'] = total
+            df_pasc_withrwd.loc[index, 'no. in positive group'] = npos
+            df_pasc_withrwd.loc[index, 'no. in negative group'] = nneg
+            df_pasc_withrwd.loc[index, 'ratio'] = ratio
+
+    df_pasc_withrwd.to_csv(
+        r'../data/V15_COVID19/output/character/PASC-negativeControlList_Adult_Combined_List_with_covid_4manuNegNoCovid.csv',
+        index=False)
+
+    return df, df_pasc_withrwd
+
+
 if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
@@ -1830,7 +1879,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1840,4 +1889,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
     # df_med = enrich_med_rwd_info()
     # df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    df, df_pasc_withrwd = rwd_dx_and_pascnegativecontrol_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

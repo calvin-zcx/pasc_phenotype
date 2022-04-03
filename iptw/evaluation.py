@@ -505,10 +505,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
 
     ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                              event_of_interest=1,
-                                                             label="COVID+ Adjusted", weights=treated_w)
+                                                             label="Covid-19 Positive", weights=treated_w)
     ajf0w = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
                                                              event_of_interest=1,
-                                                             label="Control Adjusted", weights=controlled_w)
+                                                             label="Controls", weights=controlled_w)
     cif_1_w = ajf1w.predict(point_in_time).to_numpy()
     cif_0_w = ajf0w.predict(point_in_time).to_numpy()
     cifdiff_w = cif_1_w - cif_0_w
@@ -531,6 +531,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         # ajf0.plot(ax=ax)
         ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
         add_at_risk_counts(ajf1w, ajf0w, ax=ax)
+        plt.xlim([0, 180])
         plt.tight_layout()
 
         # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
