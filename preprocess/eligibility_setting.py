@@ -114,5 +114,10 @@ def _is_in_covid_medication(event_time, index_time):
 
 
 def _is_in_bmi_period(event_time, index_time):
-    # -365 -- + 1
+    # -365 -- + 7
     return BMI_LEFT <= (event_time - index_time).days <= BMI_RIGHT
+
+
+def _is_in_smoke_period(event_time, index_time):
+    # -365 -- + 7
+    return SMOKE_LEFT <= (event_time - index_time).days <= SMOKE_RIGHT
