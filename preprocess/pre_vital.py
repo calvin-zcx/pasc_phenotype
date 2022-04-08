@@ -123,7 +123,7 @@ def read_vital(input_file, output_file='', selected_patients={}):
     print('len(id_vital):', len(id_vital))
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
-    print('Time range of vital table of selected patients:', dfs["ADMIT_DATE"].describe(datetime_is_numeric=True))
+    print('Time range of vital table of selected patients:', dfs["MEASURE_DATE"].describe(datetime_is_numeric=True))
 
     # sort and de-duplicates
     print('sort dx list in id_vital by time')

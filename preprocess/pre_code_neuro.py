@@ -47,9 +47,55 @@ def add_rwd_to_neurologic_code_list():
     return df_combined
 
 
+def restore_index_neurologic_code_list():
+    df_neuro = pd.read_excel(r'../data/mapping/Neurologic PASC Code List_3_21-Chengxi.xlsx',
+                             sheet_name=r'Neurologic Codes')
+
+    df_help = pd.read_excel(r'../data/mapping/Neurologic PASC Code List_3_21.xlsx',
+                            sheet_name=r'Neurologic Codes').reset_index()
+    df_help.index = df_help.index+1
+    df_combined = pd.merge(df_neuro, df_help,
+                           left_on='ICD-10-CM Code',
+                           right_on="ICD-10-CM Code", how='left')
+    df_combined.to_csv(r'../data/mapping/Neurologic PASC Code List_3_21-Chengxi_helper4restoreIndex.csv')
+
+    return df_combined
+
+
+def add_rwd_to_respiratory_code_list():
+    df_rwd = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_submit_withRWEV3.xlsx',
+                           sheet_name=r'PASC Screening List')
+
+    df_res = pd.read_excel(r'../data/mapping/Respiratory PASC Code List_3_21-Chengxi.xlsx',
+                           sheet_name=r'Respiratory Code List')
+
+    df_combined = pd.merge(df_res, df_rwd[["ICD-10-CM Code",
+                                           "dx code Covid Cohort",
+                                           "total Covid Cohort",
+                                           "no. in positive group Covid Cohort",
+                                           "no. in negative group Covid Cohort",
+                                           "ratio Covid Cohort",
+                                           "dx code Covid Cohort NegNoCovid",
+                                           "total Covid Cohort NegNoCovid",
+                                           "no. in positive group Covid Cohort NegNoCovid",
+                                           "no. in negative group Covid Cohort NegNoCovid",
+                                           "ratio Covid Cohort NegNoCovid",
+                                           "dx code Oneflorida Covid Cohort NegNoCovid",
+                                           "total Oneflorida Covid Cohort NegNoCovid",
+                                           "no. in positive group Oneflorida Covid Cohort NegNoCovid",
+                                           "no. in negative group Oneflorida Covid Cohort NegNoCovid",
+                                           "ratio Oneflorida Covid Cohort NegNoCovid"]],
+                           left_on='ICD-10-CM Code',
+                           right_on="ICD-10-CM Code", how='left')
+    df_combined.to_csv(r'../data/mapping/Respiratory PASC Code List_3_21-Chengxi_helper.csv')
+
+    return df_combined
+
+
 if __name__ == '__main__':
     start_time = time.time()
 
-    add_rwd_to_neurologic_code_list()
-
+    # add_rwd_to_neurologic_code_list()
+    # add_rwd_to_respiratory_code_list()
+    restore_index_neurologic_code_list()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
