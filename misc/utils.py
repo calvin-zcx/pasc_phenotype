@@ -141,7 +141,7 @@ def load(filename, chunk=2):
         return data
     except Exception as e:
         print(e)
-        print('Try to load two parts:')
+        print('Try to load {} chunks:'.format(chunk))
         with open(filename + '-part1', 'rb') as f:
             data = pickle.load(f)
             print('load {}-part1 done, len:{}'.format(filename, len(data)))

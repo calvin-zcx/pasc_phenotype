@@ -32,6 +32,13 @@ BASELINE_MEDICATION_RIGHT = -7
 COVIDMED_LEFT = -14
 COVIDMED_RIGHT = 14
 
+BMI_LEFT = -365
+BMI_RIGHT = 7
+
+SMOKE_LEFT = -1095
+SMOKE_RIGHT = 7
+
+
 print('Adopted Eligibility Setting:')
 print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
 
@@ -55,6 +62,12 @@ print("...BASELINE_MEDICATION_RIGHT:", BASELINE_MEDICATION_RIGHT)
 
 print("...COVIDMED_LEFT:", COVIDMED_LEFT)
 print("...COVIDMED_RIGHT:", COVIDMED_RIGHT)
+
+print("...BMI_LEFT:", BMI_LEFT)
+print("...BMI_RIGHT:", BMI_RIGHT)
+
+print("...SMOKE_LEFT:", SMOKE_LEFT)
+print("...SMOKE_RIGHT:", SMOKE_RIGHT)
 
 
 def _is_in_baseline(event_time, index_time):
@@ -98,3 +111,13 @@ def _is_in_medication_baseline(event_time, index_time):
 def _is_in_covid_medication(event_time, index_time):
     # 14 days before or after the index event
     return COVIDMED_LEFT <= (event_time - index_time).days <= COVIDMED_RIGHT
+
+
+def _is_in_bmi_period(event_time, index_time):
+    # -365 -- + 7
+    return BMI_LEFT <= (event_time - index_time).days <= BMI_RIGHT
+
+
+def _is_in_smoke_period(event_time, index_time):
+    # -365 -- + 7
+    return SMOKE_LEFT <= (event_time - index_time).days <= SMOKE_RIGHT
