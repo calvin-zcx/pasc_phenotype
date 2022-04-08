@@ -899,8 +899,30 @@ def plot_heatmap_for_dx_subgroup_compare2data(database='V15_COVID19', type='cif'
     print()
 
 
+def add_smd_to_med_sheet(database='insight'):
+    if database == 'oneflorida':
+        df = pd.read_excel(
+            r'../data/oneflorida/output/character/outcome/MED-all/causal_effects_specific_med.xlsx',
+            sheet_name='med_selected')
+        df_aux = pd.read_csv(r'../data/oneflorida/output/character/outcome/MED-all/causal_effects_specific_med.csv',)
+
+    else:
+        df = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+            sheet_name='med')
+        df_aux = pd.read_csv(r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_med.csv',)
+
+    df = pd.merge(df, df_aux[['i', 'pasc', 'max smd', 'max smd iptw']], left_on='i', right_on='i', how='left')
+
+    df.to_csv('../debug/med-{}-with-smd.csv'.format(database))
+    print('Done')
+
+
 if __name__ == '__main__':
     start_time = time.time()
+    add_smd_to_med_sheet(database='V15_COVID19')
+    add_smd_to_med_sheet(database='oneflorida')
+
     # plot_forest_for_dx()
     # plot_forest_for_med()
     # combine_pasc_list()
@@ -924,22 +946,22 @@ if __name__ == '__main__':
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff',
     #                                                    month=6, pasc=True, star=True, pvalue=0.01)
 
-    for dataset in ['V15_COVID19', 'oneflorida']:
-        for month in [6]: #2, 3, 4, 5,
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
-                                                               star=True)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
-                                                               star=True, pvalue=0.01)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
-                                                               star=True, pvalue=0.05)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff-pvalue', month=month,
-                                                               pasc=True, star=True)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cif', month=month, pasc=True,
-                                                               star=True)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=month, pasc=True,
-                                                               star=True)
-            plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifneg', month=month, pasc=True,
-                                                               star=True)
+    # for dataset in ['V15_COVID19', 'oneflorida']:
+    #     for month in [2, 3, 4, 5]: #
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
+    #                                                            star=True)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
+    #                                                            star=True, pvalue=0.01)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,
+    #                                                            star=True, pvalue=0.05)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff-pvalue', month=month,
+    #                                                            pasc=True, star=True)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cif', month=month, pasc=True,
+    #                                                            star=True)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='hr', month=month, pasc=True,
+    #                                                            star=True)
+    #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifneg', month=month, pasc=True,
+    #                                                            star=True)
     #
 
     # plot_heatmap_for_dx_subgroup_compare2data(database='V15_COVID19', type='cifdiff', month=6, pasc=True, star=True)
