@@ -36,11 +36,15 @@ def parse_args():
     args.immun_file = r'../data/V15_COVID19/output/{}/immunization_{}.pkl'.format(args.dataset, args.dataset)
     # added 2022-02-20
     args.death_file = r'../data/V15_COVID19/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
+    # added 2022-04-08
+    args.vital_file = r'../data/V15_COVID19/output/{}/vital_{}.pkl'.format(args.dataset, args.dataset)
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
     args.covid_list_file = r'../data/V15_COVID19/covid_phenotype/COVID_ICD.xlsx'
 
-    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
+    # changed 2022-04-08 V2, add vital information in V2
+    # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovidV2_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -86,9 +90,11 @@ def read_preprocessed_data(args):
     id_obsgen = utils.load(args.obsgen_file)
     id_immun = utils.load(args.immun_file)
     id_death = utils.load(args.death_file)
+    id_vital = utils.load(args.vital_file)
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death
+    return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen,\
+           id_immun, id_death, id_vital
 
 
 def _eligibility_age(id_indexrecord, age_minimum_criterion):
@@ -541,7 +547,8 @@ def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
-    covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death = read_preprocessed_data(args)
+    covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, \
+    id_immun, id_death, id_vital = read_preprocessed_data(args)
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
@@ -585,7 +592,8 @@ def integrate_data_and_apply_eligibility(args):
             obsgen = id_obsgen[pid]
             immun = id_immun[pid]
             death = id_death.get(pid, [])
-            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death]
+            vital = id_vital.get(pid, [])
+            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death, vital]
         print('building data done, len(id_indexrecord):', len(id_indexrecord), 'len(data) ', len(data))
         return data
 
@@ -633,7 +641,8 @@ def integrate_data_and_apply_eligibility(args):
     # and rerun all the codes
 
     # __step : save data structure for later encoding. save last cohort
-    _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, id_immun, id_death]
+    _last_cohort_raw_data = [id_indexrecord, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen,
+                             id_immun, id_death, id_vital]
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return data, _last_cohort_raw_data
