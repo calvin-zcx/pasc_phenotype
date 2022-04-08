@@ -616,7 +616,7 @@ def integrate_data_and_apply_eligibility(args):
     id_indexrecord = _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set)
 
     data = _local_build_data(id_indexrecord)
-    utils.dump(data, args.output_file_covid)
+    utils.dump(data, args.output_file_covid, chunk=4)
 
     # # Notes for other potential cohorts:
     # #  Sensitivity 1: Applying EC. No (initial, or screened) PASC diagnoses in the baseline  --> healthy population
