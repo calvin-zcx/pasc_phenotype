@@ -258,7 +258,8 @@ def _encoding_bmi_and_smoking(vital_list, index_date):
     else:
         bmi = np.nan
 
-    # ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
+    # ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+    # 'BMI: >=30 obese ', 'BMI: missing']
     if pd.notna(bmi):
         if bmi < 18.5:
             encoding_bmi[0, 0] = 1
