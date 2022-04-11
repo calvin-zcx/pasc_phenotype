@@ -16,7 +16,7 @@ from collections import defaultdict
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='preprocess diagnosis')
+    parser = argparse.ArgumentParser(description='preprocess vital')
     parser.add_argument('--dataset', choices=['COL', 'MSHS', 'MONTE', 'NYU', 'WCM'], default='COL', help='site dataset')
     args = parser.parse_args()
 

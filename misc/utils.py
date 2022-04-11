@@ -96,14 +96,27 @@ def split_dict_data_and_dump(infile, chunk=4):
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
-def dump(data, filename, chunk=2):
+def dump(data, filename, chunk=2, chunk_must=False):
     print('Try to dump data to', filename)
     check_and_mkdir(filename)
     try:
-        # MemoryError for pickle.dump for a large or complex file
-        with open(filename, 'wb') as fo:
-            pickle.dump(data, fo)
-        print('Dump Done by pickle.dump! Saved as:', filename)
+        if not chunk_must:
+            # MemoryError for pickle.dump for a large or complex file
+            with open(filename, 'wb') as fo:
+                pickle.dump(data, fo)
+            print('Dump Done by pickle.dump! Saved as:', filename)
+        else:
+            print('Try to split file into chunk={} and dump'.format(chunk))
+            step = len(data) // chunk
+            for i in range(chunk):
+                left = i * step
+                right = (i + 1) * step
+                if i == (chunk - 1):
+                    right = len(data)
+                data_part = dict(list(data.items())[left:right])
+                with open(filename + '-part{}'.format(i + 1), 'wb') as fo:
+                    pickle.dump(data_part, fo)
+                    print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i + 1))
     except Exception as e:
         print(e)
         # print('Try to use joblib.dump(data, filename) and loading by joblib.load(filename)')
@@ -128,6 +141,7 @@ def dump(data, filename, chunk=2):
         # with open(filename+'-part2', 'wb') as fo:
         #     pickle.dump(data2, fo)
         #     print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
+    print('dump done!')
 
 
 def load(filename, chunk=2):
