@@ -251,7 +251,8 @@ def _encoding_bmi_and_smoking(vital_list, index_date):
             if pd.notna(tobacco):
                 tobacco_select = tobacco
 
-    if pd.notna(ht_select) and pd.notna(wt_select):
+    if pd.notna(ht_select) and pd.notna(wt_select) and utils.isfloat(ht_select) and utils.isfloat(wt_select) \
+            and (ht_select > 0) and (wt_select > 0):
         bmi = wt_select / (ht_select * ht_select) * 703.069
     elif pd.notna(bmi_select):
         bmi = bmi_select

@@ -261,6 +261,14 @@ def _parse_ndc_rxnorm_api(ndc):
     return rx, name
 
 
+def isfloat(num):
+    try:
+        float(num)
+        return True
+    except ValueError:
+        return False
+
+
 if __name__ == '__main__':
     start_time = time.time()
     # df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')
