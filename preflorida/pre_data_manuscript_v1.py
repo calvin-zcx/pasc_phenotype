@@ -29,9 +29,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid',
                                               'covid_4screen', 'covid_4screen_Covid+',
-                                              'covid_4manuscript', 'covid_4manuNegNoCovid', 'covid_4manuNegNoCovidV2'],
-                        default='covid_4manuNegNoCovidV2', help='cohorts')
-    parser.add_argument('--dataset', choices=['all', 'part12'], default='all', help='combined dataset')
+                                              'covid_4manuscript', 'covid_4manuNegNoCovid'],
+                        default='covid_4manuNegNoCovid', help='cohorts')
+    parser.add_argument('--dataset', choices=['all'], default='all', help='combined dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
 
@@ -227,66 +227,6 @@ def _encoding_yearmonth(index_date):
     return encoding
 
 
-def _encoding_bmi_and_smoking(vital_list, index_date):
-    # bmi_array = np.zeros((n, 5), dtype='int16')
-    # bmi_names = ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
-    # smoking_array = np.zeros((n, 4), dtype='int16')
-    # smoking_names = ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
-
-    ht_select = wt_select = bmi_select = smoking_select = tobacco_select = np.nan
-    encoding_bmi = np.zeros((1, 5), dtype='int')
-    encoding_smoke = np.zeros((1, 4), dtype='int')
-    for records in vital_list:
-        dx_date, ht, wt, ori_bmi, smoking, tobacco = records
-        if ecs._is_in_bmi_period(dx_date, index_date):
-            if pd.notna(ht):
-                ht_select = ht
-            if pd.notna(wt):
-                wt_select = wt
-            if pd.notna(ori_bmi):
-                bmi_select = ori_bmi
-
-        if ecs._is_in_smoke_period(dx_date, index_date):
-            if pd.notna(smoking):
-                smoking_select = smoking
-            if pd.notna(tobacco):
-                tobacco_select = tobacco
-
-    if pd.notna(ht_select) and pd.notna(wt_select) and utils.isfloat(ht_select) and utils.isfloat(wt_select) \
-            and (ht_select > 0) and (wt_select > 0):
-        bmi = wt_select / (ht_select * ht_select) * 703.069
-    elif pd.notna(bmi_select):
-        bmi = bmi_select
-    else:
-        bmi = np.nan
-
-    # ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
-    # 'BMI: >=30 obese ', 'BMI: missing']
-    if pd.notna(bmi):
-        if bmi < 18.5:
-            encoding_bmi[0, 0] = 1
-        elif bmi < 25:
-            encoding_bmi[0, 1] = 1
-        elif bmi < 30:
-            encoding_bmi[0, 2] = 1
-        else:
-            encoding_bmi[0, 3] = 1
-    else:
-        encoding_bmi[0, 4] = 1
-
-    # 'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing'
-    if smoking_select == '04' or tobacco_select == '02':
-        encoding_smoke[0, 0] = 1
-    elif (smoking_select in ('01', '02', '07', '08', '05')) or (tobacco_select == '01'):
-        encoding_smoke[0, 1] = 1
-    elif smoking_select == '03' or tobacco_select == '03':
-        encoding_smoke[0, 2] = 1
-    else:
-        encoding_smoke[0, 3] = 1
-
-    return encoding_bmi, encoding_smoke, bmi
-
-
 def _encoding_inpatient(dx_list, index_date):
     # inpatient status in acute phase
     flag = 0  # False
@@ -381,7 +321,7 @@ def _encoding_utilization(enc_list, index_date):
         else:
             encoding_update[0, 3 + i * 4] = 1
 
-    return encoding_update, encoding
+    return encoding_update
 
 
 def _encoding_index_period(index_date):
@@ -772,12 +712,12 @@ def build_query_1and2_matrix(args):
     # step 1: load encoding dictionary
     icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
     icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, ndc_rxnorm  = _load_mapping()
+    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, ndc_rxnorm = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     if args.dataset == 'all':
-        sites = ['part{}'.format(i) for i in range(1, 13)]
+        sites = ['part{}'.format(i) for i in range(1, 11)]
     else:
         sites = [args.dataset, ]
 
@@ -792,9 +732,10 @@ def build_query_1and2_matrix(args):
     print('Try to load: ', sites)
     for site in tqdm(sites):
         print('Loading: ', site)
-        input_file = r'../data/oneflorida/output/all/cohorts_{}_all.pkl-{}'.format(args.cohorts, site)
+        input_file = r'../data/oneflorida/output/{}/cohorts_{}_{}.pkl-{}'.format(
+            args.dataset, args.cohorts, args.dataset, site)
         print('Load cohorts pickle data file:', input_file)
-        # id_data = utils.load(input_file, chunk=4)
+        # id_data = utils.load(input_file)
         with open(input_file, 'rb') as f:
             id_data = pickle.load(f)
         print('Load done by pickle.load! len(data):', len(id_data),
@@ -804,7 +745,7 @@ def build_query_1and2_matrix(args):
         if args.positive_only:
             n = 0
             for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
+                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
                 flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
                 if flag:
                     n += 1
@@ -815,6 +756,7 @@ def build_query_1and2_matrix(args):
 
         pid_list = []
         site_list = []
+        zip_list = []
         covid_list = []
         indexdate_list = []  # newly add 2022-02-20
         hospitalized_list = []
@@ -825,22 +767,6 @@ def build_query_1and2_matrix(args):
         death_array = np.zeros((n, 2), dtype='int16')  # newly add 2022-02-20
         death_column_names = ['death', 'death t2e']
 
-        # newly add 2022-04-08
-        zip_list = []  # newly add 2022-04-08
-        age_list = []
-        adi_list = []
-        utilization_count_array = np.zeros((n, 4), dtype='int16')
-        utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
-        bmi_list = []
-        yearmonth_array = np.zeros((n, 23), dtype='int16')
-        yearmonth_column_names = [
-            "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
-            "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
-            "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
-            "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
-            "YM: November 2021", "YM: December 2021", "YM: January 2022"
-        ]
-        #
         age_array = np.zeros((n, 6), dtype='int16')
         age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
 
@@ -871,13 +797,14 @@ def build_query_1and2_matrix(args):
         index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
         #
 
-        # newly add 2022-04-08
-        bmi_array = np.zeros((n, 5), dtype='int16')
-        bmi_names = ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight',
-                     'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
-
-        smoking_array = np.zeros((n, 4), dtype='int16')
-        smoking_names = ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
+        # yearmonth_array = np.zeros((n, 23), dtype='int16')
+        # yearmonth_column_names = [
+        #     "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
+        #     "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
+        #     "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
+        #     "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
+        #     "YM: November 2021", "YM: December 2021", "YM: January 2022"
+        # ]
 
         # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards,
         # due to threshold >= 2 issue
@@ -942,13 +869,10 @@ def build_query_1and2_matrix(args):
                                    ['med-t2e@' + x for x in rxing_encoding.keys()] + \
                                    ['med-base@' + x for x in rxing_encoding.keys()]
 
-        column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
-                        'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
-                       ['zip', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
-                       age_column_names + \
+        column_names = ['patid', 'site', 'zip', 'covid', 'index date', 'hospitalized',
+                        'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + age_column_names + \
                        gender_column_names + race_column_names + hispanic_column_names + \
                        social_column_names + utilization_column_names + index_period_names + \
-                       bmi_names + smoking_names + \
                        dx_column_names + med_column_names + covidmed_column_names + \
                        outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
 
@@ -961,7 +885,7 @@ def build_query_1and2_matrix(args):
         for pid, item in tqdm(id_data.items(), total=len(
                 id_data), mininterval=10):
             # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-            index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
+            index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death = item
             flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
@@ -979,7 +903,7 @@ def build_query_1and2_matrix(args):
 
             pid_list.append(pid)
             site_list.append(site)
-
+            zip_list.append(zipcode)
             covid_list.append(flag)
             indexdate_list.append(index_date)
 
@@ -998,14 +922,6 @@ def build_query_1and2_matrix(args):
             # encode death
             death_array[i, :] = _encoding_death(death, index_date)
 
-            # newly add 2022-04-08
-            zip_list.append(zipcode)
-            age_list.append(index_age)
-            adi_list.append(nation_adi)
-            # utilization count, postponed to below
-            # bmi_list, postponed to below
-            yearmonth_array[i, :] = _encoding_yearmonth(index_date)
-
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age)
             gender_array[i] = _encoding_gender(gender)
@@ -1013,15 +929,14 @@ def build_query_1and2_matrix(args):
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             #
             social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
-            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(enc, index_date)
+            utilization_array[i, :] = _encoding_utilization(enc, index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             #
-
-            # encoding bmi and smoking
-            bmi_array[i, :], smoking_array[i, :], bmi = _encoding_bmi_and_smoking(vital, index_date)
-            bmi_list.append(bmi)
+            # yearmonth_array[i, :] = _encoding_yearmonth(index_date)
 
             # encoding query 2 information
+            # because CDC codes cover both ICD-9/10, thus, can use original codes before translated into ICD-10
+            # after translated to ICD-10 should also be OK
             dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date, procedure)
             med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
@@ -1088,6 +1003,7 @@ def build_query_1and2_matrix(args):
         #   step 4: build pandas, column, and dump
         data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                 np.asarray(site_list).reshape(-1, 1),
+                                np.asarray(zip_list).reshape(-1, 1),
                                 np.array(covid_list).reshape(-1, 1).astype(int),
                                 np.asarray(indexdate_list).reshape(-1, 1),
                                 np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
@@ -1095,12 +1011,6 @@ def build_query_1and2_matrix(args):
                                 np.array(criticalcare_list).reshape(-1, 1).astype(int),
                                 np.array(maxfollowtime_list).reshape(-1, 1),
                                 death_array,
-                                np.asarray(zip_list).reshape(-1, 1),
-                                np.asarray(age_list).reshape(-1, 1),
-                                np.asarray(adi_list).reshape(-1, 1),
-                                utilization_count_array,
-                                np.asarray(bmi_list).reshape(-1, 1),
-                                yearmonth_array,
                                 age_array,
                                 gender_array,
                                 race_array,
@@ -1108,8 +1018,6 @@ def build_query_1and2_matrix(args):
                                 social_array,
                                 utilization_array,
                                 index_period_array,
-                                bmi_array,
-                                smoking_array,
                                 dx_array,
                                 med_array,
                                 covidmed_array,
@@ -1160,7 +1068,8 @@ def build_query_1and2_matrix(args):
 
     # Warning: the covid medication part is not boolean
     # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+    # add boolean operation 2022-03-13
+    df_bool.loc[:, covidmed_column_names] = (df_bool.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
     # can be done later
 
     selected_cols = [x for x in df_bool.columns if
@@ -1270,7 +1179,7 @@ def rwd_dx_and_pasc_comparison():
 
 
 if __name__ == '__main__':
-    # python pre_data_manuscript.py --dataset all --cohorts covid_4manuNegNoCovidV2 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovidV2_all1-12partsV2.txt
+    # python pre_data_manuscript.py --dataset all --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid_all1-10partsV2.txt
 
     start_time = time.time()
     args = parse_args()
