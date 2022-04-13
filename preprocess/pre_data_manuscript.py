@@ -45,11 +45,11 @@ def parse_args():
         args.cohorts,
         args.dataset)
 
-    args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}.csv'.format(
+    args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}-V2.csv'.format(
         args.cohorts,
         args.dataset)
 
-    args.output_dx_info = r'../data/V15_COVID19/output/character/info_dx_cohorts_{}_{}.csv'.format(
+    args.output_dx_info = r'../data/V15_COVID19/output/character/info_dx_cohorts_{}_{}-V2.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -745,6 +745,31 @@ def _update_counter(dict3, key, flag):
         dict3[key][2] += 1
 
 
+def _update_counter_v2(dict3, key, flag, is_incident=False):
+    if is_incident:
+        if key in dict3:
+            dict3[key][3] += 1
+        else:
+            # total_prevalent, pos_pre, negative_pre,  total_incident, pos_incident, negative_incident
+            dict3[key] = [0, 0, 0, 1, 0, 0]
+
+        if flag:
+            dict3[key][4] += 1
+        else:
+            dict3[key][5] += 1
+    else:  # is prevalence
+        if key in dict3:
+            dict3[key][0] += 1
+        else:
+            # total_prevalent, pos_pre, negative_pre,  total_incident, pos_incident, negative_incident
+            dict3[key] = [1, 0, 0, 0, 0, 0]
+
+        if flag:
+            dict3[key][1] += 1
+        else:
+            dict3[key][2] += 1
+
+
 def build_query_1and2_matrix(args):
     start_time = time.time()
     print('In build_query_1and2_matrix...')
@@ -1021,16 +1046,22 @@ def build_query_1and2_matrix(args):
             # count additional information
             # in follow-up, each person count once
             _dx_set = set()
+            _dx_set_base = set()
             for i_dx in dx:
                 dx_t, icd, dx_type, enc_type = i_dx
                 icd = icd.replace('.', '').upper()
                 if ecs._is_in_followup(dx_t, index_date):
                     _dx_set.add(icd)
+                if ecs._is_in_baseline(dx_t, index_date):
+                    _dx_set_base.add(icd)
 
             for i_dx in _dx_set:
-                _update_counter(dx_count, i_dx, flag)
+                _update_counter_v2(dx_count, i_dx, flag, is_incident=False)
+                if i_dx not in _dx_set_base:
+                    _update_counter_v2(dx_count, i_dx, flag, is_incident=True)
 
             _med_set = set()
+            _med_set_base = set()
             for i_med in med:
                 t = i_med[0]
                 rx = i_med[1]
@@ -1041,8 +1072,17 @@ def build_query_1and2_matrix(args):
                     else:
                         _med_set.add(rx)
 
+                if ecs._is_in_medication_baseline(t, index_date):
+                    if rx in rxnorm_ing:
+                        _added = rxnorm_ing[rx]
+                        _med_set_base.update(_added)
+                    else:
+                        _med_set_base.add(rx)
+
             for i_med in _med_set:
-                _update_counter(med_count, i_med, flag)
+                _update_counter_v2(med_count, i_med, flag, is_incident=False)
+                if i_med not in _med_set_base:
+                    _update_counter_v2(med_count, i_med, flag, is_incident=True)
 
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -1094,10 +1134,14 @@ def build_query_1and2_matrix(args):
         # end iterate sites
 
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
-                                         columns=['total', 'no. in positive group', 'no. in negative group'])
+                                         columns=['total', 'no. in positive group', 'no. in negative group',
+                                                  'incident total', 'incident no. in positive group',
+                                                  'incident no. in negative group'])
     dx_count_df.to_csv(args.output_dx_info)
     med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
-                                          columns=['total', 'no. in positive group', 'no. in negative group'])
+                                          columns=['total', 'no. in positive group', 'no. in negative group',
+                                                   'incident total', 'incident no. in positive group',
+                                                   'incident no. in negative group'])
     med_count_df.to_csv(args.output_med_info)
 
     df_data_all_sites = pd.concat(data_all_sites)
