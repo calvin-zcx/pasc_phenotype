@@ -1351,7 +1351,7 @@ if __name__ == '__main__':
     args = parse_args()
     # utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
 
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1361,5 +1361,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # df_med = enrich_med_rwd_info()
-    df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    # df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
