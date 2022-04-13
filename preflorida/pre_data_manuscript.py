@@ -408,8 +408,15 @@ def _encoding_index_period(index_date):
 
 
 def _is_in_code_set_with_wildchar(code, code_set, code_set_wild):
-    if code in code_set:
-        return True
+    # if code in code_set:
+    #     return True
+    # updated 2022-04-13  from exact match to prefix match
+    for i in range(len(code)):
+        pre = code[:(len(code) - i)]
+        if pre in code_set:
+            # if pre != code:
+            #     print(pre, code)
+            return True
     for pattern in code_set_wild:
         if fnmatch.fnmatchcase(code, pattern):
             return True
@@ -1281,21 +1288,25 @@ def rwd_dx_and_pasc_comparison():
                            "'CCSR CATEGORY 1'",
                            "'CCSR CATEGORY 1 DESCRIPTION'"
                            ]]
-    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
+    # df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx',
+    #                         sheet_name=r'PASC Screening List',
+    #                         usecols="A:N")
+    df_pasc = pd.read_excel(r'../data/mapping/PASC_Adult_Combined_List_submit_withRWEV3.xlsx',
                             sheet_name=r'PASC Screening List',
-                            usecols="A:N")
+                            usecols="A:O")
     df_pasc['ICD-10-CM Code'] = df_pasc['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
     print('df_pasc.shape', df_pasc.shape)
     # pasc_codes = df_pasc_list['ICD-10-CM Code'].str.upper().replace('.', '', regex=False)  # .to_list()
 
-    df_icd = pd.read_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovid_all.csv',
+    df_icd = pd.read_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovidV2_all-V2.csv',
                          dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "dx code"})
     df_icd['ratio'] = df_icd['no. in positive group'] / df_icd['no. in negative group']
+    df_icd['incident ratio'] = df_icd['incident no. in positive group'] / df_icd['incident no. in negative group']
 
     df_icd = pd.merge(df_icd, df_ccsr_sub, left_on='dx code', right_on="'ICD-10-CM CODE'", how='left')
 
     df = pd.merge(df_icd, df_pasc, left_on='dx code', right_on='ICD-10-CM Code', how='outer')
-    df.to_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovid_all_with_PASC.csv',
+    df.to_csv(r'../data/oneflorida/output/character/info_dx_cohorts_covid_4manuNegNoCovidV2_all_with_PASC-V2.csv',
               index=False)
 
     df_pasc_withrwd = pd.merge(df_pasc, df_icd, left_on='ICD-10-CM Code', right_on='dx code', how='left')
@@ -1317,8 +1328,17 @@ def rwd_dx_and_pasc_comparison():
             df_pasc_withrwd.loc[index, 'no. in negative group'] = nneg
             df_pasc_withrwd.loc[index, 'ratio'] = ratio
 
+            total_inc = _df['incident total'].sum()
+            npos_inc = _df['incident no. in positive group'].sum()
+            nneg_inc = _df['incident no. in negative group'].sum()
+            ratio_inc = npos_inc / nneg_inc
+            df_pasc_withrwd.loc[index, 'incident total'] = total_inc
+            df_pasc_withrwd.loc[index, 'incident no. in positive group'] = npos_inc
+            df_pasc_withrwd.loc[index, 'incident no. in negative group'] = nneg_inc
+            df_pasc_withrwd.loc[index, 'incident ratio'] = ratio_inc
+
     df_pasc_withrwd.to_csv(
-        r'../data/oneflorida/output/character/PASC_Adult_Combined_List_with_covid_4manuNegNoCovid.csv',
+        r'../data/oneflorida/output/character/PASC_Adult_Combined_List_with_covid_4manuNegNoCovidV2.csv',
         index=False)
 
     return df, df_pasc_withrwd
@@ -1331,7 +1351,7 @@ if __name__ == '__main__':
     args = parse_args()
     # utils.split_dict_data_and_dump(r'../data/oneflorida/output/all/cohorts_covid_4manuNegNoCovid_all.pkl', chunk=20)
 
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    # df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
@@ -1341,5 +1361,5 @@ if __name__ == '__main__':
     # de_novo_medication_analyse_selected_and_iptw(cohorts='covid_4screen_Covid+', dataset='ALL', severity='')
 
     # df_med = enrich_med_rwd_info()
-    # df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
+    df_dx, df_pasc_withrwd = rwd_dx_and_pasc_comparison()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
