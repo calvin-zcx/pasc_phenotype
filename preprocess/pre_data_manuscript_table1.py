@@ -1180,7 +1180,7 @@ def table1_cohorts_characterization_analyse_V2(cohorts='covid_4manuNegNoCovidV2'
         cohorts, dataset)
 
     print('Try to load:', in_file)
-    df_data = pd.read_csv(in_file, dtype={'patid': str}, nrows=10000)  # , parse_dates=['index_date', 'birth_date']
+    df_data = pd.read_csv(in_file, dtype={'patid': str})  # , parse_dates=['index_date', 'birth_date']
 
     df_pos = df_data.loc[df_data["covid"] == 1, :]
     df_neg = df_data.loc[df_data["covid"] == 0, :]
@@ -1262,9 +1262,9 @@ def table1_cohorts_characterization_analyse_V2(cohorts='covid_4manuNegNoCovidV2'
     # ADI
     row_names.append('Median area deprivation index (IQR) — rank')
     records.append([
-        _quantile_str(df_pos['nation_adi']),
-        _quantile_str(df_neg['nation_adi']),
-        _smd(df_pos['nation_adi'], df_neg['nation_adi'])
+        _quantile_str(df_pos['adi']),
+        _quantile_str(df_neg['adi']),
+        _smd(df_pos['adi'], df_neg['adi'])
     ])
 
     # follow-up
