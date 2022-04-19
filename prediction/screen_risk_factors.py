@@ -182,6 +182,13 @@ def risk_factor_of_pasc(args, pasc_name, dump=True):
     model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
         cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
 
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'Female', 'Male'], pre='ageSex-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'Female', 'Male', 'hospitalized', 'ventilation', 'criticalcare'], pre='ageSexAcute-')
     if dump:
         utils.check_and_mkdir(args.out_dir)
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(

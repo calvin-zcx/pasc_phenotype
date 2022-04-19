@@ -31,7 +31,7 @@ class CoxPrediction:
             if self.learner == 'COX':
                 self.paras_grid = {
                     'l1_ratio': [0],  # 'l2',
-                    'penalizer': 10 ** np.arange(-3, 3, 0.25),
+                    'penalizer': 10 ** np.arange(-3, 3, 0.5),
                 }
 
             else:
@@ -145,6 +145,38 @@ class CoxPrediction:
         print('Best configuration: ', self.best_hyper_paras)
         print('Best TEST DATA fit mean(std) ', self.best_fit, 'k-fold details:', self.best_fit_k_folds_detail)
         return describe
+
+    def uni_variate_risk(self, cov_df_ori, T, E, adjusted_col=[], pre=''):
+        start_time = time.time()
+        if pre == '':
+            if len(adjusted_col) == 0:
+                pre = 'uni-'
+            else:
+                pre = 'uni-adjust-'
+        add_col = [pre + x for x in ['HR', 'CI-95% lower-bound', 'CI-95% upper-bound', 'p-Value']]
+
+        for col in add_col:
+            self.risk_results[col] = 0
+
+        cov_df = cov_df_ori.copy()
+        cov_df['T'] = T
+        cov_df['E'] = E
+
+        for index, row in self.risk_results.iterrows():
+
+            if len(adjusted_col) == 0:
+                cox_data = cov_df[['T', 'E', index]]
+                model = CoxPHFitter().fit(cox_data, 'T', 'E')
+            else:
+                cox_data = cov_df[['T', 'E', index] + [x for x in adjusted_col if x != index]]
+                model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
+
+            HR = model.hazard_ratios_[index]
+            CI = np.exp(model.confidence_intervals_.values.reshape(-1))
+            PVal = model.summary.p[index]
+            self.risk_results.loc[index, add_col] = [HR, CI[0], CI[1], PVal]
+
+        print('Done uni_varate_risk! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     # def predict_ps(self, X):
     #     pred_ps = self.best_model.predict_proba(X)[:, 1]
