@@ -194,6 +194,7 @@ def risk_factor_of_pasc(args, pasc_name, dump=True):
 
 if __name__ == '__main__':
     # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_risk_factors-insight-elix.txt
+    # python screen_risk_factors.py --dataset OneFlorida --encode elix 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix.txt
 
     start_time = time.time()
     args = parse_args()
