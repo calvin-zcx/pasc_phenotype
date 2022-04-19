@@ -1,4 +1,7 @@
 import os
+import sys
+# for linux env.
+sys.path.insert(0, '..')
 import pandas as pd
 import numpy as np
 import argparse
@@ -161,6 +164,8 @@ def risk_factor_of_pasc(args, pasc_name):
 
 
 if __name__ == '__main__':
+    # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_risk_factors-insight-elix.txt
+
     start_time = time.time()
     args = parse_args()
 
