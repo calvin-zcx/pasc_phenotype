@@ -170,8 +170,17 @@ if __name__ == '__main__':
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
-    model = risk_factor_of_pasc(args, pasc_name)
+    causal_res = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx',
+                               sheet_name='diagnosis')
+    filtered_data = causal_res.loc[(causal_res['hr-w'] > 1) & (causal_res['hr-w-p'] < 0.01), :]
+    filtered_data = filtered_data.reset_index(drop=True)
+    pasc_list = list(filtered_data['pasc'])
+
+    idx = 0
+    for selected_PASC in pasc_list:  # ['Neurocognitive disorders']:  # , 'Diabetes mellitus with complication']:  # tqdm(pasc_list):
+        pasc_name = selected_PASC.replace('/', '_')
+        # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
+        model = risk_factor_of_pasc(args, pasc_name)
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
