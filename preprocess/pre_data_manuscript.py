@@ -2027,9 +2027,9 @@ if __name__ == '__main__':
 
     # enrich_med_rwd_info_4_neruo_and_pulmonary()
     #
-    # start_time = time.time()
-    # args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    start_time = time.time()
+    args = parse_args()
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])

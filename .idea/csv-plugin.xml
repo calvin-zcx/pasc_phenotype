@@ -10,6 +10,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\V15_COVID19\covid_phenotype\PASC_Lab_LOINC_frquency_in_data.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\V15_COVID19\output\character\info_dx_cohorts_covid_4manuNegNoCovid_ALL.csv">
           <value>
             <Attribute>
@@ -18,6 +25,41 @@
           </value>
         </entry>
         <entry key="\data\V15_COVID19\output\character\info_dx_cohorts_covid_4manuscript_ALL.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\V15_COVID19\output\character\info_medication_cohorts_covid_4manuNegNoCovid_ALL_enriched.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\V15_COVID19\output\character\info_medication_cohorts_covid_4manuscript_ALL_enriched-4round1.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\V15_COVID19\output\character\info_medication_cohorts_covid_4manuscript_ALL_enriched.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\V15_COVID19\output\character\info_medication_cohorts_covid_4manuscript_ALL_enriched_4round2.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\V15_COVID19\output\character\rxrnom_ingredient_count\info_medication_cohorts_covid_4manuscript_ALL_enriched.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
@@ -38,6 +80,13 @@
             </Attribute>
           </value>
         </entry>
+        <entry key="\data\mapping\info_medication_cohorts_covid_4manuNegNoCovid_ALL_enriched.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
         <entry key="\data\mapping\rxnorm_atc_mapping_from_NIH_UMLS_full_01032022-playwith.csv">
           <value>
             <Attribute>
@@ -46,6 +95,41 @@
           </value>
         </entry>
         <entry key="\data\mapping\rxnorm_atc_mapping_from_NIH_UMLS_full_01032022.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\oneflorida\all\PRESCRIBING.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\oneflorida\covid_database\PRESCRIBING.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\oneflorida\main_database\LAB_RESULT_CM.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\oneflorida\main_database\PRESCRIBING.csv">
+          <value>
+            <Attribute>
+              <option name="separator" value="," />
+            </Attribute>
+          </value>
+        </entry>
+        <entry key="\data\oneflorida\output\character\info_medication_cohorts_covid_4manuNegNoCovid_all_enriched.csv">
           <value>
             <Attribute>
               <option name="separator" value="," />
