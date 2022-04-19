@@ -166,7 +166,10 @@ class CoxPrediction:
 
             if len(adjusted_col) == 0:
                 cox_data = cov_df[['T', 'E', index]]
-                model = CoxPHFitter().fit(cox_data, 'T', 'E')
+                try:
+                    model = CoxPHFitter().fit(cox_data, 'T', 'E')
+                except:
+                    model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
             else:
                 cox_data = cov_df[['T', 'E', index] + [x for x in adjusted_col if x != index]]
                 model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
