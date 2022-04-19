@@ -1,5 +1,6 @@
 import os
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import pandas as pd
@@ -15,6 +16,7 @@ from sklearn.metrics import roc_auc_score, confusion_matrix, precision_recall_fs
 import tqdm as tqdm
 from datetime import datetime
 import functools
+
 print = functools.partial(print, flush=True)
 from misc import utils
 from lifelines import KaplanMeierFitter, CoxPHFitter, AalenJohansenFitter
@@ -65,18 +67,27 @@ def collect_feature_columns(args, df):
     col_names = []
     col_names += ['hospitalized', 'ventilation', 'criticalcare']
 
-    col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-    col_names += ['Female', 'Male']  # , 'Other/Missing']
-    col_names += ['Asian', 'Black or African American', 'White', 'Other']  # , 'Missing']
+    # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+    col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
+
+    # col_names += ['Female', 'Male', 'Other/Missing']
+    col_names += ['Female', 'Male']
+
+    # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+    col_names += ['Asian', 'Black or African American', 'White', 'Other']
+
     col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
-    col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
-                  'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
-                  'outpatient visits >=5', 'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
-                  'emergency visits >=5']
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
+    #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
+    #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
+    col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
+                  'outpatient visits 0', 'outpatient visits 1-4', 'outpatient visits >=5',
+                  'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
 
-    col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
-                  'ADI80-89', 'ADI90-100']
+    # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
+    #               'ADI80-89', 'ADI90-100']
+    col_names += ['ADI1-19', 'ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100']
 
     col_names += ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
                   'BMI: >=30 obese ', 'BMI: missing']
@@ -89,7 +100,7 @@ def collect_feature_columns(args, df):
                   'num_Comorbidity=4', 'num_Comorbidity>=5']
 
     if args.encode == 'icd_med':
-        col_names += list(df.columns)[df.columns.get_loc('death t2e') + 1:-1]
+        col_names += list(df.columns)[df.columns.get_loc('death t2e') + 1:df.columns.get_loc('label')]
     else:
         col_names += ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                       "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
@@ -114,21 +125,36 @@ def collect_feature_columns(args, df):
     return col_names
 
 
-def risk_factor_of_pasc(args, pasc_name):
-    infile = args.data_dir + pasc_name + '_{}'.format('dx_med_' if args.encode == 'icd_med' else '') + args.dataset + '.csv'
+def pre_transform_feature(df):
+    # col_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
+    #              'ADI80-89', 'ADI90-100']
+    df['ADI1-19'] = (df['ADI1-9'] + df['ADI10-19'] >= 1).astype('int')
+    df['ADI20-39'] = (df['ADI20-29'] + df['ADI30-39'] >= 1).astype('int')
+    df['ADI40-59'] = (df['ADI40-49'] + df['ADI50-59'] >= 1).astype('int')
+    df['ADI60-79'] = (df['ADI60-69'] + df['ADI70-79'] >= 1).astype('int')
+    df['ADI80-100'] = (df['ADI80-89'] + df['ADI90-100'] >= 1).astype('int')
+
+    df['75+ years'] = (df['75-<85 years'] + df['85+ years'] >= 1).astype('int')
+
+    df['inpatient visits 1-4'] = (df['inpatient visits 1-2'] + df['inpatient visits 3-4'] >= 1).astype('int')
+    df['outpatient visits 1-4'] = (df['outpatient visits 1-2'] + df['outpatient visits 3-4'] >= 1).astype('int')
+    df['emergency visits 1-4'] = (df['emergency visits 1-2'] + df['emergency visits 3-4'] >= 1).astype('int')
+
+    return df
+
+
+def risk_factor_of_pasc(args, pasc_name, dump=True):
+    infile = args.data_dir + pasc_name + '_{}'.format(
+        'dx_med_' if args.encode == 'icd_med' else '') + args.dataset + '.csv'
     print('In risk_factor_of_pasc:')
     pasc = pasc_name.replace('_', '/')
     print('PASC:', pasc, 'Infile:', infile)
 
     df = pd.read_csv(infile)
     print('df.shape:', df.shape)
-
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
     # df_label = df['covid']
-    # covs_columns = [x for x in
-    #                 list(df.columns)[
-    #                 df.columns.get_loc('20-<40 years'):(df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
-    #                 if not x.startswith('YM:')
-    #                 ]
 
     covs_columns = collect_feature_columns(args, df)
 
@@ -156,9 +182,12 @@ def risk_factor_of_pasc(args, pasc_name):
     model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
         cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
 
-    utils.check_and_mkdir(args.out_dir)
-    model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(args.out_dir + pasc_name + '-riskFactor.csv')
-    model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(args.out_dir + pasc_name + '-modeSelection.csv')
+    if dump:
+        utils.check_and_mkdir(args.out_dir)
+        model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
+            args.out_dir + pasc_name + '-riskFactor.csv')
+        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+            args.out_dir + pasc_name + '-modeSelection.csv')
 
     return model
 
@@ -174,6 +203,8 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
+    # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
+    # model = risk_factor_of_pasc(args, pasc_name, dump=False)
 
     causal_res = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx',
                                sheet_name='diagnosis')
@@ -184,8 +215,6 @@ if __name__ == '__main__':
     idx = 0
     for selected_PASC in pasc_list:  # ['Neurocognitive disorders']:  # , 'Diabetes mellitus with complication']:  # tqdm(pasc_list):
         pasc_name = selected_PASC.replace('/', '_')
-        # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
         model = risk_factor_of_pasc(args, pasc_name)
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
