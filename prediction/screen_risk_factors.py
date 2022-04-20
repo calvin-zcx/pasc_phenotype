@@ -13,7 +13,7 @@ import ast
 from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import roc_auc_score, confusion_matrix, precision_recall_fscore_support
-import tqdm as tqdm
+from tqdm import tqdm
 from datetime import datetime
 import functools
 
@@ -24,6 +24,7 @@ from lifelines.statistics import survival_difference_at_fixed_point_in_time_test
 from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
+import matplotlib.pyplot as plt
 
 
 def parse_args():
@@ -49,9 +50,9 @@ def parse_args():
 
     # More args
     if args.dataset == 'INSIGHT':
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
     elif args.dataset == 'OneFlorida':
-        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
     else:
         raise ValueError
 
@@ -74,6 +75,120 @@ def read_all_pos_neg():
     df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
     # because a patid id may occur in multiple sites. patid were site specific
     print('df.shape:', df.shape)
+
+
+def read_all_positive():
+    print('Load data  file:', args.data_file)
+    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    # df = df.loc[(df['covid'] == 1), :]
+    # df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
+    print('df.shape:', df.shape)
+    print('All Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
+
+    # add number of comorbidity as features
+    n_comor = df[[x for x in df.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]].sum(axis=1)
+    n_comor_cols = ['num_Comorbidity=0', 'num_Comorbidity=1', 'num_Comorbidity=2',
+                    'num_Comorbidity=3', 'num_Comorbidity=4', 'num_Comorbidity>=5']
+    print('len(n_comor > 0)', (n_comor > 0).sum())
+    for i in [0, 1, 2, 3, 4, 5]:
+        col = n_comor_cols[i]
+        print(i, col)
+        df[col] = 0
+        if i < 5:
+            df.loc[n_comor == i, col] = 1
+        else:
+            df.loc[n_comor >= 5, col] = 1
+    print('After add number of comorbidities df.shape:', df.shape)
+
+    # add selected incident PASC flag
+    df_causal = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
+    selected_pasc_list = df_causal.loc[df_causal['selected'] == 1, 'pasc']
+    print('len(selected_pasc_list)', len(selected_pasc_list))
+    print(selected_pasc_list)
+
+    exclude_DX_list = {
+        'Neurocognitive disorders': ['DX: Dementia'],
+        'Diabetes mellitus with complication': ['DX: Diabetes Type 2'],
+        'Chronic obstructive pulmonary disease and bronchiectasis': ['DX: Chronic Pulmonary Disorders', 'DX: COPD'],
+        'Circulatory signs and symptoms': ['DX: Arrythmia'],
+        'Anemia': ['DX: Anemia'],
+        'Heart failure': ["DX: Congestive Heart Failure"]
+    }
+
+    for pasc in selected_pasc_list:
+        flag = df['dx-out@' + pasc] - df['dx-base@' + pasc]
+        if pasc in exclude_DX_list:
+            ex_DX_list = exclude_DX_list[pasc]
+            print(pasc, 'further exclude', ex_DX_list)
+            for ex_DX in ex_DX_list:
+                flag -= df[ex_DX]
+
+        df['flag@'+pasc] = (flag > 0).astype('int')
+
+    n_pasc_series = df[[x for x in df.columns if x.startswith('flag@')]].sum(axis=1)
+    df['pasc-count'] = n_pasc_series
+    df['pasc-flag'] = (n_pasc_series > 0).astype('int')
+    df['pasc-min-t2e'] = 180
+
+    # t2e_col = ['dx-t2e@' + x for x in selected_pasc_list]
+    flag_col = ['flag@' + x for x in selected_pasc_list]
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        npasc = rows['pasc-count']
+        if npasc > 0:
+            pasc_flag_cols = list(rows[flag_col][rows[flag_col] > 0].index)
+            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+            t2e = rows[pasc_t2e_cols].min()
+            df.loc[index, 'pasc-min-t2e'] = t2e
+    print('Add selected incident PASC flag done!')
+
+    # considering death as competing risk
+    # death_flag = df['death']
+    death_t2e = df['death t2e']
+    df.loc[(death_t2e == df['pasc-min-t2e']), 'pasc-flag'] = 2
+
+    ajf1 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['Female'] == 1, 'pasc-min-t2e'],
+                                                            df.loc[df['Female'] == 1, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label='Female')
+    ajf0 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['Male'] == 1, 'pasc-min-t2e'],
+                                                            df.loc[df['Male'] == 1, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label="Male")
+
+    ajf1 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['hospitalized'] == 0, 'pasc-min-t2e'],
+                                                            df.loc[df['hospitalized'] == 0, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label='outpatient')
+    ajf2 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['hospitalized'] == 1, 'pasc-min-t2e'],
+                                                            df.loc[df['hospitalized'] == 1, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label='inpatient')
+    ajf3 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['criticalcare'] == 0, 'pasc-min-t2e'],
+                                                            df.loc[df['criticalcare'] == 0, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label='criticalcare')
+    ajf4 = AalenJohansenFitter(calculate_variance=True).fit(df.loc[df['ventilation'] == 1, 'pasc-min-t2e'],
+                                                            df.loc[df['ventilation'] == 1, 'pasc-flag'],
+                                                            event_of_interest=1,
+                                                            label="ventilation")
+
+    ax = plt.subplot(111)
+    # ajf1.plot(ax=ax)
+    ajf1.plot(ax=ax, loc=slice(0., 180))  # 0, 180
+    # ajf0.plot(ax=ax)
+    ajf2.plot(ax=ax, loc=slice(0., 180))
+    ajf3.plot(ax=ax, loc=slice(0., 180))
+    ajf4.plot(ax=ax, loc=slice(0., 180))
+
+    add_at_risk_counts(ajf0, ajf1, ajf2, ajf3, ax=ax)
+    plt.xlim([0, 180])
+    plt.tight_layout()
+    plt.show()
+
+    # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
+
+    # plt.title(title, fontsize=12)
+    return df
 
 
 def collect_feature_columns(args, df):
@@ -224,7 +339,7 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    read_all_pos_neg()
+    df = read_all_positive()
 
     # # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
     # # model = risk_factor_of_pasc(args, pasc_name, dump=False)
