@@ -48,9 +48,13 @@ def parse_args():
     args = parser.parse_args()
 
     # More args
-    # args.data_file = r'../data/{}/output/character/matrix_cohorts_covid_4manuNegNoCovid_bool_{}.csv'.format(
-    #     args.dataset,
-    #     args.site)
+    if args.dataset == 'INSIGHT':
+        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+    elif args.dataset == 'OneFlorida':
+        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+    else:
+        raise ValueError
+
     args.data_dir = r'output/dataset/{}/{}/'.format(args.dataset, args.encode)
     args.out_dir = r'output/factors/{}/{}/'.format(args.dataset, args.encode)
 
@@ -61,6 +65,15 @@ def parse_args():
     # args.save_model_filename = os.path.join(args.output_dir, '_S{}{}'.format(args.random_seed, args.run_model))
     # utils.check_and_mkdir(args.out_dir)
     return args
+
+
+def read_all_pos_neg():
+    print('Load data  file:', args.data_file)
+    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    df = df.loc[(df['covid'] == 1), :]
+    df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
+    # because a patid id may occur in multiple sites. patid were site specific
+    print('df.shape:', df.shape)
 
 
 def collect_feature_columns(args, df):
@@ -211,18 +224,20 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
-    # model = risk_factor_of_pasc(args, pasc_name, dump=False)
+    read_all_pos_neg()
 
-    causal_res = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx',
-                               sheet_name='diagnosis')
-    filtered_data = causal_res.loc[(causal_res['hr-w'] > 1) & (causal_res['hr-w-p'] < 0.01), :]
-    filtered_data = filtered_data.reset_index(drop=True)
-    pasc_list = list(filtered_data['pasc'])
-
-    idx = 0
-    for selected_PASC in pasc_list:  # ['Neurocognitive disorders']:  # , 'Diabetes mellitus with complication']:  # tqdm(pasc_list):
-        pasc_name = selected_PASC.replace('/', '_')
-        model = risk_factor_of_pasc(args, pasc_name)
+    # # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
+    # # model = risk_factor_of_pasc(args, pasc_name, dump=False)
+    #
+    # causal_res = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx',
+    #                            sheet_name='diagnosis')
+    # filtered_data = causal_res.loc[(causal_res['hr-w'] > 1) & (causal_res['hr-w-p'] < 0.01), :]
+    # filtered_data = filtered_data.reset_index(drop=True)
+    # pasc_list = list(filtered_data['pasc'])
+    #
+    # idx = 0
+    # for selected_PASC in pasc_list:  # ['Neurocognitive disorders']:  # , 'Diabetes mellitus with complication']:  # tqdm(pasc_list):
+    #     pasc_name = selected_PASC.replace('/', '_')
+    #     model = risk_factor_of_pasc(args, pasc_name)
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
