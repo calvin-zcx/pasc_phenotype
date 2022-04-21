@@ -381,9 +381,9 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
     if dump:
         utils.check_and_mkdir(args.out_dir)
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'anyGE{}'.format(pasc_threshold) + '-riskFactor.csv')
+            args.out_dir + 'anyGE{}-riskFactor-{}.csv'.format(pasc_threshold, args.dataset))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'anyGE{}'.format(pasc_threshold)  + '-modeSelection.csv')
+            args.out_dir + 'anyGE{}-modeSelection-{}.csv'.format(pasc_threshold, args.dataset))
 
     return model
 
