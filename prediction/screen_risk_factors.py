@@ -388,6 +388,21 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
     return model
 
 
+def screen_any_pasc(args):
+    print('args: ', args)
+    print('random_seed: ', args.random_seed)
+    df, df_pasc_info = build_data_from_all_positive(args)
+    # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=2, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=3, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=4, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=5, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=6, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=7, dump=True, )
+    model = risk_factor_of_any_pasc(args, df, pasc_threshold=8, dump=True, )
+
+
 if __name__ == '__main__':
     # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-insight-elix.txt
     # python screen_risk_factors.py --dataset OneFlorida --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-OneFlorida-elix.txt
