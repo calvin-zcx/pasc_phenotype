@@ -1984,8 +1984,11 @@ def rwd_dx_and_pasc_comparison():
 def enrich_med_rwd_info_4_neruo_and_pulmonary():
     atclevel_chars = {1: 1, 2: 3, 3: 4, 4: 5, 5: 7}
     rx_name = utils.load(r'../data/mapping/rxnorm_name.pkl')
-    df = pd.read_excel(r'../data/V15_COVID19/output/character/Query-Medication_cohorts_covid_4manuscript_ALL_neurologic_pulmonary_query_summary_table.xlsx',
-                     dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "rxnorm"})
+    # df = pd.read_excel(r'../data/V15_COVID19/output/character/Query-Medication_cohorts_covid_4manuscript_ALL_neurologic_pulmonary_query_summary_table.xlsx',
+    #                  dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "rxnorm"})
+    df = pd.read_excel(
+        r'../data/V15_COVID19/output/character/Query-Medication_for_neurologic_pulmonary_CP_more_drugs.xlsx',
+        dtype={'Unnamed: 0': str}).rename(columns={'Unnamed: 0': "rxnorm"})
     # df = df.sort_values(by=['no. in positive group'], ascending=False)
 
     # df['ratio'] = df['no. in positive group'] / df['no. in negative group']
@@ -2017,7 +2020,9 @@ def enrich_med_rwd_info_4_neruo_and_pulmonary():
         atc4_col = '$'.join(atc4_col)
         df.loc[index, 'atc-l4'] = atc4_col
 
-    df.to_csv(r'../data/V15_COVID19/output/character/Query-Medication_cohorts_covid_4manuscript_ALL_neurologic_pulmonary_query_summary_table_enriched.csv')
+    # df.to_csv(r'../data/V15_COVID19/output/character/Query-Medication_cohorts_covid_4manuscript_ALL_neurologic_pulmonary_query_summary_table_enriched.csv')
+    df.to_csv(r'../data/V15_COVID19/output/character/Query-Medication_for_neurologic_pulmonary_CP_more_drugs_enriched.csv')
+
     return df
 
 
@@ -2025,7 +2030,7 @@ if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
 
-    # enrich_med_rwd_info_4_neruo_and_pulmonary()
+    enrich_med_rwd_info_4_neruo_and_pulmonary()
     #
     start_time = time.time()
     args = parse_args()
