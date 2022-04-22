@@ -60,7 +60,7 @@ def parse_args():
     args.data_dir = r'output/dataset/{}/{}/'.format(args.dataset, args.encode)
     args.out_dir = r'output/factors/{}/{}/'.format(args.dataset, args.encode)
 
-    args.pickle_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.pkl'.format(
+    args.out_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
         args.dataset, args.encode)
 
     if args.random_seed < 0:
@@ -81,7 +81,7 @@ def read_all_pos_neg():
     print('df.shape:', df.shape)
 
 
-def build_data_from_all_positive(args):
+def build_data_from_all_positive(args, dump=True):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', args.data_file)
@@ -114,6 +114,18 @@ def build_data_from_all_positive(args):
     print('len(selected_pasc_list)', len(selected_pasc_list))
     print(selected_pasc_list)
 
+    selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
+    print('len(selected_organ_list)', len(selected_organ_list))
+    print(selected_organ_list)
+    organ_pasc = {}
+    for i, organ in enumerate(selected_organ_list):
+        pascs = df_pasc_info.loc[
+            (df_pasc_info['selected'] == 1) & (df_pasc_info['Organ Domain'] == organ), 'pasc'].tolist()
+        organ_pasc[organ] = pascs
+        print(i, organ, '-->', len(pascs), ':', pascs)
+
+    print('selected PASC and organ domain done!')
+
     exclude_DX_list = {
         'Neurocognitive disorders': ['DX: Dementia'],
         'Diabetes mellitus with complication': ['DX: Diabetes Type 2'],
@@ -123,6 +135,8 @@ def build_data_from_all_positive(args):
         'Heart failure': ["DX: Congestive Heart Failure"]
     }
 
+    print('Labeling INCIDENT pasc in {0,1}')
+    # flag@pascname  for incidence label, dx-t2e@pascname for original shared t2e
     for pasc in selected_pasc_list:
         flag = df['dx-out@' + pasc] - df['dx-base@' + pasc]
         if pasc in exclude_DX_list:
@@ -133,25 +147,89 @@ def build_data_from_all_positive(args):
 
         df['flag@' + pasc] = (flag > 0).astype('int')
 
+    def _debug_person(pid):
+        _person = pd.DataFrame(data={'dx-base': df.loc[pid, ['dx-base@' + x for x in selected_pasc_list]].tolist(),
+                                     'dx-out': df.loc[pid, ['dx-out@' + x for x in selected_pasc_list]].tolist(),
+                                     'dx-t2e': df.loc[pid, ['dx-t2e@' + x for x in selected_pasc_list]].tolist()},
+                               index=selected_pasc_list)
+        return _person
+
+    # build flag, t2e for any pasc
+    # flag@pascname  for incidence label, dx-t2e@pascname for original shared t2e
+    print('Any PASC: build flag, t2e for any pasc')
     specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
     n_pasc_series = df[specific_pasc_col].sum(axis=1)
-    df['pasc-count'] = n_pasc_series
-    df['pasc-flag'] = (n_pasc_series > 0).astype('int')
+    df['pasc-count'] = n_pasc_series  # number of incident pascs of this person
+    df['pasc-flag'] = (n_pasc_series > 0).astype('int')  # indicator of any incident pasc of this person
     df['pasc-min-t2e'] = 180
 
-    # t2e_col = ['dx-t2e@' + x for x in selected_pasc_list]
-    # flag_col = ['flag@' + x for x in selected_pasc_list]
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         npasc = rows['pasc-count']
-        if npasc > 0:
+        if npasc >= 1:
+            # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
             pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
             pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-            t2e = rows[pasc_t2e_cols].min()
-            df.loc[index, 'pasc-min-t2e'] = t2e
+            t2e = rows.loc[pasc_t2e_cols].min()
+        else:
+            # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
+            # no event, only consider death, censoring, 180 days, which is approximated by the maximum-t2e of any selected pasc
+            # unless all selected pasc were happened, but not incident, this not happened in our data.
+            # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
+            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
 
-    print('Add selected incident PASC flag done!')
+        df.loc[index, 'pasc-min-t2e'] = t2e
 
-    # utils.dump(df, args.pickle_file)
+    # build flag, t2e for any organ
+    print('Organ category: build flag, t2e for Organ category with a list of pascs')
+    for organ in selected_organ_list:
+        pascs = organ_pasc[organ]
+        pascs_col = ['flag@' + x for x in pascs]
+        organ_series = df[pascs_col].sum(axis=1)
+        df['organ-count@' + organ] = organ_series
+        df['organ-flag@' + organ] = (organ_series > 0).astype('int')
+        df['organ-t2e@' + organ] = 180
+
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        for organ in selected_organ_list:
+            npasc = rows['organ-count@' + organ]
+            pascs_col = ['flag@' + x for x in organ_pasc[organ]]
+            if npasc >= 1:
+                pasc_flag_cols = list(rows[pascs_col][rows[pascs_col] > 0].index)
+                pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+                t2e = rows.loc[pasc_t2e_cols].min()
+            else:
+                # t2e = rows.loc[['dx-t2e@' + x for x in organ_pasc[organ]]].max()
+                t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+            df.loc[index, 'organ-t2e@' + organ] = t2e
+
+    print('Any Organ: build flag, t2e for any organ')
+    specific_organ_col = [x for x in df.columns if x.startswith('organ-flag@')]
+    n_organ_series = df[specific_organ_col].sum(axis=1)
+    df['organ-count'] = n_organ_series
+    df['organ-flag'] = (n_organ_series > 0).astype('int')
+    df['organ-min-t2e'] = 180
+
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        norgan = rows['organ-count']
+        if norgan >= 1:
+            organ_flag_cols = list(rows[specific_organ_col][rows[specific_organ_col] > 0].index)
+            organ_t2e_cols = [x.replace('organ-flag@', 'organ-t2e@') for x in organ_flag_cols]
+            t2e = rows.loc[organ_t2e_cols].min()
+        else:
+            # t2e: event, death, censoring , 180, whichever came first.
+            # no t2e, only consider death and censoring, which were considered by the maximum-t2e of any selected pasc
+            # t2e = rows.loc[['organ-t2e@' + x for x in selected_organ_list]].max()
+            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+        df.loc[index, 'organ-min-t2e'] = t2e
+
+    print('Add selected incident PASC, any pasc, organ system, flag done!')
+
+    if dump:
+        utils.check_and_mkdir(args.out_data_file)
+        df.to_csv(args.out_data_file, index=False)
+
     print('build_data_from_all_positive Done! Total Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -171,7 +249,7 @@ def distribution_statistics(args, df, df_pasc_info):
     df_selected_pasc = df_pasc_info.loc[df_pasc_info['selected'] == 1, :]
     df_pasc_person_counts = pd.merge(pasc_person_counts,
                                      df_selected_pasc[['i', 'pasc', 'PASC Name Simple', 'Notes',
-                                                      'selected', 'Organ Domain', 'Original CCSR Domain']],
+                                                       'selected', 'Organ Domain', 'Original CCSR Domain']],
                                      left_on='pasc', right_on='pasc', how='left')
 
     out_dir = r'output/dataset/{}/stats/'.format(args.dataset)
@@ -346,13 +424,21 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
         specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
         for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
             npasc = rows['pasc-count']
-            if npasc > 0:
+            if npasc >= pasc_threshold:
+                # if at least pasc_threshold pasc occur, t2e is the pasc_threshold^th earlist time
                 pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
                 pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
                 # t2e = rows[pasc_t2e_cols].min()
                 time_vec = sorted(rows[pasc_t2e_cols])
-                t2e = time_vec[min(len(time_vec)-1, pasc_threshold-1)]
-                df.loc[index, 'pasc-min-t2e'] = t2e
+                t2e = time_vec[min(len(time_vec) - 1, pasc_threshold - 1)]
+            else:
+                # if events number < pasc_threshold occur, e.g. pasc_threshold=2, but only 1 event happened,
+                # then 2-event pasc did not happen
+                # t2e is the event, death, censoring, 180 days, whichever came first.
+                # t2e = rows.loc[[x.replace('flag@', 'dx-t2e@') for x in specific_pasc_col]].max()
+                t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+            df.loc[index, 'pasc-min-t2e'] = t2e
 
     # support >= 2,3,4... by updating pasc-min-t2e definition.
 
@@ -388,19 +474,88 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
     return model
 
 
+def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
+    print('Organ is defined by >=', organ_threshold)
+
+    print('df.shape:', df.shape)
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+
+    pasc_flag = (df['organ-count'] >= organ_threshold).astype('int')
+    pasc_t2e = df['organ-min-t2e']
+    # 1 pasc --> the earliest; 2 pasc --> 2nd earliest, et.c
+    if organ_threshold >= 2:
+        print('organ_threshold >=', organ_threshold, 't2e is defined as the ', organ_threshold,
+              'th earliest events time')
+        df['organ-min-t2e'] = 180
+        specific_organ_col = [x for x in df.columns if x.startswith('organ-flag@')]
+        for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+            norgan = rows['organ-count']
+            if norgan >= organ_threshold:
+                organ_flag_cols = list(rows[specific_organ_col][rows[specific_organ_col] > 0].index)
+                organ_t2e_cols = [x.replace('organ-flag@', 'organ-t2e@') for x in organ_flag_cols]
+                # t2e = rows[organ_t2e_cols].min()
+                time_vec = sorted(rows[organ_t2e_cols])
+                t2e = time_vec[min(len(time_vec) - 1, organ_threshold - 1)]
+            else:
+                t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+            df.loc[index, 'organ-min-t2e'] = t2e
+
+    # support >= 2,3,4... by updating pasc-min-t2e definition.
+    cox_data = df.loc[:, covs_columns]
+    print('cox_data.shape before number filter:', cox_data.shape)
+    cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
+    print('cox_data.shape after number filter:', cox_data.shape)
+
+    model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
+        cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
+
+    if dump:
+        utils.check_and_mkdir(args.out_dir)
+        model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
+            args.out_dir + 'anyOrganCategory-GE{}-riskFactor-{}.csv'.format(organ_threshold, args.dataset))
+        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+            args.out_dir + 'anyOrganCategory-GE{}-modeSelection-{}.csv'.format(organ_threshold, args.dataset))
+
+    return model
+
+
 def screen_any_pasc(args):
     print('args: ', args)
     print('random_seed: ', args.random_seed)
     df, df_pasc_info = build_data_from_all_positive(args)
-    # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=2, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=3, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=4, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=5, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=6, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=7, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=8, dump=True, )
+    model_dict = {}
+    for i in range(1, 9):
+        print('screen_any_pasc, In threshold:', i)
+        model = risk_factor_of_any_pasc(args, df, pasc_threshold=i, dump=True)
+        model_dict[i] = model
+
+    return df, df_pasc_info, model_dict
+
+
+def screen_any_organ(args):
+    print('args: ', args)
+    print('random_seed: ', args.random_seed)
+    df, df_pasc_info = build_data_from_all_positive(args)
+    model_dict = {}
+    for i in range(1, 9):
+        print('screen_any_pasc, In threshold:', i)
+        model = risk_factor_of_any_organ(args, df, organ_threshold=i, dump=True)
+        model_dict[i] = model
+
+    return df, df_pasc_info, model_dict
 
 
 if __name__ == '__main__':
@@ -415,16 +570,10 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    df, df_pasc_info = build_data_from_all_positive(args)
+    # df, df_pasc_info = build_data_from_all_positive(args)
     # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=2, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=3, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=4, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=5, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=6, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=7, dump=True, )
-    model = risk_factor_of_any_pasc(args, df, pasc_threshold=8, dump=True, )
+
+    df, df_pasc_info, model_dict = screen_any_organ(args)
 
     # # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
     # # model = risk_factor_of_pasc(args, pasc_name, dump=False)
