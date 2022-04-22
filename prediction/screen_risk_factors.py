@@ -179,7 +179,7 @@ def build_data_from_all_positive(args, dump=True):
 
         df.loc[index, 'pasc-min-t2e'] = t2e
 
-    # build flag, t2e for any organ
+    # build flag, t2e for each organ
     print('Organ category: build flag, t2e for Organ category with a list of pascs')
     for organ in selected_organ_list:
         pascs = organ_pasc[organ]
