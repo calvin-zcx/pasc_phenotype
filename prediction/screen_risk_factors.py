@@ -31,7 +31,7 @@ import matplotlib.pyplot as plt
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
@@ -85,7 +85,7 @@ def build_data_from_all_positive(args, dump=True):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', args.data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    df = pd.read_csv(args.data_file, dtype={'patid': str, 'zip' : str}, parse_dates=['index date'])
     df = df.drop(columns=['Unnamed: 0.1'])
     # df = df.loc[(df['covid'] == 1), :]
     # df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
@@ -155,7 +155,7 @@ def build_data_from_all_positive(args, dump=True):
         return _person
 
     # build flag, t2e for any pasc
-    # flag@pascname  for incidence label, dx-t2e@pascname for original shared t2e
+    # flag@pascname  for incidence label, dx-t2e@pascname for t2e which is shared from original data
     print('Any PASC: build flag, t2e for any pasc')
     specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
     n_pasc_series = df[specific_pasc_col].sum(axis=1)
@@ -172,8 +172,10 @@ def build_data_from_all_positive(args, dump=True):
             t2e = rows.loc[pasc_t2e_cols].min()
         else:
             # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
-            # no event, only consider death, censoring, 180 days, which is approximated by the maximum-t2e of any selected pasc
-            # unless all selected pasc were happened, but not incident, this not happened in our data.
+            # no event, only consider death, censoring, 180 days,
+            # 1. approximated by the maximum-t2e of any selected pasc .
+            #   unless all selected pasc happened, but not incident, this not happened in our data.
+            # 2. directly follow the definition. Because I also stored max-followup information
             # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
             t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
 
@@ -209,7 +211,7 @@ def build_data_from_all_positive(args, dump=True):
     df['organ-count'] = n_organ_series
     df['organ-flag'] = (n_organ_series > 0).astype('int')
     df['organ-min-t2e'] = 180
-
+    # b_debug = df[['pasc-count', 'pasc-flag', 'pasc-min-t2e', 'organ-count', 'organ-flag', 'organ-min-t2e']]
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         norgan = rows['organ-count']
         if norgan >= 1:
@@ -535,7 +537,7 @@ def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
 def screen_any_pasc(args):
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    df, df_pasc_info = build_data_from_all_positive(args)
+    # df, df_pasc_info = build_data_from_all_positive(args)
     model_dict = {}
     for i in range(1, 9):
         print('screen_any_pasc, In threshold:', i)
@@ -570,10 +572,14 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
+
+    # build data and dump
+    df, df_pasc_info = build_data_from_all_positive(args)
+
     # df, df_pasc_info = build_data_from_all_positive(args)
     # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
 
-    df, df_pasc_info, model_dict = screen_any_organ(args)
+    # df, df_pasc_info, model_dict = screen_any_organ(args)
 
     # # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
     # # model = risk_factor_of_pasc(args, pasc_name, dump=False)

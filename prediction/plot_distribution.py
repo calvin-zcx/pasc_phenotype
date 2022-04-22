@@ -48,7 +48,7 @@ def plot_person_pasc_counts():
     # sns.ecdfplot(data=dfflor, x="count",  stat="proportion", complementary=True, color="#4895ef", label='NYC')
 
     # plt.yscale('log')
-    plt.ylim(top=1.1)
+    # plt.ylim(top=1.1)
     # plt.grid(axis='y', alpha=0.75)
     plt.xlabel('No. of PASC Per Patient')
     plt.ylabel('Normalized Frequency')
