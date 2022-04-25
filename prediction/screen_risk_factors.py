@@ -31,19 +31,19 @@ import matplotlib.pyplot as plt
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
-    # parser.add_argument('--severity', choices=['all',
-    #                                            'outpatient', 'inpatient', 'icu', 'inpatienticu',
-    #                                            'female', 'male',
-    #                                            'white', 'black',
-    #                                            'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
-    #                                            'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
-    #                                            'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
-    #                                            'healthy'],
-    #                     default='all')
+    parser.add_argument('--severity', choices=['all',
+                                               'outpatient', 'inpatient', 'critical', 'ventilation',
+                                               'female', 'male',
+                                               'white', 'black',
+                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
+                                               'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
+                                               'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
+                                               'healthy'],
+                        default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
 
@@ -60,7 +60,7 @@ def parse_args():
     args.data_dir = r'output/dataset/{}/{}/'.format(args.dataset, args.encode)
     args.out_dir = r'output/factors/{}/{}/'.format(args.dataset, args.encode)
 
-    args.out_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
+    args.processed_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
         args.dataset, args.encode)
 
     if args.random_seed < 0:
@@ -72,20 +72,25 @@ def parse_args():
     return args
 
 
-def read_all_pos_neg():
-    print('Load data  file:', args.data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+def read_all_pos_neg(data_file):
+    # r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+    # r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+    print('Load data  file:', data_file)
+    # a_debug = pd.DataFrame({'0':df.columns, '1':df.dtypes})
+    df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
     df = df.loc[(df['covid'] == 1), :]
-    df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
-    # because a patid id may occur in multiple sites. patid were site specific
-    print('df.shape:', df.shape)
+    print('df.loc[(df[covid] == 1), :].shape:', df.shape)
+
+    df.to_csv(data_file.replace('.csv', '-PosOnly.csv'), index=False)
+    print('Load posOnly file done!:', data_file.replace('.csv', '-PosOnly.csv'))
+    return  df
 
 
 def build_data_from_all_positive(args, dump=True):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', args.data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str, 'zip' : str}, parse_dates=['index date'])
+    df = pd.read_csv(args.data_file, dtype={'patid': str, 'zip': str}, parse_dates=['index date'])
     df = df.drop(columns=['Unnamed: 0.1'])
     # df = df.loc[(df['covid'] == 1), :]
     # df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
@@ -229,8 +234,8 @@ def build_data_from_all_positive(args, dump=True):
     print('Add selected incident PASC, any pasc, organ system, flag done!')
 
     if dump:
-        utils.check_and_mkdir(args.out_data_file)
-        df.to_csv(args.out_data_file, index=False)
+        utils.check_and_mkdir(args.processed_data_file)
+        df.to_csv(args.processed_data_file, index=False)
 
     print('build_data_from_all_positive Done! Total Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -574,7 +579,101 @@ if __name__ == '__main__':
     print('random_seed: ', args.random_seed)
 
     # build data and dump
-    df, df_pasc_info = build_data_from_all_positive(args)
+    read_all_pos_neg(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
+    read_all_pos_neg(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
+
+    sys.exit(0)
+    # df, df_pasc_info = build_data_from_all_positive(args)
+    # After building data, just load them
+    print('Load data file:', args.processed_data_file)
+    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
+    # because a patid id may occur in multiple sites. patid were site specific
+    print('df.shape:', df.shape)
+    if args.severity == 'inpatient':
+        print('Considering inpatient/hospitalized cohorts but not ICU')
+        df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif args.severity == 'icu':
+        print('Considering ICU (hospitalized ventilation or critical care) cohorts')
+        df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)), :].copy()
+    if args.severity == 'inpatienticu':
+        print('Considering inpatient/hospitalized including icu cohorts')
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
+    elif args.severity == 'outpatient':
+        print('Considering outpatient cohorts')
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif args.severity == 'female':
+        print('Considering female cohorts')
+        df = df.loc[(df['Female'] == 1), :].copy()
+    elif args.severity == 'male':
+        print('Considering male cohorts')
+        df = df.loc[(df['Male'] == 1), :].copy()
+    elif args.severity == 'white':
+        print('Considering white cohorts')
+        df = df.loc[(df['White'] == 1), :].copy()
+    elif args.severity == 'black':
+        print('Considering black cohorts')
+        df = df.loc[(df['Black or African American'] == 1), :].copy()
+    elif args.severity == '20to40':
+        print('Considering 20to40 cohorts')
+        df = df.loc[(df['20-<40 years'] == 1), :].copy()
+    elif args.severity == '40to55':
+        print('Considering 40to55 cohorts')
+        df = df.loc[(df['40-<55 years'] == 1), :].copy()
+    elif args.severity == '55to65':
+        print('Considering 55to65 cohorts')
+        df = df.loc[(df['55-<65 years'] == 1), :].copy()
+    elif args.severity == 'less65':
+        print('Considering less65 cohorts')
+        df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
+    elif args.severity == '65to75':
+        print('Considering 65to75 cohorts')
+        df = df.loc[(df['65-<75 years'] == 1), :].copy()
+    elif args.severity == '75above':
+        print('Considering 75above cohorts')
+        df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+    elif args.severity == 'above65':
+        print('Considering above65 cohorts')
+        df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+    elif args.severity == 'Anemia':
+        print('Considering Anemia cohorts')
+        df = df.loc[(df["DX: Anemia"] == 1), :].copy()
+    elif args.severity == 'Arrythmia':
+        print('Considering Arrythmia cohorts')
+        df = df.loc[(df["DX: Arrythmia"] == 1), :].copy()
+    elif args.severity == 'CKD':
+        print('Considering CKD cohorts')
+        df = df.loc[(df["DX: Chronic Kidney Disease"] == 1), :].copy()
+    elif args.severity == 'CPD-COPD':
+        print('Considering CPD-COPD cohorts')
+        df = df.loc[(df["DX: Chronic Pulmonary Disorders"] == 1) | (df["DX: COPD"] == 1), :].copy()
+    elif args.severity == 'CAD':
+        print('Considering CAD cohorts')
+        df = df.loc[(df["DX: Coronary Artery Disease"] == 1), :].copy()
+    elif args.severity == 'T2D-Obesity':
+        print('Considering T2D-Obesity cohorts')
+        df = df.loc[(df["DX: Diabetes Type 2"] == 1) | (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] == 1), :].copy()
+    elif args.severity == 'Hypertension':
+        print('Considering Hypertension cohorts')
+        df = df.loc[(df["DX: Hypertension"] == 1), :].copy()
+    elif args.severity == 'Mental-substance':
+        print('Considering Mental-substance cohorts')
+        df = df.loc[(df["DX: Mental Health Disorders"] == 1) | (df['DX: Other Substance Abuse'] == 1), :].copy()
+    elif args.severity == 'Corticosteroids':
+        print('Considering Corticosteroids cohorts')
+        df = df.loc[(df["MEDICATION: Corticosteroids"] == 1), :].copy()
+    elif args.severity == 'healthy':
+        # no comorbidity and no PASC?
+        print('Considering baseline totally healthy cohorts')
+        selected_cols = [x for x in df.columns if
+                         (x.startswith('dx-base@')
+                          or x.startswith('DX:')
+                          or x.startswith('MEDICATION:'))]
+        flag = df[selected_cols].sum(axis=1)
+        df = df.loc[(flag == 0), :].copy()
+    else:
+        print('Considering ALL cohorts')
+    # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
+    print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
 
     # df, df_pasc_info = build_data_from_all_positive(args)
     # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
