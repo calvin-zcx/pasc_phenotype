@@ -36,15 +36,10 @@ def parse_args():
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
     parser.add_argument('--severity', choices=['all',
-                                               'outpatient', 'inpatient', 'critical', 'ventilation',
-                                               'female', 'male',
-                                               'white', 'black',
-                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
-                                               'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
-                                               'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
-                                               'healthy'],
+                                               'outpatient', 'inpatient', 'icu', 'ventilation', "inpatienticu"
+                                               ],
                         default='all')
-
+    parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
     parser.add_argument("--random_seed", type=int, default=0)
 
     args = parser.parse_args()
@@ -72,7 +67,7 @@ def parse_args():
     return args
 
 
-def read_all_pos_neg(data_file):
+def read_all_and_dump_covid_positive(data_file):
     # r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
     # r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
     print('Load data  file:', data_file)
@@ -82,16 +77,16 @@ def read_all_pos_neg(data_file):
     print('df.loc[(df[covid] == 1), :].shape:', df.shape)
 
     df.to_csv(data_file.replace('.csv', '-PosOnly.csv'), index=False)
-    print('Load posOnly file done!:', data_file.replace('.csv', '-PosOnly.csv'))
-    return  df
+    print('Dump posOnly file done!:', data_file.replace('.csv', '-PosOnly.csv'))
+    return df
 
 
-def build_data_from_all_positive(args, dump=True):
+def build_incident_pasc_from_all_positive(args, dump=True):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', args.data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str, 'zip': str}, parse_dates=['index date'])
-    df = df.drop(columns=['Unnamed: 0.1'])
+    df = pd.read_csv(args.data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    # df = df.drop(columns=['Unnamed: 0.1'])
     # df = df.loc[(df['covid'] == 1), :]
     # df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
     print('df.shape:', df.shape)
@@ -236,6 +231,7 @@ def build_data_from_all_positive(args, dump=True):
     if dump:
         utils.check_and_mkdir(args.processed_data_file)
         df.to_csv(args.processed_data_file, index=False)
+        print('Dump to:', args.processed_data_file)
 
     print('build_data_from_all_positive Done! Total Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -269,8 +265,9 @@ def distribution_statistics(args, df, df_pasc_info):
 
 def collect_feature_columns_4_risk_analysis(args, df):
     col_names = []
-    # col_names += ['hospitalized', 'ventilation', 'criticalcare']
-    col_names += ['not hospitalized', 'hospitalized', 'icu']
+    if args.severity == 'all':
+        # col_names += ['hospitalized', 'ventilation', 'criticalcare']
+        col_names += ['not hospitalized', 'hospitalized', 'icu']
 
     # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
     col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
@@ -407,15 +404,8 @@ def risk_factor_of_pasc(args, pasc_name, dump=True):
     return model
 
 
-def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
-    # infile = args.data_dir + pasc_name + '_{}'.format(
-    #     'dx_med_' if args.encode == 'icd_med' else '') + args.dataset + '.csv'
-    # print('In risk_factor_of_pasc:')
-    # pasc = pasc_name.replace('_', '/')
-    # print('PASC:', pasc, 'Infile:', infile)
-    #
-    # df = pd.read_csv(infile)
-    print('PASC is defined by >=', pasc_threshold)
+def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True):
+    print('in risk_factor_of_any_pasc, PASC is defined by >=', pasc_threshold)
 
     print('df.shape:', df.shape)
     df = pre_transform_feature(df)
@@ -424,6 +414,8 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
 
     pasc_flag = (df['pasc-count'] >= pasc_threshold).astype('int')
     pasc_t2e = df['pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
+    print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+          'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
     # 1 pasc --> the earliest; 2 pasc --> 2nd earliest, et.c
     if pasc_threshold >= 2:
         print('pasc thereshold >=', pasc_threshold, 't2e is defined as the ', pasc_threshold, 'th earliest events time')
@@ -448,7 +440,6 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
             df.loc[index, 'pasc-min-t2e'] = t2e
 
     # support >= 2,3,4... by updating pasc-min-t2e definition.
-
     # pasc_name = 'Heart failure'
     # pasc_flag = df['flag@'+pasc_name]
     # pasc_t2e = df['dx-t2e@'+pasc_name]
@@ -458,30 +449,34 @@ def risk_factor_of_any_pasc(args, df, pasc_threshold=1, dump=True):
     cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
     print('cox_data.shape after number filter:', cox_data.shape)
 
-    model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
+    model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
         cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+    # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
         '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
-        'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
-        'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
+    if args.severity == 'all':
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
 
     if dump:
-        utils.check_and_mkdir(args.out_dir)
+        utils.check_and_mkdir(args.out_dir + 'any_pasc/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'anyGE{}-riskFactor-{}.csv'.format(pasc_threshold, args.dataset))
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}.csv'.format(pasc_threshold, args.dataset,
+                                                                              args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'anyGE{}-modeSelection-{}.csv'.format(pasc_threshold, args.dataset))
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}.csv'.format(pasc_threshold, args.dataset,
+                                                                                 args.severity))
 
     return model
 
 
-def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
+def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=True):
     print('Organ is defined by >=', organ_threshold)
 
     print('df.shape:', df.shape)
@@ -490,6 +485,9 @@ def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
     covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['organ-count'] >= organ_threshold).astype('int')
+    print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+          'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
+
     pasc_t2e = df['organ-min-t2e']
     # 1 pasc --> the earliest; 2 pasc --> 2nd earliest, et.c
     if organ_threshold >= 2:
@@ -516,7 +514,7 @@ def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
     cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
     print('cox_data.shape after number filter:', cox_data.shape)
 
-    model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
+    model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
         cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -528,41 +526,141 @@ def risk_factor_of_any_organ(args, df, organ_threshold=1, dump=True):
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
         '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
         'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
-
     if dump:
-        utils.check_and_mkdir(args.out_dir)
+        utils.check_and_mkdir(args.out_dir + 'any_organ/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'anyOrganCategory-GE{}-riskFactor-{}.csv'.format(organ_threshold, args.dataset))
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}.csv'.format(organ_threshold, args.dataset,
+                                                                               args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'anyOrganCategory-GE{}-modeSelection-{}.csv'.format(organ_threshold, args.dataset))
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}.csv'.format(organ_threshold, args.dataset,
+                                                                                  args.severity))
 
     return model
 
 
-def screen_any_pasc(args):
-    print('args: ', args)
+def screen_any_pasc(args, df, df_pasc_info):
+    print('In screen_any_pasc, args: ', args)
     print('random_seed: ', args.random_seed)
-    # df, df_pasc_info = build_data_from_all_positive(args)
     model_dict = {}
     for i in range(1, 9):
         print('screen_any_pasc, In threshold:', i)
-        model = risk_factor_of_any_pasc(args, df, pasc_threshold=i, dump=True)
+        model = risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=i, dump=True)
         model_dict[i] = model
 
-    return df, df_pasc_info, model_dict
+    return model_dict
 
 
-def screen_any_organ(args):
-    print('args: ', args)
+def screen_any_organ(args, df, df_pasc_info):
+    print('In screen_any_organ, args: ', args)
     print('random_seed: ', args.random_seed)
-    df, df_pasc_info = build_data_from_all_positive(args)
     model_dict = {}
     for i in range(1, 9):
         print('screen_any_pasc, In threshold:', i)
-        model = risk_factor_of_any_organ(args, df, organ_threshold=i, dump=True)
+        model = risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=i, dump=True)
         model_dict[i] = model
 
-    return df, df_pasc_info, model_dict
+    return model_dict
+
+
+def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
+    print('In screen_all_organ, args: ', args)
+    print('random_seed: ', args.random_seed)
+    print('df.shape:', df.shape)
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+
+    # build flag, t2e for each organ
+    print('Screening All Organ category')
+    i = 0
+    model_dict = {}
+    for organ in tqdm(selected_organ_list, total=len(selected_organ_list)):
+        i += 1
+        print(i, 'screening:', organ)
+        pasc_flag = df['organ-flag@' + organ]
+        pasc_t2e = df['organ-t2e@' + organ]
+        print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+              'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
+
+        cox_data = df.loc[:, covs_columns]
+        print('cox_data.shape before number filter:', cox_data.shape)
+        cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
+        print('cox_data.shape after number filter:', cox_data.shape)
+
+        model = ml.CoxPrediction(random_seed=args.random_seed,).cross_validation_fit(
+            cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
+        if dump:
+            utils.check_and_mkdir(args.out_dir + 'every_organ/')
+            model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
+                args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}.csv'.format(organ, args.dataset, args.severity))
+            model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}.csv'.format(organ, args.dataset, args.severity))
+            print('Dump done', organ)
+
+        model_dict[organ] = model
+
+    return model_dict
+
+
+def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
+    print('In screen_all_pasc, args: ', args)
+    print('random_seed: ', args.random_seed)
+    print('df.shape:', df.shape)
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+
+    # build flag, t2e for each organ
+    print('Screening All PASC category')
+    i = 0
+    model_dict = {}
+    for pasc in tqdm(selected_pasc_list, total=len(selected_pasc_list)):
+        i += 1
+        print(i, 'screening:', pasc)
+        pasc_flag = df['flag@' + pasc]
+        pasc_t2e = df['dx-t2e@' + pasc]
+
+        print('pos:{} ({:.3%})'.format(pasc_flag.sum(),  pasc_flag.mean()),
+              'neg:{} ({:.3%})'.format((1-pasc_flag).sum(), (1-pasc_flag).mean()))
+
+        cox_data = df.loc[:, covs_columns]
+        print('cox_data.shape before number filter:', cox_data.shape)
+        cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
+        print('cox_data.shape after number filter:', cox_data.shape)
+
+        model = ml.CoxPrediction(random_seed=args.random_seed,).cross_validation_fit(
+            cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
+        if dump:
+            utils.check_and_mkdir(args.out_dir + 'every_pasc/')
+            model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
+                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset, args.severity))
+            model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset, args.severity))
+            print('Dump done', pasc)
+
+        model_dict[pasc] = model
+
+    return model_dict
 
 
 if __name__ == '__main__':
@@ -578,18 +676,33 @@ if __name__ == '__main__':
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    # build data and dump
-    read_all_pos_neg(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
-    read_all_pos_neg(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
+    # -Pre step1: select Covid Positive data and dump
+    # read_all_and_dump_covid_positive(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
+    # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
-    sys.exit(0)
-    # df, df_pasc_info = build_data_from_all_positive(args)
-    # After building data, just load them
+    # -Pre step2: build Covid Positive data and dump for future use
+    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+
+    # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
-    df = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
-    # because a patid id may occur in multiple sites. patid were site specific
-    print('df.shape:', df.shape)
-    if args.severity == 'inpatient':
+    df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                     parse_dates=['index date'])
+    print('Load done, df.shape:', df.shape)
+
+    # Step 2: Load pasc meta information
+    df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
+    selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
+    print('len(selected_pasc_list)', len(selected_pasc_list))
+    print(selected_pasc_list)
+    selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
+    print('len(selected_organ_list)', len(selected_organ_list))
+
+    # Step 3: set stratified (sub-) population
+    # 'all', 'outpatient', 'inpatient', 'critical', 'ventilation'   can add more later, just these 4 for brevity
+    if args.severity == 'outpatient':
+        print('Considering outpatient cohorts')
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif args.severity == 'inpatient':
         print('Considering inpatient/hospitalized cohorts but not ICU')
         df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
     elif args.severity == 'icu':
@@ -598,82 +711,25 @@ if __name__ == '__main__':
     if args.severity == 'inpatienticu':
         print('Considering inpatient/hospitalized including icu cohorts')
         df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
-    elif args.severity == 'outpatient':
-        print('Considering outpatient cohorts')
-        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
-    elif args.severity == 'female':
-        print('Considering female cohorts')
-        df = df.loc[(df['Female'] == 1), :].copy()
-    elif args.severity == 'male':
-        print('Considering male cohorts')
-        df = df.loc[(df['Male'] == 1), :].copy()
-    elif args.severity == 'white':
-        print('Considering white cohorts')
-        df = df.loc[(df['White'] == 1), :].copy()
-    elif args.severity == 'black':
-        print('Considering black cohorts')
-        df = df.loc[(df['Black or African American'] == 1), :].copy()
-    elif args.severity == '20to40':
-        print('Considering 20to40 cohorts')
-        df = df.loc[(df['20-<40 years'] == 1), :].copy()
-    elif args.severity == '40to55':
-        print('Considering 40to55 cohorts')
-        df = df.loc[(df['40-<55 years'] == 1), :].copy()
-    elif args.severity == '55to65':
-        print('Considering 55to65 cohorts')
-        df = df.loc[(df['55-<65 years'] == 1), :].copy()
-    elif args.severity == 'less65':
-        print('Considering less65 cohorts')
-        df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
-    elif args.severity == '65to75':
-        print('Considering 65to75 cohorts')
-        df = df.loc[(df['65-<75 years'] == 1), :].copy()
-    elif args.severity == '75above':
-        print('Considering 75above cohorts')
-        df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
-    elif args.severity == 'above65':
-        print('Considering above65 cohorts')
-        df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
-    elif args.severity == 'Anemia':
-        print('Considering Anemia cohorts')
-        df = df.loc[(df["DX: Anemia"] == 1), :].copy()
-    elif args.severity == 'Arrythmia':
-        print('Considering Arrythmia cohorts')
-        df = df.loc[(df["DX: Arrythmia"] == 1), :].copy()
-    elif args.severity == 'CKD':
-        print('Considering CKD cohorts')
-        df = df.loc[(df["DX: Chronic Kidney Disease"] == 1), :].copy()
-    elif args.severity == 'CPD-COPD':
-        print('Considering CPD-COPD cohorts')
-        df = df.loc[(df["DX: Chronic Pulmonary Disorders"] == 1) | (df["DX: COPD"] == 1), :].copy()
-    elif args.severity == 'CAD':
-        print('Considering CAD cohorts')
-        df = df.loc[(df["DX: Coronary Artery Disease"] == 1), :].copy()
-    elif args.severity == 'T2D-Obesity':
-        print('Considering T2D-Obesity cohorts')
-        df = df.loc[(df["DX: Diabetes Type 2"] == 1) | (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] == 1), :].copy()
-    elif args.severity == 'Hypertension':
-        print('Considering Hypertension cohorts')
-        df = df.loc[(df["DX: Hypertension"] == 1), :].copy()
-    elif args.severity == 'Mental-substance':
-        print('Considering Mental-substance cohorts')
-        df = df.loc[(df["DX: Mental Health Disorders"] == 1) | (df['DX: Other Substance Abuse'] == 1), :].copy()
-    elif args.severity == 'Corticosteroids':
-        print('Considering Corticosteroids cohorts')
-        df = df.loc[(df["MEDICATION: Corticosteroids"] == 1), :].copy()
-    elif args.severity == 'healthy':
-        # no comorbidity and no PASC?
-        print('Considering baseline totally healthy cohorts')
-        selected_cols = [x for x in df.columns if
-                         (x.startswith('dx-base@')
-                          or x.startswith('DX:')
-                          or x.startswith('MEDICATION:'))]
-        flag = df[selected_cols].sum(axis=1)
-        df = df.loc[(flag == 0), :].copy()
+    elif args.severity == 'ventilation':
+        print('Considering (hospitalized) ventilation cohorts')
+        df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
-    # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
+
     print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
+
+    # ['anypasc', 'allpasc', 'anyorgan', 'allorgan']
+    print(args.goal)
+    if args.goal == 'anypasc':
+        # screening risk factor of >= k PASC
+        screen_any_pasc(args, df, df_pasc_info)
+    elif args.goal == 'anyorgan':
+        screen_any_organ(args, df, df_pasc_info)
+    elif args.goal == 'allpasc':
+        screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True)
+    elif args.goal == 'allorgan':
+        screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True)
 
     # df, df_pasc_info = build_data_from_all_positive(args)
     # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)

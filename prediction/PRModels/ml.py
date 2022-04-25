@@ -90,9 +90,14 @@ class CoxPrediction:
             else:
                 raise ValueError
 
-            i_model_fit_over_kfold = k_fold_cross_validation(model,
-                                                             cov_df, 'T', event_col='E',
-                                                             k=kfold, scoring_method=scoring_method)
+            if kfold > 1:
+                i_model_fit_over_kfold = k_fold_cross_validation(model,
+                                                                 cov_df, 'T', event_col='E',
+                                                                 k=kfold, scoring_method=scoring_method)
+            else:
+                model.fit(cov_df, 'T', 'E')
+                i_model_fit_over_kfold = [model.concordance_index_, ]
+
 
             i_model_fit = [np.mean(i_model_fit_over_kfold), np.std(i_model_fit_over_kfold)]
             self.results.append([i, kfold, para_d] + i_model_fit + [i_model_fit_over_kfold, ])
