@@ -1162,11 +1162,11 @@ def build_query_1and2_matrix(args):
         df_pasc_enc_normalized = df_pasc_enc.div(df_pasc_enc.sum(axis=1), axis=0)
         print('Save by', site)
         df_pasc_enc.to_csv(
-            r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}-bothposneg.csv'.format(
+            r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}.csv'.format(
             args.cohorts,
             args.dataset))
         df_pasc_enc_normalized.to_csv(
-            r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}-bothposneg-normalized.csv'.format(
+            r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}-normalized.csv'.format(
                 args.cohorts,
                 args.dataset))
 
