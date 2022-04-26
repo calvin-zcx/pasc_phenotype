@@ -2030,7 +2030,7 @@ if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
 
-    enrich_med_rwd_info_4_neruo_and_pulmonary()
+    # enrich_med_rwd_info_4_neruo_and_pulmonary()
     #
     start_time = time.time()
     args = parse_args()
