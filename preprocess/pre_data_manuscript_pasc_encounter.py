@@ -572,7 +572,7 @@ def _prefix_in_set(icd, icd_set):
     return False, ''
 
 
-def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e, outcome_enctype):
+def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e):
     # encoding 137 outcomes from our PASC list
     # outcome_t2e = np.zeros((n, 137), dtype='int')
     # outcome_flag = np.zeros((n, 137), dtype='int')
@@ -583,7 +583,7 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
     outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
     outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
 
-    # outcome_enctype = np.zeros((len(pasc_encoding), 4), dtype='int')
+    outcome_enctype = np.zeros((len(pasc_encoding), 4), dtype='int')
 
     for records in dx_list:
         dx_date, icd, dx_type, enc_type = records
@@ -629,7 +629,7 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
                     outcome_enctype[pos, 3] += 1
 
     # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
-    return outcome_flag, outcome_t2e, outcome_baseline
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_enctype
 
 
 def _encoding_outcome_med_rxnorm_ingredient(med_list, rxnorm_ing, ing_encoding, index_date, default_t2e, verbose=0):
@@ -1059,9 +1059,11 @@ def build_query_1and2_matrix(args):
             # outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
             #     = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
 
-            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
-                _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e, outcome_enctype)
+            outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :], outcome_enctype_i = \
+                _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
 
+            # outcome_enctype_i = np.where(outcome_enctype_i >= 1, 1, 0)
+            outcome_enctype += outcome_enctype_i
             # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
             #     _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
@@ -1163,8 +1165,8 @@ def build_query_1and2_matrix(args):
         print('Save by', site)
         df_pasc_enc.to_csv(
             r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}.csv'.format(
-            args.cohorts,
-            args.dataset))
+                args.cohorts,
+                args.dataset))
         df_pasc_enc_normalized.to_csv(
             r'../data/V15_COVID19/output/character/pasc_diagnosis_encounter_type_cohorts_{}_{}-normalized.csv'.format(
                 args.cohorts,
@@ -1180,7 +1182,6 @@ if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
     # python pre_data_manuscript_pasc_encounter.py --dataset ALL --positive_only --cohorts covid_4manuNegNoCovidV2 2>&1 | tee  log/pre_data_manuscript_pasc_encounter_positiveOnly.txt
-
 
     # enrich_med_rwd_info_4_neruo_and_pulmonary()
     #

@@ -26,6 +26,8 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
 import matplotlib.pyplot as plt
+from mlxtend.preprocessing import TransactionEncoder
+from mlxtend.frequent_patterns import apriori
 
 
 def parse_args():
@@ -696,6 +698,17 @@ if __name__ == '__main__':
     print(selected_pasc_list)
     selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
     print('len(selected_organ_list)', len(selected_organ_list))
+
+    specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
+    pasc_name = {}
+    for index, row in df_pasc_info.iterrows():
+        pasc_name['flag@'+row['pasc']] = row['PASC Name Simple']
+    pasc_data = df.loc[df['pasc-count']>=1, specific_pasc_col].rename(columns=pasc_name)
+    # te = TransactionEncoder()
+    # te_ary = te.fit(pasc_data).transform(pasc_data)
+    freitem = apriori(pasc_data, min_support=0.005, use_colnames=True)
+    freitem['length'] = freitem['itemsets'].apply(lambda x: len(x))
+    freitem.to_csv(args.out_dir + 'frequent_pasc.csv')
 
     # Step 3: set stratified (sub-) population
     # 'all', 'outpatient', 'inpatient', 'critical', 'ventilation'   can add more later, just these 4 for brevity
