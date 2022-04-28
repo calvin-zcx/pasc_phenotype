@@ -29,7 +29,7 @@ random.seed(0)
 from misc import utils
 
 
-def plot_forest_for_dx_organ(pvalue=0.05/137, star=True):
+def plot_forest_for_dx_organ(pvalue=0.05 / 137, star=True):
     df = pd.read_excel(
         r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
         sheet_name='diagnosis')
@@ -110,7 +110,7 @@ def plot_forest_for_dx_organ(pvalue=0.05/137, star=True):
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     c = '#F65453'
-    p.colors(pointshape="s", errorbarcolor=c, pointcolor=c) #, linecolor='black'),   # , linecolor='#fcb2ab')
+    p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='black'),   # , linecolor='#fcb2ab')
     ax = p.plot(figsize=(8, .38 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2)
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
@@ -139,14 +139,14 @@ def plot_forest_for_dx_organ(pvalue=0.05/137, star=True):
     plt.close()
 
 
-def plot_forest_for_med_organ(pvalue=0.05/459, star=True, datasite='insight'):
+def plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='insight'):
     if datasite == 'oneflorida':
         df = pd.read_excel(
             r'../data/oneflorida/output/character/outcome/MED-all/causal_effects_specific_med.xlsx',
             sheet_name='med_selected')
-        df = df.rename(columns={'hr-w-p':'Hazard Ratio, Adjusted, P-Value',
+        df = df.rename(columns={'hr-w-p': 'Hazard Ratio, Adjusted, P-Value',
                                 'hr-w': 'Hazard Ratio, Adjusted',
-                                'hr-w-CI':'Hazard Ratio, Adjusted, Confidence Interval'
+                                'hr-w-CI': 'Hazard Ratio, Adjusted, Confidence Interval'
                                 })
         n_threshold = 66
     else:
@@ -222,8 +222,8 @@ def plot_forest_for_med_organ(pvalue=0.05/459, star=True, datasite='insight'):
     else:
         c = '#5494DA'  # '#A986B5'
         p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='#fcb2ab')
-        ax = p.plot(figsize=(8, 0.42* 27 / 45 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5,
-                    decimal=2) #
+        ax = p.plot(figsize=(8, 0.42 * 27 / 45 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5,
+                    decimal=2)  #
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -255,7 +255,8 @@ def plot_forest_for_med_organ(pvalue=0.05/459, star=True, datasite='insight'):
     plt.close()
 
 
-def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=True, select_criteria='', pvalue=0.05 / 137):
+def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=True, select_criteria='',
+                                          pvalue=0.05 / 137):
     if severity == 'all':
         df1 = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
@@ -283,9 +284,9 @@ def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=T
         df_name = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
             sheet_name='diagnosis')
-        df1 = pd.merge(df1, df_name[["pasc", "PASC Name Simple", "Organ Domain", "Original CCSR Domain",]],
+        df1 = pd.merge(df1, df_name[["pasc", "PASC Name Simple", "Organ Domain", "Original CCSR Domain", ]],
                        left_on='pasc', right_on='pasc', how='left')
-        df1 = df1.rename(columns={x + '_y': x for x in [ "PASC Name Simple", "Organ Domain", "Original CCSR Domain"]})
+        df1 = df1.rename(columns={x + '_y': x for x in ["PASC Name Simple", "Organ Domain", "Original CCSR Domain"]})
 
     df_aux = df2.rename(columns=lambda x: x + '_aux')
     df = pd.merge(df1, df_aux, left_on='pasc', right_on='pasc_aux', how='left').set_index('i')
@@ -308,11 +309,20 @@ def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=T
         df_select = df.loc[df['pasc'].isin(_df_select['pasc']), :]
         df_select = df_select.sort_values(by='hr-w', ascending=False)
     else:
+        # def select_criteria_func(_df):
+        #     _df_select = _df.sort_values(by='hr-w', ascending=False)
+        #     _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc'] == 'Muscle disorders'), :]  #
+        #     _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc'] == 'Muscle disorders'), :]
+        #     _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc'] == 'Muscle disorders'),
+        #                  :]
+        #     print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+        #     return _df_select
+
         def select_criteria_func(_df):
             _df_select = _df.sort_values(by='hr-w', ascending=False)
-            _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc'] == 'Muscle disorders'), :]  #
-            _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc'] == 'Muscle disorders'), :]
-            _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc'] == 'Muscle disorders'),
+            _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue), :]  #
+            _df_select = _df_select.loc[(_df_select['hr-w'] > 1), :]
+            _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100),
                          :]
             print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
             return _df_select
@@ -443,10 +453,10 @@ def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=T
     check_and_mkdir(output_dir)
     organ = 'all'
     i = 0
-    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}.png'.format(severity, pvalue, select_criteria),
+    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}-new-NoPASCV2.png'.format(severity, pvalue, select_criteria),
                 bbox_inches='tight',
                 dpi=650)
-    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}.pdf'.format(severity, pvalue, select_criteria),
+    plt.savefig(output_dir + '{}_hr-p{:.3f}-{}-new-NoPASCV2.pdf'.format(severity, pvalue, select_criteria),
                 bbox_inches='tight',
                 transparent=True)
     plt.show()
@@ -521,10 +531,10 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ(pvalue=0.05/137)
     # plot_forest_for_dx_organ(pvalue=0.05)
     # plot_forest_for_med_organ(pvalue=0.05/459)
-    plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='oneflorida')
+    # plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='oneflorida')
 
     #
-    # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all')
+    plot_forest_for_dx_organ_compare2data(add_name=False, severity='all')
     # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.01)
     # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.05)
     # plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65', select_criteria='insight')
