@@ -49,12 +49,15 @@ def parse_args():
     # More args
     if args.dataset == 'INSIGHT':
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        args.out_dir = r'../data/V15_COVID19/output/character/query/'
+
     elif args.dataset == 'OneFlorida':
         args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+        args.out_dir = r'../data/oneflorida/output/character/query/'
+
     else:
         raise ValueError
 
-    args.out_dir = r'../data/{}/output/character/query/'.format(args.dataset, args.encode)
     args.processed_data_file = args.out_dir + r'matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-ANYPASC.csv'
 
     if args.random_seed < 0:
@@ -229,7 +232,7 @@ def build_incident_pasc_from_all(args, dump=True):
 
     covs_columns = list(df.columns)[0:df.columns.get_loc('PX: Convalescent Plasma')] + \
                    ['pasc-count', 'pasc-flag', 'pasc-min-t2e'] + \
-                   [x for x in df.columns if x.startswith('organ')]
+                   [x for x in df.columns if (x.startswith('organ') or x.startswith('flag') )]
     if dump:
         utils.check_and_mkdir(args.processed_data_file)
         df.loc[:, covs_columns].to_csv(args.processed_data_file, index=False)

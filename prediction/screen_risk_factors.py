@@ -470,10 +470,10 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
         utils.check_and_mkdir(args.out_dir + 'any_pasc/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
             args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}.csv'.format(pasc_threshold, args.dataset,
-                                                                              args.severity))
+                                                                                       args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
             args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}.csv'.format(pasc_threshold, args.dataset,
-                                                                                 args.severity))
+                                                                                          args.severity))
 
     return model
 
@@ -532,10 +532,11 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
         utils.check_and_mkdir(args.out_dir + 'any_organ/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
             args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}.csv'.format(organ_threshold, args.dataset,
-                                                                               args.severity))
+                                                                                         args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}.csv'.format(organ_threshold, args.dataset,
-                                                                                  args.severity))
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}.csv'.format(organ_threshold,
+                                                                                            args.dataset,
+                                                                                            args.severity))
 
     return model
 
@@ -589,7 +590,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
         print('cox_data.shape after number filter:', cox_data.shape)
 
-        model = ml.CoxPrediction(random_seed=args.random_seed,).cross_validation_fit(
+        model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
             cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -606,7 +607,8 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
                 args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}.csv'.format(organ, args.dataset, args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}.csv'.format(organ, args.dataset, args.severity))
+                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}.csv'.format(organ, args.dataset,
+                                                                                     args.severity))
             print('Dump done', organ)
 
         model_dict[organ] = model
@@ -632,15 +634,15 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         pasc_flag = df['flag@' + pasc]
         pasc_t2e = df['dx-t2e@' + pasc]
 
-        print('pos:{} ({:.3%})'.format(pasc_flag.sum(),  pasc_flag.mean()),
-              'neg:{} ({:.3%})'.format((1-pasc_flag).sum(), (1-pasc_flag).mean()))
+        print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+              'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
 
         cox_data = df.loc[:, covs_columns]
         print('cox_data.shape before number filter:', cox_data.shape)
         cox_data = cox_data.loc[:, cox_data.columns[cox_data.mean() >= 0.001]]
         print('cox_data.shape after number filter:', cox_data.shape)
 
-        model = ml.CoxPrediction(random_seed=args.random_seed,).cross_validation_fit(
+        model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
             cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -655,9 +657,11 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_pasc/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset, args.severity))
+                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset,
+                                                                                args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset, args.severity))
+                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset,
+                                                                                   args.severity))
             print('Dump done', pasc)
 
         model_dict[pasc] = model
@@ -687,6 +691,7 @@ if __name__ == '__main__':
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
+    args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date'])
     print('Load done, df.shape:', df.shape)
@@ -702,13 +707,30 @@ if __name__ == '__main__':
     specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
     pasc_name = {}
     for index, row in df_pasc_info.iterrows():
-        pasc_name['flag@'+row['pasc']] = row['PASC Name Simple']
-    pasc_data = df.loc[df['pasc-count']>=1, specific_pasc_col].rename(columns=pasc_name)
+        pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
+
+    pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
     # te = TransactionEncoder()
     # te_ary = te.fit(pasc_data).transform(pasc_data)
-    freitem = apriori(pasc_data, min_support=0.005, use_colnames=True)
+    freitem = apriori(pasc_data, min_support=0.001, use_colnames=True, low_memory=True)
     freitem['length'] = freitem['itemsets'].apply(lambda x: len(x))
-    freitem.to_csv(args.out_dir + 'frequent_pasc.csv')
+    freitem['itemsets'] = freitem['itemsets'].apply(lambda x: '; '.join(list(x)))
+    freitem['Occurrence'] = freitem['support'] * len(pasc_data)
+    freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 1, :])
+    freitem.to_csv(args.out_dir + 'frequent_pasc-covid-positive.csv')
+
+    pasc_data = df.loc[(df['covid'] == 0) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
+    # te = TransactionEncoder()
+    # te_ary = te.fit(pasc_data).transform(pasc_data)
+    freitem2 = apriori(pasc_data, min_support=0.001, use_colnames=True, low_memory=True)
+    freitem2['length'] = freitem2['itemsets'].apply(lambda x: len(x))
+    freitem2['itemsets'] = freitem2['itemsets'].apply(lambda x: '; '.join(list(x)))
+    freitem['Occurrence'] = freitem['support'] * len(pasc_data)
+    freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 0, :])
+    freitem2.to_csv(args.out_dir + 'frequent_pasc-covid-negative.csv')
+
+    freitem_combined = pd.merge(freitem, freitem2, left_on='itemsets', right_on='itemsets', how='left')
+    freitem2.to_csv(args.out_dir + 'frequent_pasc-combined.csv')
 
     # Step 3: set stratified (sub-) population
     # 'all', 'outpatient', 'inpatient', 'critical', 'ventilation'   can add more later, just these 4 for brevity
