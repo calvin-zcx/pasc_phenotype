@@ -20,15 +20,15 @@ import seaborn as sns
 
 print = functools.partial(print, flush=True)
 from misc import utils
-from lifelines import KaplanMeierFitter, CoxPHFitter, AalenJohansenFitter
-from lifelines.statistics import survival_difference_at_fixed_point_in_time_test, proportional_hazard_test, logrank_test
-from lifelines.plotting import add_at_risk_counts
-from lifelines.utils import k_fold_cross_validation
-# from PRModels import ml
-import matplotlib.pyplot as plt
-from mlxtend.preprocessing import TransactionEncoder
-from mlxtend.frequent_patterns import apriori
-
+# from lifelines import KaplanMeierFitter, CoxPHFitter, AalenJohansenFitter
+# from lifelines.statistics import survival_difference_at_fixed_point_in_time_test, proportional_hazard_test, logrank_test
+# from lifelines.plotting import add_at_risk_counts
+# from lifelines.utils import k_fold_cross_validation
+# # from PRModels import ml
+# import matplotlib.pyplot as plt
+# from mlxtend.preprocessing import TransactionEncoder
+# from mlxtend.frequent_patterns import apriori
+#
 
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
