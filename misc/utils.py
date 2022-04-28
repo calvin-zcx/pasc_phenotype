@@ -12,7 +12,7 @@ import math
 import itertools
 import os
 # import pyreadstat
-from sas7bdat import SAS7BDAT
+# from sas7bdat import SAS7BDAT
 import argparse
 import csv
 import functools
@@ -169,17 +169,17 @@ def load(filename, chunk=2):
         return data
 
 
-def sas_2_csv(infile, outfile):
-    start_time = time.time()
-    # r'../COL/lab_result_cm.sas7bdat'
-    with SAS7BDAT(infile, skip_header=False) as reader:
-        #     df3 = reader.to_data_frame()
-        print('read:', infile)
-        check_and_mkdir(outfile)
-        print('dump as:', outfile)
-        reader.convert_file(outfile, delimiter=',')
-
-    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+# def sas_2_csv(infile, outfile):
+#     start_time = time.time()
+#     # r'../COL/lab_result_cm.sas7bdat'
+#     with SAS7BDAT(infile, skip_header=False) as reader:
+#         #     df3 = reader.to_data_frame()
+#         print('read:', infile)
+#         check_and_mkdir(outfile)
+#         print('dump as:', outfile)
+#         reader.convert_file(outfile, delimiter=',')
+#
+#     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
 def read_sas_2_df(infile, chunksize=100000, encoding='WINDOWS-1252', column_name='upper'):
