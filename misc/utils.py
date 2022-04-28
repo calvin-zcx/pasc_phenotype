@@ -11,7 +11,7 @@ import pickle
 import math
 import itertools
 import os
-import pyreadstat
+# import pyreadstat
 from sas7bdat import SAS7BDAT
 import argparse
 import csv
