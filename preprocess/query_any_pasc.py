@@ -247,7 +247,7 @@ def build_incident_pasc_from_all(args, dump=True):
     print(len(df.loc[(df['covid'] == 1) & (df['pasc-flag'] == 0), :]),
           len(df.loc[(df['covid'] == 1) & (df['pasc-flag'] == 1), :]),
           len(df.loc[(df['covid'] == 1), :]),
-          len(df.loc[(df['covid'] == 1) & (df['pasc-flag'] == 1), :]) / len(df.loc[(df['covid'] == 0), :]) * 10000
+          len(df.loc[(df['covid'] == 1) & (df['pasc-flag'] == 1), :]) / len(df.loc[(df['covid'] == 1), :]) * 10000
           )
 
     print(len(df.loc[(df['pasc-flag'] == 0), :]),
