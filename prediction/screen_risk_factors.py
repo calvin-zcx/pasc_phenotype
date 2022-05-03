@@ -691,7 +691,7 @@ if __name__ == '__main__':
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
-    args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
+    # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date'])
     print('Load done, df.shape:', df.shape)
@@ -719,18 +719,22 @@ if __name__ == '__main__':
     freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 1, :])
     freitem.to_csv(args.out_dir + 'frequent_pasc-covid-positive.csv')
 
-    pasc_data = df.loc[(df['covid'] == 0) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
-    # te = TransactionEncoder()
-    # te_ary = te.fit(pasc_data).transform(pasc_data)
-    freitem2 = apriori(pasc_data, min_support=0.001, use_colnames=True, low_memory=True)
-    freitem2['length'] = freitem2['itemsets'].apply(lambda x: len(x))
-    freitem2['itemsets'] = freitem2['itemsets'].apply(lambda x: '; '.join(list(x)))
-    freitem['Occurrence'] = freitem['support'] * len(pasc_data)
-    freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 0, :])
-    freitem2.to_csv(args.out_dir + 'frequent_pasc-covid-negative.csv')
-
-    freitem_combined = pd.merge(freitem, freitem2, left_on='itemsets', right_on='itemsets', how='left')
-    freitem2.to_csv(args.out_dir + 'frequent_pasc-combined.csv')
+    # pasc_data = df.loc[(df['covid'] == 0) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
+    # # te = TransactionEncoder()
+    # # te_ary = te.fit(pasc_data).transform(pasc_data)
+    # freitem2 = apriori(pasc_data, min_support=0.0001, use_colnames=True, low_memory=True)
+    # freitem2['length'] = freitem2['itemsets'].apply(lambda x: len(x))
+    # freitem2['itemsets'] = freitem2['itemsets'].apply(lambda x: '; '.join(list(x)))
+    # freitem2['Occurrence'] = freitem2['support'] * len(pasc_data)
+    # freitem2['Crude Incidence'] = freitem2['support'] * len(pasc_data) / len(df.loc[df['covid'] == 0, :])
+    # freitem2.to_csv(args.out_dir + 'frequent_pasc-covid-negative.csv')
+    #
+    # freitem_combined = pd.merge(freitem, freitem2, left_on='itemsets', right_on='itemsets', how='left')
+    # freitem_combined.to_csv(args.out_dir + 'frequent_pasc-combined.csv')
+    #
+    # print("done!")
+    # print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    # sys.exit(0)
 
     # Step 3: set stratified (sub-) population
     # 'all', 'outpatient', 'inpatient', 'critical', 'ventilation'   can add more later, just these 4 for brevity
