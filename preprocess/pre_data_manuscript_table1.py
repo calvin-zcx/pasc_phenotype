@@ -1525,12 +1525,12 @@ def table1_cohorts_characterization_analyse_V3(cohorts='covid_4manuNegNoCovidV2'
                      'Outpatient 0', 'Outpatient 1-2', 'Outpatient 3-4', 'Outpatient >=5',
                      'Emergency 0', 'Emergency 1-2', 'Emergency 3-4', 'Emergency >=5']
 
-    df_pos['Inpatient >=3'] = df_pos['Inpatient 3-4'] + df_pos['Inpatient >=5']
-    df_neg['Inpatient >=3'] = df_neg['Inpatient 3-4'] + df_neg['Inpatient >=5']
-    df_pos['Outpatient >=3'] = df_pos['Outpatient 3-4'] + df_pos['Outpatient >=5']
-    df_neg['Outpatient >=3'] = df_neg['Outpatient 3-4'] + df_neg['Outpatient >=5']
-    df_pos['Emergency >=3'] = df_pos['Emergency 3-4'] + df_pos['Emergency >=5']
-    df_neg['Emergency >=3'] = df_neg['Emergency 3-4'] + df_neg['Emergency >=5']
+    df_pos['Inpatient >=3'] = df_pos['inpatient visits 3-4'] + df_pos['inpatient visits >=5']
+    df_neg['Inpatient >=3'] = df_neg['inpatient visits 3-4'] + df_neg['inpatient visits >=5']
+    df_pos['Outpatient >=3'] = df_pos['outpatient visits 3-4'] + df_pos['outpatient visits >=5']
+    df_neg['Outpatient >=3'] = df_neg['outpatient visits 3-4'] + df_neg['outpatient visits >=5']
+    df_pos['Emergency >=3'] = df_pos['emergency visits 3-4'] + df_pos['emergency visits >=5']
+    df_neg['Emergency >=3'] = df_neg['emergency visits 3-4'] + df_neg['emergency visits >=5']
 
     col_names = ['inpatient visits 0', 'inpatient visits 1-2', 'Inpatient >=3',
                  'outpatient visits 0', 'outpatient visits 1-2', 'Outpatient >=3',
