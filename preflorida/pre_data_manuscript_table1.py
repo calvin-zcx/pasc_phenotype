@@ -1413,7 +1413,7 @@ def table1_cohorts_characterization_analyse_V3(cohorts='covid_4manuNegNoCovidV2'
     # severity in 'hospitalized', 'ventilation', None
     in_file = r'../data/oneflorida/output/character/matrix_cohorts_{}_bool_{}.csv'.format(
         cohorts, dataset)
-    out_file = r'../data/oneflorida/output/character/table1_of_matrix_cohorts_{}_bool_{}_4table1-V2.xlsx'.format(
+    out_file = r'../data/oneflorida/output/character/table1_of_matrix_cohorts_{}_bool_{}_4table1-V3.xlsx'.format(
         cohorts, dataset)
 
     print('Try to load:', in_file)
