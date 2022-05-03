@@ -35,7 +35,7 @@ def parse_args():
                                                'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
-                                               'healthy'
+                                               'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21'],
                         default='03-20-06-20')
