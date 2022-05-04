@@ -176,7 +176,7 @@ class CoxPrediction:
                 except:
                     model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
             else:
-                cox_data = cov_df[['T', 'E', index] + [x for x in adjusted_col if x != index]]
+                cox_data = cov_df[['T', 'E', index] + [x for x in adjusted_col if ((x != index) and (x in cov_df.columns))]]
                 model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
 
             HR = model.hazard_ratios_[index]
