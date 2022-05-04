@@ -26,6 +26,8 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
 import matplotlib.pyplot as plt
+
+
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
 
@@ -37,10 +39,9 @@ def parse_args():
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
-    parser.add_argument('--severity', choices=['all',
-                                               'outpatient', 'inpatient', 'icu', 'ventilation', "inpatienticu"
-                                               ],
-                        default='all')
+    parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
+    parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
+                                               'inpatient', 'icu', 'ventilation', ], default='all')
     parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
     parser.add_argument("--random_seed", type=int, default=0)
 
@@ -96,7 +97,8 @@ def build_incident_pasc_from_all_positive(args, dump=True):
     # df = df.loc[(df['covid'] == 1), :]
     # df.to_csv(args.data_file.replace('.csv', '-PosOnly.csv'))
     print('df.shape:', df.shape)
-    print('All Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
+    print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
+    print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
 
     # add number of comorbidity as features
     n_comor = df[[x for x in df.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]].sum(axis=1)
@@ -473,11 +475,11 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}.csv'.format(pasc_threshold, args.dataset,
-                                                                                       args.severity))
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+                pasc_threshold, args.dataset, args.population, args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}.csv'.format(pasc_threshold, args.dataset,
-                                                                                          args.severity))
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+                pasc_threshold, args.dataset, args.population, args.severity))
 
     return model
 
@@ -535,12 +537,15 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_organ/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}.csv'.format(organ_threshold, args.dataset,
-                                                                                         args.severity))
-        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}.csv'.format(organ_threshold,
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}-{}.csv'.format(organ_threshold,
                                                                                             args.dataset,
+                                                                                            args.population,
                                                                                             args.severity))
+        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}-{}.csv'.format(organ_threshold,
+                                                                                               args.dataset,
+                                                                                               args.population,
+                                                                                               args.severity))
 
     return model
 
@@ -609,10 +614,11 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_organ/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-                args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}.csv'.format(organ, args.dataset, args.severity))
+                args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}-{}.csv'.format(
+                    organ, args.dataset, args.population, args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}.csv'.format(organ, args.dataset,
-                                                                                     args.severity))
+                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}-{}.csv'.format(
+                    organ, args.dataset, args.population, args.severity))
             print('Dump done', organ)
 
         model_dict[organ] = model
@@ -661,11 +667,11 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_pasc/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset,
-                                                                                args.severity))
+                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}-{}.csv'.format(
+                    pasc.replace('/', '_'), args.dataset, args.population, args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}.csv'.format(pasc.replace('/', '_'), args.dataset,
-                                                                                   args.severity))
+                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}-{}.csv'.format(
+                    pasc.replace('/', '_'), args.dataset, args.population, args.severity))
             print('Dump done', pasc)
 
         model_dict[pasc] = model
@@ -673,49 +679,13 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
     return model_dict
 
 
-if __name__ == '__main__':
-    # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-insight-elix.txt
-    # python screen_risk_factors.py --dataset OneFlorida --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-OneFlorida-elix.txt
-
-    start_time = time.time()
-    args = parse_args()
-
-    np.random.seed(args.random_seed)
-    random.seed(args.random_seed)
-
-    print('args: ', args)
-    print('random_seed: ', args.random_seed)
-
-    # -Pre step1: select Covid Positive data and dump
-    # read_all_and_dump_covid_positive(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
-    # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
-
-    # -Pre step2: build Covid Positive data and dump for future use
-    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
-
-    sys.exit(0)
-
-    # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
-    print('Load data file:', args.processed_data_file)
-    # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
-    df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date'])
-    print('Load done, df.shape:', df.shape)
-
-    # Step 2: Load pasc meta information
-    df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
-    selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    print('len(selected_pasc_list)', len(selected_pasc_list))
-    print(selected_pasc_list)
-    selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
-    print('len(selected_organ_list)', len(selected_organ_list))
-
-    specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
-    pasc_name = {}
-    for index, row in df_pasc_info.iterrows():
-        pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
-
-    pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
+def combination_of_pasc():
+    # specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
+    # pasc_name = {}
+    # for index, row in df_pasc_info.iterrows():
+    #     pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
+    #
+    # pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
 
     # # te = TransactionEncoder()
     # # te_ary = te.fit(pasc_data).transform(pasc_data)
@@ -742,28 +712,89 @@ if __name__ == '__main__':
     # print("done!")
     # print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # sys.exit(0)
+    pass
 
-    # Step 3: set stratified (sub-) population
+
+if __name__ == '__main__':
+    # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-insight-elix.txt
+    # python screen_risk_factors.py --dataset OneFlorida --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-OneFlorida-elix.txt
+
+    start_time = time.time()
+    args = parse_args()
+
+    np.random.seed(args.random_seed)
+    random.seed(args.random_seed)
+
+    print('args: ', args)
+    print('random_seed: ', args.random_seed)
+
+    # -Pre step1: select Covid Positive data and dump
+    # read_all_and_dump_covid_positive(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
+    # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
+
+    # -Pre step2: build Covid Positive data and dump for future use
+    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+
+    # sys.exit(0)
+
+    # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
+    print('Load data file:', args.processed_data_file)
+    # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
+    df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                     parse_dates=['index date'])
+    print('Load done, df.shape:', df.shape)
+    print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
+    print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
+
+    # Step 2: Load pasc meta information
+    df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
+    selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
+    print('len(selected_pasc_list)', len(selected_pasc_list))
+    print(selected_pasc_list)
+    selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
+    print('len(selected_organ_list)', len(selected_organ_list))
+
+    specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
+    pasc_name = {}
+    for index, row in df_pasc_info.iterrows():
+        pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
+
+    pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
+
+    # Step 3: set Covid pos, neg, or all population
+    if args.population == 'positive':
+        print('Using Covid positive  cohorts')
+        df = df.loc[(df['covid'] == 1), :].copy()
+    elif args.population == 'negative':
+        print('Using Covid negative  cohorts')
+        df = df.loc[(df['covid'] == 1), :].copy()
+    else:
+        print('Using Both Covid Positive and Negative  cohorts')
+
+    print('Select population:', args.population, 'df.shape:', df.shape)
+
+    # Step 4: set sub- population
+    # focusing on: all, outpatient, inpatienticu (namely inpatient in a broad sense)
     # 'all', 'outpatient', 'inpatient', 'critical', 'ventilation'   can add more later, just these 4 for brevity
     if args.severity == 'outpatient':
         print('Considering outpatient cohorts')
         df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif (args.severity == 'inpatienticu') or (args.severity == 'nonoutpatient'):
+        print('Considering inpatient/hospitalized including icu cohorts, namely non-outpatient')
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
     elif args.severity == 'inpatient':
         print('Considering inpatient/hospitalized cohorts but not ICU')
         df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
     elif args.severity == 'icu':
         print('Considering ICU (hospitalized ventilation or critical care) cohorts')
         df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)), :].copy()
-    if args.severity == 'inpatienticu':
-        print('Considering inpatient/hospitalized including icu cohorts')
-        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
     elif args.severity == 'ventilation':
         print('Considering (hospitalized) ventilation cohorts')
         df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
 
-    print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
+    print('Select sub- cohorts:', args.severity, 'df.shape:', df.shape)
 
     # ['anypasc', 'allpasc', 'anyorgan', 'allorgan']
     print(args.goal)
