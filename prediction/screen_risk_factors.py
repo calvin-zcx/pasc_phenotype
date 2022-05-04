@@ -767,7 +767,7 @@ if __name__ == '__main__':
         df = df.loc[(df['covid'] == 1), :].copy()
     elif args.population == 'negative':
         print('Using Covid negative  cohorts')
-        df = df.loc[(df['covid'] == 1), :].copy()
+        df = df.loc[(df['covid'] == 0), :].copy()
     else:
         print('Using Both Covid Positive and Negative  cohorts')
 
