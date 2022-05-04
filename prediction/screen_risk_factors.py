@@ -26,8 +26,8 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
 import matplotlib.pyplot as plt
-from mlxtend.preprocessing import TransactionEncoder
-from mlxtend.frequent_patterns import apriori
+# from mlxtend.preprocessing import TransactionEncoder
+# from mlxtend.frequent_patterns import apriori
 
 
 def parse_args():
@@ -716,14 +716,15 @@ if __name__ == '__main__':
         pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
 
     pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
-    # te = TransactionEncoder()
-    # te_ary = te.fit(pasc_data).transform(pasc_data)
-    freitem = apriori(pasc_data, min_support=0.001, use_colnames=True, low_memory=True)
-    freitem['length'] = freitem['itemsets'].apply(lambda x: len(x))
-    freitem['itemsets'] = freitem['itemsets'].apply(lambda x: '; '.join(list(x)))
-    freitem['Occurrence'] = freitem['support'] * len(pasc_data)
-    freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 1, :])
-    freitem.to_csv(args.out_dir + 'frequent_pasc-covid-positive.csv')
+
+    # # te = TransactionEncoder()
+    # # te_ary = te.fit(pasc_data).transform(pasc_data)
+    # freitem = apriori(pasc_data, min_support=0.001, use_colnames=True, low_memory=True)
+    # freitem['length'] = freitem['itemsets'].apply(lambda x: len(x))
+    # freitem['itemsets'] = freitem['itemsets'].apply(lambda x: '; '.join(list(x)))
+    # freitem['Occurrence'] = freitem['support'] * len(pasc_data)
+    # freitem['Crude Incidence'] = freitem['support'] * len(pasc_data) / len(df.loc[df['covid'] == 1, :])
+    # freitem.to_csv(args.out_dir + 'frequent_pasc-covid-positive.csv')
 
     # pasc_data = df.loc[(df['covid'] == 0) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
     # # te = TransactionEncoder()
