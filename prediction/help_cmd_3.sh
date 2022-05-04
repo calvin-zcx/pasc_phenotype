@@ -1,0 +1,12 @@
+python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-positive-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-positive-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population negative --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-negative-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population negative --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-negative-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population negative --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-negative-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population negative --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-negative-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-all-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-all-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-all-inpatienticu.txt
+python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-all-inpatienticu.txt
