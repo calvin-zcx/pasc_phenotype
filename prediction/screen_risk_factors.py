@@ -48,17 +48,21 @@ def parse_args():
 
     # More args
     if args.dataset == 'INSIGHT':
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
+        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
+        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
     elif args.dataset == 'OneFlorida':
-        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
+        # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
+        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+        args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
     else:
         raise ValueError
 
     args.data_dir = r'output/dataset/{}/{}/'.format(args.dataset, args.encode)
     args.out_dir = r'output/factors/{}/{}/'.format(args.dataset, args.encode)
 
-    args.processed_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
-        args.dataset, args.encode)
+    # args.processed_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
+    #     args.dataset, args.encode)
 
     if args.random_seed < 0:
         from datetime import datetime
@@ -687,7 +691,9 @@ if __name__ == '__main__':
     # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
     # -Pre step2: build Covid Positive data and dump for future use
-    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+
+    sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
