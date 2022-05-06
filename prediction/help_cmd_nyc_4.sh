@@ -1,0 +1,12 @@
+#python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-positive-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-positive-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population negative --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-negative-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population negative --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-negative-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population negative --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-negative-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population negative --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-negative-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population all --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-all-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population all --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-all-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population all --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-all-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population all --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-all-icu.txt
