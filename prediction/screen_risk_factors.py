@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
-
+KFOLD = 1
 
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
@@ -458,7 +458,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -523,7 +523,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -600,7 +600,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -653,7 +653,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[

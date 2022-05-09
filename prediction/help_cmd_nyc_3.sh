@@ -10,7 +10,7 @@
 #python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population all --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-all-inpatient.txt
 #python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population all --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-all-inpatient.txt
 #python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population all --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-all-inpatient.txt
-python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-icu.txt
+#python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-icu.txt
 python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-icu.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anyorgan --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anyorgan-positive-icu.txt
 python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-positive-icu.txt
