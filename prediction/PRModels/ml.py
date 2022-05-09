@@ -31,7 +31,9 @@ class CoxPrediction:
             if self.learner == 'COX':
                 self.paras_grid = {
                     'l1_ratio': [0],  # 'l2',
-                    'penalizer': 10 ** np.arange(-3, 3, 0.5),
+                    # 'penalizer': 10 ** np.arange(-3, 3, 0.5),
+                    'penalizer': 10 ** np.arange(-3, 0.5, 0.5),
+
                 }
 
             else:
