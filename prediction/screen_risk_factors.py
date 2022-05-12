@@ -687,11 +687,13 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc_severity/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc_severity/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+                'severe' if severe else 'moderate',
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc_severity/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+                'severe' if severe else 'moderate',
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
 
