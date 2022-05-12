@@ -691,7 +691,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc_severity/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
 
