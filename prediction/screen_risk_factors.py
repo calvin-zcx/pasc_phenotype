@@ -685,7 +685,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
             'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
 
     if dump:
-        utils.check_and_mkdir(args.out_dir + 'any_pasc_severity/')
+        utils.check_and_mkdir(args.out_dir + 'any_pasc_{}/'.format('severe' if severe else 'moderate'))
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
             args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
                 'severe' if severe else 'moderate',
