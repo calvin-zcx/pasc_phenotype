@@ -26,7 +26,7 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
 import matplotlib.pyplot as plt
-
+from brokenaxes import brokenaxes
 
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
@@ -36,13 +36,14 @@ KFOLD = 5
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
     parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
     parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
-                                               'inpatient', 'icu', 'ventilation', ], default='all')
+                                               'inpatient', 'icu', 'ventilation', ],
+                        default='icu')
     parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
     parser.add_argument("--random_seed", type=int, default=0)
 
@@ -50,22 +51,21 @@ def parse_args():
 
     # More args
     if args.dataset == 'INSIGHT':
-        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
-        # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
-        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
-
+        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
+        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
+        args.processed_data_file = r'output/dataset/INSIGHT/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
     elif args.dataset == 'OneFlorida':
-        # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
-        # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
-        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
-        args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
-
+        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
+        # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+        # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
+        args.processed_data_file = r'output/dataset/OneFlorida/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
     else:
         raise ValueError
 
     args.data_dir = r'output/dataset/{}/{}/'.format(args.dataset, args.encode)
     args.out_dir = r'output/factors/{}/{}/'.format(args.dataset, args.encode)
+    args.fig_out_dir = r'output/figures/{}/{}/'.format(args.dataset, args.encode)
 
     # args.processed_data_file = r'output/dataset/{}/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-{}.csv'.format(
     #     args.dataset, args.encode)
@@ -126,11 +126,6 @@ def build_incident_pasc_from_all_positive(args, dump=True):
     selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
     print('len(selected_pasc_list)', len(selected_pasc_list))
     print(selected_pasc_list)
-
-    pasc_severe_list = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 1), 'pasc']
-    pasc_moderate_list = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 0), 'pasc']
-    print('len(pasc_severe_list)', len(pasc_severe_list))
-    print('len(pasc_moderate_list)', len(pasc_moderate_list))
 
     selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
     print('len(selected_organ_list)', len(selected_organ_list))
@@ -198,50 +193,6 @@ def build_incident_pasc_from_all_positive(args, dump=True):
             t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
 
         df.loc[index, 'pasc-min-t2e'] = t2e
-
-    # build severe v.s. non-severe PASC part, 2022-May-11
-    print('Any Sever or Moderate PASC: build flag, t2e for any Sever or Moderate pasc')
-    severe_pasc_col = ['flag@' + x for x in pasc_severe_list]
-    moderate_pasc_col = ['flag@' + x for x in pasc_moderate_list]
-
-    n_severe_pasc_series = df[severe_pasc_col].sum(axis=1)
-    df['pasc-severe-count'] = n_severe_pasc_series  # number of incident severe pascs of this person
-    df['pasc-severe-flag'] = (n_severe_pasc_series > 0).astype('int')  # indicator of any incident severe pasc of this person
-    df['pasc-severe-min-t2e'] = 180
-
-    n_moderate_pasc_series = df[moderate_pasc_col].sum(axis=1)
-    df['pasc-moderate-count'] = n_moderate_pasc_series  # number of incident moderate pascs of this person
-    df['pasc-moderate-flag'] = (n_moderate_pasc_series > 0).astype('int')  # indicator of any incident moderate pasc of this person
-    df['pasc-moderate-min-t2e'] = 180
-
-    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-        npasc = rows['pasc-severe-count']
-        if npasc >= 1:
-            # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
-            pasc_flag_cols = list(rows[severe_pasc_col][rows[severe_pasc_col] > 0].index)
-            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-            t2e = rows.loc[pasc_t2e_cols].min()
-        else:
-            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
-
-        df.loc[index, 'pasc-severe-min-t2e'] = t2e
-
-        npasc = rows['pasc-moderate-count']
-        if npasc >= 1:
-            pasc_flag_cols = list(rows[moderate_pasc_col][rows[moderate_pasc_col] > 0].index)
-            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-            t2e = rows.loc[pasc_t2e_cols].min()
-        else:
-            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
-
-        df.loc[index, 'pasc-moderate-min-t2e'] = t2e
-
-    # there can be 3 cases: only severe, both severe and moderate, and only moderate
-    # the above 2 type columns account for: has severe (only severe + both), has moderate (both + only moderate)
-    #
-    df['pasc-moderateonly-flag'] = ((df['pasc-moderate-flag'] - df['pasc-severe-flag']) > 0).astype('int')
-    # df['pasc-moderateonly-count'] = df['pasc-moderate-count']
-    # df['pasc-moderateonly-min-t2e'] = df['pasc-moderate-min-t2e']
 
     # build flag, t2e for each organ
     print('Organ category: build flag, t2e for Organ category with a list of pascs')
@@ -408,62 +359,6 @@ def pre_transform_feature(df):
     df['icu'] = ((df['ventilation'] + df['criticalcare']) >= 1).astype('int')
 
     return df
-
-
-def risk_factor_of_pasc(args, pasc_name, dump=True):
-    infile = args.data_dir + pasc_name + '_{}'.format(
-        'dx_med_' if args.encode == 'icd_med' else '') + args.dataset + '.csv'
-    print('In risk_factor_of_pasc:')
-    pasc = pasc_name.replace('_', '/')
-    print('PASC:', pasc, 'Infile:', infile)
-
-    df = pd.read_csv(infile)
-    print('df.shape:', df.shape)
-    df = pre_transform_feature(df)
-    print('df.shape after pre_transform_feature:', df.shape)
-    # df_label = df['covid']
-
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
-
-    if pasc == 'Neurocognitive disorders':
-        covs_columns = [x for x in covs_columns if x != "DX: Dementia"]
-    elif pasc == 'Diabetes mellitus with complication':
-        covs_columns = [x for x in covs_columns if x != 'DX: Diabetes Type 2']
-
-    pasc_flag = df['dx-out@' + pasc]
-    pasc_t2e = df['dx-t2e@' + pasc]  # .astype('float')
-    pasc_baseline = df['dx-base@' + pasc]
-
-    death_flag = df['death']
-    death_t2e = df['death t2e']
-    # pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
-    print('#death:', (death_t2e == pasc_t2e).sum(),
-          '#death:', (death_t2e == pasc_t2e).sum(),
-          'ratio of death:', (death_t2e == pasc_t2e).mean())
-
-    cox_data = df.loc[:, covs_columns]
-    print('cox_data.shape before number filter:', cox_data.shape)
-    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
-    print('cox_data.shape after number filter:', cox_data.shape)
-
-    model = ml.CoxPrediction(random_seed=args.random_seed).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=5, scoring_method="concordance_index")
-
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
-        'Female', 'Male'], pre='ageSex-')
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
-        'Female', 'Male', 'hospitalized', 'ventilation', 'criticalcare'], pre='ageSexAcute-')
-    if dump:
-        utils.check_and_mkdir(args.out_dir)
-        model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + pasc_name + '-riskFactor.csv')
-        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + pasc_name + '-modeSelection.csv')
-
-    return model
 
 
 def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True):
@@ -769,6 +664,9 @@ def combination_of_pasc():
     pass
 
 
+# def plot_cumulative_incidence():
+
+
 if __name__ == '__main__':
     # python screen_risk_factors.py --dataset INSIGHT --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-insight-elix.txt
     # python screen_risk_factors.py --dataset OneFlorida --encode elix 2>&1 | tee  log/screen_anyPASC-risk_factors-OneFlorida-elix.txt
@@ -787,15 +685,15 @@ if __name__ == '__main__':
     # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
     # -Pre step2: build Covid Positive data and dump for future use
-    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
 
-    sys.exit(0)
+    # sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
     # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date'])  # , nrows=100
+                     parse_dates=['index date'])
     print('Load done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
     print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
@@ -803,7 +701,7 @@ if __name__ == '__main__':
     # Step 2: Load pasc meta information
     df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
     selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    print('len(selected_pasc_list)', len(selected_pasc_list))  # 44 pasc
+    print('len(selected_pasc_list)', len(selected_pasc_list))
     print(selected_pasc_list)
     selected_organ_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'Organ Domain'].unique()
     print('len(selected_organ_list)', len(selected_organ_list))
@@ -850,35 +748,89 @@ if __name__ == '__main__':
 
     print('Select sub- cohorts:', args.severity, 'df.shape:', df.shape)
 
+    print('df.shape:', df.shape)
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+
+    pasc_flag = (df['pasc-count'] >= 1).astype('int')
+    pasc_t2e = df['pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
+    print('PASC pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+          'PASC neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
+
+    # plot cumulative incidence across age
+    age_cols = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
+    col_name = ['20-39', '40-54', '55-64', '65-74', '75+']
+    legend_title = "Age group"
+    #
+    age_cols = ['Female', 'Male']
+    col_name = ['Female', 'Male']
+    legend_title = "Gender"
+
+    line_type = ['-', '-.', ':', '--', 'dotted', ]
+    ajs = []
+    for i, col in enumerate(age_cols):
+        t2e = df.loc[df[col] == 1, 'pasc-min-t2e']
+        flag = df.loc[df[col] == 1, 'pasc-flag']
+        aj = AalenJohansenFitter(calculate_variance=True).fit(t2e, flag, event_of_interest=1, label=col_name[i])
+        ajs.append(aj)
+
+    f = plt.figure(figsize=(8, 5))
+    ax = f.add_subplot(111)
+    # ax = brokenaxes(ylims=((0, .7), (.7, 1)), hspace=.05)
+    plt.axhline(y=0.5, color='0.85', linestyle='--')
+    plt.axhline(y=0.6, color='0.85', linestyle='--')
+    plt.axhline(y=0.7, color='0.85', linestyle='--')
+    plt.axhline(y=0.8, color='0.85', linestyle='--')
+    # ajf1.plot(ax=ax)
+    for i, aj in enumerate(ajs):
+        aj.plot(ax=ax, loc=slice(0., t2e.max()), linestyle=line_type[i])  # 0, 180
+
+    # add_at_risk_counts(ajf1w, ajf0w, ax=ax)
+    plt.xlim([0, 180])
+    plt.ylim([0, 0.85])
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(True)
+    legend = plt.legend(title=legend_title, fontsize=15, loc='upper left')
+    legend.get_title().set_fontsize('15')  # legend 'Title' fontsize
+    # ax.grid(axis='y')
+
+    plt.xticks(fontsize=12)
+    plt.yticks(fontsize=12)
+    ax.set_xlabel("Days", fontsize=15)
+    ax.set_ylabel("Cumulative Incidence", fontsize=15)
+    plt.tight_layout()
+
+    utils.check_and_mkdir(args.fig_out_dir)
+    plt.savefig(args.fig_out_dir + 'cumincidence_{}_{}.png'.format(legend_title, args.severity, ),
+                bbox_inches='tight',
+                dpi=600)
+    plt.savefig(args.fig_out_dir + 'cumincidence_{}_{}.pdf'.format(legend_title, args.severity, ),
+                bbox_inches='tight',
+                transparent=True)
+
+    plt.show()
+    # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
+
+    # plt.title('title', fontsize=12)
+    # plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'))
+    # plt.close()
+
+    # plot cumulative incidence across severity
+
     # ['anypasc', 'allpasc', 'anyorgan', 'allorgan']
     print(args.goal)
-    if args.goal == 'anypasc':
-        # screening risk factor of >= k PASC
-        screen_any_pasc(args, df, df_pasc_info)
-    elif args.goal == 'anyorgan':
-        screen_any_organ(args, df, df_pasc_info)
-    elif args.goal == 'allpasc':
-        screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True)
-    elif args.goal == 'allorgan':
-        screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True)
-
-    # df, df_pasc_info = build_data_from_all_positive(args)
-    # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
-
-    # df, df_pasc_info, model_dict = screen_any_organ(args)
-
-    # # pasc_name = 'Neurocognitive disorders'  # 'Diabetes mellitus with complication' # 'Anemia' #
-    # # model = risk_factor_of_pasc(args, pasc_name, dump=False)
-    #
-    # causal_res = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx',
-    #                            sheet_name='diagnosis')
-    # filtered_data = causal_res.loc[(causal_res['hr-w'] > 1) & (causal_res['hr-w-p'] < 0.01), :]
-    # filtered_data = filtered_data.reset_index(drop=True)
-    # pasc_list = list(filtered_data['pasc'])
-    #
-    # idx = 0
-    # for selected_PASC in pasc_list:  # ['Neurocognitive disorders']:  # , 'Diabetes mellitus with complication']:  # tqdm(pasc_list):
-    #     pasc_name = selected_PASC.replace('/', '_')
-    #     model = risk_factor_of_pasc(args, pasc_name)
+    # if args.goal == 'anypasc':
+    #     # screening risk factor of >= k PASC
+    #     screen_any_pasc(args, df, df_pasc_info)
+    # elif args.goal == 'anyorgan':
+    #     screen_any_organ(args, df, df_pasc_info)
+    # elif args.goal == 'allpasc':
+    #     screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True)
+    # elif args.goal == 'allorgan':
+    #     screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True)
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
