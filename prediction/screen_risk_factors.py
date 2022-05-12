@@ -27,7 +27,6 @@ from lifelines.utils import k_fold_cross_validation
 from PRModels import ml
 import matplotlib.pyplot as plt
 
-
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
 KFOLD = 5
@@ -43,17 +42,19 @@ def parse_args():
     parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
     parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
                                                'inpatient', 'icu', 'ventilation', ], default='all')
-    parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
+    parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan',
+                                           'anypascsevere', 'anypascmoderate'],
+                        default='anypascmoderate')
     parser.add_argument("--random_seed", type=int, default=0)
 
     args = parser.parse_args()
 
     # More args
     if args.dataset == 'INSIGHT':
-        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
-        # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
-        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
+        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
+        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
+        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
 
     elif args.dataset == 'OneFlorida':
         # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
@@ -199,19 +200,21 @@ def build_incident_pasc_from_all_positive(args, dump=True):
 
         df.loc[index, 'pasc-min-t2e'] = t2e
 
-    # build severe v.s. non-severe PASC part, 2022-May-11
+    # build ANY Severe v.s. non-severe PASC part, 2022-May-11
     print('Any Sever or Moderate PASC: build flag, t2e for any Sever or Moderate pasc')
     severe_pasc_col = ['flag@' + x for x in pasc_severe_list]
     moderate_pasc_col = ['flag@' + x for x in pasc_moderate_list]
 
     n_severe_pasc_series = df[severe_pasc_col].sum(axis=1)
     df['pasc-severe-count'] = n_severe_pasc_series  # number of incident severe pascs of this person
-    df['pasc-severe-flag'] = (n_severe_pasc_series > 0).astype('int')  # indicator of any incident severe pasc of this person
+    df['pasc-severe-flag'] = (n_severe_pasc_series > 0).astype(
+        'int')  # indicator of any incident severe pasc of this person
     df['pasc-severe-min-t2e'] = 180
 
     n_moderate_pasc_series = df[moderate_pasc_col].sum(axis=1)
     df['pasc-moderate-count'] = n_moderate_pasc_series  # number of incident moderate pascs of this person
-    df['pasc-moderate-flag'] = (n_moderate_pasc_series > 0).astype('int')  # indicator of any incident moderate pasc of this person
+    df['pasc-moderate-flag'] = (n_moderate_pasc_series > 0).astype(
+        'int')  # indicator of any incident moderate pasc of this person
     df['pasc-moderate-min-t2e'] = 180
 
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
@@ -604,6 +607,97 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     return model
 
 
+def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_threshold=1, dump=True):
+    print('in risk_factor_of_any_pasc severity, severe or moderate PASC is defined by >=', pasc_threshold)
+
+    print('df.shape:', df.shape)
+    df = pre_transform_feature(df)
+    print('df.shape after pre_transform_feature:', df.shape)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+
+    if severe:
+        print('Focusing on Severe PASC')
+        pasc_flag = (df['pasc-severe-count'] >= pasc_threshold).astype('int')
+        pasc_t2e = df['pasc-severe-min-t2e']
+        t2ecolname = 'pasc-severe-min-t2e'
+        pasccntname = 'pasc-severe-count'
+        # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
+        specific_pasc_col = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 1), 'pasc']
+        print('len(pasc_severe_list)', len(specific_pasc_col))
+
+    else:
+        print('Focusing on Moderate PASC')
+        # moderate flag: only moderate, no severe
+        pasc_flag = (df['pasc-moderate-count'] >= pasc_threshold).astype('int')
+        pasc_flag = ((pasc_flag - df['pasc-severe-flag']) >= 1).astype('int')
+        pasc_t2e = df['pasc-moderate-min-t2e']
+        t2ecolname = 'pasc-moderate-min-t2e'
+        pasccntname = 'pasc-moderate-count'
+        specific_pasc_col = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 0), 'pasc']
+        print('len(pasc_moderate_list)', len(specific_pasc_col))
+
+    specific_pasc_col = ['flag@'+x for x in specific_pasc_col]
+    print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
+          'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
+
+    # 1 pasc --> the earliest; 2 pasc --> 2nd earliest, et.c
+    if pasc_threshold >= 2:
+        print('pasc thereshold >=', pasc_threshold, 't2e is defined as the ', pasc_threshold, 'th earliest events time')
+        df[t2ecolname] = 180
+        # replace this with severity-related PASC
+        # specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
+        for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+            npasc = rows[pasccntname]
+            if npasc >= pasc_threshold:
+                # if at least pasc_threshold pasc occur, t2e is the pasc_threshold^th earlist time
+                pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
+                pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+                # t2e = rows[pasc_t2e_cols].min()
+                time_vec = sorted(rows[pasc_t2e_cols])
+                t2e = time_vec[min(len(time_vec) - 1, pasc_threshold - 1)]
+            else:
+                # if events number < pasc_threshold occur, e.g. pasc_threshold=2, but only 1 event happened,
+                # then 2-event pasc did not happen
+                # t2e is the event, death, censoring, 180 days, whichever came first.
+                # t2e = rows.loc[[x.replace('flag@', 'dx-t2e@') for x in specific_pasc_col]].max()
+                t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+            df.loc[index, t2ecolname] = t2e
+
+    cox_data = df.loc[:, covs_columns]
+    print('cox_data.shape before number filter:', cox_data.shape)
+    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+    print('cox_data.shape after number filter:', cox_data.shape)
+
+    model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+    # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
+
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
+    if args.severity == 'all':
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
+
+    if dump:
+        utils.check_and_mkdir(args.out_dir + 'any_pasc_severity/')
+        model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
+            args.out_dir + 'any_pasc_severity/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+                pasc_threshold, 'severe' if severe else 'moderate',
+                args.dataset, args.population, args.severity))
+        model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
+            args.out_dir + 'any_pasc/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+                pasc_threshold, 'severe' if severe else 'moderate',
+                args.dataset, args.population, args.severity))
+
+    return model
+
+
 def screen_any_pasc(args, df, df_pasc_info):
     print('In screen_any_pasc, args: ', args)
     print('random_seed: ', args.random_seed)
@@ -611,6 +705,19 @@ def screen_any_pasc(args, df, df_pasc_info):
     for i in range(1, 9):
         print('screen_any_pasc, In threshold:', i)
         model = risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=i, dump=True)
+        model_dict[i] = model
+
+    return model_dict
+
+
+def screen_any_pasc_severity(args, df, df_pasc_info, severe):
+    print('In screen_any_pasc_severity, args: ', args)
+    print('screen_any_pasc_severity, severe:', severe)
+    print('random_seed: ', args.random_seed)
+    model_dict = {}
+    for i in range(1, 9):
+        print('screen_any_pasc_severity, In threshold:', i)
+        model = risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe, pasc_threshold=i, dump=True)
         model_dict[i] = model
 
     return model_dict
@@ -787,13 +894,12 @@ if __name__ == '__main__':
     # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
     # -Pre step2: build Covid Positive data and dump for future use
-    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
 
-    sys.exit(0)
+    # sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
-    # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-ANYPASC.csv'
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date'])  # , nrows=100
     print('Load done, df.shape:', df.shape)
@@ -812,8 +918,6 @@ if __name__ == '__main__':
     pasc_name = {}
     for index, row in df_pasc_info.iterrows():
         pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
-
-    pasc_data = df.loc[(df['covid'] == 1) & (df['pasc-count'] >= 1), specific_pasc_col].rename(columns=pasc_name)
 
     # Step 3: set Covid pos, neg, or all population
     if args.population == 'positive':
@@ -840,6 +944,8 @@ if __name__ == '__main__':
         print('Considering inpatient/hospitalized cohorts but not ICU')
         df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
     elif args.severity == 'icu':
+        KFOLD = 1
+        print('using KFOLD=1 in the ICU case due to sample size issue')
         print('Considering ICU (hospitalized ventilation or critical care) cohorts')
         df = df.loc[(((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)), :].copy()
     elif args.severity == 'ventilation':
@@ -861,6 +967,10 @@ if __name__ == '__main__':
         screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True)
     elif args.goal == 'allorgan':
         screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True)
+    elif args.goal == 'anypascsevere':
+        screen_any_pasc_severity(args, df, df_pasc_info, severe=True)
+    elif args.goal == 'anypascmoderate':
+        screen_any_pasc_severity(args, df, df_pasc_info, severe=False)
 
     # df, df_pasc_info = build_data_from_all_positive(args)
     # df_pasc_person_counts, df_person_pasc_counts = distribution_statistics(args, df, df_pasc_info)
