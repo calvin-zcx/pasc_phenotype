@@ -1,9 +1,9 @@
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-all.txt
+python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-all.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-outpatient.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-inpatienticu.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-inpatient.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity icu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-icu.txt
-python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-all.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-outpatient.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-inpatienticu.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-inpatient.txt
