@@ -38,15 +38,17 @@ from misc import utils
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
     parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
     parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
                                                'inpatient', 'icu', 'ventilation', ],
-                        default='icu')
-    parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
+                        default='all')
+    parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan',
+                                           'anypascsevere', 'anypascmoderate'],
+                        default='anypascsevere')
     parser.add_argument("--random_seed", type=int, default=0)
 
     args = parser.parse_args()
@@ -152,10 +154,10 @@ def plot_forest_for_risk_stratified_by_severity(args, star=True):
     # 'Certain Infectious and Parasitic Diseases',
     # 'Injury, Poisoning and Certain Other Consequences of External Causes']
 
-    f1 = args.out_dir + 'any_pasc/' + 'any-at-least-1-pasc-riskFactor-{}-positive-all.csv'.format(args.dataset)
-    f2 = args.out_dir + 'any_pasc/' + 'any-at-least-1-pasc-riskFactor-{}-positive-outpatient.csv'.format(args.dataset)
-    f3 = args.out_dir + 'any_pasc/' + 'any-at-least-1-pasc-riskFactor-{}-positive-inpatient.csv'.format(args.dataset)
-    f4 = args.out_dir + 'any_pasc/' + 'any-at-least-1-pasc-riskFactor-{}-positive-icu.csv'.format(args.dataset)
+    f1 = args.out_dir + 'any_pasc_severe/' + 'any-at-least-1-severe-pasc-riskFactor-{}-positive-all.csv'.format(args.dataset)
+    f2 = args.out_dir + 'any_pasc_severe/' + 'any-at-least-1-severe-pasc-riskFactor-{}-positive-outpatient.csv'.format(args.dataset)
+    f3 = args.out_dir + 'any_pasc_severe/' + 'any-at-least-1-severe-pasc-riskFactor-{}-positive-inpatient.csv'.format(args.dataset)
+    f4 = args.out_dir + 'any_pasc_severe/' + 'any-at-least-1-severe-pasc-riskFactor-{}-positive-icu.csv'.format(args.dataset)
 
     df = pd.read_csv(f1)
     df_select = df.loc[df['p-Value'] < 0.05, :]
@@ -166,7 +168,7 @@ def plot_forest_for_risk_stratified_by_severity(args, star=True):
         df2 = pd.read_csv(filename)
         df_vec.append(df2)
 
-    df_vec = df_vec[:2]
+    df_vec = df_vec[:0]
 
     organ_n = np.zeros(len(organ_list))
     labs = []
@@ -224,12 +226,12 @@ def plot_forest_for_risk_stratified_by_severity(args, star=True):
     # '#F65453', '#82A2D3'
     # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
     c = '#F65453'
-    p.colors(pointshape="s", errorbarcolor=color_list, pointcolor=color_list)  # , linecolor='#fcb2ab')
+    p.colors(pointshape="o", errorbarcolor=color_list, pointcolor=color_list)  # , linecolor='#fcb2ab')
     width = 9.
     height = .28 * len(labs)
     if len(labs) == 2:
         height = .3 * (len(labs) + 1)
-    ax = p.plot(figsize=(width, height), t_adjuster=0.010, max_value=1.5, min_value=0.2, size=5, decimal=2)  # 0.02
+    ax = p.plot(figsize=(width, height), t_adjuster=0.010, max_value=3, min_value=0.5, size=5, decimal=2)  # 0.02
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -262,6 +264,26 @@ def plot_forest_for_risk_stratified_by_severity(args, star=True):
     plt.close()
 
 
+def get_model_c_index(args, severe=True, total=9):
+    vcindex = []
+    vstd = []
+    for pasc_threshold in range(1, total):
+        fname = args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+                'severe' if severe else 'moderate',
+                pasc_threshold, 'severe' if severe else 'moderate',
+                args.dataset, args.population, args.severity)
+        df = pd.read_csv(fname)
+        for key, row in df.iterrows():
+            cindex = row['E[fit]']
+            st = row['Std[fit]']
+            vcindex.append(cindex)
+            vstd.append(st)
+            break
+
+    result = pd.DataFrame({'cindex':vcindex, 'std':vstd})
+    return result
+
+
 if __name__ == '__main__':
     start_time = time.time()
     args = parse_args()
@@ -273,6 +295,11 @@ if __name__ == '__main__':
     print('random_seed: ', args.random_seed)
     plot_forest_for_risk_stratified_by_severity(args, star=True)
 
-    # df = risk_table_2_datasets()
+    # result1 = get_model_c_index(args, severe=True, total=9)
+    # result2 = get_model_c_index(args, severe=False, total=8)
+    # result = pd.concat([result1, result2], axis=1)
+    # result.index = result.index+1
+    # result.to_csv('output/factors/{}/elix/c_index_of_pasc_severity_over_threshold.csv'.format(args.dataset))
+    # # df = risk_table_2_datasets()
 
     print('Done')

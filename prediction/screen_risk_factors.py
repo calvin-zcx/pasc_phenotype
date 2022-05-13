@@ -61,7 +61,6 @@ def parse_args():
         # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
         args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
         args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
-
     else:
         raise ValueError
 
@@ -896,9 +895,9 @@ if __name__ == '__main__':
     # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
     # -Pre step2: build Covid Positive data and dump for future use
-    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
-
-    # sys.exit(0)
+    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+    #
+    sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
