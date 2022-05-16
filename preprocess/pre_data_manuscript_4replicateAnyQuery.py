@@ -943,12 +943,12 @@ def build_query_1and2_matrix(args):
                                ['dx-base@' + x for x in pasc_encoding.keys()]
 
         # rxing_encoding outcome.
-        outcome_med_flag = np.zeros((n, 434), dtype='int16')
-        outcome_med_t2e = np.zeros((n, 434), dtype='int16')
-        outcome_med_baseline = np.zeros((n, 434), dtype='int16')
-        outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-t2e@' + x for x in rxing_encoding.keys()] + \
-                                   ['med-base@' + x for x in rxing_encoding.keys()]
+        # outcome_med_flag = np.zeros((n, 434), dtype='int16')
+        # outcome_med_t2e = np.zeros((n, 434), dtype='int16')
+        # outcome_med_baseline = np.zeros((n, 434), dtype='int16')
+        # outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
+        #                            ['med-t2e@' + x for x in rxing_encoding.keys()] + \
+        #                            ['med-base@' + x for x in rxing_encoding.keys()]
 
         column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                         'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
@@ -958,7 +958,7 @@ def build_query_1and2_matrix(args):
                        social_column_names + utilization_column_names + index_period_names + \
                        bmi_names + smoking_names + \
                        dx_column_names + med_column_names + covidmed_column_names + \
-                       outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
+                       outcome_covidmed_column_names + outcome_column_names # + outcome_med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -1048,8 +1048,8 @@ def build_query_1and2_matrix(args):
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
                 _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
 
-            outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
-                _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
+            # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
+            #     _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
             # count additional information
             # in follow-up, each person count once
@@ -1130,9 +1130,9 @@ def build_query_1and2_matrix(args):
                                 outcome_flag,
                                 outcome_t2e,
                                 outcome_baseline,
-                                outcome_med_flag,
-                                outcome_med_t2e,
-                                outcome_med_baseline
+                                # outcome_med_flag,
+                                # outcome_med_t2e,
+                                # outcome_med_baseline
                                 ))
 
         df_data = pd.DataFrame(data_array, columns=column_names)
