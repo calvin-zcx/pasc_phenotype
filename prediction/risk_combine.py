@@ -38,7 +38,7 @@ from misc import utils
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
@@ -71,8 +71,11 @@ def parse_args():
 
 def risk_table_2_datasets():
     args.out_dir = r''.format(args.dataset, args.encode)
-    f1 = 'output/factors/INSIGHT/elix/any_pasc/any-at-least-1-pasc-riskFactor-INSIGHT-positive-all.csv'
-    f2 = 'output/factors/OneFlorida/elix/any_pasc/any-at-least-1-pasc-riskFactor-OneFlorida-positive-all.csv'
+    f1 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-2-severe-pasc-riskFactor-INSIGHT-positive-all.csv'
+    f2 = 'output/factors/OneFlorida/elix/any_pasc_severe/any-at-least-2-severe-pasc-riskFactor-OneFlorida-positive-all.csv'
+    f3 = 'output/factors/INSIGHT/elix/any_pasc_moderate/any-at-least-2-moderate-pasc-riskFactor-INSIGHT-positive-all.csv'
+    f4 = 'output/factors/OneFlorida/elix/any_pasc_moderate/any-at-least-2-moderate-pasc-riskFactor-OneFlorida-positive-all.csv'
+
     df_vec = []
 
     def _hr_str(hr, hr_lower, hr_upper):
@@ -84,7 +87,7 @@ def risk_table_2_datasets():
         else:
             return '{:.1e}'.format(p)
 
-    for f in [f1, f2]:
+    for f in [f1, f2, f3, f4]:
         df = pd.read_csv(f)
 
         df_format = df[['Unnamed: 0', 'covariate', ]].copy()
@@ -114,9 +117,11 @@ def risk_table_2_datasets():
 
         df_vec.append(df_format)
 
-    df_out = pd.merge(df_vec[0], df_vec[1], left_on='covariate', right_on='covariate', how='outer')
+    df_out = df_vec[0]
+    for i in range(1, len(df_vec)):
+        df_out = pd.merge(df_out, df_vec[i], left_on='covariate', right_on='covariate', how='outer')
 
-    df_out.to_excel('output/factors/INSIGHT/elix/any-at-least-1-pasc-riskFactor-2sites-positive_FORMATED.xlsx',
+    df_out.to_excel('output/factors/INSIGHT/elix/any-at-least-2-severe-pasc-riskFactor-2sites-andModerate-positive_FORMATED.xlsx',
                     index=False)
     return df_out
 
@@ -293,13 +298,16 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    plot_forest_for_risk_stratified_by_severity(args, star=True)
+    # 1.
+    # plot_forest_for_risk_stratified_by_severity(args, star=True)
+
+    # 2.
+    df = risk_table_2_datasets()
 
     # result1 = get_model_c_index(args, severe=True, total=9)
-    # result2 = get_model_c_index(args, severe=False, total=8)
+    # result2 = get_model_c_index(args, severe=False, total=9)
     # result = pd.concat([result1, result2], axis=1)
     # result.index = result.index+1
-    # result.to_csv('output/factors/{}/elix/c_index_of_pasc_severity_over_threshold.csv'.format(args.dataset))
-    # # df = risk_table_2_datasets()
+    # result.to_csv('output/factors/{}/elix/c_index_of_pasc_severity_over_threshold-v2.csv'.format(args.dataset))
 
     print('Done')

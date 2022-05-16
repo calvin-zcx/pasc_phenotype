@@ -36,14 +36,14 @@ KFOLD = 5
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='OneFlorida',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
     parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
     parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
                                                'inpatient', 'icu', 'ventilation', ],
-                        default='icu')
+                        default='inpatienticu')
     parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan'], default='allpasc')
     parser.add_argument("--random_seed", type=int, default=0)
 
@@ -54,12 +54,15 @@ def parse_args():
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
         # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
-        args.processed_data_file = r'output/dataset/INSIGHT/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
+        # args.processed_data_file = r'output/dataset/INSIGHT/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
+        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
+
     elif args.dataset == 'OneFlorida':
         args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
         # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
         # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
-        args.processed_data_file = r'output/dataset/OneFlorida/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
+        # args.processed_data_file = r'output/dataset/OneFlorida/df_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-elix.csv'
+        args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
     else:
         raise ValueError
 
@@ -754,9 +757,20 @@ if __name__ == '__main__':
     covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['pasc-count'] >= 1).astype('int')
-    pasc_t2e = df['pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
+    pasc_t2e = df.loc[pasc_flag==1, 'pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
     print('PASC pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
           'PASC neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
+    print('PASC t2e quantile:', np.quantile(pasc_t2e, [0.5, 0.25, 0.75]))
+
+    severe_pasc_flag = df['pasc-severe-flag']
+    severe_pasc_t2e = df.loc[df['pasc-severe-flag']==1, 'pasc-severe-min-t2e']
+    print('Severe PASC pos:{} ({:.3%})'.format(severe_pasc_flag.sum(), severe_pasc_flag.sum()/pasc_flag.sum()))
+    print('Severe PASC t2e quantile:', np.quantile(severe_pasc_t2e, [0.5, 0.25, 0.75]))
+
+    severe_pasc_flag = df['pasc-moderateonly-flag']
+    severe_pasc_t2e = df.loc[df['pasc-moderateonly-flag'] == 1, 'pasc-moderate-min-t2e']
+    print('Moderate PASC pos:{} ({:.3%})'.format(severe_pasc_flag.sum(), severe_pasc_flag.sum()/pasc_flag.sum()))
+    print('Moderate PASC t2e quantile:', np.quantile(severe_pasc_t2e, [0.5, 0.25, 0.75]))
 
     # plot cumulative incidence across age
     age_cols = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
