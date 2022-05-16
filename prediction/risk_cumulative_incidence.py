@@ -767,10 +767,10 @@ if __name__ == '__main__':
     print('Severe PASC pos:{} ({:.3%})'.format(severe_pasc_flag.sum(), severe_pasc_flag.sum()/pasc_flag.sum()))
     print('Severe PASC t2e quantile:', np.quantile(severe_pasc_t2e, [0.5, 0.25, 0.75]))
 
-    severe_pasc_flag = df['pasc-moderateonly-flag']
-    severe_pasc_t2e = df.loc[df['pasc-moderateonly-flag'] == 1, 'pasc-moderate-min-t2e']
-    print('Moderate PASC pos:{} ({:.3%})'.format(severe_pasc_flag.sum(), severe_pasc_flag.sum()/pasc_flag.sum()))
-    print('Moderate PASC t2e quantile:', np.quantile(severe_pasc_t2e, [0.5, 0.25, 0.75]))
+    moderate_pasc_flag = df['pasc-moderateonly-flag']
+    moderate_pasc_t2e = df.loc[df['pasc-moderateonly-flag'] == 1, 'pasc-moderate-min-t2e']
+    print('Moderate PASC pos:{} ({:.3%})'.format(moderate_pasc_flag.sum(), moderate_pasc_flag.sum() / pasc_flag.sum()))
+    print('Moderate PASC t2e quantile:', np.quantile(moderate_pasc_flag, [0.5, 0.25, 0.75]))
 
     # plot cumulative incidence across age
     age_cols = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
