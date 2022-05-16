@@ -329,9 +329,9 @@ def distribution_statistics(args, df, df_pasc_info):
 
 def collect_feature_columns_4_risk_analysis(args, df):
     col_names = []
-    if args.severity == 'all':
+    # if args.severity == 'all':
         # col_names += ['hospitalized', 'ventilation', 'criticalcare']
-        col_names += ['not hospitalized', 'hospitalized', 'icu']
+    col_names += ['not hospitalized', 'hospitalized', 'icu']
 
     # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
     col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
