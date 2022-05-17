@@ -348,8 +348,11 @@ def collect_feature_columns_4_risk_analysis(args, df):
     # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
     #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
     #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
-    col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
-                  'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
+    #               'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
+    col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
+                  'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
+                  'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
 
     # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
     #               'ADI80-89', 'ADI90-100']
@@ -402,9 +405,12 @@ def pre_transform_feature(df):
 
     df['75+ years'] = (df['75-<85 years'] + df['85+ years'] >= 1).astype('int')
 
-    df['inpatient visits 1-4'] = (df['inpatient visits 1-2'] + df['inpatient visits 3-4'] >= 1).astype('int')
-    df['outpatient visits 1-4'] = (df['outpatient visits 1-2'] + df['outpatient visits 3-4'] >= 1).astype('int')
-    df['emergency visits 1-4'] = (df['emergency visits 1-2'] + df['emergency visits 3-4'] >= 1).astype('int')
+    # df['inpatient visits 1-4'] = (df['inpatient visits 1-2'] + df['inpatient visits 3-4'] >= 1).astype('int')
+    # df['outpatient visits 1-4'] = (df['outpatient visits 1-2'] + df['outpatient visits 3-4'] >= 1).astype('int')
+    # df['emergency visits 1-4'] = (df['emergency visits 1-2'] + df['emergency visits 3-4'] >= 1).astype('int')
+    df['inpatient visits >=3'] = (df['inpatient visits >=5'] + df['inpatient visits 3-4'] >= 1).astype('int')
+    df['outpatient visits >=3'] = (df['outpatient visits >=5'] + df['outpatient visits 3-4'] >= 1).astype('int')
+    df['emergency visits >=3'] = (df['emergency visits >=5'] + df['emergency visits 3-4'] >= 1).astype('int')
 
     df['not hospitalized'] = 1 - df['hospitalized']
     df['icu'] = ((df['ventilation'] + df['criticalcare']) >= 1).astype('int')
