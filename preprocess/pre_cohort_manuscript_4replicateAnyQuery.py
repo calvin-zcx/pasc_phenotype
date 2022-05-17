@@ -602,11 +602,11 @@ def integrate_data_and_apply_eligibility(args):
     # goal: adult population is our targeted population
     id_indexrecord = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM)
 
-    id_indexrecord = _eligibility_baseline_or_followup_any_dx(id_indexrecord, id_dx, _is_in_baseline, _is_in_followup)
+    # id_indexrecord = _eligibility_baseline_or_followup_any_dx(id_indexrecord, id_dx, _is_in_baseline, _is_in_followup)
 
     # # Step 3: Applying EC. Any diagnosis in the baseline period
     # # goal: baseline information, and access to healthcare
-    # id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
+    id_indexrecord = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
     # # data = _local_build_data(id_indexrecord)
     #
     # # Step 4: Applying EC. Any diagnosis in the follow-up period
