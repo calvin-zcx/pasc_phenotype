@@ -217,7 +217,7 @@ def table1_cohorts_characterization_analyse(args):
     records = []
 
     # N
-    row_names.append('N')
+    row_names.append('Total')
     records.append([
         _n_str(len(df)),
         _percentage_str(df['pasc-flag']),
@@ -276,7 +276,7 @@ def table1_cohorts_characterization_analyse(args):
     row_names.append('Race — no. (%)')
     records.append([])
     col_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
-    row_names.extend(col_names)
+    row_names.extend(['Asian', 'Black', 'White', 'Other', 'Missing'])
     records.extend(
         [[_percentage_str(df[c]),
           _percentage_str(df.loc[df[c] == 1, 'pasc-flag']),
@@ -287,7 +287,7 @@ def table1_cohorts_characterization_analyse(args):
     row_names.append('Ethnic group — no. (%)')
     records.append([])
     col_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-    row_names.extend(col_names)
+    row_names.extend(['Hispanic', 'Not Hispanic', 'Other/Missing'])
     records.extend(
         [[_percentage_str(df[c]),
           _percentage_str(df.loc[df[c] == 1, 'pasc-flag']),
@@ -371,7 +371,7 @@ def table1_cohorts_characterization_analyse(args):
     # df = pd.DataFrame(records, columns=['Covid+', 'Covid-', 'SMD'], index=row_names)
 
     # Coexisting coditions
-    row_names.append('Coexisting conditions — no. (%)')
+    row_names.append('Pre-existing conditions — no. (%)')
     records.append([])
     col_names = ['num_Comorbidity=0', 'num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
                  'num_Comorbidity=4', 'num_Comorbidity>=5',
