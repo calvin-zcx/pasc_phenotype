@@ -104,7 +104,7 @@ def pre_transform_feature(df):
 def table1_cohorts_characterization_analyse(args):
     # severity in 'hospitalized', 'ventilation', None
     in_file = args.processed_data_file
-    out_file = args.out_dir + r'/table1_of_{}_table1-V2.xlsx'.format(args.dataset)
+    out_file = args.out_dir + r'/table1_of_{}_table1-V3.xlsx'.format(args.dataset)
 
     print('Try to load:', in_file)
     df = pd.read_csv(in_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])

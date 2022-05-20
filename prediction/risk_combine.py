@@ -75,9 +75,9 @@ def risk_table_2_datasets():
     f2 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-all.csv'
     f3 = 'output/factors/INSIGHT/elix/any_pasc_moderate/any-at-least-1-moderate-pasc-riskFactor-INSIGHT-positive-all.csv'
 
-    f1 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-all.csv'
-    f2 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-outpatient.csv'
-    f3 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-inpatienticu.csv'
+    # f1 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-all.csv'
+    # f2 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-outpatient.csv'
+    # f3 = 'output/factors/INSIGHT/elix/any_pasc_severe/any-at-least-1-severe-pasc-riskFactor-INSIGHT-positive-inpatienticu.csv'
 
     # f2 = 'output/factors/OneFlorida/elix/any_pasc_severe/any-at-least-2-severe-pasc-riskFactor-OneFlorida-positive-all.csv'
     # f3 = 'output/factors/INSIGHT/elix/any_pasc_moderate/any-at-least-2-moderate-pasc-riskFactor-INSIGHT-positive-all.csv'
@@ -350,9 +350,9 @@ if __name__ == '__main__':
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-    df_result = get_c_index_of_all_pasc(args)
+    # df_result = get_c_index_of_all_pasc(args)
 
-    # risk_stratified_by_severity(args)
+    risk_stratified_by_severity(args)
 
     # 1.
     # plot_forest_for_risk_stratified_by_severity(args, star=True)

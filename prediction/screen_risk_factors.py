@@ -35,7 +35,7 @@ KFOLD = 5
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='Pooled',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='OneFlorida',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
@@ -906,9 +906,9 @@ if __name__ == '__main__':
     # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
 
     # -Pre step2: build Covid Positive data and dump for future use
-    # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
+    df, df_pasc_info = build_incident_pasc_from_all_positive(args)
 
-    # sys.exit(0)
+    sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
