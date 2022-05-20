@@ -22,6 +22,85 @@ print = functools.partial(print, flush=True)
 import re
 from datetime import datetime
 from collections import Counter
+from scipy import stats
+
+
+def boot_matrix(z, B):
+    """Bootstrap sample
+    Returns all bootstrap samples in a matrix"""
+    z = np.array(z).flatten()
+    n = len(z)  # sample size
+    idz = np.random.randint(0, n, size=(B, n))  # indices to pick for all boostrap samples
+    return z[idz]
+
+
+def bootstrap_mean_ci(x, B=1000, alpha=0.05):
+    n = len(x)
+    # Generate boostrap distribution of sample mean
+    xboot = boot_matrix(x, B=B)
+    sampling_distribution = xboot.mean(axis=1)
+    quantile_confidence_interval = np.percentile(sampling_distribution, q=(100 * alpha / 2, 100 * (1 - alpha / 2)))
+    std = sampling_distribution.std()
+    # if plot:
+    #     plt.hist(sampling_distribution, bins="fd")
+    return quantile_confidence_interval, std
+
+
+def bootstrap_mean_pvalue(x, expected_mean=0., B=1000):
+    """
+    Ref:
+    1. https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#cite_note-:0-1
+    2. https://www.tau.ac.il/~saharon/StatisticsSeminar_files/Hypothesis.pdf
+    3. https://github.com/mayer79/Bootstrap-p-values/blob/master/Bootstrap%20p%20values.ipynb
+    4. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html?highlight=one%20sample%20ttest
+    Bootstrap p values for one-sample t test
+    Returns boostrap p value, test statistics and parametric p value"""
+    n = len(x)
+    orig = stats.ttest_1samp(x, expected_mean)
+    # Generate boostrap distribution of sample mean
+    x_boots = boot_matrix(x - x.mean() + expected_mean, B=B)
+    x_boots_mean = x_boots.mean(axis=1)
+    t_boots = (x_boots_mean - expected_mean) / (x_boots.std(axis=1, ddof=1) / np.sqrt(n))
+    p = np.mean(t_boots >= orig[0])
+    p_final = 2 * min(p, 1 - p)
+    # Plot bootstrap distribution
+    # if plot:
+    #     plt.figure()
+    #     plt.hist(x_boots_mean, bins="fd")
+    return p_final, orig
+
+
+def bootstrap_mean_pvalue_2samples(x, y, equal_var=False, B=1000):
+    """
+    Bootstrap hypothesis testing for comparing the means of two independent samples
+    Ref:
+    1. https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#cite_note-:0-1
+    2. https://www.tau.ac.il/~saharon/StatisticsSeminar_files/Hypothesis.pdf
+    3. https://github.com/mayer79/Bootstrap-p-values/blob/master/Bootstrap%20p%20values.ipynb
+    4. https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.ttest_1samp.html?highlight=one%20sample%20ttest
+    Bootstrap p values for one-sample t test
+    Returns boostrap p value, test statistics and parametric p value"""
+    n = len(x)
+    orig = stats.ttest_ind(x, y, equal_var=equal_var)
+    pooled_mean = np.concatenate((x, y), axis=None).mean()
+
+    xboot = boot_matrix(x - x.mean() + pooled_mean,
+                        B=B)  # important centering step to get sampling distribution under the null
+    yboot = boot_matrix(y - y.mean() + pooled_mean, B=B)
+    sampling_distribution = stats.ttest_ind(xboot, yboot, axis=1, equal_var=equal_var)[0]
+
+    if np.isnan(orig[1]):
+        p_final = np.nan
+    else:
+        # Calculate proportion of bootstrap samples with at least as strong evidence against null
+        p = np.mean(sampling_distribution >= orig[0])
+        # RESULTS
+        # print("p value for null hypothesis of equal population means:")
+        # print("Parametric:", orig[1])
+        # print("Bootstrap:", 2 * min(p, 1 - p))
+        p_final = 2 * min(p, 1 - p)
+
+    return p_final, orig
 
 
 def ndc_normalization(x):

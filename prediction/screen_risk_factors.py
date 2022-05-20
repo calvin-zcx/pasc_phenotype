@@ -35,7 +35,7 @@ KFOLD = 5
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT'], default='INSIGHT',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='Pooled',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
@@ -55,12 +55,17 @@ def parse_args():
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
         args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
-
     elif args.dataset == 'OneFlorida':
         # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
         # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
         args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
         args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
+    elif args.dataset == 'Pooled':
+        # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
+        # args.processed_data_file2 = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
+        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
+        args.processed_data_file2 = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
+
     else:
         raise ValueError
 
@@ -330,7 +335,7 @@ def distribution_statistics(args, df, df_pasc_info):
 def collect_feature_columns_4_risk_analysis(args, df):
     col_names = []
     # if args.severity == 'all':
-        # col_names += ['hospitalized', 'ventilation', 'criticalcare']
+    # col_names += ['hospitalized', 'ventilation', 'criticalcare']
     col_names += ['not hospitalized', 'hospitalized', 'icu']
 
     # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
@@ -416,6 +421,7 @@ def pre_transform_feature(df):
     df['icu'] = ((df['ventilation'] + df['criticalcare']) >= 1).astype('int')
 
     return df
+
 
 #
 # def risk_factor_of_pasc(args, pasc_name, dump=True):
@@ -519,7 +525,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -584,7 +590,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -640,7 +646,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
         specific_pasc_col = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 0), 'pasc']
         print('len(pasc_moderate_list)', len(specific_pasc_col))
 
-    specific_pasc_col = ['flag@'+x for x in specific_pasc_col]
+    specific_pasc_col = ['flag@' + x for x in specific_pasc_col]
     print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
           'neg:{} ({:.3%})'.format((1 - pasc_flag).sum(), (1 - pasc_flag).mean()))
 
@@ -674,7 +680,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -767,7 +773,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -820,7 +826,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -911,6 +917,15 @@ if __name__ == '__main__':
     print('Load done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
     print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
+    if args.dataset == 'Pooled':
+        print('Load Second data file:', args.processed_data_file2)
+        df2 = pd.read_csv(args.processed_data_file2, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date'])  # , nrows=100
+        print('Load done, df2.shape:', df2.shape)
+        df = df.append(df2, ignore_index=True)
+        print('df.append(df2, ignore_index=True) done, df.shape:', df.shape)
+        print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
+        print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
 
     # Step 2: Load pasc meta information
     df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
@@ -968,7 +983,7 @@ if __name__ == '__main__':
     print('Select sub- cohorts:', args.severity, 'df.shape:', df.shape)
 
     # Step 6: Basic statistics
-    pasc_flag = df['pasc-flag'] # (df['pasc-count'] >= 1).astype('int')
+    pasc_flag = df['pasc-flag']  # (df['pasc-count'] >= 1).astype('int')
     pasc_t2e = df.loc[
         pasc_flag == 1, 'pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
     print('PASC pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
@@ -986,15 +1001,15 @@ if __name__ == '__main__':
     print('Moderate PASC t2e quantile:', np.quantile(moderate_pasc_t2e, [0.5, 0.25, 0.75]))
 
     df_pasc_distribution = pd.DataFrame(
-        {'any_pasc_sum':df.loc[pasc_flag == 1, specific_pasc_col].sum(),
-                  'any_pasc-mean': df.loc[pasc_flag == 1, specific_pasc_col].mean(),
-                  'any_severe_pasc_sum': df.loc[severe_pasc_flag == 1, specific_pasc_col].sum(),
-                  'any_severe_pasc-mean': df.loc[severe_pasc_flag == 1, specific_pasc_col].mean(),
-                  'any_moderateonly_pasc_sum': df.loc[moderate_pasc_flag == 1, specific_pasc_col].sum(),
-                  'any_moderateonly_pasc-mean': df.loc[moderate_pasc_flag == 1, specific_pasc_col].mean()
-                  })
+        {'any_pasc_sum': df.loc[pasc_flag == 1, specific_pasc_col].sum(),
+         'any_pasc-mean': df.loc[pasc_flag == 1, specific_pasc_col].mean(),
+         'any_severe_pasc_sum': df.loc[severe_pasc_flag == 1, specific_pasc_col].sum(),
+         'any_severe_pasc-mean': df.loc[severe_pasc_flag == 1, specific_pasc_col].mean(),
+         'any_moderateonly_pasc_sum': df.loc[moderate_pasc_flag == 1, specific_pasc_col].sum(),
+         'any_moderateonly_pasc-mean': df.loc[moderate_pasc_flag == 1, specific_pasc_col].mean()
+         })
     df_pasc_distribution['pasc'] = df_pasc_distribution.index
-    df_pasc_distribution.index = df_pasc_distribution['pasc'].apply(lambda x : pasc_name[x])
+    df_pasc_distribution.index = df_pasc_distribution['pasc'].apply(lambda x: pasc_name[x])
     utils.check_and_mkdir(args.out_dir)
     df_pasc_distribution.to_csv(
         args.out_dir + 'pasc_ditribution-{}-{}-{}.csv'.format(args.dataset, args.population, args.severity))

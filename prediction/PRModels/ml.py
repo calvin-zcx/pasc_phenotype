@@ -20,6 +20,8 @@ from lifelines import KaplanMeierFitter, CoxPHFitter, AalenJohansenFitter
 from lifelines.statistics import survival_difference_at_fixed_point_in_time_test, proportional_hazard_test, logrank_test
 from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
+from misc import utils
+from sklearn.utils import shuffle
 
 
 class CoxPrediction:
@@ -31,9 +33,9 @@ class CoxPrediction:
             if self.learner == 'COX':
                 self.paras_grid = {
                     'l1_ratio': [0],  # 'l2',
-                    'penalizer': 10 ** np.arange(-3, 3, 0.5),
-                    # 'penalizer': 10 ** np.arange(-3, -1.5, 0.5),  # for positive ICU case
-
+                    # 'penalizer': 10 ** np.arange(-3, 3, 0.5),
+                    'penalizer': 10 ** np.arange(-3, 0.5, 0.5),
+                    # for a smaller space after post-hoc #for positive ICU case
                 }
 
             else:
@@ -66,11 +68,13 @@ class CoxPrediction:
         self.best_fit = [float('-inf'), np.nan]  # (mean, std), mean, the larger, the better, AUC
         self.best_fit_k_folds_detail = []  # k AUC
 
-        self.results_colname = ['model-i', 'fold-k', 'paras', 'E[fit]', 'Std[fit]', 'kfold-values']
+        self.results_colname = ['model-i', 'fold-k', 'paras', 'E[fit]', 'Std[fit]',
+                                'CI0', 'CI1', 'std-boost', 'kfold-values']
         self.results = []
         self.risk_results = np.nan
 
-    def cross_validation_fit(self, cov_df_ori, T, E, kfold=5, verbose=1, shuffle=True, scoring_method="concordance_index"):
+    def cross_validation_fit(self, cov_df_ori, T, E, kfold=5, verbose=1, n_shuffle=0,
+                             scoring_method="concordance_index"):
         start_time = time.time()
         cov_df = cov_df_ori.copy()
         cov_df['T'] = T
@@ -92,16 +96,37 @@ class CoxPrediction:
             else:
                 raise ValueError
 
-            if kfold > 1:
-                i_model_fit_over_kfold = k_fold_cross_validation(model,
-                                                                 cov_df, 'T', event_col='E',
-                                                                 k=kfold, scoring_method=scoring_method)
+            if n_shuffle == 0:
+                # no data shuffle, just cross-validation
+                if kfold > 1:
+                    i_model_fit_over_kfold = k_fold_cross_validation(model,
+                                                                     cov_df, 'T', event_col='E',
+                                                                     k=kfold, scoring_method=scoring_method)
+                else:
+                    model.fit(cov_df, 'T', 'E')
+                    i_model_fit_over_kfold = [model.concordance_index_, ]
             else:
-                model.fit(cov_df, 'T', 'E')
-                i_model_fit_over_kfold = [model.concordance_index_, ]
+                print("shuffle time:", n_shuffle)
+                i_model_fit_over_kfold = []
+                for _i_ in tqdm(range(n_shuffle), total=n_shuffle):
+                    if kfold > 1:
+                        i_model_fit_over_kfold += k_fold_cross_validation(model,
+                                                                          cov_df, 'T', event_col='E',
+                                                                          k=kfold, scoring_method=scoring_method)
+                    else:
+                        model.fit(cov_df, 'T', 'E')
+                        i_model_fit_over_kfold += [model.concordance_index_, ]
 
+                    cov_df = shuffle(cov_df)
+                    print('Done {}th shuffle!'.format(_i_))
 
-            i_model_fit = [np.mean(i_model_fit_over_kfold), np.std(i_model_fit_over_kfold)]
+            print('n_shuffle * kfold sampe size:', n_shuffle * kfold,
+                  'len(i_model_fit_over_kfold):', i_model_fit_over_kfold)
+
+            quantile_confidence_interval, std_boost = utils.bootstrap_mean_ci(i_model_fit_over_kfold)
+
+            i_model_fit = [np.mean(i_model_fit_over_kfold), np.std(i_model_fit_over_kfold)] + \
+                          list(quantile_confidence_interval) + [std_boost,]
             self.results.append([i, kfold, para_d] + i_model_fit + [i_model_fit_over_kfold, ])
 
             if i_model_fit[0] > self.best_fit[0]:
@@ -136,7 +161,6 @@ class CoxPrediction:
                                               'mean': cov_df_ori.mean().loc[HR.index]})
         except:
             self.risk_results = pd.DataFrame()
-
 
         if verbose:
             self.report_stats()
@@ -178,7 +202,8 @@ class CoxPrediction:
                 except:
                     model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
             else:
-                cox_data = cov_df[['T', 'E', index] + [x for x in adjusted_col if ((x != index) and (x in cov_df.columns))]]
+                cox_data = cov_df[
+                    ['T', 'E', index] + [x for x in adjusted_col if ((x != index) and (x in cov_df.columns))]]
                 model = CoxPHFitter(**self.best_hyper_paras).fit(cox_data, 'T', 'E')
 
             HR = model.hazard_ratios_[index]
@@ -191,7 +216,3 @@ class CoxPrediction:
     # def predict_ps(self, X):
     #     pred_ps = self.best_model.predict_proba(X)[:, 1]
     #     return pred_ps
-
-
-
-
