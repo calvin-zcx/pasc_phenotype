@@ -1,3 +1,4 @@
+python screen_risk_factors.py --dataset Pooled --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascsevere-positive-all-May17.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-all-May17.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascmoderate-positive-all-May17.txt
 python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-outpatient-May17.txt
@@ -10,7 +11,6 @@ python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population posi
 python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-all-May17.txt
 python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-outpatient-May17.txt
 python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive-inpatienticu-May17.txt
-python screen_risk_factors.py --dataset Pooled --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascsevere-positive-all-May17.txt
 python screen_risk_factors.py --dataset Pooled --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascmoderate-positive-all-May17.txt
 python screen_risk_factors.py --dataset Pooled --goal anypascsevere --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascsevere-positive-outpatient-May17.txt
 python screen_risk_factors.py --dataset Pooled --goal anypascmoderate --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascmoderate-positive-outpatient-May17.txt
