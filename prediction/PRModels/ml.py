@@ -22,6 +22,8 @@ from lifelines.plotting import add_at_risk_counts
 from lifelines.utils import k_fold_cross_validation
 from misc import utils
 from sklearn.utils import shuffle
+import functools
+print = functools.partial(print, flush=True)
 
 
 class CoxPrediction:
