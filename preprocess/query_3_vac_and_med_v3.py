@@ -38,10 +38,10 @@ def parse_args():
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/query4-covid-drug-and-vaccine-matrix_cohorts_{}_cnt_{}-ProImmun.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/query4-covid-drug-and-vaccine-matrix_cohorts_{}_cnt_{}-ProImmun-V3.csv'.format(
         args.cohorts,
         args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/query4-covid-drug-and-vaccine-matrix_cohorts_{}_bool_{}-ProImmun.csv'.format(
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/query4-covid-drug-and-vaccine-matrix_cohorts_{}_bool_{}-ProImmun-V3.csv'.format(
         args.cohorts,
         args.dataset)
 
@@ -454,9 +454,9 @@ def _encoding_vaccine(pro_list, immun_list, vaccine_column_names, vaccine_codes,
     mrna = sorted(set(mrna), key=lambda x: x[0])
     jj = sorted(set(jj), key=lambda x: x[0])
     mrna_pre = [x for x in mrna if x[0] < index_date]
-    mrna_post = [x for x in mrna if x[0] > index_date]
+    mrna_post = mrna  # [x for x in mrna if x[0] > index_date] # change to any time
     jj_pre = [x for x in jj if x[0] < index_date]
-    jj_post = [x for x in jj if x[0] > index_date]
+    jj_post = jj  # [x for x in jj if x[0] > index_date] # # change to any time
 
     def _fully_vaccined_mrna(vlist):
         if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days >= 20):
@@ -523,9 +523,9 @@ def _encoding_vaccineV2(pro_list, immun_list, vaccine_column_names, vaccine_code
     mrna = sorted(set(mrna), key=lambda x: x[0])
     jj = sorted(set(jj), key=lambda x: x[0])
     mrna_pre = [x for x in mrna if x[0] < index_date]
-    mrna_post = [x for x in mrna if x[0] > index_date]
+    mrna_post = mrna  # [x for x in mrna if x[0] > index_date]
     jj_pre = [x for x in jj if x[0] < index_date]
-    jj_post = [x for x in jj if x[0] > index_date]
+    jj_post = jj  # [x for x in jj if x[0] > index_date]
 
     def _fully_vaccined_mrna(vlist):
         if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days >= 20):
@@ -595,9 +595,9 @@ def _encoding_vaccineV3(pro_list, immun_list, vaccine_column_names, vaccine_code
     mrna = sorted(set(mrna), key=lambda x: x[0])
     jj = sorted(set(jj), key=lambda x: x[0])
     mrna_pre = [x for x in mrna if x[0] < index_date]
-    mrna_post = [x for x in mrna if x[0] > index_date]
+    mrna_post = mrna # [x for x in mrna if x[0] > index_date]
     jj_pre = [x for x in jj if x[0] < index_date]
-    jj_post = [x for x in jj if x[0] > index_date]
+    jj_post = jj  # [x for x in jj if x[0] > index_date]
 
     def _fully_vaccined_mrna(vlist):
         if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days >= 20):
@@ -1395,17 +1395,17 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
 
 
 if __name__ == '__main__':
-    # python query_3_vac_and_med_v2.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_4_vac_and_med-ProImmun.txt
+    # python query_3_vac_and_med_v3.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_4_vac_and_med-ProImmun-v3.txt
 
     start_time = time.time()
     args = parse_args()
-    # df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data, df_data_bool = build_query_1and2_matrix(args)
 
-    pasc = 'Diabetes mellitus with complication'
-    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
-                                                   pasc=pasc, after=True)
-    pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
-                                                   pasc=pasc, after=False)
+    # pasc = 'Diabetes mellitus with complication'
+    # pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
+    #                                                pasc=pasc, after=True)
+    # pasc_specific_cohorts_characterization_analyse(cohorts='pasc_incidence', dataset=args.dataset, severity='',
+    #                                                pasc=pasc, after=False)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
