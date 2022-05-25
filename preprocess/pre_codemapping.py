@@ -818,7 +818,10 @@ def ICD_to_PASC():
 
 
 def load_cdc_mapping():
-    input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
+    # input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
+    # change at 2022-5-24, Add DX: Obstructive sleep apnea <----> OSA
+    input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v2.xlsx'
+
     mapping_file = r'../data/mapping/ventilation&comorbidity_sheetname.csv'
     df_map = pd.read_csv(mapping_file, dtype=str)
     df_all = pd.read_excel(input_file, sheet_name=None, dtype=str)  # read all sheets
@@ -990,7 +993,7 @@ if __name__ == '__main__':
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
 
     # 7. Load CDC code mapping:
-    # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
+    df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
     # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
@@ -1000,6 +1003,6 @@ if __name__ == '__main__':
     # icd9_icd10 = build_icd9_to_icd10()
 
     # 10 build ICD10 to negative outcome control of PASC
-    icd_pasc, pasc_index, df_pasc_list = ICD_to_negative_control_pasc()
+    # icd_pasc, pasc_index, df_pasc_list = ICD_to_negative_control_pasc()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
