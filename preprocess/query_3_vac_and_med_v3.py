@@ -339,8 +339,15 @@ def _encoding_index_period(index_date):
 
 
 def _is_in_code_set_with_wildchar(code, code_set, code_set_wild):
-    if code in code_set:
-        return True
+    # if code in code_set:
+    #     return True
+    # updated 2022-04-13  from exact match to prefix match
+    for i in range(len(code)):
+        pre = code[:(len(code) - i)]
+        if pre in code_set:
+            # if pre != code:
+            #     print(pre, code)
+            return True
     for pattern in code_set_wild:
         if fnmatch.fnmatchcase(code, pattern):
             return True
@@ -394,8 +401,15 @@ def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
     return encoding
 
 
-def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes, index_date):
+def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes, index_date, default_t2e):
+    # in -14 -- 14 days
     encoding = np.zeros((1, len(covidmed_column_names)), dtype='int')
+
+    # also consider these drugs as outcome setting
+    outcome_t2e = np.ones((1, len(covidmed_column_names)), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, len(covidmed_column_names)), dtype='int')
+    outcome_baseline = np.zeros((1, len(covidmed_column_names)), dtype='int')
+
     for records in med_list:
         med_date, rxnorm, supply_days = records
         if ecs._is_in_covid_medication(med_date, index_date):
@@ -404,6 +418,24 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
                     if rxnorm in covidmed_codes[col_name]:
                         encoding[0, pos] += 1
 
+        if ecs._is_in_medication_baseline(med_date, index_date):
+            for pos, col_name in enumerate(covidmed_column_names):
+                if col_name in covidmed_codes:
+                    if rxnorm in covidmed_codes[col_name]:
+                        outcome_baseline[0, pos] += 1
+
+        if ecs._is_in_followup(med_date, index_date):
+            days = (med_date - index_date).days
+            for pos, col_name in enumerate(covidmed_column_names):
+                if col_name in covidmed_codes:
+                    if rxnorm in covidmed_codes[col_name]:
+                        if outcome_flag[0, pos] == 0:
+                            if days < outcome_t2e[0, pos]:
+                                outcome_t2e[0, pos] = days
+                            outcome_flag[0, pos] = 1
+                        else:
+                            outcome_flag[0, pos] += 1
+
     for records in pro_list:
         px_date, px, px_type, enc_type, enc_id = records
         if ecs._is_in_covid_medication(px_date, index_date):
@@ -411,7 +443,25 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
                 if col_name in covidmed_codes:
                     if px in covidmed_codes[col_name]:
                         encoding[0, pos] += 1
-    return encoding
+
+        if ecs._is_in_medication_baseline(px_date, index_date):
+            for pos, col_name in enumerate(covidmed_column_names):
+                if col_name in covidmed_codes:
+                    if px in covidmed_codes[col_name]:
+                        outcome_baseline[0, pos] += 1
+
+        if ecs._is_in_followup(px_date, index_date):
+            days = (px_date - index_date).days
+            for pos, col_name in enumerate(covidmed_column_names):
+                if col_name in covidmed_codes:
+                    if px in covidmed_codes[col_name]:
+                        if outcome_flag[0, pos] == 0:
+                            if days < outcome_t2e[0, pos]:
+                                outcome_t2e[0, pos] = days
+                            outcome_flag[0, pos] = 1
+                        else:
+                            outcome_flag[0, pos] += 1
+    return encoding, outcome_flag, outcome_t2e, outcome_baseline
 
 
 def _encoding_vaccine(pro_list, immun_list, vaccine_column_names, vaccine_codes, index_date):
@@ -727,6 +777,14 @@ def _encoding_death(death, index_date):
     return encoding
 
 
+def _prefix_in_set(icd, icd_set):
+    for i in range(len(icd)):
+        pre = icd[:(len(icd) - i)]
+        if pre in icd_set:
+            return True, pre
+    return False, ''
+
+
 def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e):
     # encoding 137 outcomes from our PASC list
     # outcome_t2e = np.zeros((n, 137), dtype='int')
@@ -743,17 +801,23 @@ def _encoding_outcome_dx(dx_list, icd_pasc, pasc_encoding, index_date, default_t
         icd = icd.replace('.', '').upper()
         # build baseline
         if ecs._is_in_baseline(dx_date, index_date):
-            if icd in icd_pasc:
-                pasc_info = icd_pasc[icd]
+            # 2022-02-27, change exact match to prefix match of PASC codes
+            flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+            if flag:  # if icd in icd_pasc:
+                # if icdprefix != icd:
+                #     print(icd, icdprefix)
+                pasc_info = icd_pasc[icdprefix]
                 pasc = pasc_info[0]
                 rec = pasc_encoding[pasc]
                 pos = rec[0]
                 outcome_baseline[0, pos] += 1
+
         # build outcome
         if ecs._is_in_followup(dx_date, index_date):
             days = (dx_date - index_date).days
-            if icd in icd_pasc:
-                pasc_info = icd_pasc[icd]
+            flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+            if flag:  # if icd in icd_pasc:
+                pasc_info = icd_pasc[icdprefix]
                 pasc = pasc_info[0]
                 rec = pasc_encoding[pasc]
                 pos = rec[0]
@@ -978,6 +1042,13 @@ def build_query_1and2_matrix(args):
             'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
 
         # add vaccine status
+        # outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
+        # outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
+        #                                 ['covidmed-t2e@' + x for x in covidmed_column_names] + \
+        #                                 ['covidmed-base@' + x for x in covidmed_column_names]
+
 
         vaccine_column_names = ['mRNA fully vaccinated - Pre-index',
                                 'mRNA fully vaccinated - Post-index',
@@ -1069,7 +1140,7 @@ def build_query_1and2_matrix(args):
 
         column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                         'ventilation', 'criticalcare'] + \
-                       covidmed_column_names + vaccine_column_names + vaccineV2_column_names + \
+                       covidmed_column_names  + vaccine_column_names + vaccineV2_column_names + \
                        vaccineV3_pro_column_names+vaccineV3_immu_column_names+\
                        vaccine_aux_column_names + outcome_column_names
 
@@ -1082,8 +1153,12 @@ def build_query_1and2_matrix(args):
         for pid, item in tqdm(id_data.items(), total=len(
                 id_data),
                               mininterval=10):  # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-            index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
-            flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
+            # index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun = item
+            # flag, index_date, covid_loinc, flag_name, index_age_year, index_enc_id = index_info
+            # birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
+
+            index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
+            flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
             if args.positive_only:
@@ -1132,9 +1207,10 @@ def build_query_1and2_matrix(args):
             # med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date)
 
             # encoding query 3 covid medication
-            if pid == '1043542':
-                print(pid)
-            covidmed_array[i, :] = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date)
+            # if pid == '1043542':
+            #     print(pid)
+            # covidmed_array[i, :] = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
+            covidmed_array[i, :], _, _, _ = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
 
             vaccine_array[i, :] = _encoding_vaccine(procedure, immun, vaccine_column_names, vaccine_codes, index_date)
 
@@ -1395,7 +1471,7 @@ def pasc_specific_cohorts_characterization_analyse(cohorts, dataset='ALL', sever
 
 
 if __name__ == '__main__':
-    # python query_3_vac_and_med_v3.py --dataset ALL --cohorts covid 2>&1 | tee  log/query_4_vac_and_med-ProImmun-v3.txt
+    # python query_3_vac_and_med_v3.py --dataset ALL --cohorts covid_4manuNegNoCovidV2 2>&1 | tee  log/query_4_vac_and_med-ProImmun-covid_4manuNegNoCovidV2-v3.txt
 
     start_time = time.time()
     args = parse_args()
