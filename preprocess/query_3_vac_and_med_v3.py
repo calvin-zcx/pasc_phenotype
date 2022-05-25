@@ -1187,6 +1187,15 @@ def build_query_1and2_matrix(args):
             maxfollowtime = _encoding_maxfollowtime(index_date, enc, dx, med)
             maxfollowtime_list.append(maxfollowtime)
 
+            death_array[i, :] = _encoding_death(death, index_date)
+
+
+            default_t2e = np.min([
+                np.maximum(ecs.FOLLOWUP_LEFT, maxfollowtime),
+                np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
+                np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
+            ])
+
             # encode death
             # death_array[i, :] = _encoding_death(death, index_date)
 
