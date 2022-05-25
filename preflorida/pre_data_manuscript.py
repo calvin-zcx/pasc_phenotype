@@ -139,10 +139,11 @@ def _load_mapping():
     covidmed_codes = utils.load(r'../data/mapping/query3_medication_codes.pkl')
 
     ndc_rxnorm = utils.load(r'../data/mapping/ndc_rxnorm_mapping.pkl')
+    vaccine_codes = utils.load(r'../data/mapping/query3_vaccine_codes.pkl')
 
     return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
            rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, ndc_rxnorm
+           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, ndc_rxnorm, vaccine_codes
 
 
 def _encoding_age(age):
@@ -533,6 +534,108 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
     return encoding, outcome_flag, outcome_t2e, outcome_baseline
 
 
+def _encoding_vaccine_4risk(pro_list, immun_list, vaccine_column_names, vaccine_codes, index_date):
+    # modified from _encoding_vaccineV2  for risk factors
+    # 2022 May 25
+    # extended fully definition:
+    # fully: mrna: 2 vacs, or evidence of sencond or booster
+    # check vaccine status before baseline, or
+    # check vaccine until followup end
+    # https://www.cdc.gov/coronavirus/2019-ncov/vaccines/stay-up-to-date.html
+
+    # vaccineV2_column_names = ['Fully vaccinated - Pre-index',
+    #                           'Fully vaccinated - Post-index',
+    #                           'Partially vaccinated - Pre-index',
+    #                           'Partially vaccinated - Post-index',
+    #                           'No evidence - Pre-index',
+    #                           'No evidence - Post-index',
+    #                           ]
+
+    # vaccine_aux_column_names = [
+    #     'pfizer_first', 'pfizer_second', 'pfizer_third', 'pfizer_booster',
+    #     'moderna_first', 'moderna_second', 'moderna_booster',
+    #     'janssen_first', 'janssen_booster',
+    #     'px_pfizer', 'imm_pfizer',
+    #     'px_moderna', 'imm_moderna',
+    #     'px_janssen', 'imm_janssen',
+    #     'vax_unspec',
+    #     'pfizer_any', 'moderna_any', 'janssen_any', 'any_mrna']
+
+    mrna = []
+    jj = []
+    only_2more = []
+
+    encoding = np.zeros((1, len(vaccine_column_names)), dtype='int')
+    for records in pro_list:
+        px_date, px, px_type, enc_type, enc_id = records
+        if px in vaccine_codes['any_mrna']:
+            mrna.append((px_date, px))
+        elif px in vaccine_codes['janssen_any']:
+            jj.append((px_date, px))
+
+        if (px in vaccine_codes['pfizer_second']) or (px in vaccine_codes['pfizer_third']) or \
+                (px in vaccine_codes['pfizer_booster']) or \
+                (px in vaccine_codes['moderna_second']) or (px in vaccine_codes['moderna_booster']) or \
+                (px in vaccine_codes['janssen_booster']):
+            only_2more.append((px_date, px))
+
+    for records in immun_list:
+        px_date, px, px_type, enc_id = records
+        if px in vaccine_codes['any_mrna']:
+            mrna.append((px_date, px))
+        elif px in vaccine_codes['janssen_any']:
+            jj.append((px_date, px))
+
+        if (px in vaccine_codes['pfizer_second']) or (px in vaccine_codes['pfizer_third']) or \
+                (px in vaccine_codes['pfizer_booster']) or \
+                (px in vaccine_codes['moderna_second']) or (px in vaccine_codes['moderna_booster']) or \
+                (px in vaccine_codes['janssen_booster']):
+            only_2more.append((px_date, px))
+
+    mrna = sorted(set(mrna), key=lambda x: x[0])
+    jj = sorted(set(jj), key=lambda x: x[0])
+    only_2more = sorted(set(only_2more), key=lambda x: x[0])
+
+    # change definition of POST. all inform before end of follow up
+    mrna_pre = [x for x in mrna if (x[0] - index_date).days <= 0]
+    mrna_post = [x for x in mrna if ((x[0] - index_date).days <= 180)]
+    jj_pre = [x for x in jj if (x[0] - index_date).days <= 0]
+    jj_post = [x for x in jj if ((x[0] - index_date).days <= 180)]
+    only_2more_pre = [x for x in only_2more if (x[0] - index_date).days <= 0]
+    only_2more_post = [x for x in only_2more if ((x[0] - index_date).days <= 180)]
+
+    def _fully_vaccined_mrna(vlist, only2more):
+        if (len(vlist) >= 2) and ((vlist[-1][0] - vlist[0][0]).days > 20):
+            return True
+        elif len(only2more) > 0:
+            return True
+        else:
+            return False
+
+    def _fully_vaccined_jj(vlist):
+        if len(vlist) >= 1:
+            return True
+        else:
+            return False
+
+    encoding[0, 0] = int(
+        (_fully_vaccined_mrna(mrna_pre, only_2more_pre) or _fully_vaccined_jj(
+            jj_pre)))  # 'Fully vaccinated - Pre-index',
+    encoding[0, 1] = int(
+        (_fully_vaccined_mrna(mrna_post, only_2more_post) or _fully_vaccined_jj(
+            jj_post)))  # 'Fully vaccinated - Post-index',
+    encoding[0, 2] = int(
+        (not _fully_vaccined_mrna(mrna_pre, only_2more_pre)) and (
+                len(mrna_pre) > 0))  # 'Partially vaccinated - Pre-index'
+    encoding[0, 3] = int(
+        (not _fully_vaccined_mrna(mrna_post, only_2more_post)) and (
+                len(mrna_post) > 0))  # 'Partially vaccinated - Post-index',
+    encoding[0, 4] = int((len(mrna_pre) == 0) and (len(jj_pre) == 0))  # 'No evidence - Pre-index'
+    encoding[0, 5] = int((len(mrna_post) == 0) and (len(jj_post) == 0))  # 'No evidence - Post-index'
+
+    return encoding
+
+
 def _encoding_maxfollowtime(index_date, enc, dx, med):
     # encode maximum followup in database
     if enc:
@@ -804,7 +907,7 @@ def build_query_1and2_matrix(args):
     # step 1: load encoding dictionary
     icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
     icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, ndc_rxnorm  = _load_mapping()
+    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, ndc_rxnorm, vaccine_codes = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -914,7 +1017,7 @@ def build_query_1and2_matrix(args):
         # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards,
         # due to threshold >= 2 issue
         # DX: End Stage Renal Disease on Dialysis, Both diagnosis and procedure codes used to define this condtion
-        dx_array = np.zeros((n, 37), dtype='int16')
+        dx_array = np.zeros((n, 40), dtype='int16')
         dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                            "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
                            "DX: Coagulopathy", "DX: Congestive Heart Failure",
@@ -928,7 +1031,10 @@ def build_query_1and2_matrix(args):
                            "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
                            "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
                            "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
-                           'DX: Autism', 'DX: Sickle Cell'
+                           'DX: Autism', 'DX: Sickle Cell',
+                           'DX: Obstructive sleep apnea',  # added 2022-05-25
+                           'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+                           'DX: Herpes Zoster',  # added 2022-05-25
                            ]
 
         # Two selected baseline medication
@@ -936,6 +1042,16 @@ def build_query_1and2_matrix(args):
         # atc level 3 category # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
         # --> detailed code list from CDC
         med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
+
+        # vaccine info designed for risk. definition of post, and fully are different from our previous query
+        vaccine_column_names = ['Fully vaccinated - Pre-index',
+                                'Fully vaccinated - Post-index',
+                                'Partially vaccinated - Pre-index',
+                                'Partially vaccinated - Post-index',
+                                'No evidence - Pre-index',
+                                'No evidence - Post-index',
+                                ]
+        vaccine_array = np.zeros((n, 6), dtype='int16')
 
         # add covid medication
         covidmed_array = np.zeros((n, 25), dtype='int16')
@@ -981,7 +1097,7 @@ def build_query_1and2_matrix(args):
                        gender_column_names + race_column_names + hispanic_column_names + \
                        social_column_names + utilization_column_names + index_period_names + \
                        bmi_names + smoking_names + \
-                       dx_column_names + med_column_names + covidmed_column_names + \
+                       dx_column_names + med_column_names + vaccine_column_names + covidmed_column_names + \
                        outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
 
         print('len(column_names):', len(column_names), '\n', column_names)
@@ -1065,6 +1181,9 @@ def build_query_1and2_matrix(args):
                 np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
                 np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
+
+            vaccine_array[i, :] = _encoding_vaccine_4risk(procedure, immun, vaccine_column_names, vaccine_codes,
+                                                          index_date)
 
             covidmed_array[i, :], \
             outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :]\
@@ -1170,6 +1289,7 @@ def build_query_1and2_matrix(args):
                                 smoking_array,
                                 dx_array,
                                 med_array,
+                                vaccine_array,
                                 covidmed_array,
                                 outcome_covidmed_flag,
                                 outcome_covidmed_t2e,
