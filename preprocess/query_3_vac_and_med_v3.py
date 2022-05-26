@@ -940,7 +940,7 @@ def build_query_1and2_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         print('Load cohorts pickle data file:', input_file)
-        id_data = utils.load(input_file)
+        id_data = utils.load(input_file, chunk=4)
 
         # step 3: encoding cohorts baseline covariates into matrix
         if args.positive_only:
