@@ -951,13 +951,13 @@ if __name__ == '__main__':
     print('random_seed: ', args.random_seed)
 
     # -Pre step1: select Covid Positive data and dump
-    # read_all_and_dump_covid_positive(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
-    # read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
-
+    read_all_and_dump_covid_positive(r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv')
+    read_all_and_dump_covid_positive(r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv')
+    #
     # -Pre step2: build Covid Positive data and dump for future use
     # df, df_pasc_info = build_incident_pasc_from_all_positive(args)
 
-    # sys.exit(0)
+    sys.exit(0)
 
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
