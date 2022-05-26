@@ -132,6 +132,9 @@ def build_incident_pasc_from_all_positive(args, dump=True):
     print('len(selected_pasc_list)', len(selected_pasc_list))
     print(selected_pasc_list)
 
+    selected_pasc_list_narrow = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc']
+    print('len(selected_pasc_list_narrow)', len(selected_pasc_list_narrow))
+
     pasc_severe_list = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 1), 'pasc']
     pasc_moderate_list = df_pasc_info.loc[(df_pasc_info['selected'] == 1) & (df_pasc_info['severity'] == 0), 'pasc']
     print('len(pasc_severe_list)', len(pasc_severe_list))
@@ -177,7 +180,36 @@ def build_incident_pasc_from_all_positive(args, dump=True):
                                index=selected_pasc_list)
         return _person
 
-    # build flag, t2e for any pasc
+    # 2022-05-25
+    # build flag, t2e for any pasc with NARROW List
+    # flag@pascname  for incidence label, dx-t2e@pascname for t2e which is shared from original data
+    print('Any PASC: build flag, t2e for any pasc from Narrow List')
+    specific_pasc_col_narrow = ['flag@' + x for x in selected_pasc_list_narrow]
+    n_pasc_series_narrow = df[specific_pasc_col_narrow].sum(axis=1)
+    df['pasc-narrow-count'] = n_pasc_series_narrow  # number of incident pascs of this person
+    df['pasc-narrow-flag'] = (n_pasc_series_narrow > 0).astype('int')  # indicator of any incident pasc of this person
+    df['pasc-narrow-min-t2e'] = 180
+
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        npasc = rows['pasc-narrow-count']
+        if npasc >= 1:
+            # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
+            pasc_flag_cols = list(rows[specific_pasc_col_narrow][rows[specific_pasc_col_narrow] > 0].index)
+            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+            t2e = rows.loc[pasc_t2e_cols].min()
+        else:
+            # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
+            # no event, only consider death, censoring, 180 days,
+            # 1. approximated by the maximum-t2e of any selected pasc .
+            #   unless all selected pasc happened, but not incident, this not happened in our data.
+            # 2. directly follow the definition. Because I also stored max-followup information
+            # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
+            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+        df.loc[index, 'pasc-narrow-min-t2e'] = t2e
+
+    # before 2022-05-20
+    # build flag, t2e for any pasc from broader list, all the follows are from broader list
     # flag@pascname  for incidence label, dx-t2e@pascname for t2e which is shared from original data
     print('Any PASC: build flag, t2e for any pasc')
     specific_pasc_col = [x for x in df.columns if x.startswith('flag@')]
@@ -389,10 +421,27 @@ def collect_feature_columns_4_risk_analysis(args, df):
                       "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
                       "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
                       "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
-                      'DX: Autism', 'DX: Sickle Cell'
+                      'DX: Autism', 'DX: Sickle Cell',
+                      'DX: Obstructive sleep apnea',  # added 2022-05-25
+                      'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+                      'DX: Herpes Zoster',  # added 2022-05-25
                       ]
 
         col_names += ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"]
+
+    # add at 2022-05-25
+    col_names += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',]
+
+    col_names += [
+            'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
+            'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+            'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+            'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, '
+            'Sotrovimab, and unspecified monoclonal antibodies)',
+            'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
+            'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
+            'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
+            'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
 
     print('encoding:', args.encode, 'len(col_names):', len(col_names))
     print(col_names)
