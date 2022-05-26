@@ -1,15 +1,15 @@
-python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-all-May17.txt
-python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-all-May17.txt
-python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-outpatient-May17.txt
-python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-outpatient-May17.txt
-python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-inpatienticu-May17.txt
-python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-inpatienticu-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal anypasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypasc-positive-all-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal anypasc --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypasc-positive-outpatient-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal anypasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypasc-positive-inpatienticu-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-allpasc-positive-all-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal allpasc --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-allpasc-positive-outpatient-May17.txt
 python screen_risk_factors.py --dataset OneFlorida --goal allpasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-allpasc-positive-inpatienticu-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-all-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-all-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-outpatient-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-outpatient-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-inpatienticu-May17.txt
+python screen_risk_factors.py --dataset OneFlorida --goal anypascmoderate --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascmoderate-positive-inpatienticu-May17.txt
 
 #python screen_risk_factors.py --dataset OneFlorida --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-allpasc-positive.txt
 #python screen_risk_factors.py --dataset OneFlorida --goal anypascsevere --population positive --severity inpatient 2>&1 | tee  log/screen_risk_factors-OneFlorida-elix-anypascsevere-positive-inpatient.txt
