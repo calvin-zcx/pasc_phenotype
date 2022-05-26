@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
 KFOLD = 5
+MIN_PERCENTAGE = 0.005
 
 
 def parse_args():
@@ -570,7 +571,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
 
     cox_data = df.loc[:, covs_columns]
     print('cox_data.shape before number filter:', cox_data.shape)
-    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= MIN_PERCENTAGE) & (cox_data.mean() < 1)]]
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
@@ -635,7 +636,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     # support >= 2,3,4... by updating pasc-min-t2e definition.
     cox_data = df.loc[:, covs_columns]
     print('cox_data.shape before number filter:', cox_data.shape)
-    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= MIN_PERCENTAGE) & (cox_data.mean() < 1)]]
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
@@ -725,7 +726,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
 
     cox_data = df.loc[:, covs_columns]
     print('cox_data.shape before number filter:', cox_data.shape)
-    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+    cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= MIN_PERCENTAGE) & (cox_data.mean() < 1)]]
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
@@ -818,7 +819,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
 
         cox_data = df.loc[:, covs_columns]
         print('cox_data.shape before number filter:', cox_data.shape)
-        cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+        cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= MIN_PERCENTAGE) & (cox_data.mean() < 1)]]
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
@@ -871,7 +872,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
 
         cox_data = df.loc[:, covs_columns]
         print('cox_data.shape before number filter:', cox_data.shape)
-        cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= 0.001) & (cox_data.mean() < 1)]]
+        cox_data = cox_data.loc[:, cox_data.columns[(cox_data.mean() >= MIN_PERCENTAGE) & (cox_data.mean() < 1)]]
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
