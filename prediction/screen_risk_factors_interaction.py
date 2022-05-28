@@ -48,7 +48,7 @@ def parse_args():
                                            'anypascsevere', 'anypascmoderate'],
                         default='anypasc')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=4)
+    parser.add_argument('--negative_ratio', type=int, default=2)
 
     args = parser.parse_args()
 
