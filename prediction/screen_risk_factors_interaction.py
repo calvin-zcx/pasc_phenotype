@@ -969,7 +969,7 @@ if __name__ == '__main__':
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date'], nrows=10000)  # , nrows=100
+                     parse_dates=['index date'])  # , nrows=100
     print('Load done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
     print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
