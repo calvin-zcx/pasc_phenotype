@@ -104,7 +104,7 @@ def pre_transform_feature(df):
 def table1_cohorts_characterization_analyse(args):
     # severity in 'hospitalized', 'ventilation', None
     in_file = args.processed_data_file
-    out_file = args.out_dir + r'/table1_of_{}_table1-V3.xlsx'.format(args.dataset)
+    out_file = args.out_dir + r'/table1_of_{}_table1-V4.xlsx'.format(args.dataset)
 
     print('Try to load:', in_file)
     df = pd.read_csv(in_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
@@ -389,7 +389,11 @@ def table1_cohorts_characterization_analyse(args):
                  "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
                  "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
                  'DX: Autism', 'DX: Sickle Cell',
-                 "MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"
+                 'DX: Obstructive sleep apnea',  # added 2022-05-25
+                 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+                 'DX: Herpes Zoster',  # added 2022-05-25
+                 "MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug",
+                 'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
                  ]
     col_names_out = [
         'No comorbidity', '1 comorbidity', '2 comorbidities', '3 comorbidities',
@@ -408,7 +412,11 @@ def table1_cohorts_characterization_analyse(args):
         "Severe Obesity  (BMI>=40 kg/m2)", "Weight Loss",
         "Down's Syndrome", 'Other Substance Abuse', 'Cystic Fibrosis',
         'Autism', 'Sickle Cell',
-        "Prescription of Corticosteroids", "Prescription of Immunosuppressant drug"
+        'Obstructive sleep apnea',  # added 2022-05-25
+        'Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+        'Herpes Zoster',  # added 2022-05-25
+        "Prescription of Corticosteroids", "Prescription of Immunosuppressant drug",
+        'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
     ]
     row_names.extend(col_names_out)
     records.extend(

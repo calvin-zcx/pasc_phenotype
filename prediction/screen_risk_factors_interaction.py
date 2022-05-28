@@ -31,22 +31,24 @@ import matplotlib.pyplot as plt
 # from mlxtend.frequent_patterns import apriori
 KFOLD = 5
 MIN_PERCENTAGE = 0.005
+N_SHUFFLE = 0
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='OneFlorida',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='INSIGHT',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
-    parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='positive')
+    parser.add_argument('--population', choices=['positive', 'negative', 'all'], default='all')
     parser.add_argument('--severity', choices=['all', 'outpatient', "inpatienticu",
                                                'inpatient', 'icu', 'ventilation', ], default='all')
     parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan',
                                            'anypascsevere', 'anypascmoderate'],
-                        default='anypascsevere')
+                        default='anypasc')
     parser.add_argument("--random_seed", type=int, default=0)
+    parser.add_argument('--negative_ratio', type=int, default=2)
 
     args = parser.parse_args()
 
@@ -366,6 +368,7 @@ def distribution_statistics(args, df, df_pasc_info):
 
 
 def collect_feature_columns_4_risk_analysis(args, df):
+    # add covid to model interaction term
     col_names = []
     # if args.severity == 'all':
     # col_names += ['hospitalized', 'ventilation', 'criticalcare']
@@ -431,22 +434,25 @@ def collect_feature_columns_4_risk_analysis(args, df):
         col_names += ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"]
 
     # add at 2022-05-25
-    col_names += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',]
+    col_names += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index', ]
 
     # col_names += [
-    #         'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
-    #         'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
-    #         'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
-    #         'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, '
-    #         'Sotrovimab, and unspecified monoclonal antibodies)',
-    #         'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
-    #         'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
-    #         'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
-    #         'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
+    #     'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
+    #     'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+    #     'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+    #     'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, '
+    #     'Sotrovimab, and unspecified monoclonal antibodies)',
+    #     'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
+    #     'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
+    #     'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
+    #     'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
 
     print('encoding:', args.encode, 'len(col_names):', len(col_names))
     print(col_names)
-    return col_names
+    col_names_inter = ['Inter+' + x for x in col_names]
+    df_inter = df[col_names].multiply(df['covid'], axis='index').copy().rename(columns=lambda x:'Inter+'+x)
+    df = pd.concat([df, df_inter], axis=1)
+    return ['covid',] + col_names + col_names_inter, df
 
 
 def pre_transform_feature(df):
@@ -535,7 +541,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns, df = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['pasc-count'] >= pasc_threshold).astype('int')
     pasc_t2e = df['pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
@@ -575,7 +581,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -592,10 +598,10 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-riskFactor-{}-{}-{}-interaction.csv'.format(
                 pasc_threshold, args.dataset, args.population, args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc/any-at-least-{}-pasc-modeSelection-{}-{}-{}-interaction.csv'.format(
                 pasc_threshold, args.dataset, args.population, args.severity))
 
     return model
@@ -607,7 +613,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns, df = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['organ-count'] >= organ_threshold).astype('int')
     print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
@@ -640,7 +646,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -654,12 +660,12 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_organ/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}-{}.csv'.format(organ_threshold,
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-riskFactor-{}-{}-{}-interaction.csv'.format(organ_threshold,
                                                                                             args.dataset,
                                                                                             args.population,
                                                                                             args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}-{}.csv'.format(organ_threshold,
+            args.out_dir + 'any_organ/any-at-least-{}-ORGAN-modeSelection-{}-{}-{}-interaction.csv'.format(organ_threshold,
                                                                                                args.dataset,
                                                                                                args.population,
                                                                                                args.severity))
@@ -673,7 +679,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns, df = collect_feature_columns_4_risk_analysis(args, df)
 
     if severe:
         print('Focusing on Severe PASC')
@@ -730,7 +736,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     print('cox_data.shape after number filter:', cox_data.shape)
 
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
+        cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
@@ -747,12 +753,12 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc_{}/'.format('severe' if severe else 'moderate'))
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-riskFactor-{}-{}-{}-interaction.csv'.format(
                 'severe' if severe else 'moderate',
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
         model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}.csv'.format(
+            args.out_dir + 'any_pasc_{}/any-at-least-{}-{}-pasc-modeSelection-{}-{}-{}-interaction.csv'.format(
                 'severe' if severe else 'moderate',
                 pasc_threshold, 'severe' if severe else 'moderate',
                 args.dataset, args.population, args.severity))
@@ -803,7 +809,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns, df = collect_feature_columns_4_risk_analysis(args, df)
 
     # build flag, t2e for each organ
     print('Screening All Organ category')
@@ -823,7 +829,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -837,10 +843,10 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_organ/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-                args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}-{}.csv'.format(
+                args.out_dir + 'every_organ/ORGAN-{}-riskFactor-{}-{}-{}-interaction.csv'.format(
                     organ, args.dataset, args.population, args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}-{}.csv'.format(
+                args.out_dir + 'every_organ/ORGAN-{}-modeSelection-{}-{}-{}-interaction.csv'.format(
                     organ, args.dataset, args.population, args.severity))
             print('Dump done', organ)
 
@@ -855,7 +861,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns, df = collect_feature_columns_4_risk_analysis(args, df)
 
     # build flag, t2e for each organ
     print('Screening All PASC category')
@@ -876,7 +882,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         print('cox_data.shape after number filter:', cox_data.shape)
 
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
-            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=10, scoring_method="concordance_index")
+            cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
@@ -890,10 +896,10 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_pasc/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}-{}.csv'.format(
+                args.out_dir + 'every_pasc/PASC-{}-riskFactor-{}-{}-{}-interaction.csv'.format(
                     pasc.replace('/', '_'), args.dataset, args.population, args.severity))
             model.results.sort_values(by=['E[fit]'], ascending=False).to_csv(
-                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}-{}.csv'.format(
+                args.out_dir + 'every_pasc/PASC-{}-modeSelection-{}-{}-{}-interaction.csv'.format(
                     pasc.replace('/', '_'), args.dataset, args.population, args.severity))
             print('Dump done', pasc)
 
@@ -963,7 +969,7 @@ if __name__ == '__main__':
     # Step 1: Load pre-processed data for screening. May dynamically fine tune feature
     print('Load data file:', args.processed_data_file)
     df = pd.read_csv(args.processed_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date'])  # , nrows=100
+                     parse_dates=['index date'], nrows=10000)  # , nrows=100
     print('Load done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
     print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
@@ -976,6 +982,18 @@ if __name__ == '__main__':
         print('df.append(df2, ignore_index=True) done, df.shape:', df.shape)
         print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
         print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
+
+    # keep both positive and negative to calculate interaction effetc
+    # pos : neg = 1 : negative_ratio
+    print('# to build both positive and negative to calculate interaction effetc, pos : neg = 1 : negative_ratio')
+    df_pos = df.loc[df['covid'] == 1, :]
+    df_neg = df.loc[df['covid'] == 0, :]
+    print('df_pos.shape:', df_pos.shape)
+    print('df_neg.shape:', df_neg.shape)
+    df_neg_sample = df_neg.sample(n=int(len(df_pos) * args.negative_ratio), replace=False, random_state=args.random_seed)
+    print('df_neg_sample.shape:', df_neg_sample.shape)
+    df = pd.concat([df_pos, df_neg_sample], ignore_index=True)
+    print('Build data done! df.shape:', df.shape)
 
     # Step 2: Load pasc meta information
     df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
@@ -991,14 +1009,14 @@ if __name__ == '__main__':
         pasc_name['flag@' + row['pasc']] = row['PASC Name Simple']
 
     # Step 3: set Covid pos, neg, or all population
-    if args.population == 'positive':
-        print('Using Covid positive  cohorts')
-        df = df.loc[(df['covid'] == 1), :].copy()
-    elif args.population == 'negative':
-        print('Using Covid negative  cohorts')
-        df = df.loc[(df['covid'] == 0), :].copy()
-    else:
-        print('Using Both Covid Positive and Negative  cohorts')
+    # if args.population == 'positive':
+    #     print('Using Covid positive  cohorts')
+    #     df = df.loc[(df['covid'] == 1), :].copy()
+    # elif args.population == 'negative':
+    #     print('Using Covid negative  cohorts')
+    #     df = df.loc[(df['covid'] == 0), :].copy()
+    # else:
+    print('Using Both Covid Positive and Negative  cohorts')
 
     print('Select population:', args.population, 'df.shape:', df.shape)
 
@@ -1062,7 +1080,7 @@ if __name__ == '__main__':
     df_pasc_distribution.index = df_pasc_distribution['pasc'].apply(lambda x: pasc_name[x])
     utils.check_and_mkdir(args.out_dir)
     df_pasc_distribution.to_csv(
-        args.out_dir + 'pasc_ditribution-{}-{}-{}.csv'.format(args.dataset, args.population, args.severity))
+        args.out_dir + 'pasc_ditribution-{}-{}-{}-interaction.csv'.format(args.dataset, args.population, args.severity))
 
     # Step 7: final computing risk factors
     # ['anypasc', 'allpasc', 'anyorgan', 'allorgan']
