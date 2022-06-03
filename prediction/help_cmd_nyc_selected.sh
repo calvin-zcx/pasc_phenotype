@@ -1,4 +1,3 @@
-taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypasc-positive-all-May28.txt
 #taskset --cpu-list 0-3 python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-all-May28.txt
 #taskset --cpu-list 0-3 python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-outpatient-May28.txt
 #taskset --cpu-list 0-3 python screen_risk_factors.py --dataset INSIGHT --goal anypasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-anypasc-positive-inpatienticu-May28.txt
@@ -16,6 +15,7 @@ taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal any
 #taskset --cpu-list 0-3 python screen_risk_factors.py --dataset INSIGHT --goal allorgan --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-insight-elix-allorgan-positive-inpatienticu-May28.txt
 #echo finish insight
 #echo begin Pooled
+taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypasc-positive-all-May28.txt
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypasc --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypasc-positive-outpatient-May28.txt
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypasc --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypasc-positive-inpatienticu-May28.txt
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-Pooled-elix-allpasc-positive-all-May28.txt
@@ -27,7 +27,6 @@ taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal any
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypascmoderate --population positive --severity outpatient 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascmoderate-positive-outpatient-May28.txt
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypascsevere --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascsevere-positive-inpatienticu-May28.txt
 taskset --cpu-list 0-3 python screen_risk_factors.py --dataset Pooled --goal anypascmoderate --population positive --severity inpatienticu 2>&1 | tee  log/screen_risk_factors-Pooled-elix-anypascmoderate-positive-inpatienticu-May28.txt
-
 
 #python screen_risk_factors.py --dataset INSIGHT --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors-insight-elix-allpasc-positive.txt
 #python screen_risk_factors.py --dataset INSIGHT --goal anypascsevere --population positive --severity inpatient 2>&1 | tee  log/screen_risk_factors-insight-elix-anypascsevere-positive-inpatient.txt
