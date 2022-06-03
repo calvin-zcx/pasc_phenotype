@@ -30,7 +30,7 @@ import matplotlib.pyplot as plt
 # from mlxtend.preprocessing import TransactionEncoder
 # from mlxtend.frequent_patterns import apriori
 KFOLD = 5
-MIN_PERCENTAGE = 0.001 # 0.005
+MIN_PERCENTAGE = 0.001  # 0.005 # lost many interaction terms
 N_SHUFFLE = 0
 
 

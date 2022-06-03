@@ -94,7 +94,7 @@ def pre_transform_feature(df):
 
     df['not hospitalized'] = (((df['hospitalized'] == 0) & (df['criticalcare'] == 0)) >= 1).astype('int')
     df['hospitalized w/o icu'] = (
-                ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)) >= 1).astype('int')
+            ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)) >= 1).astype('int')
     df['icu'] = ((((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)) >= 1).astype(
         'int')
 
@@ -425,10 +425,56 @@ def table1_cohorts_characterization_analyse(args):
           _percentage_str(df.loc[df[c] == 1, 'pasc-severe-flag']),
           _percentage_str(df.loc[df[c] == 1, 'pasc-moderateonly-flag'])] for c in col_names])
 
-    df = pd.DataFrame(records, columns=['COVID Positive', 'Any PASC', 'Predictable PASC', 'Unpredictable PASC'], index=row_names)
+    df = pd.DataFrame(records, columns=['COVID Positive', 'Any PASC', 'Predictable PASC', 'Unpredictable PASC'],
+                      index=row_names)
     # df['SMD'] = df['SMD'].astype(float)
     df.to_excel(out_file)
     print('Dump done ', df)
+    return df
+
+
+def generate_table_2_hr(infile, outfile):
+    print('In generate_table_2_hr', infile, outfile)
+
+    def _hr_ci_str(hr, l, u):
+        return '{:.2f} ({:.2f}-{:.2f})'.format(hr, l, u)
+
+    def _p_log(p):
+        logp = -np.log10(p)
+        return '{:.1f}'.format(logp)
+
+    df = pd.read_csv(infile)
+    df = df.sort_values(by=['Unnamed: 0'], ascending=True)
+
+    df['Univariate HR'] = np.nan
+    df['Univariate HR, -log10 P-Value'] = np.nan
+    df['Fully adjusted HR'] = np.nan
+    df['Fully adjusted HR, -log10 P-Value'] = np.nan
+    df['Age, sex and severity adjusted HR'] = np.nan
+    df['Age, sex and severity adjusted HR, -log10 P-Value'] = np.nan
+
+    for key, row in df.iterrows():
+        print(key)
+        df.loc[key, 'Univariate HR'] = _hr_ci_str(row['uni-HR'],
+                                                  row['uni-CI-95% lower-bound'],
+                                                  row['uni-CI-95% upper-bound'])
+
+        df.loc[key, 'Univariate HR, -log10 P-Value'] = _p_log(row['uni-p-Value'])
+
+        df.loc[key, 'Fully adjusted HR'] = _hr_ci_str(row['HR'],
+                                                      row['CI-95% lower-bound'],
+                                                      row['CI-95% upper-bound'])
+
+        df.loc[key, 'Fully adjusted HR, -log10 P-Value'] = _p_log(row['p-Value'])
+
+        df.loc[key, 'Age, sex and severity adjusted HR'] = _hr_ci_str(row['ageAcuteSex-HR'],
+                                                                      row['ageAcuteSex-CI-95% lower-bound'],
+                                                                      row['ageAcuteSex-CI-95% upper-bound'])
+
+        df.loc[key, 'Age, sex and severity adjusted HR, -log10 P-Value'] = _p_log(row['ageAcuteSex-p-Value'])
+
+    df.to_excel(outfile)
+
     return df
 
 
@@ -436,6 +482,9 @@ if __name__ == '__main__':
     # python pre_data_manuscript_table1.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_table1_covid_4manuNegNoCovid.txt
     start_time = time.time()
     args = parse_args()
-    df_table1 = table1_cohorts_characterization_analyse(args)
-
+    # df_table1 = table1_cohorts_characterization_analyse(args)
+    df = generate_table_2_hr(
+        'output/factors/INSIGHT/elix/any_pasc/any-at-least-1-pasc-riskFactor-INSIGHT-positive-all.csv',
+        'output/factors/INSIGHT/elix/Table2-any-at-least-1-pasc-riskFactor-INSIGHT-positive-all.xlsx',
+    )
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
