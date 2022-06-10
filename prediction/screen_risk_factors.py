@@ -378,13 +378,13 @@ def collect_feature_columns_4_risk_analysis(args, df):
     col_names += ['20-<40 years', '40-<55 years', '65-<75 years', '75+ years'] # '55-<65 years', # reference group
 
     # col_names += ['Female', 'Male', 'Other/Missing']
-    col_names += [ 'Male']  # 'Female', # (+ Other/Missing), # reference group
+    col_names += [ 'Female',] #'Male']  # 'Female', # (+ Other/Missing), # reference group
 
     # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
     col_names += ['Asian', 'Black or African American', 'Other'] # 'White', #(+ missing) reference group
 
     # col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-    col_names += ['Hispanic: Yes'] #, 'Hispanic: No', 'Hispanic: Other/Missing'] # reference group
+    col_names += ['Hispanic: Yes',] #, 'Hispanic: No', 'Hispanic: Other/Missing'] # reference group
 
     # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
     #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
@@ -394,16 +394,16 @@ def collect_feature_columns_4_risk_analysis(args, df):
     # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
     #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
     #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
-    col_names += [ 'inpatient visits 1-2', 'inpatient visits >=3',  # 'inpatient visits 0',
-                  'outpatient visits 1-2', 'outpatient visits >=3', # 'outpatient visits 0',
+    col_names += [ 'inpatient visits 1-2', 'inpatient visits >=3',
+                  'outpatient visits 1-2', 'outpatient visits >=3',
                    'emergency visits 1-2', 'emergency visits >=3'] # 'emergency visits 0', # reference group
 
     # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
     #               'ADI80-89', 'ADI90-100']
     col_names += ['ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100'] # 'ADI1-19',
 
-    col_names += ['BMI: <18.5 under weight', 'BMI: 25-<30 overweight ',
-                  'BMI: >=30 obese ', 'BMI: missing'] # 'BMI: 18.5-<25 normal weight',  # ref group
+    col_names += ['BMI: <18.5 under weight', 'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
+    # 'BMI: 18.5-<25 normal weight',  # ref group
 
     col_names += ['Smoker: current', 'Smoker: former', 'Smoker: missing'] # 'Smoker: never', # reference group
 

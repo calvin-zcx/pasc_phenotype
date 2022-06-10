@@ -467,7 +467,7 @@ def collect_feature_columns_4_risk_analysis(args, df):
     col_names += ['20-<40 years', '40-<55 years', '65-<75 years', '75+ years'] # '55-<65 years', # reference group
 
     # col_names += ['Female', 'Male', 'Other/Missing']
-    col_names += [ 'Male']  # 'Female', # (+ Other/Missing), # reference group
+    col_names += [ 'Female',]  # 'Female', 'Male' # (+ Other/Missing), # reference group
 
     # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
     col_names += ['Asian', 'Black or African American', 'Other'] # 'White', #(+ missing) reference group
