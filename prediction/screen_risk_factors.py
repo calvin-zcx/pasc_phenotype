@@ -372,42 +372,45 @@ def collect_feature_columns_4_risk_analysis(args, df):
     col_names = []
     # if args.severity == 'all':
     # col_names += ['hospitalized', 'ventilation', 'criticalcare']
-    col_names += ['not hospitalized', 'hospitalized', 'icu']
+    col_names += ['hospitalized', 'icu'] # 'not hospitalized', # reference group
 
     # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-    col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
+    col_names += ['20-<40 years', '40-<55 years', '65-<75 years', '75+ years'] # '55-<65 years', # reference group
 
     # col_names += ['Female', 'Male', 'Other/Missing']
-    col_names += ['Female', 'Male']
+    col_names += [ 'Male']  # 'Female', # (+ Other/Missing), # reference group
 
     # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
-    col_names += ['Asian', 'Black or African American', 'White', 'Other']
+    col_names += ['Asian', 'Black or African American', 'Other'] # 'White', #(+ missing) reference group
 
     # col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-    col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+    col_names += ['Hispanic: Yes'] #, 'Hispanic: No', 'Hispanic: Other/Missing'] # reference group
 
     # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
     #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
     #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
     # col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
     #               'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
-    col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
-                  'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
-                  'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
+    #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
+    #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
+    col_names += [ 'inpatient visits 1-2', 'inpatient visits >=3',  # 'inpatient visits 0',
+                  'outpatient visits 1-2', 'outpatient visits >=3', # 'outpatient visits 0',
+                   'emergency visits 1-2', 'emergency visits >=3'] # 'emergency visits 0', # reference group
 
     # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
     #               'ADI80-89', 'ADI90-100']
-    col_names += ['ADI1-19', 'ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100']
+    col_names += ['ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100'] # 'ADI1-19',
 
-    col_names += ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
-                  'BMI: >=30 obese ', 'BMI: missing']
+    col_names += ['BMI: <18.5 under weight', 'BMI: 25-<30 overweight ',
+                  'BMI: >=30 obese ', 'BMI: missing'] # 'BMI: 18.5-<25 normal weight',  # ref group
 
-    col_names += ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
+    col_names += ['Smoker: current', 'Smoker: former', 'Smoker: missing'] # 'Smoker: never', # reference group
 
-    col_names += ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+    col_names += [ '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21'] # '03/20-06/20', # reference group
 
-    col_names += ['num_Comorbidity=0', 'num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
-                  'num_Comorbidity=4', 'num_Comorbidity>=5']
+    col_names += [ 'num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
+                  'num_Comorbidity=4', 'num_Comorbidity>=5'] # 'num_Comorbidity=0', # reference
 
     if args.encode == 'icd_med':
         col_names += list(df.columns)[df.columns.get_loc('death t2e') + 1:df.columns.get_loc('label')]
@@ -434,7 +437,7 @@ def collect_feature_columns_4_risk_analysis(args, df):
         col_names += ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"]
 
     # add at 2022-05-25
-    col_names += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',]
+    col_names += [ 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',] # 'Fully vaccinated - Pre-index',
 
     # col_names += [
     #         'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',

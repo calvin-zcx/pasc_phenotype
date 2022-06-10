@@ -367,7 +367,7 @@ def distribution_statistics(args, df, df_pasc_info):
     return df_pasc_person_counts, df_person_pasc_counts
 
 
-def collect_feature_columns_4_risk_analysis(args, df):
+def collect_feature_columns_4_risk_analysis_full_One_Hot(args, df):
     # add covid to model interaction term
     col_names = []
     # if args.severity == 'all':
@@ -454,6 +454,94 @@ def collect_feature_columns_4_risk_analysis(args, df):
     df = pd.concat([df, df_inter], axis=1)
     return ['covid',] + col_names + col_names_inter, df
 
+
+def collect_feature_columns_4_risk_analysis(args, df):
+    # for prediction ok
+    # for risk factor analysis, categorical data, should consider reference value
+    col_names = []
+    # if args.severity == 'all':
+    # col_names += ['hospitalized', 'ventilation', 'criticalcare']
+    col_names += ['hospitalized', 'icu'] # 'not hospitalized', # reference group
+
+    # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+    col_names += ['20-<40 years', '40-<55 years', '65-<75 years', '75+ years'] # '55-<65 years', # reference group
+
+    # col_names += ['Female', 'Male', 'Other/Missing']
+    col_names += [ 'Male']  # 'Female', # (+ Other/Missing), # reference group
+
+    # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+    col_names += ['Asian', 'Black or African American', 'Other'] # 'White', #(+ missing) reference group
+
+    # col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+    col_names += ['Hispanic: Yes'] #, 'Hispanic: No', 'Hispanic: Other/Missing'] # reference group
+
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
+    #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
+    #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
+    #               'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
+    # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
+    #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
+    #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
+    col_names += [ 'inpatient visits 1-2', 'inpatient visits >=3',  # 'inpatient visits 0',
+                  'outpatient visits 1-2', 'outpatient visits >=3', # 'outpatient visits 0',
+                   'emergency visits 1-2', 'emergency visits >=3'] # 'emergency visits 0', # reference group
+
+    # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
+    #               'ADI80-89', 'ADI90-100']
+    col_names += ['ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100'] # 'ADI1-19',
+
+    col_names += ['BMI: <18.5 under weight', 'BMI: 25-<30 overweight ',
+                  'BMI: >=30 obese ', 'BMI: missing'] # 'BMI: 18.5-<25 normal weight',  # ref group
+
+    col_names += ['Smoker: current', 'Smoker: former', 'Smoker: missing'] # 'Smoker: never', # reference group
+
+    col_names += [ '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21'] # '03/20-06/20', # reference group
+
+    col_names += [ 'num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
+                  'num_Comorbidity=4', 'num_Comorbidity>=5'] # 'num_Comorbidity=0', # reference
+
+    if args.encode == 'icd_med':
+        col_names += list(df.columns)[df.columns.get_loc('death t2e') + 1:df.columns.get_loc('label')]
+    else:
+        col_names += ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
+                      "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
+                      "DX: Coagulopathy", "DX: Congestive Heart Failure",
+                      "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
+                      "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                      "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                      "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
+                      "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
+                      "DX: Peripheral vascular disorders ", "DX: Pregnant",
+                      "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
+                      "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
+                      "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
+                      "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
+                      'DX: Autism', 'DX: Sickle Cell',
+                      'DX: Obstructive sleep apnea',  # added 2022-05-25
+                      'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+                      'DX: Herpes Zoster',  # added 2022-05-25
+                      ]
+
+        col_names += ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"]
+
+    # add at 2022-05-25
+    col_names += [ 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',] # 'Fully vaccinated - Pre-index',
+
+    # col_names += [
+    #         'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
+    #         'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+    #         'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+    #         'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, '
+    #         'Sotrovimab, and unspecified monoclonal antibodies)',
+    #         'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
+    #         'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
+    #         'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
+    #         'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
+
+    print('encoding:', args.encode, 'len(col_names):', len(col_names))
+    print(col_names)
+    return col_names
 
 def pre_transform_feature(df):
     # col_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',

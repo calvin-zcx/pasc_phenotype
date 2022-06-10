@@ -14,19 +14,19 @@ taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset INSIG
 taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset INSIGHT --goal allorgan --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-INSIGHT-elix-allorgan-all-outpatient-May28.txt
 taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset INSIGHT --goal allorgan --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-INSIGHT-elix-allorgan-all-inpatienticu-May28.txt
 echo finish insight
-echo begin Pooled
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-all-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-outpatient-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-inpatienticu-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-all-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-outpatient-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-inpatienticu-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-all-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-all-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-outpatient-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-outpatient-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-inpatienticu-May28.txt
-taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-inpatienticu-May28.txt
+#echo begin Pooled
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-all-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-outpatient-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypasc-all-inpatienticu-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-all-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-outpatient-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal allpasc --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-allpasc-all-inpatienticu-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-all-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity all 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-all-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-outpatient-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity outpatient 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-outpatient-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascsevere --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascsevere-all-inpatienticu-May28.txt
+#taskset --cpu-list 4-7 python screen_risk_factors_interaction.py --dataset Pooled --goal anypascmoderate --population all --severity inpatienticu 2>&1 | tee  log/screen_risk_factors_interaction-Pooled-elix-anypascmoderate-all-inpatienticu-May28.txt
 
 
 #python screen_risk_factors_interaction.py --dataset INSIGHT --goal allpasc --population positive --severity all 2>&1 | tee  log/screen_risk_factors_interaction-insight-elix-allpasc-positive.txt
