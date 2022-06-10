@@ -541,7 +541,11 @@ def collect_feature_columns_4_risk_analysis(args, df):
 
     print('encoding:', args.encode, 'len(col_names):', len(col_names))
     print(col_names)
-    return col_names
+    col_names_inter = ['Inter+' + x for x in col_names]
+    df_inter = df[col_names].multiply(df['covid'], axis='index').copy().rename(columns=lambda x: 'Inter+' + x)
+    df = pd.concat([df, df_inter], axis=1)
+    return ['covid', ] + col_names + col_names_inter, df
+
 
 def pre_transform_feature(df):
     # col_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
