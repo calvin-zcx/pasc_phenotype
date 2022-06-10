@@ -367,6 +367,8 @@ def distribution_statistics(args, df, df_pasc_info):
 
 
 def collect_feature_columns_4_risk_analysis(args, df):
+    # for prediction ok
+    # for risk factor analysis, categorical data, should consider reference value
     col_names = []
     # if args.severity == 'all':
     # col_names += ['hospitalized', 'ventilation', 'criticalcare']
