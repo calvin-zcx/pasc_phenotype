@@ -16,8 +16,10 @@ mkdir log
 #taskset --cpu-list 12-15 python screen_dx_v2.py --dataset oneflorida --site all --severity Arrythmia 2>&1 | tee  log/screen_dx_oneflorida_all_Arrythmia-competingRiskCumInc.txt
 #taskset --cpu-list 12-15 python screen_dx_v2.py --dataset oneflorida --site all --severity CKD 2>&1 | tee  log/screen_dx_oneflorida_all_CKD-competingRiskCumInc.txt
 #taskset --cpu-list 12-15 python screen_dx_v2.py --dataset oneflorida --site all --severity healthy 2>&1 | tee  log/screen_dx_oneflorida_ALL_healthy-competingRiskCumInc.txt
-taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 03-20-06-20 2>&1 | tee  log/screen_dx_oneflorida_ALL_03-20-06-20-competingRiskCumInc.txt
-taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 07-20-10-20 2>&1 | tee  log/screen_dx_oneflorida_ALL_07-20-10-20-competingRiskCumInc.txt
-taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 11-20-02-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_11-20-02-21-competingRiskCumInc.txt
-taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 03-21-06-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_03-21-06-21-competingRiskCumInc.txt
-taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 07-21-11-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_07-21-11-21-competingRiskCumInc.txt
+#taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 03-20-06-20 2>&1 | tee  log/screen_dx_oneflorida_ALL_03-20-06-20-competingRiskCumInc.txt
+#taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 07-20-10-20 2>&1 | tee  log/screen_dx_oneflorida_ALL_07-20-10-20-competingRiskCumInc.txt
+#taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 11-20-02-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_11-20-02-21-competingRiskCumInc.txt
+#taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 03-21-06-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_03-21-06-21-competingRiskCumInc.txt
+#taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 07-21-11-21 2>&1 | tee  log/screen_dx_oneflorida_ALL_07-21-11-21-competingRiskCumInc.txt
+taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity 1stwave 2>&1 | tee  log/screen_dx_oneflorida_ALL_1stwave-competingRiskCumInc.txt
+taskset --cpu-list 12-15 python screen_dx_v3.py --dataset oneflorida --site all --severity delta 2>&1 | tee  log/screen_dx_oneflorida_ALL_Delta-competingRiskCumInc.txt
