@@ -179,7 +179,7 @@ class CoxPrediction:
         print('Best TEST DATA fit mean(std) ', self.best_fit, 'k-fold details:', self.best_fit_k_folds_detail)
         return describe
 
-    def uni_variate_risk(self, cov_df_ori, T, E, adjusted_col=[], pre=''):
+    def uni_variate_risk(self, cov_df_ori, T, E, adjusted_col=[], pre='', categorical_map={}):
         start_time = time.time()
         if pre == '':
             if len(adjusted_col) == 0:
@@ -196,6 +196,11 @@ class CoxPrediction:
         cov_df['E'] = E
 
         for index, row in self.risk_results.iterrows():
+            cat = []
+            if index in categorical_map:
+                cat = categorical_map[index]
+            adjusted_col += cat
+            adjusted_col = list(set(adjusted_col))
 
             if len(adjusted_col) == 0:
                 cox_data = cov_df[['T', 'E', index]]

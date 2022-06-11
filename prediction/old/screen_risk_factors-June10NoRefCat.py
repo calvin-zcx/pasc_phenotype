@@ -2,7 +2,7 @@ import os
 import sys
 
 # for linux env.
-sys.path.insert(0, '..')
+sys.path.insert(0, '../..')
 import pandas as pd
 import numpy as np
 import argparse
@@ -37,7 +37,7 @@ N_SHUFFLE = 5
 def parse_args():
     parser = argparse.ArgumentParser(description='process parameters')
     # Input
-    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='INSIGHT',
+    parser.add_argument('--dataset', choices=['OneFlorida', 'INSIGHT', 'Pooled'], default='OneFlorida',
                         help='data bases')
     parser.add_argument('--encode', choices=['elix', 'icd_med'], default='elix',
                         help='data encoding')
@@ -46,7 +46,7 @@ def parse_args():
                                                'inpatient', 'icu', 'ventilation', ], default='all')
     parser.add_argument('--goal', choices=['anypasc', 'allpasc', 'anyorgan', 'allorgan',
                                            'anypascsevere', 'anypascmoderate'],
-                        default='anypasc')
+                        default='anypascsevere')
     parser.add_argument("--random_seed", type=int, default=0)
 
     args = parser.parse_args()
@@ -55,17 +55,17 @@ def parse_args():
     if args.dataset == 'INSIGHT':
         # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
-        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
+        args.data_file = r'../../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+        args.processed_data_file = r'../../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
     elif args.dataset == 'OneFlorida':
         # args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly.csv'
         # args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
-        args.data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
-        args.processed_data_file = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
+        args.data_file = r'../../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
+        args.processed_data_file = r'../../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
     elif args.dataset == 'Pooled':
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
         # args.processed_data_file2 = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-PosOnly-anyPASC.csv'
-        args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
+        args.processed_data_file = r'../../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
         args.processed_data_file2 = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all-anyPASC.csv'
 
     else:
@@ -369,84 +369,45 @@ def distribution_statistics(args, df, df_pasc_info):
 def collect_feature_columns_4_risk_analysis(args, df):
     # for prediction ok
     # for risk factor analysis, categorical data, should consider reference value
-    categorical_map = {}
     col_names = []
-
+    # if args.severity == 'all':
     # col_names += ['hospitalized', 'ventilation', 'criticalcare']
-    severity = ['hospitalized', 'icu']
-    col_names += severity  # 'not hospitalized', # reference group
-    for x in severity:
-        categorical_map[x] = severity
+    col_names += ['not hospitalized', 'hospitalized', 'icu']
 
     # col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-    ages = ['20-<40 years', '40-<55 years', '65-<75 years', '75+ years']  # '55-<65 years', # reference group
-    col_names += ages
-    for x in ages:
-        categorical_map[x] = ages
+    col_names += ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years']
 
     # col_names += ['Female', 'Male', 'Other/Missing']
-    col_names += ['Female', ]  # 'Male']  # 'Female', # (+ Other/Missing), # reference group
+    col_names += ['Female', 'Male']
 
     # col_names += ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
-    races = ['Asian', 'Black or African American', 'Other', 'Missing']  # 'White', # reference group
-    col_names += races
-    for x in races:
-        categorical_map[x] = races
+    col_names += ['Asian', 'Black or African American', 'White', 'Other']
 
     # col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-    ethnicity = ['Hispanic: Yes', 'Hispanic: Other/Missing']  # , 'Hispanic: No', ] # reference group
-    col_names += ethnicity
-    for x in ethnicity:
-        categorical_map[x] = ethnicity
+    col_names += ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
     # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4', 'inpatient visits >=5',
     #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4', 'outpatient visits >=5',
     #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4', 'emergency visits >=5']
     # col_names += ['inpatient visits 0', 'inpatient visits 1-4', 'inpatient visits >=5',
     #               'emergency visits 0', 'emergency visits 1-4', 'emergency visits >=5']
-    # col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
-    #               'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
-    #               'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
-    inpatient = ['inpatient visits 1-2', 'inpatient visits >=3', ]
-    outpatient = ['outpatient visits 1-2', 'outpatient visits >=3', ]
-    emergency = ['emergency visits 1-2', 'emergency visits >=3']  # 'emergency visits 0', # reference group
-    col_names += (inpatient + outpatient + emergency)
-    for x in inpatient:
-        categorical_map[x] = inpatient
+    col_names += ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits >=3',
+                  'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits >=3',
+                  'emergency visits 0', 'emergency visits 1-2', 'emergency visits >=3']
 
-    for x in outpatient:
-        categorical_map[x] = outpatient
-
-    for x in emergency:
-        categorical_map[x] = emergency
     # col_names += ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49', 'ADI50-59', 'ADI60-69', 'ADI70-79',
     #               'ADI80-89', 'ADI90-100']
-    ADI = ['ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100']  # 'ADI1-19',
-    col_names += ADI
-    for x in ADI:
-        categorical_map[x] = ADI
+    col_names += ['ADI1-19', 'ADI20-39', 'ADI40-59', 'ADI60-79', 'ADI80-100']
 
-    BMI = ['BMI: <18.5 under weight', 'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
-    # 'BMI: 18.5-<25 normal weight',  # ref group
-    col_names += BMI
-    for x in BMI:
-        categorical_map[x] = BMI
+    col_names += ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+                  'BMI: >=30 obese ', 'BMI: missing']
 
-    SMOKE = ['Smoker: current', 'Smoker: former', 'Smoker: missing']  # 'Smoker: never', # reference group
-    col_names += SMOKE
-    for x in SMOKE:
-        categorical_map[x] = SMOKE
+    col_names += ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
 
-    period = ['07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']  # '03/20-06/20', # reference group
-    col_names += period
-    for x in period:
-        categorical_map[x] = period
+    col_names += ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
 
-    comorbidity = ['num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
-                   'num_Comorbidity=4', 'num_Comorbidity>=5']  # 'num_Comorbidity=0', # reference
-    col_names += comorbidity
-    for x in comorbidity:
-        categorical_map[x] = comorbidity
+    col_names += ['num_Comorbidity=0', 'num_Comorbidity=1', 'num_Comorbidity=2', 'num_Comorbidity=3',
+                  'num_Comorbidity=4', 'num_Comorbidity>=5']
 
     if args.encode == 'icd_med':
         col_names += list(df.columns)[df.columns.get_loc('death t2e') + 1:df.columns.get_loc('label')]
@@ -473,10 +434,7 @@ def collect_feature_columns_4_risk_analysis(args, df):
         col_names += ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug"]
 
     # add at 2022-05-25
-    vax = ['Partially vaccinated - Pre-index', 'No evidence - Pre-index', ]  # 'Fully vaccinated - Pre-index',
-    col_names += vax
-    for x in vax:
-        categorical_map[x] = vax
+    col_names += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',]
 
     # col_names += [
     #         'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
@@ -491,7 +449,7 @@ def collect_feature_columns_4_risk_analysis(args, df):
 
     print('encoding:', args.encode, 'len(col_names):', len(col_names))
     print(col_names)
-    return col_names, categorical_map
+    return col_names
 
 
 def pre_transform_feature(df):
@@ -580,7 +538,7 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns, categorical_map = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['pasc-count'] >= pasc_threshold).astype('int')
     pasc_t2e = df['pasc-min-t2e']  # this time 2 event can only be used for >= 1 pasc. If >= 2, how to define t2e?
@@ -623,18 +581,16 @@ def risk_factor_of_any_pasc(args, df, df_pasc_info, pasc_threshold=1, dump=True)
         cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-', categorical_map=categorical_map)
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '65-<75 years', '75+ years'], pre='age-',
-                           categorical_map=categorical_map)  # '55-<65 years',
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
     if args.severity == 'all':
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu'], pre='ageAcute-', categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu', 'Female', ], pre='ageAcuteSex-',
-                               categorical_map=categorical_map)
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
 
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc/')
@@ -654,7 +610,7 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns, categorical_map = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     pasc_flag = (df['organ-count'] >= organ_threshold).astype('int')
     print('pos:{} ({:.3%})'.format(pasc_flag.sum(), pasc_flag.mean()),
@@ -689,16 +645,15 @@ def risk_factor_of_any_organ(args, df, df_pasc_info, organ_threshold=1, dump=Tru
     model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
         cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-', categorical_map=categorical_map)
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '65-<75 years', '75+ years'], pre='age-', categorical_map=categorical_map)  # '55-<65 years',
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu'], pre='ageAcute-', categorical_map=categorical_map)  # '55-<65 years',
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu', 'Female', ], pre='ageAcuteSex-', categorical_map=categorical_map)
-
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+        'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_organ/')
         model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
@@ -721,7 +676,7 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns, categorical_map = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     if severe:
         print('Focusing on Severe PASC')
@@ -781,17 +736,16 @@ def risk_factor_of_any_pasc_severity(args, df, df_pasc_info, severe=True, pasc_t
         cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
     # paras_grid={'l1_ratio': [0], 'penalizer': [0.1]}
 
-    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-', categorical_map=categorical_map)
+    model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
     model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-        '20-<40 years', '40-<55 years', '65-<75 years', '75+ years'], pre='age-',
-                           categorical_map=categorical_map)  # '55-<65 years',
+        '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
     if args.severity == 'all':
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu'], pre='ageAcute-', categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu', 'Female', ], pre='ageAcuteSex-', categorical_map=categorical_map)
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
 
     if dump:
         utils.check_and_mkdir(args.out_dir + 'any_pasc_{}/'.format('severe' if severe else 'moderate'))
@@ -852,7 +806,7 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns, categorical_map = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     # build flag, t2e for each organ
     print('Screening All Organ category')
@@ -874,16 +828,15 @@ def screen_all_organ(args, df, df_pasc_info, selected_organ_list, dump=True):
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
             cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
-        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-', categorical_map=categorical_map)
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years'], pre='age-',  categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-                '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-                'hospitalized', 'icu'], pre='ageAcute-', categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-                '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-                'hospitalized', 'icu', 'Female', ], pre='ageAcuteSex-', categorical_map=categorical_map)
-
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_organ/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
@@ -905,7 +858,7 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
     # print('df.shape:', df.shape)
     # df = pre_transform_feature(df)
     # print('df.shape after pre_transform_feature:', df.shape)
-    covs_columns, categorical_map = collect_feature_columns_4_risk_analysis(args, df)
+    covs_columns = collect_feature_columns_4_risk_analysis(args, df)
 
     # build flag, t2e for each organ
     print('Screening All PASC category')
@@ -928,18 +881,15 @@ def screen_all_pasc(args, df, df_pasc_info, selected_pasc_list, dump=True):
         model = ml.CoxPrediction(random_seed=args.random_seed, ).cross_validation_fit(
             cox_data, pasc_t2e, pasc_flag, kfold=KFOLD, n_shuffle=N_SHUFFLE, scoring_method="concordance_index")
 
-        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-',
-                               categorical_map=categorical_map)
+        model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[], pre='uni-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years'], pre='age-',
-                               categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years'], pre='age-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu'], pre='ageAcute-', categorical_map=categorical_map)  # '55-<65 years',
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu'], pre='ageAcute-')
         model.uni_variate_risk(cox_data, pasc_t2e, pasc_flag, adjusted_col=[
-            '20-<40 years', '40-<55 years', '65-<75 years', '75+ years',
-            'hospitalized', 'icu', 'Female', ], pre='ageAcuteSex-', categorical_map=categorical_map)
-
+            '20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75+ years',
+            'not hospitalized', 'hospitalized', 'icu', 'Female', 'Male', ], pre='ageAcuteSex-')
         if dump:
             utils.check_and_mkdir(args.out_dir + 'every_pasc/')
             model.risk_results.reset_index().sort_values(by=['HR'], ascending=False).to_csv(
