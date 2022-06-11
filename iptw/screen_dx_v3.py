@@ -228,8 +228,8 @@ if __name__ == "__main__":
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
     elif args.severity == 'delta':
-        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2020')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (df['index date'] < datetime.datetime(2020, 12, 1, 0, 0)), :].copy()
+        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
