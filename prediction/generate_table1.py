@@ -20,8 +20,8 @@ from lifelines import KaplanMeierFitter, CoxPHFitter
 
 print = functools.partial(print, flush=True)
 
-from iptw.PSModels import ml
-from iptw.evaluation import *
+# from iptw.PSModels import ml
+# from iptw.evaluation import *
 
 
 def parse_args():
