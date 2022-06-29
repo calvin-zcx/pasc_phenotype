@@ -34,6 +34,7 @@ from misc import utils
 from matplotlib.colors import LogNorm, Normalize
 from scipy.stats import uniform
 from scipy.stats import randint
+from matplotlib.patches import Rectangle
 
 
 def collect_covariate_name():
@@ -212,7 +213,7 @@ def combine_risk_p_value_with_interaction(database='INSIGHT', severity='all'):
     print('Done')
     return df_row
 
-
+"""
 def plot_heatmap_for_risk_grouped_by_organ(database='INSIGHT', star=False, pvalue=0.01):
     df_pasc_info = pd.read_excel(
         r'C:/Users/zangc/Documents/Boston/workshop/2021-PASC/prediction/PASC_risk_factors_predictability.xlsx',
@@ -386,6 +387,7 @@ def plot_heatmap_for_risk_grouped_by_organ(database='INSIGHT', star=False, pvalu
 
     plt.show()
     print()
+"""
 
 
 def manhattan_plt(database='INSIGHT', ):
@@ -452,7 +454,8 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
                                       interactionge1=False,
                                       interact_p_val_threhold=None,
                                       severity='all',
-                                      drop_cols=[]):
+                                      drop_cols=[],
+                                      highlightinterle1=True):
     if database == 'OneFlorida':
         dir_path = 'output/factors/OneFlorida/elix/'
     else:
@@ -522,6 +525,14 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
         assert len(covs_new) == len(covs)
         covs = covs_new
 
+    if drop_cols:
+        print('drop columns: ', drop_cols)
+        print('before drop, len(covs):', len(covs))
+        covs_new = [x for x in covs if x not in drop_cols]
+        covs = covs_new
+        print('after drop, len(covs):', len(covs))
+
+
     n_cov = len(covs)
     n_pasc = len(pascs)
     print('n_cov:', n_cov, 'n_pasc:', n_pasc)
@@ -530,6 +541,8 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
     pasc_id = {c: i for i, c in zip(range(n_pasc), pascs)}
     data = np.empty((n_pasc, n_cov,))
     data[:] = np.nan
+    highlight_cell = []
+
     for key, row in df.iterrows():
         cov = row['covariate']
         pasc = row['pasc']
@@ -537,21 +550,24 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
         hr_l = row['CI-95% lower-bound']
         hr_u = row['CI-95% upper-bound']
         pval = row['p-Value']
+        hr_int = row['HR_inter']
         i = pasc_id[pasc]
         if cov not in cov_id:
             print(cov, 'not in cov_id')
             continue
         j = cov_id[cov]
         data[i, j] = hr
+        if hr_int <= 1:
+            highlight_cell.append((j, i))
 
     df_data = pd.DataFrame(data, index=pascs,
                            columns=covs)  # [re.sub("\(.*?\)", "", x.replace('DX: ', '')) for x in covs])
 
-    if drop_cols:
-        print('drop columns: ', drop_cols)
-        print('before drop, df_data.shape:', df_data.shape)
-        df_data = df_data.drop(columns=drop_cols)
-        print('after drop, df_data.shape:', df_data.shape)
+    # if drop_cols:
+    #     print('drop columns: ', drop_cols)
+    #     print('before drop, df_data.shape:', df_data.shape)
+    #     df_data = df_data.drop(columns=drop_cols)
+    #     print('after drop, df_data.shape:', df_data.shape)
 
     df_data = df_data.rename(columns=cov_name)
     # {'icu': 'ICU', '75+ years': '≥ 75 years', 'hospitalized': 'Hospitalized',
@@ -574,26 +590,33 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
     if n_cov < 35:
         ax.set_xticklabels(ax.get_xmajorticklabels(), fontsize=14)
         ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize=14)
+
+    if highlightinterle1:
+        for cell in highlight_cell:
+            ax.add_patch(Rectangle(cell, 1, 1, fill=False, edgecolor='crimson', lw=2))
+
     # divider = make_axes_locatable(ax)
     # cax = divider.append_axes("right", size="10%", pad=0.1)
     # plt.colorbar(ax.get_children()[0], shrink=0.5, cax=cax)
     plt.tight_layout()
     utils.check_and_mkdir(dir_path + 'figure/')
 
-    plt.savefig(dir_path + 'figure/risk_heat_map_{}-p{:.6f}-{}-{}{}.png'.format(
+    plt.savefig(dir_path + 'figure/risk_heat_map_{}-p{:.6f}-{}-{}{}{}.png'.format(
         severity,
         p_val_threshold,
         '-interHRGe1' if interactionge1 else '-interHRNotUsed',
         '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
-        '-dropcols' if drop_cols else '-fullcols'
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
     ), bbox_inches='tight', dpi=600)
 
-    plt.savefig(dir_path + 'figure/risk_heat_map_{}-p{:.6f}-{}-{}{}.pdf'.format(
+    plt.savefig(dir_path + 'figure/risk_heat_map_{}-p{:.6f}-{}-{}{}{}.pdf'.format(
         severity,
         p_val_threshold,
         '-interHRGe1' if interactionge1 else '-interHRNotUsed',
         '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
-        '-dropcols' if drop_cols else '-fullcols'
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
     ), bbox_inches='tight', dpi=600)
 
     plt.show()
@@ -828,44 +851,55 @@ def build_heat_map_from_inpatient_vs_outpatient(database='INSIGHT',
 if __name__ == '__main__':
     start_time = time.time()
     # manhattan_plt(database='INSIGHT', )
-    # df_row = combine_risk_p_value_with_interaction(database='INSIGHT', severity='all')
-    # df_row = combine_risk_p_value_with_interaction(database='INSIGHT', severity='inpatienticu')
-    # df_row = combine_risk_p_value_with_interaction(database='INSIGHT', severity='outpatient')
+    database = 'OneFlorida'  # 'INSIGHT'
+    df_row = combine_risk_p_value_with_interaction(database=database, severity='all')
+    df_row = combine_risk_p_value_with_interaction(database=database, severity='inpatienticu')
+    df_row = combine_risk_p_value_with_interaction(database=database, severity='outpatient')
 
     # df_hr, df_p, df_row = combine_risk_p_value(database='INSIGHT')
     # plot_heatmap_for_risk_grouped_by_organ(database='INSIGHT', star=False, pvalue=0.05)
     # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.01)
-    df_data1, df_data2 = build_heat_map_from_inpatient_vs_outpatient(database='INSIGHT', p_val_threshold=0.05 / 89,
-                                                                     selected_cols=False, interactionge1=True,
-                                                                     severity='all',
-                                                                     drop_cols=['Missing',
-                                                                                'Other',
-                                                                                'Smoker: current',
-                                                                                'Smoker: former',
-                                                                                'Smoker: missing',
-                                                                                'inpatient visits 1-2',
-                                                                                'inpatient visits >=3',
-                                                                                'emergency visits >=3',
-                                                                                '03/21-06/21'])
+    # df_data1, df_data2 = build_heat_map_from_inpatient_vs_outpatient(database='INSIGHT', p_val_threshold=0.05 / 89,
+    #                                                                  selected_cols=False, interactionge1=True,
+    #                                                                  severity='all',
+    #                                                                  drop_cols=['Missing',
+    #                                                                             'Other',
+    #                                                                             'Smoker: current',
+    #                                                                             'Smoker: former',
+    #                                                                             'Smoker: missing',
+    #                                                                             'inpatient visits 1-2',
+    #                                                                             'inpatient visits >=3',
+    #                                                                             'emergency visits >=3',
+    #                                                                             '03/21-06/21'])
 
-    # severity = 'all'
-    # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.05 / 89,
-    #                                                         selected_cols=False, interactionge1=False,
-    #                                                         severity=severity)
-    # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.05 / 89,
-    #                                                         selected_cols=False, interactionge1=True,
-    #                                                         severity=severity)
-    # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.05 / 89,
-    #                                                         selected_cols=False, interactionge1=True,
-    #                                                         severity=severity,
-    #                                                         drop_cols=['Missing',
-    #                                                                    'inpatient visits 1-2',
-    #                                                                    'inpatient visits >=3',
-    #                                                                    '03/21-06/21'])
-    # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.05 / 89,
-    #                                                         selected_cols=False, interactionge1=True,
-    #                                                         severity=severity,
-    #                                                         interact_p_val_threhold=0.05)
+    severity = 'all'
+    df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
+                                                            selected_cols=False, interactionge1=False,
+                                                            severity=severity)
+    df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
+                                                            selected_cols=False, interactionge1=True,
+                                                            severity=severity)
+    df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
+                                                            selected_cols=False, interactionge1=False,
+                                                            severity=severity,
+                                                            drop_cols=['Missing',
+                                                                       'inpatient visits 1-2',
+                                                                       'inpatient visits >=3',
+                                                                       'Smoker: missing',
+                                                                       '03/21-06/21'])
+    df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
+                                                            selected_cols=False, interactionge1=True,
+                                                            severity=severity,
+                                                            drop_cols=['Missing',
+                                                                       'inpatient visits 1-2',
+                                                                       'inpatient visits >=3',
+                                                                       'Smoker: missing',
+                                                                       '03/21-06/21'])
+
+    df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
+                                                            selected_cols=False, interactionge1=True,
+                                                            severity=severity,
+                                                            interact_p_val_threhold=0.05)
 
     # df_row, df, df_data = build_heat_map_from_selected_rows(database='INSIGHT', p_val_threshold=0.01,
     #                                                         selected_cols=False, interactionge1=False,

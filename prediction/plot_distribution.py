@@ -73,8 +73,10 @@ def combine_predictive_performance(database='INSIGHT', severity='all'):
             print(fname)
             df = pd.read_csv(fname)
             df['pasc'] = pasc
+            df['pasc raw'] = pasc_raw
 
-            row = df.head(1)[['paras', 'E[fit]', 'Std[fit]', 'CI0', 'CI1', 'std-boost', 'kfold-values', 'pasc']]
+            row = df.head(1)[['paras', 'E[fit]', 'Std[fit]', 'CI0', 'CI1', 'std-boost', 'kfold-values',
+                              'pasc', 'pasc raw']]
 
             if df_row is not None:
                 df_row = df_row.append(row)
@@ -85,6 +87,41 @@ def combine_predictive_performance(database='INSIGHT', severity='all'):
 
     print('Done')
     return df_row
+
+
+def print_predictive_performance(database='INSIGHT', severity='all'):
+    # df_pasc_info = pd.read_excel(
+    #     r'C:/Users/zangc/Documents/Boston/workshop/2021-PASC/prediction/PASC_risk_factors_predictability.xlsx',
+    #     sheet_name='person_counts_LR_res')
+    df_pasc_info = pd.read_excel(
+        r'output/PASC_risk_factors_predictability.xlsx',
+        sheet_name='person_counts_LR_res')
+    df_pasc_info = df_pasc_info.sort_values(by=['Organ Domain', 'c_index'], ascending=False)
+
+    if database == 'OneFlorida':
+        dir_path = 'output/factors/OneFlorida/elix/'
+    elif database == 'INSIGHT':
+        dir_path = 'output/factors/INSIGHT/elix/'
+    elif database == 'Pooled':
+        dir_path = 'output/factors/Pooled/elix/'
+
+    df = pd.read_csv(dir_path + 'combined_predictive_performance-{}.csv'.format(severity))
+
+    df = df.sort_values(by=['E[fit]'], ascending=False)
+
+    results = []
+    for key, row in df.iterrows():
+        auc = row['E[fit]']
+        low = row['CI0']
+        high = row['CI1']
+        pasc = row['pasc']
+        r = '{} ({:.2f} ({:.2f}, {:.2f}))'.format(pasc, auc, low, high)
+        results.append(r)
+        print(r)
+
+    print(', '.join(results))
+    print('Done')
+    return results
 
 
 def plot_person_pasc_counts():
@@ -175,23 +212,120 @@ def plot_auc_bar(database='INSIGHT', severity='all'):
     plt.close()
 
 
+def plot_auc_bar_sensitivity(database='INSIGHT', encoding='EC'):
+
+    if database == 'OneFlorida':
+        dir_path = 'output/factors/OneFlorida/elix/'
+    elif database == 'INSIGHT':
+        dir_path = 'output/factors/INSIGHT/elix/'
+
+    df = pd.read_csv(dir_path + 'combined_predictive_performance-all.csv')
+    df['pasc raw'] = df['pasc raw'].apply(lambda x : x.replace('/', '_'))
+    print('df_row.shape:', df.shape)
+
+    for m in ['LR', 'LIGHTGBM', 'MLP']:
+        df_2 = pd.read_csv(dir_path + 'sensitivity/' + '{}_{}_{}_CI_res.csv'.format(encoding, database, m))
+        df = pd.merge(
+                df,
+                df_2,
+                left_on='pasc raw',
+                right_on='Pasc',
+                how='left',
+                suffixes=('', '_' + m))
+        print('combine:', m)
+
+
+    df = df.sort_values(by=['E[fit]'], ascending=False)
+
+    results = []
+    pasc_list = df['pasc'].tolist()
+    auc_list_1 = df['E[fit]'].tolist()
+    error_list_1 = df['Std[fit]'].tolist()
+    ci0 = (df['E[fit]'] - df['CI0']).tolist()
+    ci1 = (df['CI1'] - df['E[fit]']).tolist()
+    yerr = np.vstack((ci0, ci1))
+
+    results.append((auc_list_1, yerr))
+    # auc_list_2 = data[metrics + '_mean_of'].tolist()
+    # error_list_2 = data[metrics + '_std_of'].tolist()
+
+    for m in ['', '_LIGHTGBM', '_MLP']:
+        auc = df['AUC' + m]
+        ci0 = df['AUC CI' + m].apply(lambda x : float(x.split()[0].strip("(),")))
+        ci1 = df['AUC CI' + m].apply(lambda x: float(x.split()[1].strip("(),")))
+
+        auc_list = auc.tolist()
+        ci0 = (auc - ci0).tolist()
+        ci1 = (ci1 - auc).tolist()
+        yerr = np.vstack((ci0, ci1))
+        results.append((auc_list, yerr))
+
+    fig, ax = plt.subplots(figsize=(15, 8.5))
+    idx = np.arange(len(pasc_list))
+    # new_idx = np.asarray([2 * i for i in idx])
+    new_idx = np.asarray([i for i in idx])
+
+    w = 0.2
+    colors = ['#98c1d9', '#98d9b0', '#d998c1', '#d9b098']
+    colors = ['#98c1d9', '#FFCC00', '#99CC99', '#FF0000']
+    ax.bar(new_idx - 1.5*w, results[0][0], w, yerr=results[0][1], color=colors[0])#, edgecolor=None, alpha=.8)
+    ax.bar(new_idx - 0.5*w, results[1][0], w, yerr=results[1][1], color=colors[1])#, edgecolor=None, alpha=.8)
+    ax.bar(new_idx + 0.5*w, results[2][0], w, yerr=results[2][1], color=colors[2])#, edgecolor=None, alpha=.8)
+    ax.bar(new_idx + 1.5*w, results[3][0], w, yerr=results[3][1], color=colors[3])#, edgecolor=None, alpha=.8)
+
+    # ax.bar(new_idx + .6, auc_list_2, .6, yerr=error_list_2, color='#98c1d9', edgecolor='black', alpha=.8)
+
+    # for x in range(len(pasc_list)):
+    #     ax.text(x=idx[x] - 0.5, y=auc_list_1[x] + error_list_1[x] + 0.02, s=str(auc_list_1[x]), ha='center',
+    #             va="center", rotation=90, rotation_mode="anchor")
+    #     ax.text(x=idx[x] + 0.5, y=auc_list_2[x] + error_list_2[x] + 0.02, s=str(auc_list_2[x]), ha='center',
+    #             va="center", rotation=90, rotation_mode="anchor")
+
+    ax.set_xticks(new_idx )
+    ax.set_xlim([-1, len(new_idx)])
+    ax.set_ylim([.5, 1])
+
+    ax.set_xticklabels(pasc_list, rotation=45, fontsize=15, ha='right', rotation_mode="anchor")
+    ax.yaxis.grid()  # color='#D3D3D3', linestyle='--', linewidth=0.7)
+    plt.ylabel('AUROC', fontsize=16) #, weight='bold')
+    plt.yticks(fontsize=15)
+    # ax.set(title=learner + ' ' + metrics)
+    # plt.subplots_adjust(bottom=.3)
+    handle_list = [mpatches.Patch(color=colors[0], label='COX'),  # '#e26d5c'
+                   mpatches.Patch(color=colors[1], label='LR'),
+                   mpatches.Patch(color=colors[2], label='GBM'),  # '#e26d5c'
+                   mpatches.Patch(color=colors[3], label='DNN')
+                   ]
+    plt.legend(handles=handle_list, prop={'size': 15})
+    plt.tight_layout()
+    plt.savefig(dir_path + 'figure/' + 'auc_multiple_bars-plot-{}-{}.pdf'.format(database, encoding), dpi=600)
+    plt.savefig(dir_path + 'figure/' + 'auc_multiple_bars_plot-{}-{}.png'.format(database, encoding), dpi=600)
+    plt.show()
+    plt.close()
+
+
 if __name__ == '__main__':
     start_time = time.time()
     # plot_person_pasc_counts()
-    df_row = combine_predictive_performance(database='INSIGHT', severity='all')
-    df_row = combine_predictive_performance(database='INSIGHT', severity='inpatienticu')
-    df_row = combine_predictive_performance(database='INSIGHT', severity='outpatient')
+    # print_predictive_performance(database='INSIGHT', severity='all')
 
-    df_row = combine_predictive_performance(database='OneFlorida', severity='all')
-    df_row = combine_predictive_performance(database='OneFlorida', severity='inpatienticu')
-    df_row = combine_predictive_performance(database='OneFlorida', severity='outpatient')
+    # df_row = combine_predictive_performance(database='INSIGHT', severity='all')
+    # df_row = combine_predictive_performance(database='INSIGHT', severity='inpatienticu')
+    # df_row = combine_predictive_performance(database='INSIGHT', severity='outpatient')
+    #
+    # df_row = combine_predictive_performance(database='OneFlorida', severity='all')
+    # df_row = combine_predictive_performance(database='OneFlorida', severity='inpatienticu')
+    # df_row = combine_predictive_performance(database='OneFlorida', severity='outpatient')
 
-    plot_auc_bar(database='INSIGHT', severity='all')
-    plot_auc_bar(database='INSIGHT', severity='inpatienticu')
-    plot_auc_bar(database='INSIGHT', severity='outpatient')
+    # plot_auc_bar(database='INSIGHT', severity='all')
+    # plot_auc_bar(database='INSIGHT', severity='inpatienticu')
+    # plot_auc_bar(database='INSIGHT', severity='outpatient')
 
     # plot_auc_bar(database='OneFlorida', severity='all')
     # plot_auc_bar(database='OneFlorida', severity='inpatienticu')
     # plot_auc_bar(database='OneFlorida', severity='outpatient')
+
+    plot_auc_bar_sensitivity(database='INSIGHT', encoding='EC')
+    plot_auc_bar_sensitivity(database='INSIGHT', encoding='icd_med')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
