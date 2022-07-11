@@ -11,4 +11,6 @@ mkdir log
 #taskset --cpu-list 8-11 python screen_dx_v3.py --dataset V15_COVID19 --site ALL --severity 07-21-11-21 2>&1 | tee  log/screen_dx_insight_ALL_07-21-11-21-competingRiskCumInc.txt
 #
 # taskset --cpu-list 8-11 python screen_dx_v3.py --dataset V15_COVID19 --site ALL --severity 1stwave 2>&1 | tee  log/screen_dx_insight_ALL_1stWave-competingRiskCumInc.txt
-taskset --cpu-list 8-11 python screen_dx_v3.py --dataset V15_COVID19 --site ALL --severity delta 2>&1 | tee  log/screen_dx_insight_ALL_Delta-competingRiskCumInc.txt
+#taskset --cpu-list 8-11 python screen_dx_v3.py --dataset V15_COVID19 --site ALL --severity delta 2>&1 | tee  log/screen_dx_insight_ALL_Delta-competingRiskCumInc.txt
+taskset --cpu-list 8-11 python screen_dx_pooled.py --dataset V15_COVID19 --site ALL --severity 1stwave 2>&1 | tee  log/screen_dx_POOLED_ALL_1stWave-competingRiskCumInc.txt
+taskset --cpu-list 8-11 python screen_dx_pooled.py --dataset V15_COVID19 --site ALL --severity delta 2>&1 | tee  log/screen_dx_POOLED_ALL_Delta-competingRiskCumInc.txt

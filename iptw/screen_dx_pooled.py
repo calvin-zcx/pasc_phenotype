@@ -17,6 +17,7 @@ from misc import utils
 import itertools
 import functools
 from tqdm import tqdm
+import datetime
 
 print = functools.partial(print, flush=True)
 
@@ -35,7 +36,11 @@ def parse_args():
                                                'less65', '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
-                                               'healthy'],
+                                               'healthy',
+                                               '03-20-06-20', '07-20-10-20', '11-20-02-21',
+                                               '03-21-06-21', '07-21-11-21',
+                                               '1stwave', 'delta'
+                                               ],
                         default='icu')
 
     parser.add_argument("--random_seed", type=int, default=0)
@@ -124,8 +129,8 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     # Load Covariates Data
     print('Load data covariates file:', args.data_file, args.data_file2)
-    df1 = pd.read_csv(args.data_file, dtype={'patid': str}, parse_dates=['index date'])
-    df2 = pd.read_csv(args.data_file2, dtype={'patid': str}, parse_dates=['index date'])
+    df1 = pd.read_csv(args.data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    df2 = pd.read_csv(args.data_file2, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
     df1['database'] = 0
     df2['database'] = 1
     df = pd.concat([df1, df2], ignore_index=True, sort=False)
@@ -207,6 +212,29 @@ if __name__ == "__main__":
                           or x.startswith('MEDICATION:'))]
         flag = df[selected_cols].sum(axis=1)
         df = df.loc[(flag == 0), :].copy()
+    elif args.severity == '03-20-06-20':
+        print('Considering patients in 03/20-06/20')
+        df = df.loc[(df['03/20-06/20'] == 1), :].copy()
+    elif args.severity == '07-20-10-20':
+        print('Considering patients in 07/20-10/20')
+        df = df.loc[(df['07/20-10/20'] == 1), :].copy()
+    elif args.severity == '11-20-02-21':
+        print('Considering patients in 11/20-02/21')
+        df = df.loc[(df['11/20-02/21'] == 1), :].copy()
+    elif args.severity == '03-21-06-21':
+        print('Considering patients in 03/21-06/21')
+        df = df.loc[(df['03/21-06/21'] == 1), :].copy()
+    elif args.severity == '07-21-11-21':
+        print('Considering patients in 07/21-11/21')
+        df = df.loc[(df['07/21-11/21'] == 1), :].copy()
+    elif args.severity == '1stwave':
+        print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
+        df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
+    elif args.severity == 'delta':
+        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
@@ -244,8 +272,8 @@ if __name__ == "__main__":
         df_select = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v2.xlsx',
             sheet_name='diagnosis').set_index('i')
-        df_select = df_select.loc[(df_select['hr-w-p'] <= 0.05) | (df_select['pasc']=='Muscle disorders'), :]  #
-        df_select = df_select.loc[(df_select['hr-w'] > 1) | (df_select['pasc']=='Muscle disorders'), :]
+        df_select = df_select.loc[(df_select['hr-w-p'] <= 0.05) | (df_select['pasc'] == 'Muscle disorders'), :]  #
+        df_select = df_select.loc[(df_select['hr-w'] > 1) | (df_select['pasc'] == 'Muscle disorders'), :]
         selected_list = df_select.index.tolist()
         print('Selected: len(selected_list):', len(selected_list))
         print(df_select['PASC Name Simple'])
@@ -381,9 +409,11 @@ if __name__ == "__main__":
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
                         cox_w[4],
-                        cox_inter[0], cox_inter[1], cox_inter[6].summary.p.treatment if pd.notna(cox_inter[6]) else np.nan,
+                        cox_inter[0], cox_inter[1],
+                        cox_inter[6].summary.p.treatment if pd.notna(cox_inter[6]) else np.nan,
                         cox_inter[2], cox_inter[3], cox_inter[6].summary.p.inter if pd.notna(cox_inter[6]) else np.nan,
-                        cox_inter[4], cox_inter[5], cox_inter[6].summary.p.database if pd.notna(cox_inter[6]) else np.nan,]
+                        cox_inter[4], cox_inter[5],
+                        cox_inter[6].summary.p.database if pd.notna(cox_inter[6]) else np.nan, ]
             causal_results.append(_results)
             results_columns_name = [
                 'i', 'pasc', 'covid+', 'covid-',
@@ -393,18 +423,20 @@ if __name__ == "__main__":
                 'km-diff', 'km-diff-time', 'km-diff-p',
                 'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower", "cif_0_w_CIUpper",
+                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
+                "cif_0_w_CIUpper",
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time",
                 "HR_inter_treat", "CI_inter_treat", "CI_inter_treat-p",
-                "HR_inter", "CI_inter",  "CI_inter-p",
+                "HR_inter", "CI_inter", "CI_inter-p",
                 "HR_inter_database", "CI_inter_database", "CI_inter_database-p"]
             print('causal result:\n', causal_results[-1])
 
             if i % 50 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/V15_COVID19/output/character/outcome/{}/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
-                    args.dataset, args.severity, '-select' if args.selectpasc else '', i))
+                    to_csv(
+                    r'../data/V15_COVID19/output/character/outcome/{}/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                        args.dataset, args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
@@ -413,7 +445,7 @@ if __name__ == "__main__":
                 r'../data/V15_COVID19/output/character/outcome/{}/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.dataset,
                     args.severity,
-                    '-select' if args.selectpasc else '',))
+                    '-select' if args.selectpasc else '', ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
