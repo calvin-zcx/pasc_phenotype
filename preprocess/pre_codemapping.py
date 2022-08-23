@@ -1,6 +1,7 @@
 import sys
+
 # for linux env.
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import os
 import pickle
 import numpy as np
@@ -106,13 +107,13 @@ def rxnorm_ingredient_from_NIH_UMLS():
     link_cui_df = link_df.loc[(link_df[2] == 'CUI') & (link_df[6] == 'CUI'), :]
     print('all cui-cui relations, link_cui_df.shape:', link_cui_df.shape)  # (7204009, 17)
 
-    rx_name_df = node_df.loc[(node_df[11]=='RXNORM'), [0, 14]]
-    rx_name = {row[0]:row[14] for index, row in rx_name_df.iterrows()}
+    rx_name_df = node_df.loc[(node_df[11] == 'RXNORM'), [0, 14]]
+    rx_name = {row[0]: row[14] for index, row in rx_name_df.iterrows()}
 
-    IN_and_name = node_df.loc[(node_df[11]=='RXNORM') & (node_df[12]=='IN'), [0, 14, 12]]
+    IN_and_name = node_df.loc[(node_df[11] == 'RXNORM') & (node_df[12] == 'IN'), [0, 14, 12]]
     MIN_and_name = node_df.loc[(node_df[11] == 'RXNORM') & (node_df[12] == 'MIN'), [0, 14, 12]]
     PIN_and_name = node_df.loc[(node_df[11] == 'RXNORM') & (node_df[12] == 'PIN'), [0, 14, 12]]
-    print('IN_and_name.shape:', IN_and_name.shape)   # (13569, 3)
+    print('IN_and_name.shape:', IN_and_name.shape)  # (13569, 3)
     print('MIN_and_name.shape:', MIN_and_name.shape)  # (3767, 3)
     print('PIN_and_name.shape:', PIN_and_name.shape)  # (3221, 3)
 
@@ -207,9 +208,9 @@ def add_rxnorm_ingredient_by_umls_api():
     node_df = pd.read_csv(r'../data/mapping/RXNCONSO.RRF', sep='|', header=None, dtype=str)
     print('node_df.shape:', node_df.shape)  # node_df.shape: (1101174, 19)
 
-    node_cui_df = node_df.loc[(node_df[11]=='RXNORM'), [0, 14]].drop_duplicates()
+    node_cui_df = node_df.loc[(node_df[11] == 'RXNORM'), [0, 14]].drop_duplicates()
     rxnorm_name = {row[0]: row[14] for index, row in node_cui_df.iterrows()}
-    rxnorm_set = set(node_df.loc[(node_df[11]=='RXNORM'), 0])
+    rxnorm_set = set(node_df.loc[(node_df[11] == 'RXNORM'), 0])
     print('unique rxnorm codes number: ', len(rxnorm_set))
 
     rx_ing_api = defaultdict(set)
@@ -217,7 +218,7 @@ def add_rxnorm_ingredient_by_umls_api():
     n_has_return = 0
     i = 0
     for rx in rxnorm_set:
-        i+=1
+        i += 1
         ings = _parse_from_nih_rxnorm_api(rx)
         if ings:
             rx_ing_api[rx].update(ings)
@@ -230,7 +231,8 @@ def add_rxnorm_ingredient_by_umls_api():
 
         if i % 10000 == 0:
             print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-            print('Total search:', len(rxnorm_set), 'search:', i, 'n_has_return:', n_has_return, 'n_no_return:', n_no_return)
+            print('Total search:', len(rxnorm_set), 'search:', i, 'n_has_return:', n_has_return, 'n_no_return:',
+                  n_no_return)
 
     print('Total search:', len(rxnorm_set), 'n_has_return:', n_has_return, 'n_no_return:', n_no_return)
 
@@ -246,7 +248,6 @@ def add_rxnorm_ingredient_by_umls_api():
     print('df_rx_ing.shape', df_rx_ing.shape)
     # df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api.csv')
     df_rx_ing.to_csv(r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.csv')
-
 
     print('rxnorm to active ingredient(s): len(rx_ing_api):', len(rx_ing_api))
     # output_file = r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl'
@@ -273,7 +274,8 @@ def combine_rxnorm_ingredients_dicts():
         print('e.g.:', record_example)
 
     # rxnorm_ingredient_mapping_from_api_moiety
-    with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.pkl', 'rb') as f: # with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl', 'rb') as f:
+    with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api_moiety.pkl',
+              'rb') as f:  # with open(r'../data/mapping/rxnorm_ingredient_mapping_from_api.pkl', 'rb') as f:
         rx_ing_api = pickle.load(f)
         print('Load rxRNOM_CUI to ingredient mapping generated from API done! len(rx_ing_api):', len(rx_ing_api))
         record_example = next(iter(rx_ing_api.items()))
@@ -542,6 +544,7 @@ def rxnorm_atc_from_NIH_UMLS():
     return rxnorm_atcset, atc_rxnormset, atc3_index, df
 
 
+
 def zip_aid_mapping():
     # To get code mapping from rxnorm_cui to ATC.
     # Data source: https://www.neighborhoodatlas.medicine.wisc.edu/download
@@ -566,12 +569,13 @@ def zip_aid_mapping():
         #               'GISJOIN': str, 'FIPS.y': str, 'ADI_NATRANK': int, 'ADI_STATERNK': int}
         if os.path.exists(input_file):
             df = pd.read_csv(input_file, dtype=str)
-            print(index, input_file, 'df.shape:', df.shape, 'n_records_adi:', n_records_adi, 'n_records_wcm:', n_records_wcm)
+            print(index, input_file, 'df.shape:', df.shape, 'n_records_adi:', n_records_adi, 'n_records_wcm:',
+                  n_records_wcm)
             if df.shape[0] != n_records_adi:
                 print('ERROR in ', input_file, 'df.shape[0] != n_records_adi')
             df['nation_rank'] = pd.to_numeric(df['ADI_NATRANK'], errors='coerce')
             df['state_rank'] = pd.to_numeric(df['ADI_STATERNK'], errors='coerce')
-            df['zip5'] = df["ZIPID"].apply(lambda x : x[:6] if pd.notna(x) else np.nan)
+            df['zip5'] = df["ZIPID"].apply(lambda x: x[:6] if pd.notna(x) else np.nan)
             zip5_scores = df.groupby(["zip5"])[['nation_rank', "state_rank"]].median().reset_index()
             print('......zip5_scores.shape:', zip5_scores.shape)
 
@@ -580,7 +584,7 @@ def zip_aid_mapping():
             # save zip5 for debugging
             zip5_df.append(zip5_scores[['zip5', 'nation_rank', 'state_rank']])
             # n_null_zip9 = n_null_zip5 = 0
-            zip_adi.update({x[0][1:]: x[1:] for x in zip9_list if pd.notna(x[0]) })
+            zip_adi.update({x[0][1:]: x[1:] for x in zip9_list if pd.notna(x[0])})
             print('......len(zip_adi) after adding zip9:', len(zip_adi))
             zip_adi.update({x[0][1:]: x[1:] for x in zip5_list if pd.notna(x[0])})
             print('......len(zip_adi) after adding zip5:', len(zip_adi))
@@ -604,7 +608,7 @@ def zip_aid_mapping():
 def selected_rxnorm_ingredient_to_index():
     start_time = time.time()
     rx_df = pd.read_csv(r'../data/mapping/info_medication_cohorts_covid_4manuNegNoCovid_ALL_enriched.csv',
-                        dtype={'rxnorm':str})
+                        dtype={'rxnorm': str})
     # ['rxnorm', 'total', 'no. in positive group', 'no. in negative group',
     #        'ratio', 'name', 'atc-l3', 'atc-l4']
     rx_df = rx_df.sort_values(by='ratio', ascending=False)
@@ -663,7 +667,7 @@ def ICD10_to_CCSR():
     print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return icd_ccsr, ccsr_index,  df
+    return icd_ccsr, ccsr_index, df
 
 
 def ICD_to_elixhauser_comorbidity():
@@ -736,7 +740,8 @@ def ICD_to_negative_control_pasc():
         else:
             return False
 
-    df_pasc_list_neg = df_pasc_list.loc[df_pasc_list['CCSR CATEGORY 1'].apply(lambda x: select_negative_control_ccsr_category(x)), :]
+    df_pasc_list_neg = df_pasc_list.loc[
+                       df_pasc_list['CCSR CATEGORY 1'].apply(lambda x: select_negative_control_ccsr_category(x)), :]
 
     for index, row in df_pasc_list_neg.iterrows():
         hd_domain = row['HD Domain (Defined by Nature paper)']
@@ -744,15 +749,16 @@ def ICD_to_negative_control_pasc():
         ccsr_category = row['CCSR CATEGORY 1 DESCRIPTION']
         icd = row['ICD-10-CM Code']
         icd_name = row['ICD-10-CM Code Description']
-        icd_pasc[icd] = [ccsr_code+'='+ccsr_category, ccsr_code, hd_domain, icd_name]
+        icd_pasc[icd] = [ccsr_code + '=' + ccsr_category, ccsr_code, hd_domain, icd_name]
 
     df_dim = df_pasc_list_neg[['CCSR CATEGORY 1 DESCRIPTION', 'CCSR CATEGORY 1']].value_counts().reset_index()
-    df_dim = df_dim.sort_values(by='CCSR CATEGORY 1').reset_index() #, ascending=False)
+    df_dim = df_dim.sort_values(by='CCSR CATEGORY 1').reset_index()  # , ascending=False)
     for index, row in df_dim.iterrows():
         ccsr_category = row['CCSR CATEGORY 1 DESCRIPTION']
         cnt = row[0]
-        codes = row['CCSR CATEGORY 1']  # set(df_pasc_list_neg.loc[df_pasc_list_neg['CCSR CATEGORY 1 DESCRIPTION']==ccsr_category, 'CCSR CATEGORY 1'])
-        pasc_index[codes +'='+ ccsr_category] = [index, cnt, codes]
+        codes = row[
+            'CCSR CATEGORY 1']  # set(df_pasc_list_neg.loc[df_pasc_list_neg['CCSR CATEGORY 1 DESCRIPTION']==ccsr_category, 'CCSR CATEGORY 1'])
+        pasc_index[codes + '=' + ccsr_category] = [index, cnt, codes]
 
     print('len(icd_pasc):', len(icd_pasc))
     output_file = r'../data/mapping/icd_negative-outcome-control_mapping.pkl'
@@ -778,8 +784,8 @@ def ICD_to_PASC():
     pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
     df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'PASC Screening List', usecols="A:N")
     print('df_pasc_list.shape', df_pasc_list.shape)
-    df_pasc_list['ICD-10-CM Code'] = df_pasc_list['ICD-10-CM Code'].apply(lambda x : x.strip().upper().replace('.', ''))
-    pasc_codes = df_pasc_list['ICD-10-CM Code'] #.str.upper().replace('.', '', regex=False)  # .to_list()
+    df_pasc_list['ICD-10-CM Code'] = df_pasc_list['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    pasc_codes = df_pasc_list['ICD-10-CM Code']  # .str.upper().replace('.', '', regex=False)  # .to_list()
     pasc_codes_set = set(pasc_codes)
     print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
           len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
@@ -873,7 +879,8 @@ def load_cdc_mapping():
 def load_query3_vaccine_and_drug_mapping():
     df_map_vac = pd.read_excel(r'../data/mapping/query3-vaccine_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
     df_map_med = pd.read_excel(r'../data/mapping/query3-medication_sheet_mapping.xlsx', sheet_name='Sheet1', dtype=str)
-    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.28.22.xlsx', sheet_name=None, dtype=str)  # read all sheets
+    df_all = pd.read_excel(r'../data/mapping/RECOVER Query 3 Code List_2.28.22.xlsx', sheet_name=None,
+                           dtype=str)  # read all sheets
     print('len(df_all):', len(df_all))
     print('len(df_map_vac):', len(df_map_vac))
     print('len(df_map_med):', len(df_map_med))
@@ -941,7 +948,6 @@ def load_query3_vaccine_and_drug_mapping():
 
 
 def build_icd9_to_icd10():
-
     df = pd.read_csv(r'../data/mapping/icd9toicd10cmgem.csv', dtype=str)
     print('df.shape:', df.shape)
 
@@ -993,7 +999,7 @@ if __name__ == '__main__':
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
 
     # 7. Load CDC code mapping:
-    df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
+    # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
 
     # 8. Load query 3 mapping:
     # df_all, med_code, vac_code = load_query3_vaccine_and_drug_mapping()
