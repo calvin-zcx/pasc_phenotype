@@ -393,6 +393,13 @@ if __name__ == "__main__":
                 '-select' if args.selectpasc else '',
                 i, pasc))
         try:
+            figout = r'../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-PS.png'.format(
+                args.dataset,
+                args.severity,
+                '-select' if args.selectpasc else '',
+                i, pasc)
+            print('Dump ', figout)
+
             ax = plt.subplot(111)
             sns.histplot(
                 dfps, x="ps", hue="covid", element="step",
@@ -401,13 +408,10 @@ if __name__ == "__main__":
             plt.tight_layout()
             # plt.show()
             plt.title(pasc, fontsize=12)
-            plt.savefig(r'../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-PS.png'.format(
-                args.dataset,
-                args.severity,
-                '-select' if args.selectpasc else '',
-                i, pasc))
+            plt.savefig(figout)
             plt.close()
         except:
+            print('Dump Error', figout)
             plt.close()
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(

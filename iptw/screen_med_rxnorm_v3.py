@@ -270,6 +270,10 @@ if __name__ == "__main__":
                                                                                                   args.severity, i,
                                                                                                   pasc))
         try:
+            figout = r'../data/{}/output/character/outcome/MED-{}-new/{}-{}-{}-PS.png'.format(
+                args.dataset, args.severity,
+                i, pasc, drugname)
+            print('Dump ', figout)
             ax = plt.subplot(111)
             sns.histplot(
                 dfps, x="ps", hue="covid", element="step",
@@ -278,11 +282,10 @@ if __name__ == "__main__":
             plt.tight_layout()
             # plt.show()
             plt.title(pasc + '-' + drugname, fontsize=12)
-            plt.savefig(r'../data/{}/output/character/outcome/MED-{}-new/{}-{}-{}-PS.png'.format(
-                args.dataset, args.severity,
-                i, pasc, drugname))
+            plt.savefig(figout)
             plt.close()
         except:
+            print('Dump Error', figout)
             plt.close()
 
         try:
