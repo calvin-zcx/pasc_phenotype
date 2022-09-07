@@ -18,6 +18,7 @@ import itertools
 import functools
 from tqdm import tqdm
 import datetime
+import seaborn as sns
 
 print = functools.partial(print, flush=True)
 
@@ -40,7 +41,7 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta'],
-                        default='03-20-06-20')
+                        default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)
@@ -339,14 +340,21 @@ if __name__ == "__main__":
             covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
             (pasc_flag == 1).sum(), (pasc_flag == 0).sum(), (pasc_flag == 2).sum()))
 
-        model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array,
-                                                                                                        covid_label,
-                                                                                                        verbose=0)
+        # model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array,
+        #                                                                                                 covid_label,
+        #                                                                                                 verbose=0)
         # , paras_grid = {
         #     'penalty': 'l2',
         #     'C': 0.03162277660168379,
         #     'max_iter': 200,
         #     'random_state': 0}
+
+        model = ml.PropensityEstimator(learner='LR', paras_grid={
+            'penalty': ['l2'],  # 'l1',
+            'C': 10 ** np.arange(-2, 0.5, 0.5),
+            'max_iter': [200],  # [100, 200, 500],
+            'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
+            covs_array, covid_label, verbose=0)
 
         ps = model.predict_ps(covs_array)
         model.report_stats()
@@ -359,7 +367,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/{}/output/character/outcome/DX-{}{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-results.csv'.format(
             args.dataset,
             args.severity,
             '-select' if args.selectpasc else '',
@@ -370,15 +378,41 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/{}/output/character/outcome/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-evaluation_balance.csv'.format(
                 args.dataset,
                 args.severity,
                 '-select' if args.selectpasc else '',
                 i, pasc))
 
+        dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
+
+        dfps.to_csv(
+            '../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-evaluation_ps-iptw.csv'.format(
+                args.dataset,
+                args.severity,
+                '-select' if args.selectpasc else '',
+                i, pasc))
+        try:
+            ax = plt.subplot(111)
+            sns.histplot(
+                dfps, x="ps", hue="covid", element="step",
+                stat="percent", common_norm=False, bins=25,
+            )
+            plt.tight_layout()
+            # plt.show()
+            plt.title(pasc, fontsize=12)
+            plt.savefig(r'../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-PS.png'.format(
+                args.dataset,
+                args.severity,
+                '-select' if args.selectpasc else '',
+                i, pasc))
+            plt.close()
+        except:
+            plt.close()
+
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/{}/output/character/outcome/DX-{}{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/{}/output/character/outcome/DX-{}{}-new/{}-{}-km.png'.format(
                 args.dataset,
                 args.severity,
                 '-select' if args.selectpasc else '',
@@ -401,7 +435,7 @@ if __name__ == "__main__":
                         cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
-                        cox_w[4]]
+                        cox_w[4], model.best_hyper_paras]
             causal_results.append(_results)
             results_columns_name = [
                 'i', 'pasc', 'covid+', 'covid-',
@@ -413,19 +447,19 @@ if __name__ == "__main__":
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
                 'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower", "cif_0_w_CIUpper",
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
-                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time"]
+                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
 
             if i % 50 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    to_csv(r'../data/{}/output/character/outcome/DX-{}{}-new/causal_effects_specific-snapshot-{}.csv'.format(
                     args.dataset, args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/{}/output/character/outcome/DX-{}{}-new/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.dataset,
                     args.severity,
                     '-select' if args.selectpasc else '',))
@@ -435,7 +469,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/{}/output/character/outcome/DX-{}{}/causal_effects_specific.csv'.format(
+        r'../data/{}/output/character/outcome/DX-{}{}-new/causal_effects_specific.csv'.format(
             args.dataset,
             args.severity,
             '-select' if args.selectpasc else ''))

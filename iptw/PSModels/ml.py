@@ -19,7 +19,7 @@ from iptw.evaluation import cal_deviation, SMD_THRESHOLD, cal_weights
 
 
 class PropensityEstimator:
-    def __init__(self, learner='LR', paras_grid=None, random_seed=0):
+    def __init__(self, learner='LR', paras_grid=None, random_seed=0, add_none_penalty=True):
         self.learner = learner
         assert self.learner in ('LR', 'LIGHTGBM')
         self.random_seed = random_seed
@@ -45,7 +45,7 @@ class PropensityEstimator:
         else:
             self.paras_grid = {k: v for k, v in paras_grid.items()}
             for k, v in self.paras_grid.items():
-                if isinstance(v, str) or not isinstance(v, (list, set)):
+                if isinstance(v, str) or not isinstance(v, (list, set, np.ndarray, pd.Series)):
                     print(k, v, 'is a fixed parameter')
                     self.paras_grid[k] = [v, ]
 
@@ -54,7 +54,7 @@ class PropensityEstimator:
             paras_list = list(itertools.product(*paras_v))
             self.paras_names = paras_names
             self.paras_list = [{self.paras_names[i]: para[i] for i in range(len(para))} for para in paras_list]
-            if self.learner == 'LR':
+            if self.learner == 'LR' and add_none_penalty:
                 no_penalty_case = {'penalty': 'none', 'max_iter': 200, 'random_state': random_seed}
                 if (no_penalty_case not in self.paras_list) and (len(self.paras_list) > 1):
                     self.paras_list.append(no_penalty_case)
@@ -123,7 +123,7 @@ class PropensityEstimator:
             i_model_balance_over_kfold = []
             i_model_fit_over_kfold = []
             for k, (train_index, test_index) in enumerate(kf.split(X), 1):
-                print('Training {}th (/{}) model over the {}th-fold data'.format(i, len(self.paras_list), k))
+                print('Training {}th (/{}) model {} over the {}th-fold data'.format(i, len(self.paras_list), para_d, k))
                 # training and testing datasets:
                 X_train = X[train_index, :]
                 T_train = T[train_index]

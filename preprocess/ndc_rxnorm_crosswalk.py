@@ -339,7 +339,8 @@ def get_ndc_from_rxnorm_in_DM_cp_medication(tab):
 
     df_result = pd.DataFrame(result_list, columns=col_names)
     print(df_result.shape)
-    df_result.to_excel(r'../data/V15_COVID19/output/character/cp_dm/ndc-crosswalk-tab-{}-raw.xlsx'.format(tab.replace('|', '-')))
+    df_result.to_excel(
+        r'../data/V15_COVID19/output/character/cp_dm/ndc-crosswalk-tab-{}-raw.xlsx'.format(tab.replace('|', '-')))
 
     return df_result
 
@@ -418,6 +419,32 @@ def get_ndc_from_rxnorm_in_pulmonary_cp_medication():
     return df_result
 
 
+def compare_t2dm_cdc_recover_med():
+    fcdc = r'../data/V15_COVID19/output/character/cp_dm/Diabetes Code Lists.xlsx'
+    df1 = pd.read_excel(fcdc, sheet_name='diab_meds', engine='openpyxl', dtype=str)
+    df2 = pd.read_excel(fcdc, sheet_name='metformin_sglt2', engine='openpyxl', dtype=str)
+
+    df_1m2 = df1.loc[df1['code1'].apply(lambda x: x not in df2['code1']), :]
+    df_1m2 = df1.loc[~df1['code1'].isin(df2['code1']), :]
+
+    a = df_1m2['descrip'].value_counts()
+    b = df_1m2['descrip.1'].value_counts()
+
+    fr = r'../data/V15_COVID19/output/character/cp_dm/PASC-CP-Diabetes-Code-Lists-Version-8.22.22 -NDC-crosswalk.xlsx'
+    df3 = pd.read_excel(fr, sheet_name='5f. Oral Hypo No Met|Phen|SGLT2', engine='openpyxl', dtype=str)
+    df4 = pd.read_excel(fr, sheet_name='5g. Oral Hy Met|Phen|SGLT2 Only', engine='openpyxl', dtype=str)
+
+    c = df3['CP Group'].value_counts()
+    c2 = df3['name'].value_counts()
+    d = df4['CP Group'].value_counts()
+
+    a.to_csv('../data/V15_COVID19/output/character/cp_dm/cdc_t2dm_med.csv')
+    c2.to_csv('../data/V15_COVID19/output/character/cp_dm/recover_t2dm_med-5f.csv')
+
+    print()
+    return df1, df2, df_1m2
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -438,6 +465,62 @@ if __name__ == '__main__':
     # df_f = get_ndc_from_rxnorm_in_DM_cp_medication(tab='5f. Oral Hypo No Met|Phen|SGLT2')
     # df_g = get_ndc_from_rxnorm_in_DM_cp_medication(tab='5g. Oral Hy Met|Phen|SGLT2 Only')
 
-    get_ndc_from_rxnorm_in_pulmonary_cp_medication()
+    # get_ndc_from_rxnorm_in_pulmonary_cp_medication()
+    # df1, df2, df_1m2 = compare_t2dm_cdc_recover_med()
+
+    df = pd.read_csv(
+        r'../data/V15_COVID19/output/character/cp_dm/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC_diabetes_incidence-Sep2.csv',
+        dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+
+    cols = pd.read_csv(r'../data/V15_COVID19/output/character/cp_dm/select_cols_4_patient_list.csv')
+    cols_name = cols['name']
+    # df.loc[:, cols_name].to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence-Sep2.xlsx')
+
+    df.loc[df['flag_diabetes']==1, cols_name].to_excel(
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-Sep2.xlsx')
+
+    # df['N'] = 1
+    #
+    # print(df['site'].value_counts())
+    # # pd.DataFrame(df.columns).to_csv(r'../data/V15_COVID19/output/character/cp_dm/select_cols.csv')
+    # cols = pd.read_csv(r'../data/V15_COVID19/output/character/cp_dm/select_cols.csv')
+    # cols_name = cols['name']
+    #
+    # print('df.shape:', df.shape)
+    #
+    # result = {}
+    # for site in ['NYU', 'MSHS', 'MONTE', 'WCM', 'COL']:
+    #     print('In site:', site)
+    #     df_data = df.loc[df['site'] == site, cols_name]
+    #     print('df_data.shape:', df_data.shape)
+    #
+    #     df_pos = df_data.loc[df_data["covid"] == 1, cols_name]
+    #     df_neg = df_data.loc[df_data["covid"] == 0, cols_name]
+    #
+    #     print('df_pos.shape:', df_pos.shape)
+    #     print('df_neg.shape:', df_neg.shape)
+    #
+    #
+    #     def smd(m1, m2, v1, v2):
+    #         VAR = np.sqrt((v1 + v2) / 2)
+    #         smd = np.divide(
+    #             m1 - m2,
+    #             VAR, out=np.zeros_like(m1), where=VAR != 0)
+    #         return smd
+    #
+    #
+    #     result.update({'{}-Overall'.format(site): df_data.sum(),
+    #                    '{}-Overall-mean'.format(site): df_data.mean(),
+    #                    '{}-df_pos'.format(site): df_pos.sum(),
+    #                    '{}-df_pos-mean'.format(site): df_pos.mean(),
+    #                    '{}-df_neg'.format(site): df_neg.sum(),
+    #                    '{}-df_neg-mean'.format(site): df_neg.mean(),
+    #                    # 'smd': smd(df_pos.mean(), df_neg.mean(), df_pos.var(), df_neg.var())
+    #                    })
+    #
+    # df_result = pd.DataFrame(result)
+    # df_result.to_csv(
+    #     r'../data/V15_COVID19/output/character/cp_dm/table_DM-All.csv')
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -257,6 +257,139 @@ def plot_forest_for_dx_organ_V2(pvalue=0.05 / 137, star=True, pasc_dx=False, tex
     plt.close()
 
 
+def plot_forest_for_dx_organ_V3(star=True, pasc_dx=False, text_right=False):
+    df = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3-multitest-withMultiPval-DXMEDALL.xlsx',
+        sheet_name='Sheet1')
+
+    df_select = df.sort_values(by='hr-w', ascending=False)
+    df_select = df_select.loc[df_select['selected'] == 1, :]  #
+    print('df_select.shape:', df_select.shape)
+
+    organ_list = df_select['Organ Domain'].unique()
+    print(organ_list)
+    organ_list = [
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General']
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+    organ_n = np.zeros(len(organ_list))
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    pasc_row = []
+
+    nabsv = []
+    ncumv = []
+
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple'].strip('*')
+            pasc = row['pasc']
+            hr = row['hr-w']
+            ci = stringlist_2_list(row['hr-w-CI'])
+            p = row['hr-w-p']
+            domain = row['Organ Domain']
+
+            nabs = row['no. pasc in +']
+            ncum = stringlist_2_list(row['cif_1_w'])[-1] * 1000
+            ncum_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 1000,
+                       stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 1000]
+
+            if star:
+                if p <= 0.001:
+                    name += '***'
+                elif p <= 0.01:
+                    name += '**'
+                elif p <= 0.05:
+                    name += '*'
+
+            if pasc == 'PASC-General':
+                pasc_row = [name, hr, ci, p, domain, nabs, ncum]
+                continue
+            if domain == organ:
+                organ_n[i] += 1
+                if len(name.split()) >= 5:
+                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+                labs.append(name)
+                measure.append(hr)
+                lower.append(ci[0])
+                upper.append(ci[1])
+                pval.append(p)
+
+                nabsv.append(nabs)
+                ncumv.append(ncum)
+
+    # add pasc at last
+    if pasc_dx:
+        organ_n[-1] += 1
+        labs.append(pasc_row[0])
+        measure.append(pasc_row[1])
+        lower.append(pasc_row[2][0])
+        upper.append(pasc_row[2][1])
+        pval.append(pasc_row[3])
+
+        nabsv.append(nabs)
+        ncumv.append(ncum)
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper,
+                          nabs=nabsv, ncumIncidence=ncumv)
+    p.labels(scale='log')
+
+    # organ = 'ALL'
+    p.labels(effectmeasure='aHR', add_label1='CIF per\n1000', add_label2='No. of\nCases')  # aHR
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    c = '#F65453'
+    p.colors(pointshape="s", errorbarcolor=c, pointcolor=c)  # , linecolor='black'),   # , linecolor='#fcb2ab')
+    ax = p.plot(figsize=(8.6, .38 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.9, size=5, decimal=2,
+                text_right=text_right)
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+
+    organ_n_cumsum = np.cumsum(organ_n)
+    for i in range(len(organ_n) - 1):
+        ax.axhline(y=organ_n_cumsum[i] - .5, xmin=0.09, color=p.linec, zorder=1, linestyle='--')  # linewidth=1,
+
+    ax.set_yticklabels(labs, fontsize=11.5)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/figure/organ/dx/'
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'New-dx_hr_{}-pMultiBY-{}-V3-{}.png'.format(
+        'all',
+        '-withU099' if pasc_dx else '',
+        'text_right' if text_right else ''), bbox_inches='tight', dpi=600)
+
+    plt.savefig(output_dir + 'New-dx_hr_{}-pMultiBY-{}-V3-{}.pdf'.format(
+        'all',
+        '-withU099' if pasc_dx else '',
+        'text_right' if text_right else ''), bbox_inches='tight', transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    plt.close()
+
+
 def plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='insight'):
     if datasite == 'oneflorida':
         df = pd.read_excel(
@@ -703,7 +836,7 @@ def plot_forest_for_dx_organ_compare2data(add_name=False, severity="all", star=T
 
 
 def plot_forest_for_dx_organ_compare2data_V2(add_name=False, severity="all", star=True, select_criteria='',
-                                          pvalue=0.05 / 137, add_pasc=False):
+                                             pvalue=0.05 / 137, add_pasc=False):
     if severity == 'all':
         df1 = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
@@ -977,6 +1110,25 @@ def add_drug_name():
     return df_combined
 
 
+def add_drug_previous_label():
+    df = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_Medication-withName-simplev2-multitest-withMultiPval-DXMEDALL.xlsx',
+        sheet_name='Sheet1'
+    )
+
+    df2 = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+        sheet_name='med'
+    )
+
+    dfm = pd.merge(df, df2[['pasc', 'PASC Name Simple', 'selected', 'Organ Domain', 'Organ Domain-old']],
+                   how='left', left_on='pasc', right_on='pasc')
+
+    dfm.to_excel(
+        r'../data/V15_COVID19/output/character/outcome/MED/causal_effects_specific_Medication-withName-simplev2-multitest-withMultiPval-DXMEDALL-aux.xlsx',
+    )
+
+
 if __name__ == '__main__':
     # plot_forest_for_dx()
     # plot_forest_for_med()
@@ -992,8 +1144,11 @@ if __name__ == '__main__':
     # plot_forest_for_med_organ(pvalue=0.05 / 459, star=True, datasite='oneflorida')
     # plot_forest_for_med_organ_V2(pvalue=0.05/459)
 
+    # plot_forest_for_dx_organ_V3(star=False, pasc_dx=False, text_right=False)
+    add_drug_previous_label()
+
     #
-    plot_forest_for_dx_organ_compare2data_V2(add_name=False, severity='all')
+    # plot_forest_for_dx_organ_compare2data_V2(add_name=False, severity='all')
     # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.01)
     # plot_forest_for_dx_organ_compare2data(add_name=False, severity='all', pvalue=0.05)
     # plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65', select_criteria='insight')
