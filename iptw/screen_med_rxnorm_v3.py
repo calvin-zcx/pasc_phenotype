@@ -284,8 +284,9 @@ if __name__ == "__main__":
             plt.title(pasc + '-' + drugname, fontsize=12)
             plt.savefig(figout)
             plt.close()
-        except:
+        except Exception as e:
             print('Dump Error', figout)
+            print(str(e))
             plt.close()
 
         try:

@@ -410,8 +410,9 @@ if __name__ == "__main__":
             plt.title(pasc, fontsize=12)
             plt.savefig(figout)
             plt.close()
-        except:
+        except Exception as e:
             print('Dump Error', figout)
+            print(str(e))
             plt.close()
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
