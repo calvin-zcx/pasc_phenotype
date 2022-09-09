@@ -468,17 +468,17 @@ if __name__ == '__main__':
     # get_ndc_from_rxnorm_in_pulmonary_cp_medication()
     # df1, df2, df_1m2 = compare_t2dm_cdc_recover_med()
 
-    df = pd.read_csv(
-        r'../data/V15_COVID19/output/character/cp_dm/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC_diabetes_incidence-Sep2.csv',
-        dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
-
-    cols = pd.read_csv(r'../data/V15_COVID19/output/character/cp_dm/select_cols_4_patient_list.csv')
-    cols_name = cols['name']
-    # df.loc[:, cols_name].to_excel(
-    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence-Sep2.xlsx')
-
-    df.loc[df['flag_diabetes']==1, cols_name].to_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-Sep2.xlsx')
+    # df = pd.read_csv(
+    #     r'../data/V15_COVID19/output/character/cp_dm/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC_diabetes_incidence-Sep2.csv',
+    #     dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    #
+    # cols = pd.read_csv(r'../data/V15_COVID19/output/character/cp_dm/select_cols_4_patient_list.csv')
+    # cols_name = cols['name']
+    # # df.loc[:, cols_name].to_excel(
+    # #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence-Sep2.xlsx')
+    #
+    # df.loc[df['flag_diabetes']==1, cols_name].to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-Sep2.xlsx')
 
     # df['N'] = 1
     #
