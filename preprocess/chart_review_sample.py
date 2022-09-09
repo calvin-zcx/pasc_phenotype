@@ -30,7 +30,6 @@ def write_race_eth_combo(row):
 
 
 if __name__ == '__main__':
-    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
 
     # SET SEED
