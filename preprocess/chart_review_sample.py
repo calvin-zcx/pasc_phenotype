@@ -112,7 +112,7 @@ if __name__ == '__main__':
         print(pd.concat(age_distribution, axis=1))
         print()
 
-    print('len(selected_list):', selected_list)
+    print('len(selected_list):', len(selected_list))
     cohort_df['race_eth_combo'] = cohort_df.apply(write_race_eth_combo, axis=1)
     selected_df = cohort_df.loc[selected_list, :]
     selected_df.to_excel(
