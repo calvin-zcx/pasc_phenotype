@@ -256,9 +256,13 @@ def cal_weights(golds_treatment, logits_treatment, normalized, stabilized=True, 
                 1. - logits_treatment[zeros_idx])  # why *p_T here? my added test
 
     if clip:
-        treated_w = np.clip(treated_w, a_min=1e-06, a_max=100)
-        controlled_w = np.clip(controlled_w, a_min=1e-06, a_max=100)
-        # pred_clip_propensity = np.clip(pred_propensity, a_min=np.quantile(pred_propensity, 0.1), a_max=np.quantile(pred_propensity, 0.9))
+        # treated_w = np.clip(treated_w, a_min=1e-06, a_max=100)
+        # controlled_w = np.clip(controlled_w, a_min=1e-06, a_max=100)
+        amin = np.quantile(np.concatenate((treated_w, controlled_w)), 0.01)
+        amax = np.quantile(np.concatenate((treated_w, controlled_w)), 0.99)
+        print('Using IPTW trim [{}, {}]'.format(amin, amax))
+        treated_w = np.clip(treated_w, a_min=amin, a_max=amax)
+        controlled_w = np.clip(controlled_w, a_min=amin, a_max=amax)
 
     treated_w, controlled_w = np.reshape(treated_w, (len(treated_w), 1)), np.reshape(controlled_w,
                                                                                      (len(controlled_w), 1))

@@ -33,7 +33,7 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # SET SEED
-    seed = 10
+    seed = 3
 
     np.random.seed(seed=seed)
 
@@ -116,10 +116,10 @@ if __name__ == '__main__':
     cohort_df['race_eth_combo'] = cohort_df.apply(write_race_eth_combo, axis=1)
     selected_df = cohort_df.loc[selected_list, :]
     selected_df.to_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}.xlsx'.format(seed))
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-withDOB.xlsx'.format(seed))
     age_distribution_df = pd.concat(age_distribution, axis=1)
     age_distribution_df.to_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-agedist.xlsx'.format(
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-agedist-withDOB.xlsx'.format(
             seed))
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

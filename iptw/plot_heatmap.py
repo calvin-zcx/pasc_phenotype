@@ -1292,6 +1292,10 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(databa
         df = pd.read_excel(
             r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
             sheet_name='diagnosis').set_index('i')
+    elif database == 'pooled':
+        df = pd.read_csv(
+            r'../data/V15_COVID19/output/character/outcome/pooled/DX-all/causal_effects_specific.csv',
+        ).set_index('i')
     else:
         raise ValueError
     print(df.columns)
@@ -1435,9 +1439,17 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(databa
         heat_value = {'all': measure, }
 
     for severity in ['1stwave', 'delta']:
-        _df = pd.read_csv(
-            r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(
-                database, severity)).set_index('i')
+        if database in ['onflorida', 'V15_COVID19']:
+            _df = pd.read_csv(
+                r'../data/{}/output/character/outcome/DX-{}/causal_effects_specific.csv'.format(
+                    database, severity)).set_index('i')
+        elif database == 'pooled':
+            _df = pd.read_csv(
+                r'../data/V15_COVID19/output/character/outcome/pooled/DX-{}/causal_effects_specific.csv'.format(
+                    severity)).set_index('i')
+        else:
+            raise ValueError
+
         _df_selected = _df.loc[key_list, :]
         if type == 'hr':
             _hr = _df_selected.loc[:, 'hr-w']
@@ -1545,7 +1557,14 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(databa
         fig.colorbar(sm, cax=cax, format='%.e')
     else:
         fig.colorbar(sm, cax=cax)
-    output_dir = r'../data/{}/output/character/outcome/figure/timeperiod/{}/'.format(database, type)
+
+    if database in ['onflorida', 'V15_COVID19']:
+        output_dir = r'../data/{}/output/character/outcome/figure/timeperiod/{}/'.format(database, type)
+    elif database == 'pooled':
+        output_dir = r'../data/V15_COVID19/output/character/outcome/figure/pooled/timeperiod/{}/'.format(type)
+    else:
+        raise ValueError
+
     check_and_mkdir(output_dir)
     plt.savefig(output_dir + 'subgroup_heatmap_{}-{}-variant{}{}-p{:.3f}.png'.format(
         database, type, month, select_criteria, pvalue), bbox_inches='tight', dpi=700)
@@ -1862,16 +1881,23 @@ if __name__ == '__main__':
     #                                                               select_criteria='insight')
 
     # 2022-06-13
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(database='V15_COVID19', type='cifdiff',
-                                                                          month=6,
-                                                                          pasc=True,
-                                                                          star=True)
-
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(database='oneflorida', type='cifdiff',
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(database='V15_COVID19', type='cifdiff',
+    #                                                                       month=6,
+    #                                                                       pasc=True,
+    #                                                                       star=True)
+    #
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(database='oneflorida', type='cifdiff',
+    #                                                                       month=6,
+    #                                                                       pasc=True,
+    #                                                                       star=True,
+    #                                                                       select_criteria='insight')
+    # 2022-07-12
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant(database='pooled', type='cifdiff',
                                                                           month=6,
                                                                           pasc=True,
                                                                           star=True,
                                                                           select_criteria='insight')
+
     # for dataset in ['V15_COVID19', 'oneflorida']:
     #     for month in [6, 2, 3, 4, 5]: #
     #         plot_heatmap_for_dx_subgroup_absCumIncidence_split(database=dataset, type='cifdiff', month=month, pasc=True,

@@ -57,8 +57,7 @@ def multiple_test_correct(pv_list, fdr_threshold=0.05):
     return df
 
 
-if __name__ == '__main__':
-
+def add_test_to_old_results():
     # DX only
     # df = pd.read_excel(
     #     r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3-multitest.xlsx',
@@ -135,5 +134,63 @@ if __name__ == '__main__':
         dfm_med.to_excel(
             r'../data/oneflorida/output/character/outcome/MED-all/causal_effects_specific_med-multitest-withMultiPval-DXMEDALL.xlsx')
 
+    print('Done')
+
+
+if __name__ == '__main__':
+
+    DATA = "FL"
+    if DATA == 'INSIGHT':
+        print('Data', DATA)
+        df = pd.read_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all-new/causal_effects_specific_dx_insight.xlsx',
+            sheet_name='dx')
+
+        df_med = pd.read_excel(
+            '../data/V15_COVID19/output/character/outcome/MED-all-new/causal_effects_specific_med_insight.xlsx',
+            sheet_name='med'
+        )
+    elif DATA == 'FL':
+        print('Data', DATA)
+        df = pd.read_excel(
+            r'../data/oneflorida/output/character/outcome/DX-all-new/causal_effects_specific_dx_oneflorida.xlsx',
+            sheet_name='dx')
+
+        df_med = pd.read_excel(
+            '../data/oneflorida/output/character/outcome/MED-all-new/causal_effects_specific_med_oneflorida.xlsx',
+            sheet_name='med'
+        )
+
+    df_select = df.loc[df['hr-w-p'].notna(), :]
+    df_med_select = df_med.loc[df_med['hr-w-p'].notna(), :]
+
+    p_all = pd.concat([df_select['hr-w-p'], df_med_select['hr-w-p']])
+    df_p = multiple_test_correct(p_all, fdr_threshold=0.05)
+
+    df_p_dx = df_p.iloc[:len(df_select['hr-w-p']), :]
+    df_p_med = df_p.iloc[len(df_select['hr-w-p']):, :]
+
+    print('p_all.shape', p_all.shape, 'df_p.shape', df_p.shape)
+    print('df_p_dx.shape', df_p_dx.shape, 'df_p_med.shape', df_p_med.shape)
+
+    dfm_dx = pd.merge(df, df_p_dx, how='left', left_index=True, right_index=True)
+    dfm_med = pd.merge(df_med, df_p_med, how='left', left_index=True, right_index=True)
+
+    if DATA == 'INSIGHT':
+        print('Data', DATA)
+        dfm_dx.to_excel(
+            r'../data/V15_COVID19/output/character/outcome/DX-all-new/causal_effects_specific_dx_insight-MultiPval-DXMEDALL.xlsx',
+            sheet_name='dx')
+        dfm_med.to_excel(
+            r'../data/V15_COVID19/output/character/outcome/MED-all-new/causal_effects_specific_med_insight-MultiPval-DXMEDALL.xlsx',
+            sheet_name='med')
+    elif DATA == 'FL':
+        print('Data', DATA)
+        dfm_dx.to_excel(
+            r'../data/oneflorida/output/character/outcome/DX-all-new/causal_effects_specific_dx_oneflorida-MultiPval-DXMEDALL.xlsx',
+            sheet_name='dx')
+        dfm_med.to_excel(
+            r'../data/oneflorida/output/character/outcome/MED-all-new/causal_effects_specific_med_oneflorida-MultiPval-DXMEDALL.xlsx',
+            sheet_name='med')
 
     print('Done')
