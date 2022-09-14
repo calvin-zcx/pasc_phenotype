@@ -374,7 +374,7 @@ if __name__ == "__main__":
             i,
             pasc)
         utils.check_and_mkdir(out_file_balance)
-        # model.results.to_csv(out_file_balance)  # args.save_model_filename +
+        model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
