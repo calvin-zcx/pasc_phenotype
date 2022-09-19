@@ -140,24 +140,25 @@ def add_test_to_old_results():
 if __name__ == '__main__':
 
     DATA = "FL"
+
     if DATA == 'INSIGHT':
         print('Data', DATA)
         df = pd.read_excel(
-            r'../data/V15_COVID19/output/character/outcome/DX-all-new/causal_effects_specific_dx_insight.xlsx',
+            r'../data/V15_COVID19/output/character/outcome/DX-all-new-trim-vaccine/causal_effects_specific_dx_insight.xlsx',
             sheet_name='dx')
 
         df_med = pd.read_excel(
-            '../data/V15_COVID19/output/character/outcome/MED-all-new/causal_effects_specific_med_insight.xlsx',
+            '../data/V15_COVID19/output/character/outcome/MED-all-new-trim-vaccine/causal_effects_specific_med_insight.xlsx',
             sheet_name='med'
         )
     elif DATA == 'FL':
         print('Data', DATA)
         df = pd.read_excel(
-            r'../data/oneflorida/output/character/outcome/DX-all-new/causal_effects_specific_dx_oneflorida.xlsx',
+            r'../data/oneflorida/output/character/outcome/DX-all-new-trim-vaccine/causal_effects_specific_dx_oneflorida.xlsx',
             sheet_name='dx')
 
         df_med = pd.read_excel(
-            '../data/oneflorida/output/character/outcome/MED-all-new/causal_effects_specific_med_oneflorida.xlsx',
+            '../data/oneflorida/output/character/outcome/MED-all-new-trim-vaccine/causal_effects_specific_med_oneflorida.xlsx',
             sheet_name='med'
         )
 
@@ -179,18 +180,18 @@ if __name__ == '__main__':
     if DATA == 'INSIGHT':
         print('Data', DATA)
         dfm_dx.to_excel(
-            r'../data/V15_COVID19/output/character/outcome/DX-all-new/causal_effects_specific_dx_insight-MultiPval-DXMEDALL.xlsx',
+            r'../data/V15_COVID19/output/character/outcome/DX-all-new-trim-vaccine/causal_effects_specific_dx_insight-MultiPval-DXMEDALL.xlsx',
             sheet_name='dx')
         dfm_med.to_excel(
-            r'../data/V15_COVID19/output/character/outcome/MED-all-new/causal_effects_specific_med_insight-MultiPval-DXMEDALL.xlsx',
+            r'../data/V15_COVID19/output/character/outcome/MED-all-new-trim-vaccine/causal_effects_specific_med_insight-MultiPval-DXMEDALL.xlsx',
             sheet_name='med')
     elif DATA == 'FL':
         print('Data', DATA)
         dfm_dx.to_excel(
-            r'../data/oneflorida/output/character/outcome/DX-all-new/causal_effects_specific_dx_oneflorida-MultiPval-DXMEDALL.xlsx',
+            r'../data/oneflorida/output/character/outcome/DX-all-new-trim-vaccine/causal_effects_specific_dx_oneflorida-MultiPval-DXMEDALL.xlsx',
             sheet_name='dx')
         dfm_med.to_excel(
-            r'../data/oneflorida/output/character/outcome/MED-all-new/causal_effects_specific_med_oneflorida-MultiPval-DXMEDALL.xlsx',
+            r'../data/oneflorida/output/character/outcome/MED-all-new-trim-vaccine/causal_effects_specific_med_oneflorida-MultiPval-DXMEDALL.xlsx',
             sheet_name='med')
 
     print('Done')

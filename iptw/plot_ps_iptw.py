@@ -40,14 +40,14 @@ if __name__ == "__main__":
     rlist = []
 
     df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/outcome/DX-all-new/causal_effects_specific_dx_insight-MultiPval-DXMEDALL.xlsx',
+        r'../data/V15_COVID19/output/character/outcome/DX-all-new-trim/causal_effects_specific_dx_insight-MultiPval-DXMEDALL.xlsx',
         sheet_name='dx')
     df_select = df.sort_values(by='hr-w', ascending=False)
     df_select = df_select.loc[df_select['selected'] == 1, :]
 
     for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
         # bulid specific cohorts:
-        infname = '../data/{}/output/character/outcome/DX-{}-new/{}-{}-evaluation_ps-iptw.csv'.format(
+        infname = '../data/{}/output/character/outcome/DX-{}-new-trim/{}-{}-evaluation_ps-iptw.csv'.format(
                 'V15_COVID19', 'all', i, pasc)
         df = pd.read_csv(infname)
         rlist.append(df)

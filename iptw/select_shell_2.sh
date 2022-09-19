@@ -1,17 +1,26 @@
 mkdir log
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity 65to75 2>&1 | tee  log/screen_dx_pooled_65to75-competingRiskCumInc.txt
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity 75above 2>&1 | tee  log/screen_dx_pooled_75above-competingRiskCumInc.txt
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity male 2>&1 | tee  log/screen_dx_pooled_male-competingRiskCumInc.txt
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity female 2>&1 | tee  log/screen_dx_pooled_female-competingRiskCumInc.txt
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity white 2>&1 | tee  log/screen_dx_pooled_white-competingRiskCumInc.txt
-#taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity black 2>&1 | tee  log/screen_dx_pooled_black-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity T2D-Obesity 2>&1 | tee  log/screen_dx_pooled_T2D-Obesity-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity Mental-substance 2>&1 | tee  log/screen_dx_pooled_Mental-substance-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity Anemia 2>&1 | tee  log/screen_dx_pooled_Anemia-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity Arrythmia 2>&1 | tee  log/screen_dx_pooled_Arrythmia-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity CKD 2>&1 | tee  log/screen_dx_pooled_CKD-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity CPD-COPD 2>&1 | tee  log/screen_dx_pooled_CPD-COPD-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity CAD 2>&1 | tee  log/screen_dx_pooled_CAD-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity Hypertension 2>&1 | tee  log/screen_dx_pooled_Hypertension-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity Corticosteroids 2>&1 | tee  log/screen_dx_pooled_Corticosteroids-competingRiskCumInc.txt
-taskset --cpu-list 4-7 python screen_dx_pooled.py --dataset pooled --severity healthy 2>&1 | tee  log/screen_dx_pooled_healthy-competingRiskCumInc.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity outpatient 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_outpatient.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity inpatienticu 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_inpatienticu.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity above65 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_above65.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity less65 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_less65.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity female 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_female.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity male 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_male.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity white 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_white.txt
+#taskset --cpu-list 0-3 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity black 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_black.txt
+
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity Arrythmia 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_Arrythmia.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity CAD 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_CAD.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity CKD 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_CKD.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity CPD-COPD 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_CPD-COPD.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity Hypertension 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_Hypertension.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity Mental-substance 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_Mental-substance.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity T2D-Obesity 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_T2D-Obesity.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity healthy 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_healthy.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity Anemia 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_Anemia.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity Corticosteroids 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_Corticosteroids.txt
+
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity 1stwave 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_1stWave.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity delta 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_delta.txt
+taskset --cpu-list 4-7 python screen_dx_vtrim.py --dataset V15_COVID19 --site ALL --severity alpha 2>&1 | tee  log/screen_dx_vtrim_insight_ALL_alpha.txt
+
+

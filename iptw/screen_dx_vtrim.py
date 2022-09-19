@@ -40,7 +40,7 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta'],
+                                               '1stwave', 'delta', 'alpha'],
                         default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
@@ -231,6 +231,10 @@ if __name__ == "__main__":
     elif args.severity == 'delta':
         print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+    elif args.severity == 'alpha':
+        print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
+        df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
