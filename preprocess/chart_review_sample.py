@@ -33,12 +33,14 @@ if __name__ == '__main__':
     start_time = time.time()
 
     # SET SEED
-    seed = 3
+    seed = 155
 
     np.random.seed(seed=seed)
 
+    # cohort_df = pd.read_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-Sep2.xlsx')  # , index_col=0)
     cohort_df = pd.read_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-Sep2.xlsx')  # , index_col=0)
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_worsening_case.xlsx')
     print(list(cohort_df.columns))
     cohort_df.head()
 
@@ -115,11 +117,18 @@ if __name__ == '__main__':
     print('len(selected_list):', len(selected_list))
     cohort_df['race_eth_combo'] = cohort_df.apply(write_race_eth_combo, axis=1)
     selected_df = cohort_df.loc[selected_list, :]
+    # selected_df.to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-withDOB.xlsx'.format(seed))
+    # age_distribution_df = pd.concat(age_distribution, axis=1)
+    # age_distribution_df.to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-agedist-withDOB.xlsx'.format(
+    #         seed))
+
     selected_df.to_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-withDOB.xlsx'.format(seed))
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_worsening_cases-sampled-seed{}-withDOB.xlsx'.format(seed))
     age_distribution_df = pd.concat(age_distribution, axis=1)
     age_distribution_df.to_excel(
-        r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-agedist-withDOB.xlsx'.format(
+        r'../data/V15_COVID19/output/character/cp_dm/diabetes_worsening_cases-sampled-seed{}-agedist-withDOB.xlsx'.format(
             seed))
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
