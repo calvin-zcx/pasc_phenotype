@@ -9,15 +9,15 @@ import argparse
 import pandas as pd
 import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
-import seaborn as sns
+# import matplotlib.pyplot as plt
+# import seaborn as sns
 from collections import Counter
 import datetime
 from misc import utils
 import eligibility_setting as ecs
 import functools
 import fnmatch
-from lifelines import KaplanMeierFitter, CoxPHFitter
+# from lifelines import KaplanMeierFitter, CoxPHFitter
 
 print = functools.partial(print, flush=True)
 
