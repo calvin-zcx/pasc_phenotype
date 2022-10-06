@@ -35,22 +35,28 @@ def parse_args():
                         default='COL', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
+    parser.add_argument("--ndays", type=int, default=30)
+
 
     args = parser.parse_args()
 
-    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_cnt_2dx30daysAnyPASC_{}.csv'.format(
+    args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_cnt_2dx{}daysAnyPASC_{}.csv'.format(
         args.cohorts,
+        args.ndays,
         args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_bool_2dx30daysAnyPASC_{}.csv'.format(
+    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_bool_2dx{}daysAnyPASC_{}.csv'.format(
         args.cohorts,
-        args.dataset)
-
-    args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}-V2_2dx30daysAnyPASC.csv'.format(
-        args.cohorts,
+        args.ndays,
         args.dataset)
 
-    args.output_dx_info = r'../data/V15_COVID19/output/character/info_dx_cohorts_{}_{}-V2_2dx30daysAnyPASC.csv'.format(
+    args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}-V2_2dx{}daysAnyPASC.csv'.format(
         args.cohorts,
+        args.ndays,
+        args.dataset)
+
+    args.output_dx_info = r'../data/V15_COVID19/output/character/info_dx_cohorts_{}_{}-V2_2dx{}daysAnyPASC.csv'.format(
+        args.cohorts,
+        args.ndays,
         args.dataset)
 
     print('args:', args)
@@ -1222,7 +1228,7 @@ def build_query_1and2_matrix(args):
             #     _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
 
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
-                _encoding_outcome_dx_ndayapart(dx, icd_pasc, pasc_encoding, index_date, default_t2e, ndays=30)
+                _encoding_outcome_dx_ndayapart(dx, icd_pasc, pasc_encoding, index_date, default_t2e, ndays=args.ndays)
 
             outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
                 _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
@@ -2211,7 +2217,8 @@ def enrich_med_rwd_info_4_neruo_and_pulmonary():
 if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
-    # python pre_data_manuscript_2dx.py --dataset ALL --cohorts covid_4manuNegNoCovidV2 2>&1 | tee  log/pre_data_manuscript_2dx30daysApart_covid_4manuNegNoCovidV2.txt
+    # python pre_data_manuscript_2dx.py --dataset ALL --cohorts covid_4manuNegNoCovidV2 --ndays 30 2>&1 | tee  log/pre_data_manuscript_2dx30daysApart_covid_4manuNegNoCovidV2.txt
+    # python pre_data_manuscript_2dx.py --dataset ALL --cohorts covid_4manuNegNoCovidV2 --ndays 1 2>&1 | tee  log/pre_data_manuscript_2dx1daysApart_covid_4manuNegNoCovidV2.txt
 
     # enrich_med_rwd_info_4_neruo_and_pulmonary()
     #
