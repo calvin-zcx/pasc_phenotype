@@ -33,13 +33,11 @@ from matplotlib.colors import LogNorm, Normalize
 from matplotlib.patches import Rectangle
 from html4vision import Col, imagetable
 
-
-
 import os
 import glob
 
 
-def plot_image_html(df_pasc_info, folder='narrow' ):
+def plot_image_html(df_pasc_info, folder='narrow'):
     html = """
     <!DOCTYPE html>
     <html>
@@ -100,9 +98,8 @@ def plot_image_html(df_pasc_info, folder='narrow' ):
                    stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 1000]
         cifdif = stringlist_2_list(row['cif-w-diff'])[-1] * 1000
 
-        # a_revised.append((a[i], a[i+1], a[i+2], ncum1))
-        a_revised.append((a[i], a[i+1], a[i+2], cifdif))
-
+        a_revised.append((a[i], a[i + 1], a[i + 2], ncum1))
+        # a_revised.append((a[i], a[i+1], a[i+2], cifdif))
 
     a_revised = sorted(a_revised, reverse=True, key=lambda tup: tup[3])
 
@@ -146,7 +143,7 @@ def plot_image_html(df_pasc_info, folder='narrow' ):
             <img src="{}" alt="Outpatient" style="width:100%">
           </div>
         </div>
-        """.format(i+1, a_revised[i][0].replace('-Overall', '-*'),
+        """.format(i + 1, a_revised[i][0].replace('-Overall', '-*'),
                    pasc, domain,
                    hr, ci[0], ci[1], p,
                    ncum1, ncum0, cifdif,
@@ -154,15 +151,38 @@ def plot_image_html(df_pasc_info, folder='narrow' ):
 
     html += "</body></html>"
 
-    outfile = "output/t2e_figure/{}-index_excess_sorted.html".format(folder)
+    # outfile = "output/t2e_figure/{}-index_excess_sorted.html".format(folder)
+    outfile = "output/t2e_figure/{}-index.html".format(folder)
+
     with open(outfile, "w") as outputfile:
         outputfile.write(html)
 
     # os.startfile(outfile)
 
 
-def plot_anypasc_t2e():
-    data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+def fig_plot_t2e(t2e, title, outfile):
+    ax = plt.subplot(111)
+    sns.histplot(
+        t2e,
+        stat="proportion", common_norm=False, bins=30, kde=True
+    )
+    plt.title(title)
+    plt.xlim(left=30, right=180)
+    plt.savefig(outfile)
+    # plt.show()
+    plt.close()
+
+
+def plot_anypasc_t2e(pasc_type='1dx', pasc_n_type='broad'):
+    if pasc_type == '1dx':
+        data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
+    elif pasc_type == '2dx30days':
+        data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx30daysAnyPASC_ALL.csv'
+    elif pasc_type == '2dx1days':
+        data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx1daysAnyPASC_ALL.csv'
+    else:
+        raise ValueError
+
     df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date'])  # , nrows=100
     # df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
@@ -201,60 +221,75 @@ def plot_anypasc_t2e():
 
         df['flag@' + pasc] = (flag > 0).astype('int')
 
-    for ith, pasc in enumerate(selected_pasc_list_narrow):
+    list_t2e_all = []
+    list_t2e_outpatient = []
+    list_t2e_inpatient = []
+
+    if pasc_n_type == 'narrow':
+        pasc_list = selected_pasc_list_narrow
+    elif pasc_n_type == 'broad':
+        pasc_list = selected_pasc_list
+    else:
+        raise ValueError
+
+    for ith, pasc in enumerate(pasc_list):
         print(ith, pasc, name_map[pasc])
 
         df_sub = df.loc[(df['flag@' + pasc] == 1) & (df['covid'] == 1), :]
         t2e_all = df_sub['dx-t2e@' + pasc]
-
-        # Overall
-        ax = plt.subplot(111)
-        sns.histplot(
-            t2e_all,
-            stat="proportion", common_norm=False, bins=30, kde=True
-        )
-        plt.title(name_map[pasc] + '-Overall')
-        plt.xlim(left=30, right=180)
-        plt.savefig('output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Overall.png')
-        # plt.show()
-        plt.close()
-
-        # Outpatient
         t2e_outpatient = df_sub.loc[(df_sub['hospitalized'] == 0) & (df_sub['criticalcare'] == 0), 'dx-t2e@' + pasc]
-        ax = plt.subplot(111)
-        sns.histplot(
-            t2e_outpatient,
-            stat="proportion", common_norm=False, bins=30, kde=True
-        )
-        plt.title(name_map[pasc] + '-Not-Hospitalized')
-        plt.xlim(left=30, right=180)
-        plt.savefig('output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Not-Hospitalized.png')
-        # plt.show()
-        plt.close()
-
-        # inpatient
         t2e_inpatient = df_sub.loc[(df_sub['hospitalized'] == 1) | (df_sub['criticalcare'] == 1), 'dx-t2e@' + pasc]
-        ax = plt.subplot(111)
-        sns.histplot(
-            t2e_inpatient,
-            stat="proportion", common_norm=False, bins=30, kde=True
-        )
-        plt.title(name_map[pasc] + '-Hospitalized')
-        plt.xlim(left=30, right=180)
-        plt.savefig('output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Hospitalized.png')
-        # plt.show()
-        plt.close()
+
+        list_t2e_all.append(t2e_all)
+        list_t2e_outpatient.append(t2e_outpatient)
+        list_t2e_inpatient.append(t2e_inpatient)
+
+        continue
+        # Overall
+        fig_plot_t2e(t2e_all,
+                     name_map[pasc] + '-Overall',
+                     'output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Overall.png')
+
+        fig_plot_t2e(t2e_outpatient,
+                     name_map[pasc] + '-Not-Hospitalized',
+                     'output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Not-Hospitalized.png')
+
+        fig_plot_t2e(t2e_inpatient,
+                     name_map[pasc] + '-Hospitalized',
+                     'output/t2e_figure/' + name_map[pasc].replace('/', ' ') + '-Hospitalized.png')
+
+    all_t2e_all = pd.concat(list_t2e_all, axis=0, ignore_index=True)
+    all_t2e_outpatient = pd.concat(list_t2e_outpatient, axis=0, ignore_index=True)
+    all_t2e_inpatient = pd.concat(list_t2e_inpatient, axis=0, ignore_index=True)
+
+    fig_plot_t2e(all_t2e_all,
+                 'AnyPASC-{}-{}-Overall'.format(pasc_type, pasc_n_type),
+                 'output/t2e_figure/AnyPASC-{}-{}-Overall.png'.format(pasc_type, pasc_n_type))
+
+    fig_plot_t2e(all_t2e_outpatient,
+                 'AnyPASC-{}-{}-Not-Hospitalized'.format(pasc_type, pasc_n_type),
+                 'output/t2e_figure/AnyPASC-{}-{}-Not-Hospitalized.png'.format(pasc_type, pasc_n_type))
+
+    fig_plot_t2e(all_t2e_inpatient,
+                 'AnyPASC-{}-{}-Hospitalized'.format(pasc_type, pasc_n_type),
+                 'output/t2e_figure/AnyPASC-{}-{}-Hospitalized.png'.format(pasc_type, pasc_n_type))
 
 
 if __name__ == '__main__':
-    # plot_anypasc_t2e()
+    plot_anypasc_t2e(pasc_type='1dx', pasc_n_type='broad')
+    plot_anypasc_t2e(pasc_type='1dx', pasc_n_type='narrow')
+    plot_anypasc_t2e(pasc_type='2dx30days', pasc_n_type='broad')
+    plot_anypasc_t2e(pasc_type='2dx30days', pasc_n_type='narrow')
+    plot_anypasc_t2e(pasc_type='2dx1days', pasc_n_type='broad')
+    plot_anypasc_t2e(pasc_type='2dx1days', pasc_n_type='narrow')
 
-    df_pasc_info = pd.read_excel('output/causal_effects_specific_dx_insight-MultiPval-DXMEDALL_withOldSelection.xlsx',
-                                 sheet_name='dx')
-    df_pasc_info['PASC Name Simple'] = df_pasc_info['PASC Name Simple'].apply(lambda x:x.replace('/', ' '))
-    df_pasc_info = df_pasc_info.set_index('PASC Name Simple')
-    plot_image_html(df_pasc_info, 'narrow')
-    plot_image_html(df_pasc_info, 'broad')
-
-
-
+    # df_pasc_info = pd.read_excel('output/causal_effects_specific_dx_insight-MultiPval-DXMEDALL_withOldSelection.xlsx',
+    #                              sheet_name='dx')
+    # df_pasc_info['PASC Name Simple'] = df_pasc_info['PASC Name Simple'].apply(lambda x:x.replace('/', ' '))
+    # df_pasc_info = df_pasc_info.set_index('PASC Name Simple')
+    # # plot_image_html(df_pasc_info, 'narrow')
+    # # plot_image_html(df_pasc_info, 'broad')
+    # # plot_image_html(df_pasc_info, 'narrow_2dx30days')
+    # # plot_image_html(df_pasc_info, 'broad_2dx30days')
+    # plot_image_html(df_pasc_info, 'narrow_2dx1day')
+    # plot_image_html(df_pasc_info, 'broad_2dx1day')
