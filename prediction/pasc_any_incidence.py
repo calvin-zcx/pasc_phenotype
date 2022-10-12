@@ -49,7 +49,7 @@ def parse_args():
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx30daysAnyPASC_ALL.csv'
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx1daysAnyPASC_ALL.csv'
+        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx1daysAnyPASC_ALL.csv'
 
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
     elif args.dataset == 'OneFlorida':
@@ -83,7 +83,7 @@ def parse_args():
     return args
 
 
-def build_incident_pasc_from_all_positive(data_file, dump=False):
+def build_incident_pasc_from_all_positive(data_file, broad=True, nthreshold=1, dump=False):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', data_file)
@@ -100,12 +100,20 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
     # add selected incident PASC flag
     print('Step2: add selected incident PASC flag and time 2 event')
     df_pasc_info = pd.read_excel('output/causal_effects_specific_withMedication_v3.xlsx', sheet_name='diagnosis')
-    selected_pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    print('len(selected_pasc_list)', len(selected_pasc_list))
-    print(selected_pasc_list)
+
+    selected_pasc_list_broad = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
+    print('len(selected_pasc_list_broad)', len(selected_pasc_list_broad))
+    # print(selected_pasc_list)
 
     selected_pasc_list_narrow = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc']
     print('len(selected_pasc_list_narrow)', len(selected_pasc_list_narrow))
+
+    if broad:
+        selected_pasc_list = selected_pasc_list_broad
+        print('Select PASC broad definition', len(selected_pasc_list), )
+    else:
+        selected_pasc_list = selected_pasc_list_narrow
+        print('Select PASC narrow definition', len(selected_pasc_list), )
 
     exclude_DX_list = {
         'Neurocognitive disorders': ['DX: Dementia'],
@@ -118,7 +126,7 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
 
     print('Labeling INCIDENT pasc in {0,1}')
     # flag@pascname  for incidence label, dx-t2e@pascname for original shared t2e
-    for pasc in selected_pasc_list:
+    for pasc in selected_pasc_list_broad:
         flag = df['dx-out@' + pasc] - df['dx-base@' + pasc]
         if pasc in exclude_DX_list:
             ex_DX_list = exclude_DX_list[pasc]
@@ -138,11 +146,12 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
     # 2022-05-25
     # build flag, t2e for any pasc with NARROW List
     # flag@pascname  for incidence label, dx-t2e@pascname for t2e which is shared from original data
-    print('Any PASC: build flag, t2e for any pasc from Narrow List')
-    specific_pasc_col_narrow = ['flag@' + x for x in selected_pasc_list_narrow]
-    n_pasc_series_narrow = df[specific_pasc_col_narrow].sum(axis=1)
-    df['pasc-narrow-count'] = n_pasc_series_narrow  # number of incident pascs of this person
-    df['pasc-narrow-flag'] = (n_pasc_series_narrow > 0).astype('int')  # indicator of any incident pasc of this person
+    # print('Any PASC: build flag, t2e for any pasc from Narrow List')
+    # specific_pasc_col_narrow = ['flag@' + x for x in selected_pasc_list_narrow]
+    # n_pasc_series_narrow = df[specific_pasc_col_narrow].sum(axis=1)
+    # df['pasc-narrow-count'] = n_pasc_series_narrow  # number of incident pascs of this person
+    # df['pasc-narrow-flag'] = (n_pasc_series_narrow > 0).astype('int')  # indicator of any incident pasc of this person
+    #
     # df['pasc-narrow-min-t2e'] = 180
     #
     # for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
@@ -171,7 +180,8 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
     specific_pasc_col = ['flag@' + x for x in selected_pasc_list]
     n_pasc_series = df[specific_pasc_col].sum(axis=1)
     df['pasc-count'] = n_pasc_series  # number of incident pascs of this person
-    df['pasc-flag'] = (n_pasc_series > 0).astype('int')  # indicator of any incident pasc of this person
+    df['pasc-flag'] = (n_pasc_series >= nthreshold).astype('int')  # indicator of any incident pasc of this person
+
     # df['pasc-min-t2e'] = 180
     # for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
     #     npasc = rows['pasc-count']
@@ -196,7 +206,7 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
     specific_pasc_col_prevalence = ['dx-out@' + x for x in selected_pasc_list]
     n_pasc_series_pre = df[specific_pasc_col_prevalence].sum(axis=1)
     df['pasc-prevalence-count'] = n_pasc_series_pre  # number of incident pascs of this person
-    df['pasc-prevalence-flag'] = (n_pasc_series_pre > 0).astype('int')  # indicator of any incident pasc of this person
+    df['pasc-prevalence-flag'] = (n_pasc_series_pre >= nthreshold).astype('int')  # indicator of any incident pasc of this person
 
     # if dump:
     #     utils.check_and_mkdir(args.processed_data_file)
@@ -209,7 +219,7 @@ def build_incident_pasc_from_all_positive(data_file, dump=False):
     return df, df_pasc_info
 
 
-def print_incidence_table(cneg, cpos, flag_col, per=100000):
+def print_incidence_table(cneg, cpos, flag_col, per=100):
     neg_total = len(cneg)
     neg_yes = len(cneg.loc[cneg[flag_col] > 0, :])
     neg_no = len(cneg.loc[cneg[flag_col] == 0, :])
@@ -238,13 +248,14 @@ if __name__ == '__main__':
     print('random_seed: ', args.random_seed)
 
     # -Pre step2: build Covid Positive data and dump for future use
-    df, df_pasc_info = build_incident_pasc_from_all_positive(args.data_file)
+    df, df_pasc_info = build_incident_pasc_from_all_positive(args.data_file, broad=False, nthreshold=1)
 
     print('Process done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
     print('Covid Negative:', (df['covid'] == 0).sum(), (df['covid'] == 0).mean())
 
     if args.dataset == 'Pooled':
+        # not supported for 30 days apart definition
         print('Load Second data file:', args.data_file2)
         df2, _ = build_incident_pasc_from_all_positive(args.data_file2)
         print('Load done, df2.shape:', df2.shape)
@@ -266,11 +277,11 @@ if __name__ == '__main__':
     # Incidence table
     print('Incidence Table')
     print_incidence_table(df.loc[(df['covid'] == 0), :],
-                          df.loc[(df['covid'] == 1), :], 'pasc-flag', per=1000)
+                          df.loc[(df['covid'] == 1), :], 'pasc-flag', per=100)
     # Prevalence table
-    print('Prevalence Table')
+    print('Prevalence/Persistent Table')
     print_incidence_table(df.loc[(df['covid'] == 0), :],
-                          df.loc[(df['covid'] == 1), :], 'pasc-prevalence-flag', per=1000)
+                          df.loc[(df['covid'] == 1), :], 'pasc-prevalence-flag', per=100)
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     print('Done')
