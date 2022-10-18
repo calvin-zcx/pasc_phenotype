@@ -48,7 +48,7 @@ def parse_args():
         # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly.csv'
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-PosOnly-anyPASC.csv'
         args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
-        args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx30daysAnyPASC_ALL.csv'
+        # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx30daysAnyPASC_ALL.csv'
         # args.data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_2dx1daysAnyPASC_ALL.csv'
 
         # args.processed_data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC.csv'
@@ -154,23 +154,29 @@ def build_incident_pasc_from_all_positive(data_file, broad=True, nthreshold=1, d
     #
     # df['pasc-narrow-min-t2e'] = 180
     #
-    # for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-    #     npasc = rows['pasc-narrow-count']
-    #     if npasc >= 1:
-    #         # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
-    #         pasc_flag_cols = list(rows[specific_pasc_col_narrow][rows[specific_pasc_col_narrow] > 0].index)
-    #         pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-    #         t2e = rows.loc[pasc_t2e_cols].min()
-    #     else:
-    #         # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
-    #         # no event, only consider death, censoring, 180 days,
-    #         # 1. approximated by the maximum-t2e of any selected pasc .
-    #         #   unless all selected pasc happened, but not incident, this not happened in our data.
-    #         # 2. directly follow the definition. Because I also stored max-followup information
-    #         # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
-    #         t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
-    #
-    #     df.loc[index, 'pasc-narrow-min-t2e'] = t2e
+
+    # define PASC as any 2, 30 days apart
+    selected_pasc_list_col = ['flag@' + x for x in selected_pasc_list]
+    df['pasc-flag-2dx30days'] = 0
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        _n_pasc = rows[selected_pasc_list_col].sum()
+        pasc_flag_cols = list(rows[selected_pasc_list_col][rows[selected_pasc_list_col] > 0].index)
+        pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+        t2e_min = rows.loc[pasc_t2e_cols].min()
+        t2e_max = rows.loc[pasc_t2e_cols].max()
+        if t2e_max - t2e_min >= 30:
+            df.loc[index, 'pasc-flag-2dx30days'] = 1
+
+    # else:
+        #     # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
+        #     # no event, only consider death, censoring, 180 days,
+        #     # 1. approximated by the maximum-t2e of any selected pasc .
+        #     #   unless all selected pasc happened, but not incident, this not happened in our data.
+        #     # 2. directly follow the definition. Because I also stored max-followup information
+        #     # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
+        #     t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+        # df.loc[index, 'pasc-narrow-min-t2e'] = t2e
 
     # before 2022-05-20
     # build flag, t2e for any pasc from broader list, all the follows are from broader list
@@ -278,6 +284,11 @@ if __name__ == '__main__':
     print('Incidence Table')
     print_incidence_table(df.loc[(df['covid'] == 0), :],
                           df.loc[(df['covid'] == 1), :], 'pasc-flag', per=100)
+
+    print('Incidence 2dx-30 days apart Table')
+    print_incidence_table(df.loc[(df['covid'] == 0), :],
+                          df.loc[(df['covid'] == 1), :], 'pasc-flag-2dx30days', per=100)
+
     # Prevalence table
     print('Prevalence/Persistent Table')
     print_incidence_table(df.loc[(df['covid'] == 0), :],
