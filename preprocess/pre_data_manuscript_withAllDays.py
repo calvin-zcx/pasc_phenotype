@@ -971,6 +971,8 @@ def build_query_1and2_matrix(args):
     dx_count = {}
 
     print('Try to load: ', sites)
+    header = True
+    mode = "w"
     for site in tqdm(sites):
         print('Loading: ', site)
         input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
@@ -990,164 +992,7 @@ def build_query_1and2_matrix(args):
 
         print('args.positive_only:', args.positive_only, n)
 
-        pid_list = []
-        site_list = []
-        covid_list = []
-        indexdate_list = []  # newly add 2022-02-20
-        hospitalized_list = []
-        ventilation_list = []
-        criticalcare_list = []
-
-        maxfollowtime_list = []  # newly add 2022-02-18
-        death_array = np.zeros((n, 2), dtype='int16')  # newly add 2022-02-20
-        death_column_names = ['death', 'death t2e']
-
-        # newly add 2022-04-08
-        zip_list = []  # newly add 2022-04-08
-        age_list = []
-        adi_list = []
-        utilization_count_array = np.zeros((n, 4), dtype='int16')
-        utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
-        bmi_list = []
-        yearmonth_array = np.zeros((n, 23), dtype='int16')
-        yearmonth_column_names = [
-            "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
-            "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
-            "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
-            "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
-            "YM: November 2021", "YM: December 2021", "YM: January 2022"
-        ]
-        #
-        age_array = np.zeros((n, 6), dtype='int16')
-        age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
-
-        gender_array = np.zeros((n, 3), dtype='int16')
-        gender_column_names = ['Female', 'Male', 'Other/Missing']
-
-        race_array = np.zeros((n, 5), dtype='int16')
-        race_column_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
-        # Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5
-        # Missing (No Information, Refuse to Answer, Unknown, Missing)4
-
-        hispanic_array = np.zeros((n, 3), dtype='int16')
-        hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-
-        # newly added 2022-02-18
-        social_array = np.zeros((n, 10), dtype='int16')
-        social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
-                               'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
-        utilization_array = np.zeros((n, 12), dtype='int16')
-        utilization_column_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
-                                    'inpatient visits >=5',
-                                    'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
-                                    'outpatient visits >=5',
-                                    'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
-                                    'emergency visits >=5']
-
-        index_period_array = np.zeros((n, 5), dtype='int16')
-        index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
-        #
-
-        # newly add 2022-04-08
-        bmi_array = np.zeros((n, 5), dtype='int16')
-        bmi_names = ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight',
-                     'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
-
-        smoking_array = np.zeros((n, 4), dtype='int16')
-        smoking_names = ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
-
-        # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards,
-        # due to threshold >= 2 issue
-        # DX: End Stage Renal Disease on Dialysis, Both diagnosis and procedure codes used to define this condtion
-        dx_array = np.zeros((n, 40), dtype='int16')  # from 37 --> 40, # added 2022-05-25
-        dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
-                           "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
-                           "DX: Coagulopathy", "DX: Congestive Heart Failure",
-                           "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
-                           "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
-                           "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
-                           "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
-                           "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
-                           "DX: Peripheral vascular disorders ", "DX: Pregnant",
-                           "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
-                           "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
-                           "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
-                           "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
-                           'DX: Autism', 'DX: Sickle Cell',
-                           'DX: Obstructive sleep apnea',  # added 2022-05-25
-                           'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
-                           'DX: Herpes Zoster',  # added 2022-05-25
-                           ]
-
-        # Two selected baseline medication
-        med_array = np.zeros((n, 2), dtype='int16')
-        # atc level 3 category # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
-        # --> detailed code list from CDC
-        med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
-
-        # vaccine info designed for risk. definition of post, and fully are different from our previous query
-        vaccine_column_names = ['Fully vaccinated - Pre-index',
-                                'Fully vaccinated - Post-index',
-                                'Partially vaccinated - Pre-index',
-                                'Partially vaccinated - Post-index',
-                                'No evidence - Pre-index',
-                                'No evidence - Post-index',
-                                ]
-        vaccine_array = np.zeros((n, 6), dtype='int16')
-
-        # add covid medication
-        covidmed_array = np.zeros((n, 25), dtype='int16')
-        covidmed_column_names = [
-            'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
-            'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
-            'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
-            'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)',
-            'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
-            'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
-            'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
-            'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
-
-        # also these drug categories as outcomes in followup
-        outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
-        outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-t2e@' + x for x in covidmed_column_names] + \
-                                        ['covidmed-base@' + x for x in covidmed_column_names]
-
-        # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
-        # In total, there are 137 PASC categories in our lists. See T2E later
-        outcome_flag = np.zeros((n, 137), dtype='int16')
-        outcome_t2e = np.zeros((n, 137), dtype='int16')
-        outcome_baseline = np.zeros((n, 137), dtype='int16')
-
-        outcome_t2eall = []
-
-        # new add for 2 dx cross categories
-        outcome_column_names = ['dx-out@' + x for x in pasc_encoding.keys()] + \
-                               ['dx-t2e@' + x for x in pasc_encoding.keys()] + \
-                               ['dx-base@' + x for x in pasc_encoding.keys()] + \
-                               ['dx-t2eall@' + x for x in pasc_encoding.keys()]
-
-        # # rxing_encoding outcome.
-        # outcome_med_flag = np.zeros((n, 434), dtype='int16')
-        # outcome_med_t2e = np.zeros((n, 434), dtype='int16')
-        # outcome_med_baseline = np.zeros((n, 434), dtype='int16')
-        # outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
-        #                            ['med-t2e@' + x for x in rxing_encoding.keys()] + \
-        #                            ['med-base@' + x for x in rxing_encoding.keys()]
-
-        column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
-                        'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
-                       ['zip', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
-                       age_column_names + \
-                       gender_column_names + race_column_names + hispanic_column_names + \
-                       social_column_names + utilization_column_names + index_period_names + \
-                       bmi_names + smoking_names + \
-                       dx_column_names + med_column_names + vaccine_column_names + covidmed_column_names + \
-                       outcome_covidmed_column_names + outcome_column_names # + outcome_med_column_names
-
-        print('len(column_names):', len(column_names), '\n', column_names)
+        # print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
         adi_value_list = [v[1][7] for key, v in id_data.items()]
         adi_value_default = np.nanmedian(adi_value_list)
@@ -1162,11 +1007,171 @@ def build_query_1and2_matrix(args):
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
 
+            # dump per line
+            n = 1
+            pid_list = []
+            site_list = []
+            covid_list = []
+            indexdate_list = []  # newly add 2022-02-20
+            hospitalized_list = []
+            ventilation_list = []
+            criticalcare_list = []
+
+            maxfollowtime_list = []  # newly add 2022-02-18
+            death_array = np.zeros((n, 2), dtype='int16')  # newly add 2022-02-20
+            death_column_names = ['death', 'death t2e']
+
+            # newly add 2022-04-08
+            zip_list = []  # newly add 2022-04-08
+            age_list = []
+            adi_list = []
+            utilization_count_array = np.zeros((n, 4), dtype='int16')
+            utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
+            bmi_list = []
+            yearmonth_array = np.zeros((n, 23), dtype='int16')
+            yearmonth_column_names = [
+                "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
+                "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
+                "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
+                "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
+                "YM: November 2021", "YM: December 2021", "YM: January 2022"
+            ]
+            #
+            age_array = np.zeros((n, 6), dtype='int16')
+            age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years',
+                                '85+ years']
+
+            gender_array = np.zeros((n, 3), dtype='int16')
+            gender_column_names = ['Female', 'Male', 'Other/Missing']
+
+            race_array = np.zeros((n, 5), dtype='int16')
+            race_column_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+            # Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5
+            # Missing (No Information, Refuse to Answer, Unknown, Missing)4
+
+            hispanic_array = np.zeros((n, 3), dtype='int16')
+            hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+
+            # newly added 2022-02-18
+            social_array = np.zeros((n, 10), dtype='int16')
+            social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+                                   'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+            utilization_array = np.zeros((n, 12), dtype='int16')
+            utilization_column_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+                                        'inpatient visits >=5',
+                                        'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+                                        'outpatient visits >=5',
+                                        'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+                                        'emergency visits >=5']
+
+            index_period_array = np.zeros((n, 5), dtype='int16')
+            index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+            #
+
+            # newly add 2022-04-08
+            bmi_array = np.zeros((n, 5), dtype='int16')
+            bmi_names = ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight',
+                         'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
+
+            smoking_array = np.zeros((n, 4), dtype='int16')
+            smoking_names = ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
+
+            # cautious of "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis" using logic afterwards,
+            # due to threshold >= 2 issue
+            # DX: End Stage Renal Disease on Dialysis, Both diagnosis and procedure codes used to define this condtion
+            dx_array = np.zeros((n, 40), dtype='int16')  # from 37 --> 40, # added 2022-05-25
+            dx_column_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
+                               "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
+                               "DX: Coagulopathy", "DX: Congestive Heart Failure",
+                               "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
+                               "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                               "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
+                               "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
+                               "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
+                               "DX: Peripheral vascular disorders ", "DX: Pregnant",
+                               "DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)",
+                               "DX: Rheumatoid Arthritis", "DX: Seizure/Epilepsy",
+                               "DX: Severe Obesity  (BMI>=40 kg/m2)", "DX: Weight Loss",
+                               "DX: Down's Syndrome", 'DX: Other Substance Abuse', 'DX: Cystic Fibrosis',
+                               'DX: Autism', 'DX: Sickle Cell',
+                               'DX: Obstructive sleep apnea',  # added 2022-05-25
+                               'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',  # added 2022-05-25
+                               'DX: Herpes Zoster',  # added 2022-05-25
+                               ]
+
+            # Two selected baseline medication
+            med_array = np.zeros((n, 2), dtype='int16')
+            # atc level 3 category # H02: CORTICOSTEROIDS FOR SYSTEMIC USE   L04:IMMUNOSUPPRESSANTS
+            # --> detailed code list from CDC
+            med_column_names = ["MEDICATION: Corticosteroids", "MEDICATION: Immunosuppressant drug", ]
+
+            # vaccine info designed for risk. definition of post, and fully are different from our previous query
+            vaccine_column_names = ['Fully vaccinated - Pre-index',
+                                    'Fully vaccinated - Post-index',
+                                    'Partially vaccinated - Pre-index',
+                                    'Partially vaccinated - Post-index',
+                                    'No evidence - Pre-index',
+                                    'No evidence - Post-index',
+                                    ]
+            vaccine_array = np.zeros((n, 6), dtype='int16')
+
+            # add covid medication
+            covidmed_array = np.zeros((n, 25), dtype='int16')
+            covidmed_column_names = [
+                'Anti-platelet Therapy', 'Aspirin', 'Baricitinib', 'Bamlanivimab Monoclonal Antibody Treatment',
+                'Bamlanivimab and Etesevimab Monoclonal Antibody Treatment',
+                'Casirivimab and Imdevimab Monoclonal Antibody Treatment',
+                'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)',
+                'Colchicine', 'Corticosteroids', 'Dexamethasone', 'Factor Xa Inhibitors', 'Fluvoxamine', 'Heparin',
+                'Inhaled Steroids', 'Ivermectin', 'Low Molecular Weight Heparin', 'Molnupiravir', 'Nirmatrelvir',
+                'Paxlovid', 'Remdesivir', 'Ritonavir', 'Sotrovimab Monoclonal Antibody Treatment',
+                'Thrombin Inhibitors', 'Tocilizumab (Actemra)', 'PX: Convalescent Plasma']
+
+            # also these drug categories as outcomes in followup
+            outcome_covidmed_flag = np.zeros((n, 25), dtype='int16')
+            outcome_covidmed_t2e = np.zeros((n, 25), dtype='int16')
+            outcome_covidmed_baseline = np.zeros((n, 25), dtype='int16')
+            outcome_covidmed_column_names = ['covidmed-out@' + x for x in covidmed_column_names] + \
+                                            ['covidmed-t2e@' + x for x in covidmed_column_names] + \
+                                            ['covidmed-base@' + x for x in covidmed_column_names]
+
+            # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
+            # In total, there are 137 PASC categories in our lists. See T2E later
+            outcome_flag = np.zeros((n, 137), dtype='int16')
+            outcome_t2e = np.zeros((n, 137), dtype='int16')
+            outcome_baseline = np.zeros((n, 137), dtype='int16')
+
+            outcome_t2eall = []
+
+            # new add for 2 dx cross categories
+            outcome_column_names = ['dx-out@' + x for x in pasc_encoding.keys()] + \
+                                   ['dx-t2e@' + x for x in pasc_encoding.keys()] + \
+                                   ['dx-base@' + x for x in pasc_encoding.keys()] + \
+                                   ['dx-t2eall@' + x for x in pasc_encoding.keys()]
+
+            # # rxing_encoding outcome.
+            # outcome_med_flag = np.zeros((n, 434), dtype='int16')
+            # outcome_med_t2e = np.zeros((n, 434), dtype='int16')
+            # outcome_med_baseline = np.zeros((n, 434), dtype='int16')
+            # outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
+            #                            ['med-t2e@' + x for x in rxing_encoding.keys()] + \
+            #                            ['med-base@' + x for x in rxing_encoding.keys()]
+
+            column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
+                            'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
+                           ['zip', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
+                           age_column_names + \
+                           gender_column_names + race_column_names + hispanic_column_names + \
+                           social_column_names + utilization_column_names + index_period_names + \
+                           bmi_names + smoking_names + \
+                           dx_column_names + med_column_names + vaccine_column_names + covidmed_column_names + \
+                           outcome_covidmed_column_names + outcome_column_names  # + outcome_med_column_names
+
             if args.positive_only:
                 if not flag:
                     continue
-            i += 1
-
+            # i += 1
+            i = 0
             # maxfollowtime
             # gaurantee at least one encounter in baseline or followup. thus can be 0 if no followup
             # later EC should be at lease one in follow-up
@@ -1244,6 +1249,81 @@ def build_query_1and2_matrix(args):
             # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
             #     _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
+            #   step 4: build pandas, column, and dump
+            data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
+                                    np.asarray(site_list).reshape(-1, 1),
+                                    np.array(covid_list).reshape(-1, 1).astype(int),
+                                    np.asarray(indexdate_list).reshape(-1, 1),
+                                    np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
+                                    np.array(ventilation_list).reshape(-1, 1).astype(int),
+                                    np.array(criticalcare_list).reshape(-1, 1).astype(int),
+                                    np.array(maxfollowtime_list).reshape(-1, 1),
+                                    death_array,
+                                    np.asarray(zip_list).reshape(-1, 1),
+                                    np.asarray(age_list).reshape(-1, 1),
+                                    np.asarray(adi_list).reshape(-1, 1),
+                                    utilization_count_array,
+                                    np.asarray(bmi_list).reshape(-1, 1),
+                                    yearmonth_array,
+                                    age_array,
+                                    gender_array,
+                                    race_array,
+                                    hispanic_array,
+                                    social_array,
+                                    utilization_array,
+                                    index_period_array,
+                                    bmi_array,
+                                    smoking_array,
+                                    dx_array,
+                                    med_array,
+                                    vaccine_array,
+                                    covidmed_array,
+                                    outcome_covidmed_flag,
+                                    outcome_covidmed_t2e,
+                                    outcome_covidmed_baseline,
+                                    outcome_flag,
+                                    outcome_t2e,
+                                    outcome_baseline,
+                                    np.asarray(outcome_t2eall),
+                                    # outcome_med_flag,
+                                    # outcome_med_t2e,
+                                    # outcome_med_baseline
+                                    ))
+
+            df_data = pd.DataFrame(data_array, columns=column_names)
+            # data_all_sites.append(df_data)
+
+            # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
+            # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
+            # df_bool = df_data_all_sites
+            df_bool = df_data
+            selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
+            df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+            df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+                (df_bool.loc[:, r'DX: Hypertension'] & (
+                        df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+
+            # Warning: the covid medication part is not boolean
+            # keep the value of baseline count and outcome count in the file, filter later depends on the application
+            # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
+            # can be done later
+
+            selected_cols = [x for x in df_bool.columns if
+                             (x.startswith('dx-base@') or
+                              x.startswith('med-out@') or x.startswith('med-base@') or
+                              x.startswith('covidmed-out@') or x.startswith('covidmed-base@'))]
+            df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+            # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]
+            # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+
+            # utils.check_and_mkdir(args.output_file_query12_bool)
+
+            df_bool.to_csv(args.output_file_query12_bool, mode=mode, header=header, index=False)
+            if header:
+                header = False
+                mode = "a"
+
             # count additional information
             # in follow-up, each person count once
             _dx_set = set()
@@ -1285,54 +1365,11 @@ def build_query_1and2_matrix(args):
                 if i_med not in _med_set_base:
                     _update_counter_v2(med_count, i_med, flag, is_incident=True)
 
+        print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-        #   step 4: build pandas, column, and dump
-        data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
-                                np.asarray(site_list).reshape(-1, 1),
-                                np.array(covid_list).reshape(-1, 1).astype(int),
-                                np.asarray(indexdate_list).reshape(-1, 1),
-                                np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
-                                np.array(ventilation_list).reshape(-1, 1).astype(int),
-                                np.array(criticalcare_list).reshape(-1, 1).astype(int),
-                                np.array(maxfollowtime_list).reshape(-1, 1),
-                                death_array,
-                                np.asarray(zip_list).reshape(-1, 1),
-                                np.asarray(age_list).reshape(-1, 1),
-                                np.asarray(adi_list).reshape(-1, 1),
-                                utilization_count_array,
-                                np.asarray(bmi_list).reshape(-1, 1),
-                                yearmonth_array,
-                                age_array,
-                                gender_array,
-                                race_array,
-                                hispanic_array,
-                                social_array,
-                                utilization_array,
-                                index_period_array,
-                                bmi_array,
-                                smoking_array,
-                                dx_array,
-                                med_array,
-                                vaccine_array,
-                                covidmed_array,
-                                outcome_covidmed_flag,
-                                outcome_covidmed_t2e,
-                                outcome_covidmed_baseline,
-                                outcome_flag,
-                                outcome_t2e,
-                                outcome_baseline,
-                                np.asarray(outcome_t2eall),
-                                # outcome_med_flag,
-                                # outcome_med_t2e,
-                                # outcome_med_baseline
-                                ))
-
-        df_data = pd.DataFrame(data_array, columns=column_names)
-        data_all_sites.append(df_data)
-
         print('df_data.shape:', df_data.shape)
-        del id_data
+        # del id_data
         print('Done site:', site)
         # end iterate sites
 
@@ -1347,42 +1384,17 @@ def build_query_1and2_matrix(args):
                                                    'incident no. in negative group'])
     # med_count_df.to_csv(args.output_med_info)
 
-    df_data_all_sites = pd.concat(data_all_sites)
-    print('df_data_all_sites.shape:', df_data_all_sites.shape)
+    # df_data_all_sites = pd.concat(data_all_sites)
+    # print('df_data_all_sites.shape:', df_data_all_sites.shape)
 
     # utils.check_and_mkdir(args.output_file_query12)
     # df_data_all_sites.to_csv(args.output_file_query12)
     # print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12))
 
-    # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
-    # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
-    df_bool = df_data_all_sites
-    selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
-    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
-    df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
-        (df_bool.loc[:, r'DX: Hypertension'] & (
-                df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
-    # Warning: the covid medication part is not boolean
-    # keep the value of baseline count and outcome count in the file, filter later depends on the application
-    # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
-    # can be done later
-
-    selected_cols = [x for x in df_bool.columns if
-                     (x.startswith('dx-base@') or
-                      x.startswith('med-out@') or x.startswith('med-base@') or
-                      x.startswith('covidmed-out@') or x.startswith('covidmed-base@'))]
-    df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
-
-    # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]
-    # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
-
-    utils.check_and_mkdir(args.output_file_query12_bool)
-    df_bool.to_csv(args.output_file_query12_bool)
-    print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_data_all_sites, df_bool
+    return df_bool
 
 
 def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
@@ -2236,7 +2248,7 @@ if __name__ == '__main__':
     #
     start_time = time.time()
     args = parse_args()
-    df_data, df_data_bool = build_query_1and2_matrix(args)
+    df_data_bool = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
