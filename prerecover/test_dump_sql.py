@@ -114,13 +114,6 @@ if __name__ == '__main__':
     # 2. get file size
     # 3. determine file compressed or not
     # 4. read and dump file by chunk
-    # cred_dict = {
-    #     "pg_username" : "wcm_analyst",
-    #     "pg_password" : "zy6ryZbz9yfuAL7X",
-    #     "pg_server" : "aurora-stack-auroradbcluster-1rbqp9aty8v4q.cluster-cbs1thv2ku8o.us-east-1.rds.amazonaws.com",
-    #     "pg_port" : '5432',
-    #     "pg_database" : 'recover',
-    # }
     with open('pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
         pg_username = cred_dict['pg_username']
@@ -129,7 +122,6 @@ if __name__ == '__main__':
         pg_port = cred_dict['pg_port']
         pg_database = cred_dict['pg_database']
         connect_string = f"postgresql+psycopg2://{pg_username}:{urllib.parse.quote_plus(pg_password)}@{pg_server}:{pg_port}/{pg_database}"
-
 
     try:
         table_name = 'columbia.lab_result_cm'

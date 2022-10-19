@@ -1,5 +1,4 @@
 import sys
-
 # for linux env.
 sys.path.insert(0, '..')
 import os
@@ -17,6 +16,7 @@ import urllib
 import time
 from sqlalchemy import create_engine
 import  json
+from datetime import  datetime
 
 print = functools.partial(print, flush=True)
 
@@ -111,10 +111,13 @@ if __name__ == '__main__':
                 error_msg.append(site + '-' + table + '-' + col + str(e))
         print('Done', site)
 
+    now = datetime.now()
+    date_time = now.strftime("%Y-%m-%d")  # now.strftime("%m/%d/%Y, %H:%M:%S")
+
     pd_results = pd.concat(results, ignore_index=True)
     df_combined = pd.merge(pd_results, df_site.loc[df_site['selected'] == 1], left_on='site', right_on='Schema name', how='left')
-    df_combined.to_csv('site_table_date-V2.csv')
+    df_combined.to_csv('output/db_info/site_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)
-    pd_error.to_csv('site_table_date_ErrorMsg-V2.csv')
+    pd_error.to_csv('output/db_info/site_table_date_ErrorMsg-{}.csv'.format(date_time))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
