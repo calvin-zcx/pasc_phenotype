@@ -544,7 +544,6 @@ def rxnorm_atc_from_NIH_UMLS():
     return rxnorm_atcset, atc_rxnormset, atc3_index, df
 
 
-
 def zip_aid_mapping():
     # To get code mapping from rxnorm_cui to ATC.
     # Data source: https://www.neighborhoodatlas.medicine.wisc.edu/download
@@ -601,6 +600,73 @@ def zip_aid_mapping():
     zip5_df = pd.concat(zip5_df)
     print('zip5_df.shape', zip5_df.shape)
     zip5_df.to_csv(r'../data/mapping/zip5_for_debug.csv')
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return zip_adi, zip5_df
+
+
+def zip_adi_mapping_2020():
+    # To get code mapping from rxnorm_cui to ATC.
+    # Data source: https://www.neighborhoodatlas.medicine.wisc.edu/download
+    # 52 states files
+    # details in 2019 ADI_9 Digit Zip Code_v3.1_ReadMe
+    start_time = time.time()
+    # readme_df = pd.read_csv(r'../data/mapping/ADI/2019_ADI_9_V3.1_readme_statistics_check.csv')
+    readme_df = pd.read_csv(r'../data/mapping/ADI/2020/2020 ADI_9 Digit Zip Code_v3.2_ReadMe.csv')
+
+    print('readme_df.shape:', readme_df.shape)
+    ## df2 = pd.read_csv(r'../data/mapping/ADI/wcm_zip_state.csv')
+    ## readme_df['State_abr'] = readme_df['State_abr'].apply(str.upper)
+    ## df_combined = pd.merge(readme_df, df2, left_on='State_abr', right_on='address_state', how='left')
+    ## df_combined.to_csv(r'../data/mapping/ADI/2019_ADI_9_V3.1_readme_statistics_check_v2.csv')
+    zip_adi = {}
+    zip5_df = []
+    for index, row in tqdm(readme_df.iterrows(), total=len(readme_df)):
+        state = row['State_abr']  # row[1]
+        name = row['State_full']  # row[2]
+        n_records_adi = row['#_Records']  # row[3]
+        # n_records_wcm = row[4]
+        # input_file = r'../data/mapping/ADI/{}_2019_ADI_9 Digit Zip Code_v3.1.txt'.format(state)
+        input_file = r'../data/mapping/ADI/2020/{}_2020_ADI_9 Digit Zip Code_v3.2.csv'.format(state.upper())
+
+        # specified_dtype = {'Unnamed: 0': int, 'X': int, 'TYPE': str, 'ZIPID': str, 'FIPS.x': str,
+        #               'GISJOIN': str, 'FIPS.y': str, 'ADI_NATRANK': int, 'ADI_STATERNK': int}
+        if os.path.exists(input_file):
+            df = pd.read_csv(input_file, dtype=str)
+            print(index, input_file, 'df.shape:', df.shape, 'n_records_adi:',
+                  n_records_adi, )  # 'n_records_wcm:', n_records_wcm)
+            if df.shape[0] != n_records_adi:
+                print('ERROR in ', input_file, 'df.shape[0] {} != n_records_adi {}'.format(df.shape[0], n_records_adi))
+            df['nation_rank'] = pd.to_numeric(df['ADI_NATRANK'], errors='coerce')
+            df['state_rank'] = pd.to_numeric(df['ADI_STATERANK'], errors='coerce')
+            df['zip5'] = df["ZIP_4"].apply(lambda x: x[:5] if pd.notna(x) else np.nan)  # ZIPID --> ZIP_4  :6 -->:5 because preivous version starts with G
+            zip5_scores = df.groupby(["zip5"])[['nation_rank', "state_rank"]].median().reset_index()
+            print('......zip5_scores.shape:', zip5_scores.shape)
+
+            zip9_list = df[['ZIP_4', 'nation_rank', 'state_rank']].values.tolist()  # ZIPID --> ZIP_4
+            zip5_list = zip5_scores[['zip5', 'nation_rank', 'state_rank']].values.tolist()
+            # save zip5 for debugging
+            zip5_df.append(zip5_scores[['zip5', 'nation_rank', 'state_rank']])
+            # n_null_zip9 = n_null_zip5 = 0
+            # zip_adi.update({x[0][1:]: x[1:] for x in zip9_list if pd.notna(x[0])})
+            # print('......len(zip_adi) after adding zip9:', len(zip_adi))
+            # zip_adi.update({x[0][1:]: x[1:] for x in zip5_list if pd.notna(x[0])})
+            zip_adi.update({x[0]: x[1:] for x in zip9_list if pd.notna(x[0])})
+            print('......len(zip_adi) after adding zip9:', len(zip_adi))
+            zip_adi.update({x[0]: x[1:] for x in zip5_list if pd.notna(x[0])})
+            print('......len(zip_adi) after adding zip5:', len(zip_adi))
+            print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+        else:
+            print(index, input_file, 'NOT EXIST!')
+
+    output_file = r'../data/mapping/zip9or5_adi_mapping_2020.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(zip_adi, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    # double check zip5
+    zip5_df = pd.concat(zip5_df)
+    print('zip5_df.shape', zip5_df.shape)
+    zip5_df.to_csv(r'../data/mapping/zip5_for_debug_2020.csv')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return zip_adi, zip5_df
 
@@ -987,7 +1053,7 @@ if __name__ == '__main__':
     # ndc_rx = build_NDC_to_rxnorm()
 
     # 3. Build zip5/9 to adi mapping
-    # zip_adi, zip5_df = zip_aid_mapping()
+    zip_adi, zip5_df = zip_adi_mapping_2020()
 
     # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
