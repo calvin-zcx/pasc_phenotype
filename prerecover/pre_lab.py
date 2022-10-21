@@ -55,7 +55,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     table_name = args.input_file
     table_size = get_table_size(connect_string, table_name)
     table_rows = get_table_rows(connect_string, table_name)
-    print('Read sql table:', table_name, '| Table size: {:.2f} GB'.format(table_size), '| No. of rows:', table_rows)
+    print('Read sql table:', table_name, '| Table size:', table_size, '| No. of rows:', table_rows)
     n_chunk = int(np.ceil(table_rows / chunksize))
     sql_query = """select *
                         from {}
