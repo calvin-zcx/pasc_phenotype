@@ -57,8 +57,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     table_rows = get_table_rows(connect_string, table_name)
     print('Read sql table:', table_name, '| Table size:', table_size, '| No. of rows:', table_rows)
     n_chunk = int(np.ceil(table_rows / chunksize))
-    sql_query = """select *
-                        from {}
+    sql_query = """select * from {};
                     """.format(table_name)
 
     print('read:', sql_query)
