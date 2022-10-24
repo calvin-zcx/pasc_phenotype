@@ -65,6 +65,7 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     connection = engine.connect().execution_options(
         stream_results=True, max_row_buffer=chunksize
     )
+
     dfs = []  # holds data chunks
     dfs_covid = []
     cnt = Counter([])
@@ -76,7 +77,6 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
     patid_covid_set = set([])
 
     for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
-    # for chunk in sasds:  # , meta
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
