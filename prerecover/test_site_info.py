@@ -1,4 +1,5 @@
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import os
@@ -15,8 +16,8 @@ import psycopg2
 import urllib
 import time
 from sqlalchemy import create_engine
-import  json
-from datetime import  datetime
+import json
+from datetime import datetime
 
 print = functools.partial(print, flush=True)
 
@@ -46,7 +47,7 @@ if __name__ == '__main__':
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
 
     start_time = time.time()
-    with open('pg_credential.json') as _ff_:
+    with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
         pg_username = cred_dict['pg_username']
         pg_password = cred_dict['pg_password']
@@ -54,7 +55,6 @@ if __name__ == '__main__':
         pg_port = cred_dict['pg_port']
         pg_database = cred_dict['pg_database']
         connect_string = f"postgresql+psycopg2://{pg_username}:{urllib.parse.quote_plus(pg_password)}@{pg_server}:{pg_port}/{pg_database}"
-
 
     try:
         # conn = psycopg2.connect(user=pg_username,
@@ -67,7 +67,6 @@ if __name__ == '__main__':
     except (Exception, psycopg2.Error) as error:
         print("Error while connecting to PostgreSQL", error)
 
-
     # select target table?
     table_list = ['condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
                   'encounter', 'enrollment', 'harvest', 'hash_token', 'immunization', 'lab_history', 'lab_result_cm',
@@ -75,7 +74,7 @@ if __name__ == '__main__':
                   'procedures', 'provider', 'vital']
     # no date colum: death_cause, 'harvest', 'hash_token', 'lab_history','provider',
     table_dict = {'condition': 'report_date', 'covid_elements': 'admit_date', 'death': 'death_date',
-                  'demographic':'birth_date',
+                  'demographic': 'birth_date',
                   'diagnosis': 'admit_date', 'dispensing': 'dispense_date',
                   'encounter': 'admit_date', 'enrollment': 'enr_start_date',
                   'immunization': 'vx_record_date', 'lab_result_cm': 'lab_order_date',
@@ -115,7 +114,8 @@ if __name__ == '__main__':
     date_time = now.strftime("%Y-%m-%d")  # now.strftime("%m/%d/%Y, %H:%M:%S")
 
     pd_results = pd.concat(results, ignore_index=True)
-    df_combined = pd.merge(pd_results, df_site.loc[df_site['selected'] == 1], left_on='site', right_on='Schema name', how='left')
+    df_combined = pd.merge(pd_results, df_site.loc[df_site['selected'] == 1], left_on='site', right_on='Schema name',
+                           how='left')
     df_combined.to_csv('output/db_info/site_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)

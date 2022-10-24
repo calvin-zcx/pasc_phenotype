@@ -4,7 +4,7 @@
 #python pre_diagnosis.py --dataset wcm 2>&1 | tee  log/pre_diagnosis_wcm.txt
 #python pre_medication.py --dataset wcm 2>&1 | tee  log/pre_medication_wcm.txt
 #python pre_encounter.py --dataset wcm 2>&1 | tee  log/pre_encounter_wcm.txt
-python pre_procedure.py --dataset wcm 2>&1 | tee  log/pre_procedure_wcm.txt
+#python pre_procedure.py --dataset wcm 2>&1 | tee  log/pre_procedure_wcm.txt
 python pre_immun.py --dataset wcm 2>&1 | tee  log/pre_immun_wcm.txt
 python pre_death.py --dataset wcm 2>&1 | tee  log/pre_death_wcm.txt
  python pre_vital.py --dataset wcm 2>&1 | tee  log/pre_vital_wcm.txt
