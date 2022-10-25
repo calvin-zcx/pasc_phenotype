@@ -1,7 +1,7 @@
-python pre_lab.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
-python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
-python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
-python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
+#python pre_lab.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
+#python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+#python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
+#python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
 python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
 python pre_encounter.py --dataset nyu 2>&1 | tee  log/pre_encounter_nyu.txt
 python pre_procedure.py --dataset nyu 2>&1 | tee  log/pre_procedure_nyu.txt
