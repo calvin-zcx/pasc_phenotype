@@ -18,7 +18,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='vumc', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -86,6 +86,10 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     print('Unique patid of PCR/Antigen test:', len(df_covid['PATID'].unique()))
     print('Time range of PCR/Antigen Covid Test:', df_covid["RESULT_DATE"].describe(datetime_is_numeric=True))
 
+    # check covid test result value:
+    print(df_covid['RESULT_QUAL'].value_counts(dropna=False))
+    print(df_covid['RAW_RESULT'].value_counts(dropna=False))
+
     id_lab = defaultdict(list)
     n_no_dx = 0
     n_no_date = 0
@@ -99,11 +103,19 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
         lab_date = row["RESULT_DATE"]
         specimen_date = row['SPECIMEN_DATE']
         lab_code = row['LAB_LOINC']
-        result_label = row['RESULT_QUAL'].upper()
+        result_label = row['RESULT_QUAL']  #.upper()  # need to impute this, e.g., vumc
         enc_id = row['ENCOUNTERID']
 
         if pd.isna(lab_code):
             n_no_dx += 1
+
+        # 2022-10-25, case beyond insight, e.g. vumc
+        if pd.isna(result_label):
+            result_label = row['RAW_RESULT']
+        if pd.isna(result_label):
+            result_label = 'NI'
+        if isinstance(result_label, str):
+            result_label = result_label.strip().upper()
 
         # If there is no lab_date, using specimen_date, if also no specimen date, not recording
         if pd.isna(lab_date):
