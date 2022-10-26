@@ -531,7 +531,7 @@ def build_incident_pasc_from_all_positive_withAllTimeRecords(data_file, broad=Tr
     return df, df_pasc_info
 
 
-def build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=True, nthreshold=1, dump=False):
+def build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=True, nthreshold=30, dump=False):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', data_file)
@@ -643,7 +643,7 @@ def build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=True, nth
                 all_time = np.array(all_time)
                 t2e_min = all_time.min()
                 t2e_max = all_time.max()
-                if t2e_max - t2e_min >= 30:
+                if t2e_max - t2e_min >= nthreshold:
                     df.loc[index, 'pasc-flag-2dx30days'] = 1
                     if np.isnan(t2e):
                         t2e = t2e_min
@@ -759,7 +759,7 @@ if __name__ == '__main__':
     data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_boolbase-nout_AnyPASC-withAllDays_ALL.csv'
     # df, df_pasc_info = build_incident_pasc_from_all_positive_withAllTimeRecords(data_file, broad=False, nthreshold=1)
 
-    df, df_pasc_info = build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=False, nthreshold=1)
+    df, df_pasc_info = build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=False, nthreshold=1) # nthreshold = 30
 
     print('Process done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
@@ -804,17 +804,17 @@ if __name__ == '__main__':
     t2e_outpatient = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), 'pasc-t2e-2dx30days']
     t2e_inpatient = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), 'pasc-t2e-2dx30days']
 
-    fig_plot_t2e(t2e_all,
-                 'Overall',
-                 'output/t2e_figure_withinorgan/' + 'narrow-Overall.png')
-
-    fig_plot_t2e(t2e_outpatient,
-                 'Not-Hospitalized',
-                 'output/t2e_figure_withinorgan/' + 'narrow-Not-Hospitalized.png')
-
-    fig_plot_t2e(t2e_inpatient,
-                 'Hospitalized',
-                 'output/t2e_figure_withinorgan/' + 'narrow-Hospitalized.png')
+    # fig_plot_t2e(t2e_all,
+    #              'Overall',
+    #              'output/t2e_figure_withinorgan/' + 'narrow-Overall.png')
+    #
+    # fig_plot_t2e(t2e_outpatient,
+    #              'Not-Hospitalized',
+    #              'output/t2e_figure_withinorgan/' + 'narrow-Not-Hospitalized.png')
+    #
+    # fig_plot_t2e(t2e_inpatient,
+    #              'Hospitalized',
+    #              'output/t2e_figure_withinorgan/' + 'narrow-Hospitalized.png')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     print('Done')
