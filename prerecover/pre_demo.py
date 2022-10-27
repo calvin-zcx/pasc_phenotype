@@ -15,7 +15,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='ufh', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.demographic'.format(args.dataset)
@@ -94,10 +94,49 @@ def read_address(input_file):
         else:
             adi = [np.nan, np.nan]
 
-        id_zip[patid] = [zipcode, state, city] + adi
+        # 2022-10-26 only update notna zipcode
+        if pd.notna(zipcode):
+            id_zip[patid] = [zipcode, state, city] + adi
 
     print('df.shape:', df.shape, 'len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip,
           'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5, 'n_has_adi:', n_has_adi)
+
+    # 2022-10-26 enrich id zip by demographic table in some sites
+    table_name = r'{}.demographic'.format(args.dataset)
+    print('Read sql table:', table_name)
+    df_dem = load_whole_table_from_sql(table_name)
+    print('df_dem.shape', df_dem.shape, 'df_dem.columns:', df_dem.columns)
+    if ('ZIPCODE' in df_dem.columns) :
+        zcol = 'ZIPCODE'
+    elif ('ZIP_CODE' in df_dem.columns):
+        zcol = 'ZIP_CODE'
+    else:
+        zcol = ''
+
+    n_add_zip_from_demo = 0
+    if zcol:
+        print(zcol, ' in df_dem.columns, begin enrich')
+        for index, row in tqdm(df_dem.iterrows(), total=len(df_dem)):
+            patid = row['PATID']
+            zipcode = row[zcol]
+            if isinstance(zipcode, str):
+                zipcode = zipcode.strip().replace('-', '')
+                if pd.notna(zipcode) and (zipcode in zip_adi):
+                    adi = zip_adi[zipcode]
+                else:
+                    adi = [np.nan, np.nan]
+
+                if patid not in id_zip:
+                    id_zip[patid] = [zipcode, np.nan, np.nan] + adi
+                    n_add_zip_from_demo += 1
+                else:
+                    rec = id_zip[patid]
+                    if pd.isna(rec[0]):
+                        id_zip[patid] = [zipcode, rec[1], rec[2]] + adi
+                        n_add_zip_from_demo +=1
+
+    print('n_add_zip_from_demo:', n_add_zip_from_demo)
+    print('len(id_zip):', len(id_zip))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_zip, df
