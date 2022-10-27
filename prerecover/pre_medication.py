@@ -109,7 +109,11 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
             rx_end_date = row['RX_END_DATE']
             rxnorm = row['RXNORM_CUI']
             rx_days = row['RX_DAYS_SUPPLY']
-            raw_rxnorm = row['RAW_RXNORM_CUI']
+            if 'RAW_RXNORM_CUI' in row.index:
+                raw_rxnorm = row['RAW_RXNORM_CUI']
+            else:
+                raw_rxnorm = np.nan
+
             encid = row['ENCOUNTERID']  # 2022-10-23 ADD encounter id to drug structure
 
             # start_date
@@ -261,7 +265,8 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
             rx_end_date = row['MEDADMIN_STOP_DATE']
             med_type = row['MEDADMIN_TYPE']
             rxnorm = row['MEDADMIN_CODE']
-            names = row['RAW_MEDADMIN_MED_NAME']
+            if 'RAW_MEDADMIN_MED_NAME' in row.index:
+                names = row['RAW_MEDADMIN_MED_NAME']
             encid = row['ENCOUNTERID']  # 2022-10-23 ADD encounter id to drug structure
 
             # start_date
