@@ -18,7 +18,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='pitt', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -88,7 +88,8 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
 
     # check covid test result value:
     print(df_covid['RESULT_QUAL'].value_counts(dropna=False))
-    print(df_covid['RAW_RESULT'].value_counts(dropna=False))
+    if 'RAW_RESULT' in df_covid.columns:
+        print(df_covid['RAW_RESULT'].value_counts(dropna=False))
 
     id_lab = defaultdict(list)
     n_no_dx = 0
@@ -111,7 +112,8 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
 
         # 2022-10-25, case beyond insight, e.g. vumc
         if pd.isna(result_label):
-            result_label = row['RAW_RESULT']
+            if 'RAW_RESULT' in row.index:
+                result_label = row['RAW_RESULT']
         if pd.isna(result_label):
             result_label = 'NI'
         if isinstance(result_label, str):

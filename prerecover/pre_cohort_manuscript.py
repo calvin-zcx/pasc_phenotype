@@ -586,6 +586,20 @@ def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
     return id_indexrecord, info
 
 
+def _clean_covid_pcr_label(x):
+    if isinstance(x, str):
+        x = x.strip().upper()
+        if x.startswith(('NOT DETECTED', 'NEG', 'NEGATIVE', 'UNDETECTED')):
+            x = 'NEGATIVE'
+        elif x.startswith(('DETECTED', 'POSITIVE', 'POS')):
+            x = 'POSITIVE'
+        else:
+            x = 'NI'
+    else:
+        x = 'NI'
+    return x
+
+
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
