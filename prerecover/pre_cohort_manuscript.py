@@ -634,8 +634,10 @@ def integrate_data_and_apply_eligibility(args):
             n_with_ni += 1
 
     print('Step1: Initial Included cohorts from\nlen(id_lab):', len(id_lab))
-    print('Not using NI due to potential positive leaking, thus Total included:\n'
-          'len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg, 'n_with_ni', n_with_ni)
+    print('Not using NI due to potential positive leaking, thus Total included:\n',
+          'len(id_lab):', len(id_lab),
+          'len(id_indexrecord):', len(id_indexrecord),
+          'n_pos:', n_pos, 'n_neg:', n_neg, 'n_with_ni', n_with_ni)
     # Can calculate more statistics
 
     info = {'before N': len(id_lab), 'before N Pos': n_pos, 'before N Neg': n_neg, 'exclude N': n_with_ni,
