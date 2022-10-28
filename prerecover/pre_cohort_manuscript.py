@@ -21,7 +21,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='pitt', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
@@ -589,7 +589,7 @@ def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
 def _clean_covid_pcr_label(x):
     if isinstance(x, str):
         x = x.strip().upper()
-        if x.startswith(('NOT DETECTED', 'NEG', 'NEGATIVE', 'UNDETECTED')):
+        if x.startswith(('NOT DETECTED', 'NEG', 'NOT', 'NEGATIVE', 'UNDETECTED')):
             x = 'NEGATIVE'
         elif x.startswith(('DETECTED', 'POSITIVE', 'POS')):
             x = 'POSITIVE'
@@ -614,7 +614,9 @@ def integrate_data_and_apply_eligibility(args):
     n_pos = n_neg = 0
     n_with_ni = 0
     for i, (pid, row) in enumerate(id_lab.items()):
-        v_lables = [x[2].upper() for x in row]
+        # v_lables = [x[2].upper() for x in row]
+        v_lables = [_clean_covid_pcr_label(x[2]) for x in row]
+
         if 'POSITIVE' in v_lables:
             n_pos += 1
             position = v_lables.index('POSITIVE')  # first positive
