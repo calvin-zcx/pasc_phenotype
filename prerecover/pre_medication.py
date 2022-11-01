@@ -13,7 +13,7 @@ from misc.utilsql import *
 
 print = functools.partial(print, flush=True)
 from collections import defaultdict
-
+from datetime import datetime, date
 
 # 1. preprocess prescribing file, support supply day calculation and imputation
 # 2. preprocess med_admin file if necessary, support supply day calculation and imputation
@@ -22,7 +22,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess medication table')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='ochsner', help='site dataset')
     args = parser.parse_args()
 
     args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
@@ -35,6 +35,18 @@ def parse_args():
 
     print('args:', args)
     return args
+
+
+def _clean_date_str(x):
+    if isinstance(x, str):
+        x = pd.to_datetime(x).date()
+    elif isinstance(x, pd.Timestamp):
+        x = x.date()
+    elif isinstance(x, date):
+        x = x
+    else:
+        x = np.nan
+    return x
 
 
 def read_prescribing(input_file, output_file='', selected_patients={}):
@@ -104,12 +116,16 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
 
         for index, row in chunk.iterrows():
             patid = row['PATID']
-            rx_order_date = row['RX_ORDER_DATE']
-            rx_start_date = row['RX_START_DATE']
-            rx_end_date = row['RX_END_DATE']
+            rx_order_date = _clean_date_str(row['RX_ORDER_DATE'])
+            rx_start_date = _clean_date_str(row['RX_START_DATE'])
+            rx_end_date = _clean_date_str(row['RX_END_DATE'])
             rxnorm = row['RXNORM_CUI']
             rx_days = row['RX_DAYS_SUPPLY']
-            raw_rxnorm = row['RAW_RXNORM_CUI']
+            if 'RAW_RXNORM_CUI' in row.index:
+                raw_rxnorm = row['RAW_RXNORM_CUI']
+            else:
+                raw_rxnorm = np.nan
+
             encid = row['ENCOUNTERID']  # 2022-10-23 ADD encounter id to drug structure
 
             # start_date
@@ -130,7 +146,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
                     rxnorm = np.nan
 
             # days supply
-            if pd.notna(rx_days):
+            if pd.notna(rx_days) and rx_days:
                 days = int(float(rx_days))
             elif pd.notna(start_date) and pd.notna(rx_end_date):
                 days = (rx_end_date - start_date).days + 1
@@ -257,11 +273,12 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
 
         for index, row in chunk.iterrows():
             patid = row['PATID']
-            rx_start_date = row['MEDADMIN_START_DATE']
-            rx_end_date = row['MEDADMIN_STOP_DATE']
+            rx_start_date = _clean_date_str(row['MEDADMIN_START_DATE'])
+            rx_end_date = _clean_date_str(row['MEDADMIN_STOP_DATE'])
             med_type = row['MEDADMIN_TYPE']
             rxnorm = row['MEDADMIN_CODE']
-            names = row['RAW_MEDADMIN_MED_NAME']
+            if 'RAW_MEDADMIN_MED_NAME' in row.index:
+                names = row['RAW_MEDADMIN_MED_NAME']
             encid = row['ENCOUNTERID']  # 2022-10-23 ADD encounter id to drug structure
 
             # start_date

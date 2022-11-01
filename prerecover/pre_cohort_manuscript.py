@@ -21,7 +21,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='pitt', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
@@ -586,6 +586,20 @@ def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
     return id_indexrecord, info
 
 
+def _clean_covid_pcr_label(x):
+    if isinstance(x, str):
+        x = x.strip().upper()
+        if x.startswith(('NOT DETECTED', 'NEG', 'NOT', 'NEGATIVE', 'UNDETECTED')):
+            x = 'NEGATIVE'
+        elif x.startswith(('DETECTED', 'POSITIVE', 'POS')):
+            x = 'POSITIVE'
+        else:
+            x = 'NI'
+    else:
+        x = 'NI'
+    return x
+
+
 def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
@@ -600,7 +614,9 @@ def integrate_data_and_apply_eligibility(args):
     n_pos = n_neg = 0
     n_with_ni = 0
     for i, (pid, row) in enumerate(id_lab.items()):
-        v_lables = [x[2].upper() for x in row]
+        # v_lables = [x[2].upper() for x in row]
+        v_lables = [_clean_covid_pcr_label(x[2]) for x in row]
+
         if 'POSITIVE' in v_lables:
             n_pos += 1
             position = v_lables.index('POSITIVE')  # first positive
@@ -618,8 +634,10 @@ def integrate_data_and_apply_eligibility(args):
             n_with_ni += 1
 
     print('Step1: Initial Included cohorts from\nlen(id_lab):', len(id_lab))
-    print('Not using NI due to potential positive leaking, thus Total included:\n'
-          'len(id_indexrecord):', len(id_indexrecord), 'n_pos:', n_pos, 'n_neg:', n_neg, 'n_with_ni', n_with_ni)
+    print('Not using NI due to potential positive leaking, thus Total included:\n',
+          'len(id_lab):', len(id_lab),
+          'len(id_indexrecord):', len(id_indexrecord),
+          'n_pos:', n_pos, 'n_neg:', n_neg, 'n_with_ni', n_with_ni)
     # Can calculate more statistics
 
     info = {'before N': len(id_lab), 'before N Pos': n_pos, 'before N Neg': n_neg, 'exclude N': n_with_ni,
