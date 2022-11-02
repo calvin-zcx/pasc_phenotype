@@ -227,7 +227,7 @@ def build_incident_pasc_from_all_positive(data_file, broad=True, nthreshold=1, d
     return df, df_pasc_info
 
 
-def build_incident_pasc_from_all_positive(data_file, broad=True, nthreshold=1, dump=False):
+def build_incident_pasc_from_all_positive_30days(data_file, broad=True, nthreshold=1, dump=False):
     start_time = time.time()
     print('In build_data_from_all_positive')
     print('Step1: Load Covid positive data  file:', data_file)
@@ -456,6 +456,8 @@ def build_incident_pasc_from_all_positive_withAllTimeRecords(data_file, broad=Tr
     # define PASC as any 2, 30 days apart
     selected_pasc_list_col = ['flag@' + x for x in selected_pasc_list]
     df['pasc-flag-2dx30days'] = 0
+    df['pasc-t2e-2dx30days'] = np.nan
+
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         _n_pasc = rows[selected_pasc_list_col].sum()
         pasc_flag_cols = list(rows[selected_pasc_list_col][rows[selected_pasc_list_col] > 0].index)
@@ -469,8 +471,9 @@ def build_incident_pasc_from_all_positive_withAllTimeRecords(data_file, broad=Tr
             all_time = np.array(all_time)
             t2e_min = all_time.min()
             t2e_max = all_time.max()
-            if t2e_max - t2e_min >= 30:
+            if t2e_max - t2e_min >= nthreshold:
                 df.loc[index, 'pasc-flag-2dx30days'] = 1
+                df.loc[index, 'pasc-t2e-2dx30days'] = t2e_min
 
     # else:
     #     # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
@@ -756,10 +759,18 @@ if __name__ == '__main__':
     # -Pre step2: build Covid Positive data and dump for future use
     # df, df_pasc_info = build_incident_pasc_from_all_positive(args.data_file, broad=False, nthreshold=1)
 
+    # new version
     data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_boolbase-nout_AnyPASC-withAllDays_ALL.csv'
-    # df, df_pasc_info = build_incident_pasc_from_all_positive_withAllTimeRecords(data_file, broad=False, nthreshold=1)
+    broad = False
+    ndaysep = 1
+    outfolder = 't2e_figure_withinorgan'  # 't2e_figure_any2dx'  # 't2e_figure_withinorgan'
+    # df, df_pasc_info = build_incident_pasc_from_all_positive_withAllTimeRecords(data_file,
+    #                                                                             broad=broad,
+    #                                                                             nthreshold=ndaysep)
+    df, df_pasc_info = build_incident_pasc_from_all_positive_withinOrgan(data_file,
+                                                                         broad=broad,
+                                                                         nthreshold=ndaysep)  # nthreshold = 30
 
-    df, df_pasc_info = build_incident_pasc_from_all_positive_withinOrgan(data_file, broad=False, nthreshold=1) # nthreshold = 30
 
     print('Process done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
@@ -804,17 +815,20 @@ if __name__ == '__main__':
     t2e_outpatient = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), 'pasc-t2e-2dx30days']
     t2e_inpatient = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), 'pasc-t2e-2dx30days']
 
-    # fig_plot_t2e(t2e_all,
-    #              'Overall',
-    #              'output/t2e_figure_withinorgan/' + 'narrow-Overall.png')
-    #
-    # fig_plot_t2e(t2e_outpatient,
-    #              'Not-Hospitalized',
-    #              'output/t2e_figure_withinorgan/' + 'narrow-Not-Hospitalized.png')
-    #
-    # fig_plot_t2e(t2e_inpatient,
-    #              'Hospitalized',
-    #              'output/t2e_figure_withinorgan/' + 'narrow-Hospitalized.png')
+    fig_plot_t2e(t2e_all,
+                 'Overall',
+                 'output/{}/'.format(outfolder) + '{}-{}-Overall.png'.format('broad' if broad else 'narrow',
+                                                                             ndaysep))
+
+    fig_plot_t2e(t2e_outpatient,
+                 'Not-Hospitalized',
+                 'output/{}/'.format(outfolder) + '{}-{}-Not-Hospitalized.png'.format('broad' if broad else 'narrow',
+                                                                                      ndaysep))
+
+    fig_plot_t2e(t2e_inpatient,
+                 'Hospitalized',
+                 'output/{}/'.format(outfolder) + '{}-{}-Hospitalized.png'.format('broad' if broad else 'narrow',
+                                                                                  ndaysep))
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     print('Done')
