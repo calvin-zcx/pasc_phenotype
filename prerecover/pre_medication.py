@@ -39,7 +39,7 @@ def parse_args():
 
 def _clean_date_str(x):
     if isinstance(x, str):
-        x = pd.to_datetime(x).date()
+        x = pd.to_datetime(x, errors='coerce').date()
     elif isinstance(x, pd.Timestamp):
         x = x.date()
     elif isinstance(x, date):
