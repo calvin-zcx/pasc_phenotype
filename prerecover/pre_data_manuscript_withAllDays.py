@@ -29,31 +29,32 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid',
                                               'covid_4screen', 'covid_4screen_Covid+',
-                                              'covid_4manuscript', 'covid_4manuNegNoCovid', 'covid_4manuNegNoCovidV2'],
+                                              'covid_4manuscript', 'covid_4manuNegNoCovid',
+                                              'covid_4manuNegNoCovidV2'],
                         default='covid_4manuNegNoCovidV2', help='cohorts')
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
 
-
     args = parser.parse_args()
 
     # args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_cnt_AnyPASC-withAllDays_{}.csv'.format(
     #     args.cohorts,
     #     args.dataset)
-    args.output_file_query12_bool = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_boolbase-nout_AnyPASC-withAllDays_{}.csv'.format(
-        args.cohorts,
-        args.dataset)
-
-    # args.output_med_info = r'../data/V15_COVID19/output/character/info_medication_cohorts_{}_{}-V2_2dx{}daysAnyPASC-Cross.csv'.format(
+    # args.output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-withAllDays_{}.csv'.format(
+    #     args.dataset,
     #     args.cohorts,
-    #     args.ndays,
+    #     args.dataset)
+
+    # args.output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
+    #     args.dataset,
+    #     args.cohorts,
     #     args.dataset)
     #
-    # args.output_dx_info = r'../data/V15_COVID19/output/character/info_dx_cohorts_{}_{}-V2_2dx{}daysAnyPASC-Cross.csv'.format(
+    # args.output_dx_info = r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(
+    #     args.dataset,
     #     args.cohorts,
-    #     args.ndays,
     #     args.dataset)
 
     print('args:', args)
@@ -217,14 +218,19 @@ def _encoding_yearmonth(index_date):
     "August 2020", "September 2020", "October 2020", "November 2020", "December 2020",
     "January 2021", "February 2021", "March 2021", "April 2021", "May 2021",
     "June 2021", "July 2021", "August 2021", "September 2021", "October 2021",
-    "November 2021", "December 2021", "January 2022",]
+    "November 2021", "December 2021",
+    "January 2022", "February 2022", "March 2022", "April 2022", "May 2022",
+    "June 2022", "July 2022", "August 2022", "September 2022", ]
     :param index_date:
     :return:
     """
-    encoding = np.zeros((1, 23), dtype='int')
+    encoding = np.zeros((1, 31), dtype='int')
     year = index_date.year
     month = index_date.month
     pos = (month - 3) + (year - 2020) * 12
+    if pos >= encoding.shape[1]:
+        print('In _encoding_yearmonth out of bounds, pos:', pos)
+        pos = encoding.shape[1] - 1
     encoding[0, pos] = 1
 
     return encoding
@@ -396,13 +402,13 @@ def _encoding_index_period(index_date):
     # datetime.datetime(2021, 3, 1, 0, 0),
     # datetime.datetime(2021, 7, 1, 0, 0),
     # datetime.datetime(2021, 12, 30, 0, 0)
-    if index_date < datetime.datetime(2020, 7, 1, 0, 0):
+    if pd.to_datetime(index_date) < datetime.datetime(2020, 7, 1, 0, 0):
         encoding[0, 0] = 1
-    elif index_date < datetime.datetime(2020, 11, 1, 0, 0):
+    elif pd.to_datetime(index_date) < datetime.datetime(2020, 11, 1, 0, 0):
         encoding[0, 1] = 1
-    elif index_date < datetime.datetime(2021, 3, 1, 0, 0):
+    elif pd.to_datetime(index_date) < datetime.datetime(2021, 3, 1, 0, 0):
         encoding[0, 2] = 1
-    elif index_date < datetime.datetime(2021, 7, 1, 0, 0):
+    elif pd.to_datetime(index_date) < datetime.datetime(2021, 7, 1, 0, 0):
         encoding[0, 3] = 1
     else:
         encoding[0, 4] = 1
@@ -462,7 +468,7 @@ def _encoding_med(med_list, med_column_names, comorbidity_codes, index_date):
 
     encoding = np.zeros((1, len(med_column_names)), dtype='int')
     for records in med_list:
-        med_date, rxnorm, supply_days = records
+        med_date, rxnorm, supply_days, encid, medtable = records
         if ecs._is_in_comorbidity_period(med_date, index_date):
             for pos, col_name in enumerate(med_column_names):
                 if col_name in comorbidity_codes:
@@ -483,7 +489,7 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
     outcome_baseline = np.zeros((1, len(covidmed_column_names)), dtype='int')
 
     for records in med_list:
-        med_date, rxnorm, supply_days = records
+        med_date, rxnorm, supply_days, encid, medtable = records
         if ecs._is_in_covid_medication(med_date, index_date):
             for pos, col_name in enumerate(covidmed_column_names):
                 if col_name in covidmed_codes:
@@ -797,7 +803,7 @@ def _encoding_outcome_med_rxnorm_ingredient(med_list, rxnorm_ing, ing_encoding, 
 
     _no_mapping_rxrnom = set([])
     for records in med_list:
-        med_date, rxnorm, supply_days = records
+        med_date, rxnorm, supply_days, encid, medtable = records
         ing_set = set(rxnorm_ing.get(rxnorm, []))
 
         if len(ing_set) > 0:
@@ -856,7 +862,7 @@ def _encoding_outcome_med_atc(med_list, rxnorm_ing, rxnorm_atc, atcl_encoding, i
 
     _no_mapping_rxrnom = set([])
     for records in med_list:
-        med_date, rxnorm, supply_days = records
+        med_date, rxnorm, supply_days, encid, medtable = records
         atcl_set = _rxnorm_to_atc(rxnorm, rxnorm_ing, rxnorm_atc, atc_level)
 
         if len(atcl_set) > 0:
@@ -956,12 +962,12 @@ def build_query_1and2_matrix(args):
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
-    if args.dataset == 'ALL':
-        sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
-    else:
-        sites = [args.dataset, ]
-
-    data_all_sites = []
+    # if args.dataset == 'ALL':
+    #     sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
+    # else:
+    #     sites = [args.dataset, ]
+    sites = [args.dataset, ]
+    # data_all_sites = []
     # outcome_all_sites = []
     # outcome_med_all_sites = []
     # df_records_aux = []  # for double check, and get basic information
@@ -974,22 +980,32 @@ def build_query_1and2_matrix(args):
     mode = "w"
     for site in tqdm(sites):
         print('Loading: ', site)
-        input_file = r'../data/V15_COVID19/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
+        input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-withAllDays_{}.csv'.format(
+            args.dataset, args.cohorts, args.dataset)
+
+        output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
+            args.dataset, args.cohorts, args.dataset)
+
+        output_dx_info = r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(
+            args.dataset, args.cohorts, args.dataset)
+
         print('Load cohorts pickle data file:', input_file)
         id_data = utils.load(input_file, chunk=4)
 
-        # step 3: encoding cohorts baseline covariates into matrix
-        if args.positive_only:
-            n = 0
-            for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-                index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
-                flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
-                if flag:
-                    n += 1
-        else:
-            n = len(id_data)
 
-        print('args.positive_only:', args.positive_only, n)
+        # step 3: encoding cohorts baseline covariates into matrix
+        # if args.positive_only:
+        #     n = 0
+        #     for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
+        #         index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
+        #         flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
+        #         if flag:
+        #             n += 1
+        # else:
+        #     n = len(id_data)
+
+        # print('args.positive_only:', args.positive_only, n)
 
         # print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -997,16 +1013,18 @@ def build_query_1and2_matrix(args):
         adi_value_default = np.nanmedian(adi_value_list)
 
         i = -1
-        for pid, item in tqdm(id_data.items(), total=len(
-                id_data), mininterval=10):
+        for pid, item in tqdm(id_data.items(), total=len(id_data), mininterval=10):
             # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
             flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
+            # transform Timestamp to datetime.date when using sql and csv mixture types
+            index_date = index_date.date()
+
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx, icd9_icd10, icd_ccsr)
 
-            # dump per line
+            # stream dump per line
             n = 1
             pid_list = []
             site_list = []
@@ -1027,13 +1045,15 @@ def build_query_1and2_matrix(args):
             utilization_count_array = np.zeros((n, 4), dtype='int16')
             utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
             bmi_list = []
-            yearmonth_array = np.zeros((n, 23), dtype='int16')
+            yearmonth_array = np.zeros((n, 31), dtype='int16')
             yearmonth_column_names = [
                 "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
                 "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
                 "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
                 "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
-                "YM: November 2021", "YM: December 2021", "YM: January 2022"
+                "YM: November 2021", "YM: December 2021", "YM: January 2022",
+                "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
+                "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
             ]
             #
             age_array = np.zeros((n, 6), dtype='int16')
@@ -1139,7 +1159,6 @@ def build_query_1and2_matrix(args):
             outcome_flag = np.zeros((n, 137), dtype='int16')
             outcome_t2e = np.zeros((n, 137), dtype='int16')
             outcome_baseline = np.zeros((n, 137), dtype='int16')
-
             outcome_t2eall = []
 
             # new add for 2 dx cross categories
@@ -1148,13 +1167,13 @@ def build_query_1and2_matrix(args):
                                    ['dx-base@' + x for x in pasc_encoding.keys()] + \
                                    ['dx-t2eall@' + x for x in pasc_encoding.keys()]
 
-            # # rxing_encoding outcome.
-            # outcome_med_flag = np.zeros((n, 434), dtype='int16')
-            # outcome_med_t2e = np.zeros((n, 434), dtype='int16')
-            # outcome_med_baseline = np.zeros((n, 434), dtype='int16')
-            # outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
-            #                            ['med-t2e@' + x for x in rxing_encoding.keys()] + \
-            #                            ['med-base@' + x for x in rxing_encoding.keys()]
+            # rxing_encoding outcome.
+            outcome_med_flag = np.zeros((n, 434), dtype='int16')
+            outcome_med_t2e = np.zeros((n, 434), dtype='int16')
+            outcome_med_baseline = np.zeros((n, 434), dtype='int16')
+            outcome_med_column_names = ['med-out@' + x for x in rxing_encoding.keys()] + \
+                                       ['med-t2e@' + x for x in rxing_encoding.keys()] + \
+                                       ['med-base@' + x for x in rxing_encoding.keys()]
 
             column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
@@ -1164,12 +1183,13 @@ def build_query_1and2_matrix(args):
                            social_column_names + utilization_column_names + index_period_names + \
                            bmi_names + smoking_names + \
                            dx_column_names + med_column_names + vaccine_column_names + covidmed_column_names + \
-                           outcome_covidmed_column_names + outcome_column_names  # + outcome_med_column_names
+                           outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
 
-            if args.positive_only:
-                if not flag:
-                    continue
+            # if args.positive_only:
+            #     if not flag:
+            #         continue
             # i += 1
+            # update only 1 row here
             i = 0
             # maxfollowtime
             # gaurantee at least one encounter in baseline or followup. thus can be 0 if no followup
@@ -1245,8 +1265,9 @@ def build_query_1and2_matrix(args):
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :], outcome_t2eall_1row = \
                 _encoding_outcome_dx_withalldays(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
             outcome_t2eall.append(outcome_t2eall_1row)
-            # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
-            #     _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
+
+            outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
+                _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
@@ -1284,14 +1305,15 @@ def build_query_1and2_matrix(args):
                                     outcome_t2e,
                                     outcome_baseline,
                                     np.asarray(outcome_t2eall),
-                                    # outcome_med_flag,
-                                    # outcome_med_t2e,
-                                    # outcome_med_baseline
+                                    outcome_med_flag,
+                                    outcome_med_t2e,
+                                    outcome_med_baseline
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)
             # data_all_sites.append(df_data)
 
+            # Baseline comorbidities required at lest 2 appearance
             # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
             # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
             # df_bool = df_data_all_sites
@@ -1307,18 +1329,19 @@ def build_query_1and2_matrix(args):
             # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
             # can be done later
 
+            # 2022-11-3
+            # Only binarize baseline flag --> stringent manner. The outcome keeps count
             selected_cols = [x for x in df_bool.columns if
                              (x.startswith('dx-base@') or
-                              x.startswith('med-out@') or x.startswith('med-base@') or
-                              x.startswith('covidmed-out@') or x.startswith('covidmed-base@'))]
+                              x.startswith('med-base@') or
+                              x.startswith('covidmed-base@'))] # x.startswith('med-out@') or x.startswith('covidmed-out@') or
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
             # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]
             # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
-
             # utils.check_and_mkdir(args.output_file_query12_bool)
 
-            df_bool.to_csv(args.output_file_query12_bool, mode=mode, header=header, index=False)
+            df_bool.to_csv(output_file_query12_bool, mode=mode, header=header, index=False)
             if header:
                 header = False
                 mode = "a"
@@ -1364,10 +1387,10 @@ def build_query_1and2_matrix(args):
                 if i_med not in _med_set_base:
                     _update_counter_v2(med_count, i_med, flag, is_incident=True)
 
-        print('Done! Dump data bool matrix for query12 to {}'.format(args.output_file_query12_bool))
+        print('Done! Dump data bool matrix for query12 to {}'.format(output_file_query12_bool))
         print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-        print('df_data.shape:', df_data.shape)
+        # print('df_data.shape:', df_data.shape)
         # del id_data
         print('Done site:', site)
         # end iterate sites
@@ -1376,12 +1399,13 @@ def build_query_1and2_matrix(args):
                                          columns=['total', 'no. in positive group', 'no. in negative group',
                                                   'incident total', 'incident no. in positive group',
                                                   'incident no. in negative group'])
-    # dx_count_df.to_csv(args.output_dx_info)
+    dx_count_df.to_csv(output_dx_info)
+
     med_count_df = pd.DataFrame.from_dict(med_count, orient='index',
                                           columns=['total', 'no. in positive group', 'no. in negative group',
                                                    'incident total', 'incident no. in positive group',
                                                    'incident no. in negative group'])
-    # med_count_df.to_csv(args.output_med_info)
+    med_count_df.to_csv(output_med_info)
 
     # df_data_all_sites = pd.concat(data_all_sites)
     # print('df_data_all_sites.shape:', df_data_all_sites.shape)
@@ -1390,10 +1414,8 @@ def build_query_1and2_matrix(args):
     # df_data_all_sites.to_csv(args.output_file_query12)
     # print('Done! Dump data matrix for query12 to {}'.format(args.output_file_query12))
 
-
-
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_bool
+    return df_bool, dx_count_df, med_count_df
 
 
 def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
@@ -2247,7 +2269,7 @@ if __name__ == '__main__':
     #
     start_time = time.time()
     args = parse_args()
-    df_data_bool = build_query_1and2_matrix(args)
+    df_data_bool, dx_count_df, med_count_df = build_query_1and2_matrix(args)
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
