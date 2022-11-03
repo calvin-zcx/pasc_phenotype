@@ -1349,6 +1349,220 @@ def plot_forest_for_dx_organ_compare2data_V2(add_name=False, severity="all", sta
     plt.close()
 
 
+def plot_forest_for_dx_organ_compare3data_V2 (add_name=False, severity="all", star=True, select_criteria='',
+                                              pvalue=0.05 / 137, add_pasc=False):
+
+    df1 = pd.read_excel(
+        r'../data/V15_COVID19/output/character/outcome/pooled/DX-all/causal_effects_specific-addinfo.xlsx',
+        sheet_name='diagnosis')
+    df2 = pd.read_csv(
+        r'../data/V15_COVID19/output/character/outcome/pooled/DX-1stwave/causal_effects_specific.csv')
+    df3 = pd.read_csv(
+        r'../data/V15_COVID19/output/character/outcome/pooled/DX-delta/causal_effects_specific.csv')
+
+    df_aux2 = df2.rename(columns=lambda x: x + '_aux2')
+    df_aux3 = df3.rename(columns=lambda x: x + '_aux3')
+
+    df = pd.merge(df1, df_aux2, left_on='pasc', right_on='pasc_aux2', how='left')
+    df = pd.merge(df, df_aux3, left_on='pasc', right_on='pasc_aux3', how='left').set_index('i')
+
+    # pvalue = 0.05 / 137  # 0.01  #
+    #
+    # if select_criteria == 'insight':
+    #     print('select_critera:', select_criteria)
+    #     _df = pd.read_excel(
+    #         r'../data/V15_COVID19/output/character/outcome/DX-all/causal_effects_specific_withMedication_v3.xlsx',
+    #         sheet_name='diagnosis').set_index('i')
+    #     pvalue = 0.01  # 0.05 / 137
+    #     _df_select = _df.sort_values(by='hr-w', ascending=False)
+    #     _df_select = _df_select.loc[_df_select['hr-w-p'] <= pvalue, :]  #
+    #     _df_select = _df_select.loc[_df_select['hr-w'] > 1, :]
+    #     _df_select = _df_select.loc[_df_select['no. pasc in +'] >= 100, :]
+    #
+    #     print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+    #
+    #     df_select = df.loc[df['pasc'].isin(_df_select['pasc']), :]
+    #     df_select = df_select.sort_values(by='hr-w', ascending=False)
+    # else:
+    #     # def select_criteria_func(_df):
+    #     #     _df_select = _df.sort_values(by='hr-w', ascending=False)
+    #     #     _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue) | (_df_select['pasc'] == 'Muscle disorders'), :]  #
+    #     #     _df_select = _df_select.loc[(_df_select['hr-w'] > 1) | (_df_select['pasc'] == 'Muscle disorders'), :]
+    #     #     _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100) | (_df_select['pasc'] == 'Muscle disorders'),
+    #     #                  :]
+    #     #     print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+    #     #     return _df_select
+    #
+    #     def select_criteria_func(_df):
+    #         _df_select = _df.sort_values(by='hr-w', ascending=False)
+    #         _df_select = _df_select.loc[(_df_select['hr-w-p'] <= pvalue), :]  #
+    #         _df_select = _df_select.loc[(_df_select['hr-w'] > 1), :]
+    #         _df_select = _df_select.loc[(_df_select['no. pasc in +'] >= 100),
+    #                      :]
+    #         print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+    #         return _df_select
+
+    def select_criteria_func_V2(_df):
+        _df_select = _df.sort_values(by='hr-w', ascending=False)
+        _df_select = _df_select.loc[_df_select['selected'] == 1, :]
+
+        print('_df_select.shape:', _df_select.shape, _df_select['pasc'])
+        return _df_select
+
+    # df_select = select_criteria_func(df)
+    df_select = select_criteria_func_V2(df)
+
+    organ_list = [
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        'General'
+    ]
+    # 'Certain Infectious and Parasitic Diseases',
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+    organ_n = np.zeros(len(organ_list))
+    labs = []
+    measure = []
+    lower = []
+    upper = []
+    pval = []
+    pasc_row = []
+    pasc_row2 = []
+    pasc_row3 = []
+    color_list = []
+
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple'].strip('*')
+            hr = row['hr-w']
+            ci = stringlist_2_list(row['hr-w-CI'])
+            p = row['hr-w-p']
+            domain = row['Organ Domain']
+            pasc = row['pasc']
+
+            hr2 = row['hr-w_aux2']
+            ci2 = stringlist_2_list(row['hr-w-CI_aux2'])
+            p2 = row['hr-w-p_aux2']
+
+            hr3 = row['hr-w_aux3']
+            ci3 = stringlist_2_list(row['hr-w-CI_aux3'])
+            p3 = row['hr-w-p_aux3']
+
+            #
+            # if star:
+            #     if (p > 0.05 / 137) and (p <= 0.01):
+            #         name += '**'
+            #     elif (p > 0.01) and (p <= 0.05):
+            #         name += '*'
+
+            if pasc == 'PASC-General':
+                pasc_row = [name, hr, ci, p, domain]
+                pasc_row2 = [name, hr2, ci2, p2, domain]
+                pasc_row3 = [name, hr3, ci3, p3, domain]
+                continue
+
+            if domain == organ:
+                organ_n[i] += 3
+                # if len(name.split()) == 4:
+                #     name = ' '.join(name.split()[:2]) + '\n' + ' '.join(name.split()[2:])
+                if len(name.split()) >= 5:
+                    name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+
+                labs.append(name)
+                labs.append('')
+                labs.append('')
+                measure.append(hr)
+                measure.append(hr2)
+                measure.append(hr3)
+                lower.append(ci[0])
+                upper.append(ci[1])
+                lower.append(ci2[0])
+                upper.append(ci2[1])
+                lower.append(ci3[0])
+                upper.append(ci3[1])
+                pval.append(p)
+                pval.append(p2)
+                pval.append(p3)
+                color_list.append('#808080')
+                color_list.append('#ed6766')
+                color_list.append('#A986B5')  # '#A986B5')
+        if len(measure) == 0:
+            continue
+
+    # add pasc at last
+    # if add_pasc:
+    #     if pasc_row:
+    #         organ_n[-1] += 3
+    #         labs.append(pasc_row[0])
+    #         measure.append(pasc_row[1])
+    #         lower.append(pasc_row[2][0])
+    #         upper.append(pasc_row[2][1])
+    #         pval.append(pasc_row[3])
+    #         labs.append('')
+    #         measure.append(pasc_row2[1])
+    #         lower.append(pasc_row2[2][0])
+    #         upper.append(pasc_row2[2][1])
+    #         pval.append(pasc_row2[3])
+    #         color_list.append('#ed6766')
+    #         color_list.append('#A986B5')  # '#A986B5')
+    #     else:
+    #         print('pasc general not found!!!')
+
+    p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper)
+    p.labels(scale='log')
+
+    # organ = 'ALL'
+    p.labels(effectmeasure='aHR')  # aHR
+    # p.colors(pointcolor='r')
+    # '#F65453', '#82A2D3'
+    # c = ['#870001', '#F65453', '#fcb2ab', '#003396', '#5494DA','#86CEFA']
+    c = '#F65453'
+    p.colors(pointshape="o", errorbarcolor=color_list, pointcolor=color_list)  # , linecolor='#fcb2ab')
+    width = 8.
+    height = .23 * len(labs)
+    if len(labs) == 2:
+        height = .3 * (len(labs) + 1)
+    ax = p.plot(figsize=(width, height), t_adjuster=0.0050, max_value=3.5, min_value=0.7, size=5, decimal=2)  # 0.02
+    # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
+    # plt.title('pasc', loc="center", x=0, y=0)
+    # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
+    # ax.set_xlabel("Favours Control      Favours Haloperidol       ", fontsize=10)
+
+    organ_n_cumsum = np.cumsum(organ_n)
+    for i in range(len(organ_n) - 1):
+        ax.axhline(y=organ_n_cumsum[i] - .5, xmin=0.0, color=p.linec, zorder=1, linestyle='--')
+
+    ax.set_yticklabels(labs, fontsize=13)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(True)
+    ax.spines['left'].set_visible(False)
+    plt.tight_layout()
+    output_dir = r'../data/V15_COVID19/output/character/outcome/figure/figure2Variant/'
+    check_and_mkdir(output_dir)
+    organ = 'all'
+    i = 0
+    plt.savefig(output_dir + 'poole-1st-delta-23.png',  #.format(severity, pvalue, select_criteria),
+                bbox_inches='tight',
+                dpi=600)
+    plt.savefig(output_dir + 'poole-1st-delta-23.pdf',  # .format(severity, pvalue, select_criteria),
+                bbox_inches='tight',
+                transparent=True)
+    plt.show()
+    print()
+    # plt.clf()
+    plt.close()
+
+
 def plot_forest_for_dx_organ_compare2data_V3(add_name=False, severity="all", star=False, select_criteria='',
                                              pvalue=0.05 / 596, add_pasc=False):
     if severity == 'all':
@@ -1566,7 +1780,7 @@ def plot_forest_for_dx_organ_compare2data_V3(add_name=False, severity="all", sta
     height = .21 * len(labs)
     if len(labs) == 2:
         height = .3 * (len(labs) + 1)
-    ax = p.plot(figsize=(width, height), t_adjuster=0.005, max_value=3, min_value=0.7, size=5, decimal=2)  # 0.02
+    ax = p.plot_with_incidence(figsize=(width, height), t_adjuster=0.005, max_value=3, min_value=0.7, size=5, decimal=2)  # 0.02
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -1808,7 +2022,7 @@ def plot_forest_for_dx_organ_compare2data_sensitivity(add_name=False, severity="
     height = .3 * len(labs)
     if len(labs) == 2:
         height = .3 * (len(labs) + 1)
-    ax = p.plot(figsize=(width, height), t_adjuster=0.005, max_value=3, min_value=0.7, size=5, decimal=2)  # 0.02
+    ax = p.plot_with_incidence(figsize=(width, height), t_adjuster=0.005, max_value=3, min_value=0.7, size=5, decimal=2)  # 0.02
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)
@@ -1934,7 +2148,7 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ_V4(star=False, pasc_dx=False, text_right=False)
     # plot_forest_for_med_organ_V3(database='V15_COVID19')
 
-    plot_forest_for_med_organ_V3(database='oneflorida')
+    # plot_forest_for_med_organ_V3(database='oneflorida')
 
     # plot_forest_for_dx_organ_compare2data_V3(add_name=False, severity='all')
     # plot_forest_for_dx_organ_compare2data_sensitivity(add_name=False, severity='all')
@@ -1951,4 +2165,6 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ_compare2data(add_name=True, severity='less65')
     # plot_forest_for_dx_organ_compare2data(add_name=True, severity='above65')
     # plot_forest_for_dx_organ_compare2data(add_name=True, severity='65to75')
+
+    plot_forest_for_dx_organ_compare3data_V2()
     print('Done!')
