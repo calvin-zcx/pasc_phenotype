@@ -7,6 +7,7 @@ import time
 import pickle
 import argparse
 from misc import utils
+from misc.utils import clean_date_str
 import numpy as np
 import functools
 from misc.utilsql import *
@@ -36,17 +37,6 @@ def parse_args():
     print('args:', args)
     return args
 
-
-def _clean_date_str(x):
-    if isinstance(x, str):
-        x = pd.to_datetime(x, errors='coerce').date()
-    elif isinstance(x, pd.Timestamp):
-        x = x.date()
-    elif isinstance(x, date):
-        x = x
-    else:
-        x = np.nan
-    return x
 
 
 def read_prescribing(input_file, output_file='', selected_patients={}):
@@ -116,9 +106,9 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
 
         for index, row in chunk.iterrows():
             patid = row['PATID']
-            rx_order_date = _clean_date_str(row['RX_ORDER_DATE'])
-            rx_start_date = _clean_date_str(row['RX_START_DATE'])
-            rx_end_date = _clean_date_str(row['RX_END_DATE'])
+            rx_order_date = clean_date_str(row['RX_ORDER_DATE'])
+            rx_start_date = clean_date_str(row['RX_START_DATE'])
+            rx_end_date = clean_date_str(row['RX_END_DATE'])
             rxnorm = row['RXNORM_CUI']
             rx_days = row['RX_DAYS_SUPPLY']
             if 'RAW_RXNORM_CUI' in row.index:
@@ -273,8 +263,8 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
 
         for index, row in chunk.iterrows():
             patid = row['PATID']
-            rx_start_date = _clean_date_str(row['MEDADMIN_START_DATE'])
-            rx_end_date = _clean_date_str(row['MEDADMIN_STOP_DATE'])
+            rx_start_date = clean_date_str(row['MEDADMIN_START_DATE'])
+            rx_end_date = clean_date_str(row['MEDADMIN_STOP_DATE'])
             med_type = row['MEDADMIN_TYPE']
             rxnorm = row['MEDADMIN_CODE']
             if 'RAW_MEDADMIN_MED_NAME' in row.index:

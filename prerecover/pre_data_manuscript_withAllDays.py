@@ -601,6 +601,7 @@ def _encoding_vaccine_4risk(pro_list, immun_list, vaccine_column_names, vaccine_
                 (px in vaccine_codes['janssen_booster']):
             only_2more.append((px_date, px))
 
+
     mrna = sorted(set(mrna), key=lambda x: x[0])
     jj = sorted(set(jj), key=lambda x: x[0])
     only_2more = sorted(set(only_2more), key=lambda x: x[0])

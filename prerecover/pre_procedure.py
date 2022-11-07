@@ -17,7 +17,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess diagnosis')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='ochsner', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.procedures'.format(args.dataset)
@@ -97,8 +97,8 @@ def read_procedure(input_file, output_file='', selected_patients={}):
             enc_type = row['ENC_TYPE']
             px = row['PX']
             px_type = row["PX_TYPE"]
-            px_date = row["PX_DATE"]
-            admit_date = row['ADMIT_DATE']
+            px_date = utils.clean_date_str(row["PX_DATE"])
+            admit_date = utils.clean_date_str(row['ADMIT_DATE'])
 
             if pd.isna(px):
                 n_no_px += 1
@@ -227,7 +227,7 @@ def read_obs_gen(input_file, output_file='', selected_patients={}):
             enc_id = row['ENCOUNTERID']
             px = row['OBSGEN_CODE']
             px_type = row["OBSGEN_TYPE"]
-            px_date = row["OBSGEN_START_DATE"]
+            px_date = utils.clean_date_str(row["OBSGEN_START_DATE"])
             result_text = row['OBSGEN_RESULT_TEXT']
             source = row['OBSGEN_SOURCE']
 

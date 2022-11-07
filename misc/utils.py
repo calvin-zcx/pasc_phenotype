@@ -20,9 +20,10 @@ import requests
 print = functools.partial(print, flush=True)
 # import joblib
 import re
-from datetime import datetime
+# from datetime import datetime
 from collections import Counter
 from scipy import stats
+from datetime import datetime, date
 
 
 def boot_matrix(z, B):
@@ -368,6 +369,18 @@ def tofloat(num):
         return num
     except ValueError:
         return np.nan
+
+
+def clean_date_str(x):
+    if isinstance(x, str):
+        x = pd.to_datetime(x, errors='coerce').date()
+    elif isinstance(x, pd.Timestamp):
+        x = x.date()
+    elif isinstance(x, date):
+        x = x
+    else:
+        x = np.nan
+    return x
 
 
 if __name__ == '__main__':
