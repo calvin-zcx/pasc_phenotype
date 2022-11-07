@@ -362,6 +362,14 @@ def isfloat(num):
         return False
 
 
+def tofloat(num):
+    try:
+        num = float(num)
+        return num
+    except ValueError:
+        return np.nan
+
+
 if __name__ == '__main__':
     start_time = time.time()
     # df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')

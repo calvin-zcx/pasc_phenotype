@@ -32,7 +32,7 @@ def parse_args():
                                               'covid_4manuscript', 'covid_4manuNegNoCovid',
                                               'covid_4manuNegNoCovidV2'],
                         default='covid_4manuNegNoCovidV2', help='cohorts')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='ochsner', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
@@ -249,11 +249,11 @@ def _encoding_bmi_and_smoking(vital_list, index_date):
         dx_date, ht, wt, ori_bmi, smoking, tobacco = records
         if ecs._is_in_bmi_period(dx_date, index_date):
             if pd.notna(ht):
-                ht_select = ht
+                ht_select = utils.tofloat(ht)
             if pd.notna(wt):
-                wt_select = wt
+                wt_select = utils.tofloat(wt)
             if pd.notna(ori_bmi):
-                bmi_select = ori_bmi
+                bmi_select = utils.tofloat(ori_bmi)
 
         if ecs._is_in_smoke_period(dx_date, index_date):
             if pd.notna(smoking):
@@ -348,6 +348,7 @@ def _encoding_critical_care(pro_list, index_date, cc_codes={"99291", "99292"}):
 def _encoding_social(nation_adi, impute_value):
     # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
     #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+    # impute_value can also be nan, because of no zip code there? how?
     encoding = np.zeros((1, 10), dtype='float')
     if pd.isna(nation_adi):
         nation_adi = impute_value
@@ -898,6 +899,9 @@ def _dx_clean_and_translate_any_ICD9_to_ICD10(dx_list, icd9_icd10, icd_ccsr):
     for records in dx_list:
         dx_t, icd, dx_type, enc_type = records
         icd = icd.replace('.', '').upper().strip()
+        if icd == '':
+            # e.g. in mshs, many dx colum is '', not icd10 encoded
+            continue
         if ('9' in dx_type) or ((icd.isnumeric() or (icd[0] in ('E', 'V'))) and (icd not in icd_ccsr)):
             icd10_translation = icd9_icd10.get(icd, [])
             if len(icd10_translation) > 0:
