@@ -75,49 +75,49 @@ def _is_in_baseline(event_time, index_time):
     # 2022-01-27 updates: align with CDC query and our morning discussion
     # However, in CDC excel, they use 570 = 19*30 days for 18 months? we use 540 = 18*30days.
     # [-3 years, -7]
-    return BASELINE_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= BASELINE_RIGHT
+    return BASELINE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BASELINE_RIGHT
 
 
 def _is_in_followup(event_time, index_time):
     # follow-up: 1 month to 6 month after the index date
     # 2022-01-27 updates: align with CDC query and our morning discussion
     # [31, 180]
-    return FOLLOWUP_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= FOLLOWUP_RIGHT
+    return FOLLOWUP_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= FOLLOWUP_RIGHT
 
 
 def _is_in_inpatient_period(event_time, index_time):
     # Diagnosis in an inpatient care setting within 1 day prior to 16 days after the index event
     # [-1, 16]
-    return INPATIENT_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= INPATIENT_RIGHT
+    return INPATIENT_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= INPATIENT_RIGHT
 
 
 def _is_in_ventilation_period(event_time, index_time):
     # 3 year prior to baseline
     # [0, 16] --> [-1, 16]
-    return VENTILATION_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= VENTILATION_RIGHT
+    return VENTILATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= VENTILATION_RIGHT
 
 
 def _is_in_comorbidity_period(event_time, index_time):
     # 3 year prior to baseline
     # [-1095, 0]
-    return COMMORBIDITY_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= COMMORBIDITY_RIGHT
+    return COMMORBIDITY_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= COMMORBIDITY_RIGHT
 
 
 def _is_in_medication_baseline(event_time, index_time):
     # 1 year prior to baseline
-    return BASELINE_MEDICATION_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= BASELINE_MEDICATION_RIGHT
+    return BASELINE_MEDICATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BASELINE_MEDICATION_RIGHT
 
 
 def _is_in_covid_medication(event_time, index_time):
     # 14 days before or after the index event
-    return COVIDMED_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= COVIDMED_RIGHT
+    return COVIDMED_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= COVIDMED_RIGHT
 
 
 def _is_in_bmi_period(event_time, index_time):
     # -365 -- + 7
-    return BMI_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= BMI_RIGHT
+    return BMI_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BMI_RIGHT
 
 
 def _is_in_smoke_period(event_time, index_time):
     # -365 -- + 7
-    return SMOKE_LEFT <= (pd.to_datetime(event_time) - pd.to_datetime(index_time)).days <= SMOKE_RIGHT
+    return SMOKE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= SMOKE_RIGHT

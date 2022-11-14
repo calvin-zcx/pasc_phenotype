@@ -43,6 +43,7 @@ python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
 python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
 python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
 python pre_cohort_manuscript.py --dataset nyu 2>&1 | tee  log/pre_cohort_manuscript_nyu.txt
+python pre_data_manuscript_withAllDays.py --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_nyu.txt
         """.replace('nyu', site)
         with open(r'output\shells\shell_for_{}.ps1'.format(site), 'wt') as f:
             f.write(cmdstr)

@@ -2,7 +2,7 @@ import sys
 # for linux env.
 import pandas as pd
 
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import time
 import pickle
 import numpy as np
@@ -11,6 +11,7 @@ from misc import utils
 from eligibility_setting import _is_in_baseline, _is_in_followup, INDEX_AGE_MINIMUM
 import functools
 from collections import Counter
+
 print = functools.partial(print, flush=True)
 
 
@@ -21,7 +22,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', default='pitt', help='site dataset')
+    parser.add_argument('--dataset', default='emory', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
@@ -45,8 +46,10 @@ def parse_args():
 
     # changed 2022-04-08 V2, add vital information in V2
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}_info.csv'.format(args.dataset, args.dataset)
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}.pkl'.format(args.dataset,
+                                                                                                        args.dataset)
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}_info.csv'.format(
+        args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -95,7 +98,7 @@ def read_preprocessed_data(args):
     id_vital = utils.load(args.vital_file)
 
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen,\
+    return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, \
            id_immun, id_death, id_vital
 
 
@@ -623,7 +626,8 @@ def integrate_data_and_apply_eligibility(args):
             indexrecord = row[position]
             id_indexrecord[pid] = [True, ] + list(indexrecord)
         # else:
-        elif v_lables.count('NEGATIVE') == len(v_lables):
+        elif (len(v_lables) > 0) and (
+                v_lables.count('NEGATIVE') == len(v_lables)):  # can be empty [], then true for this. potential bug
             n_neg += 1
             position = 0  # if all negative, selected first
             indexrecord = row[position]
@@ -734,4 +738,3 @@ if __name__ == '__main__':
     args = parse_args()
     data, cohort_info, raw_data = integrate_data_and_apply_eligibility(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
