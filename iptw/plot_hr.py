@@ -6,6 +6,7 @@ import pickle
 from sklearn.manifold import TSNE
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
+import re
 
 import numpy as np
 import csv
@@ -1475,6 +1476,11 @@ def plot_forest_for_dx_organ_compare3data_V2 (add_name=False, severity="all", st
                 #     name = ' '.join(name.split()[:2]) + '\n' + ' '.join(name.split()[2:])
                 if len(name.split()) >= 5:
                     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+                # if len(re.split('[, ]', name)) >= 5:
+                #     name = ' '.join(re.split(', ', name)[:4]) + '\n' + ' '.join(re.split(', ', name)[4:])
+
+                if name == 'Pulmonary fibrosis, edema, inflammation':
+                    name = 'Pulmonary fibrosis,\nedema, inflammation'
 
                 labs.append(name)
                 labs.append('')
