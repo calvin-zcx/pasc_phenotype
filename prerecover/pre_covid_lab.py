@@ -18,7 +18,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='pitt', help='site dataset')
+    parser.add_argument('--dataset', default='mshs', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -87,9 +87,16 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     print('Time range of PCR/Antigen Covid Test:', df_covid["RESULT_DATE"].describe(datetime_is_numeric=True))
 
     # check covid test result value:
+    print('\nRESULT_QUAL:')
     print(df_covid['RESULT_QUAL'].value_counts(dropna=False))
+
     if 'RAW_RESULT' in df_covid.columns:
+        print('\nRAW_RESULT:')
         print(df_covid['RAW_RESULT'].value_counts(dropna=False))
+
+    if 'RESULT_TEXT' in df_covid.columns:
+        print('\nRESULT_TEXT:')
+        print(df_covid['RESULT_TEXT'].value_counts(dropna=False))
 
     id_lab = defaultdict(list)
     n_no_dx = 0
@@ -111,11 +118,27 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
             n_no_dx += 1
 
         # 2022-10-25, case beyond insight, e.g. vumc
-        if pd.isna(result_label):
+        # 2022-11-17 mshs also showed inconsistency
+        #            just compare 'NI', just for insight, try not too broad as the following function
+        # def _result_value_need_impute(_x):
+        #     if isinstance(_x, str):
+        #         _x = _x.strip().upper()
+        #     return not _x.startswith(
+        #         ('NOT DETECTED', 'NEG', 'NOT', 'NEGATIVE', 'UNDETECTED', 'DETECTED', 'POSITIVE', 'POS',
+        #          'PRESUMPTIVE', 'INVALID', 'INCONCLUSIVE')
+        #     )
+
+        if pd.isna(result_label) or (result_label == 'NI'):
             if 'RAW_RESULT' in row.index:
                 result_label = row['RAW_RESULT']
+
+        if pd.isna(result_label) or (result_label == 'NI'):
+            if 'RESULT_TEXT' in row.index:
+                result_label = row['RESULT_TEXT']
+
         if pd.isna(result_label):
             result_label = 'NI'
+
         if isinstance(result_label, str):
             result_label = result_label.strip().upper()
 

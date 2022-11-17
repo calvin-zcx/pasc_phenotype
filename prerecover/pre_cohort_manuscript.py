@@ -22,7 +22,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', default='emory', help='site dataset')
+    parser.add_argument('--dataset', default='mshs', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
