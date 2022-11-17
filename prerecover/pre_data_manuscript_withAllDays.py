@@ -32,7 +32,7 @@ def parse_args():
                                               'covid_4manuscript', 'covid_4manuNegNoCovid',
                                               'covid_4manuNegNoCovidV2'],
                         default='covid_4manuNegNoCovidV2', help='cohorts')
-    parser.add_argument('--dataset', default='ochsner', help='site dataset')
+    parser.add_argument('--dataset', default='utsw', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)

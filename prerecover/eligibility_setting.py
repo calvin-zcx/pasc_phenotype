@@ -1,7 +1,9 @@
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import pandas as pd
+
 # Configure baseline and follow-up setting here
 # 2022-01-27 updates: align with CDC query and our morning discussion
 
@@ -25,7 +27,6 @@ VENTILATION_RIGHT = 16
 COMMORBIDITY_LEFT = -1095
 COMMORBIDITY_RIGHT = 0
 
-
 BASELINE_MEDICATION_LEFT = -365
 BASELINE_MEDICATION_RIGHT = -7
 
@@ -37,7 +38,6 @@ BMI_RIGHT = 7
 
 SMOKE_LEFT = -1095
 SMOKE_RIGHT = 7
-
 
 print('Adopted Eligibility Setting:')
 print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
@@ -75,49 +75,105 @@ def _is_in_baseline(event_time, index_time):
     # 2022-01-27 updates: align with CDC query and our morning discussion
     # However, in CDC excel, they use 570 = 19*30 days for 18 months? we use 540 = 18*30days.
     # [-3 years, -7]
-    return BASELINE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BASELINE_RIGHT
+    # handling error, e.g. pd.to_datetime('2022-01-01', errors='coerce'), pd.to_datetime('1700-01-01', errors='coerce')
+    try:
+        return BASELINE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                              errors='coerce')).days <= BASELINE_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_followup(event_time, index_time):
     # follow-up: 1 month to 6 month after the index date
     # 2022-01-27 updates: align with CDC query and our morning discussion
     # [31, 180]
-    return FOLLOWUP_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= FOLLOWUP_RIGHT
+    try:
+        return FOLLOWUP_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                              errors='coerce')).days <= FOLLOWUP_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_inpatient_period(event_time, index_time):
     # Diagnosis in an inpatient care setting within 1 day prior to 16 days after the index event
     # [-1, 16]
-    return INPATIENT_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= INPATIENT_RIGHT
+    try:
+        return INPATIENT_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                               errors='coerce')).days <= INPATIENT_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_ventilation_period(event_time, index_time):
     # 3 year prior to baseline
     # [0, 16] --> [-1, 16]
-    return VENTILATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= VENTILATION_RIGHT
+    try:
+        return VENTILATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                                 errors='coerce')).days <= VENTILATION_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_comorbidity_period(event_time, index_time):
     # 3 year prior to baseline
     # [-1095, 0]
-    return COMMORBIDITY_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= COMMORBIDITY_RIGHT
+    try:
+        return COMMORBIDITY_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                                  errors='coerce')).days <= COMMORBIDITY_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_medication_baseline(event_time, index_time):
     # 1 year prior to baseline
-    return BASELINE_MEDICATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BASELINE_MEDICATION_RIGHT
+    try:
+        return BASELINE_MEDICATION_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                                         errors='coerce')).days <= BASELINE_MEDICATION_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_covid_medication(event_time, index_time):
     # 14 days before or after the index event
-    return COVIDMED_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= COVIDMED_RIGHT
+    try:
+        return COVIDMED_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                              errors='coerce')).days <= COVIDMED_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_bmi_period(event_time, index_time):
     # -365 -- + 7
-    return BMI_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= BMI_RIGHT
+    try:
+        return BMI_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                         errors='coerce')).days <= BMI_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
 
 
 def _is_in_smoke_period(event_time, index_time):
     # -365 -- + 7
-    return SMOKE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time, errors='coerce')).days <= SMOKE_RIGHT
+    try:
+        return SMOKE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                       errors='coerce')).days <= SMOKE_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
+
