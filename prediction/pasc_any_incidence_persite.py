@@ -542,24 +542,26 @@ def build_incident_pasc_from_all_positive_withAllTimeRecords(sites, broad=True, 
     df['pasc-count'] = n_pasc_series  # number of incident pascs of this person
     df['pasc-flag'] = (n_pasc_series >= nthreshold).astype('int')  # indicator of any incident pasc of this person
 
-    # df['pasc-min-t2e'] = 180
-    # for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-    #     npasc = rows['pasc-count']
-    #     if npasc >= 1:
-    #         # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
-    #         pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
-    #         pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-    #         t2e = rows.loc[pasc_t2e_cols].min()
-    #     else:
-    #         # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
-    #         # no event, only consider death, censoring, 180 days,
-    #         # 1. approximated by the maximum-t2e of any selected pasc .
-    #         #   unless all selected pasc happened, but not incident, this not happened in our data.
-    #         # 2. directly follow the definition. Because I also stored max-followup information
-    #         # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
-    #         t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
-    #
-    #     df.loc[index, 'pasc-min-t2e'] = t2e
+    df['pasc-min-t2e'] = np.nan  # 180
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        npasc = rows['pasc-count']
+        if npasc >= 1:
+            # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
+            pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
+            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+            t2e = rows.loc[pasc_t2e_cols].min()
+            df.loc[index, 'pasc-min-t2e'] = t2e
+
+        # else:
+        #     # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
+        #     # no event, only consider death, censoring, 180 days,
+        #     # 1. approximated by the maximum-t2e of any selected pasc .
+        #     #   unless all selected pasc happened, but not incident, this not happened in our data.
+        #     # 2. directly follow the definition. Because I also stored max-followup information
+        #     # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
+        #     t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+        # df.loc[index, 'pasc-min-t2e'] = t2e
 
     # build ANY Severe v.s. non-severe PASC part, 2022-May-11
 
@@ -903,24 +905,24 @@ def build_incident_pasc_from_all_positive_withinOrgan_old(data_file, broad=True,
     df['pasc-count'] = n_pasc_series  # number of incident pascs of this person
     df['pasc-flag'] = (n_pasc_series >= nthreshold).astype('int')  # indicator of any incident pasc of this person
 
-    # df['pasc-min-t2e'] = 180
-    # for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-    #     npasc = rows['pasc-count']
-    #     if npasc >= 1:
-    #         # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
-    #         pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
-    #         pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
-    #         t2e = rows.loc[pasc_t2e_cols].min()
-    #     else:
-    #         # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
-    #         # no event, only consider death, censoring, 180 days,
-    #         # 1. approximated by the maximum-t2e of any selected pasc .
-    #         #   unless all selected pasc happened, but not incident, this not happened in our data.
-    #         # 2. directly follow the definition. Because I also stored max-followup information
-    #         # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
-    #         t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
-    #
-    #     df.loc[index, 'pasc-min-t2e'] = t2e
+    df['pasc-min-t2e'] = 180
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        npasc = rows['pasc-count']
+        if npasc >= 1:
+            # if there are any incident pasc, t2e of any pasc is the earliest time of incident pasc
+            pasc_flag_cols = list(rows[specific_pasc_col][rows[specific_pasc_col] > 0].index)
+            pasc_t2e_cols = [x.replace('flag@', 'dx-t2e@') for x in pasc_flag_cols]
+            t2e = rows.loc[pasc_t2e_cols].min()
+        else:
+            # if no incident pasc, t2e of any pasc: event, death, censoring, 180 days followup, whichever came first.
+            # no event, only consider death, censoring, 180 days,
+            # 1. approximated by the maximum-t2e of any selected pasc .
+            #   unless all selected pasc happened, but not incident, this not happened in our data.
+            # 2. directly follow the definition. Because I also stored max-followup information
+            # t2e = rows.loc[['dx-t2e@' + x for x in selected_pasc_list]].max()
+            t2e = max(30, np.min([rows['death t2e'], rows['maxfollowup'], 180]))
+
+        df.loc[index, 'pasc-min-t2e'] = t2e
 
     # build ANY Severe v.s. non-severe PASC part, 2022-May-11
 
@@ -988,17 +990,17 @@ if __name__ == '__main__':
     # new version
     # data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_boolbase-nout_AnyPASC-withAllDays_ALL.csv'
     broad = False
-    ndaysep = 30
-    outfolder = 'new_t2e_withinorgan'  # 'new_t2e_any2dx'  # 't2e_figure_withinorgan'  # 't2e_figure_any2dx'  # 't2e_figure_withinorgan'
-    # df, df_pasc_info, dfec_sum, vdfec = build_incident_pasc_from_all_positive_withAllTimeRecords(
-    #     sites=['wcm', 'nyu', 'mshs', 'montefiore', 'columbia'],
-    #     broad=broad,
-    #     nthreshold=ndaysep)
-
-    df, df_pasc_info, dfec_sum, vdfec = build_incident_pasc_from_all_positive_withinOrgan(
+    ndaysep = 1
+    outfolder = 'new_anypasc'  # 'new_t2e_withinorgan'  # 'new_t2e_any2dx'  # 't2e_figure_withinorgan'  # 't2e_figure_any2dx'  # 't2e_figure_withinorgan'
+    df, df_pasc_info, dfec_sum, vdfec = build_incident_pasc_from_all_positive_withAllTimeRecords(
         sites=['wcm', 'nyu', 'mshs', 'montefiore', 'columbia'],
         broad=broad,
         nthreshold=ndaysep)
+
+    # df, df_pasc_info, dfec_sum, vdfec = build_incident_pasc_from_all_positive_withinOrgan(
+    #     sites=['wcm', 'nyu', 'mshs', 'montefiore', 'columbia'],
+    #     broad=broad,
+    #     nthreshold=ndaysep)
 
     print('Process done, df.shape:', df.shape)
     print('Covid Positives:', (df['covid'] == 1).sum(), (df['covid'] == 1).mean())
@@ -1058,9 +1060,12 @@ if __name__ == '__main__':
     # print_incidence_table(df.loc[(df['covid'] == 0), :],
     #                       df.loc[(df['covid'] == 1), :], 'pasc-prevalence-flag', per=100)
 
-    t2e_all = df['pasc-t2e-2dx30days']
-    t2e_outpatient = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), 'pasc-t2e-2dx30days']
-    t2e_inpatient = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), 'pasc-t2e-2dx30days']
+    # t2e_all = df['pasc-t2e-2dx30days']
+    t2ecol = 'pasc-min-t2e'
+    t2e_all = df[t2ecol]
+    # should we only focus on covid+ later?
+    t2e_outpatient = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), t2ecol]
+    t2e_inpatient = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), t2ecol]
 
     utils.check_and_mkdir('output/{}/'.format(outfolder))
     fig_plot_t2e(t2e_all,
