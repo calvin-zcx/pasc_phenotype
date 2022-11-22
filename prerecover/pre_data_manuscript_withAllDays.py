@@ -356,8 +356,10 @@ def _encoding_social(nation_adi, impute_value):
         nation_adi = 99
     if nation_adi < 1:
         nation_adi = 1
-    pos = int(nation_adi) // 10
-    encoding[0, pos] = 1
+
+    if pd.notna(nation_adi):
+        pos = int(nation_adi) // 10
+        encoding[0, pos] = 1
     return encoding
 
 
