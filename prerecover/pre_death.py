@@ -42,7 +42,8 @@ def read_death(input_file, output_file=''):
     print('Read sql table:', table_name)
     df = load_whole_table_from_sql(table_name)
 
-    print('DEATH_DATE_IMPUTE:', df['DEATH_DATE_IMPUTE'].value_counts(dropna=False))
+    if 'DEATH_DATE_IMPUTE' in df.columns:
+        print('DEATH_DATE_IMPUTE:', df['DEATH_DATE_IMPUTE'].value_counts(dropna=False))
     print('DEATH_SOURCE:', df['DEATH_SOURCE'].value_counts(dropna=False))
     print('DEATH_MATCH_CONFIDENCE:', df['DEATH_MATCH_CONFIDENCE'].value_counts(dropna=False))
     if 'CDRN_FACILITYID' in df.columns:

@@ -46,7 +46,6 @@ if __name__ == '__main__':
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
 
-    start_time = time.time()
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
         pg_username = cred_dict['pg_username']
