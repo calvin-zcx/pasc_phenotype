@@ -137,7 +137,7 @@ def sample_t2dm():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
-if __name__ == '__main__':
+def sample_cardio_incident():
     start_time = time.time()
 
     # SET SEED
@@ -264,3 +264,288 @@ if __name__ == '__main__':
             seed))
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+def sample_pulmonary_incident():
+    start_time = time.time()
+
+    # SET SEED
+    seed = 150
+
+    np.random.seed(seed=seed)
+
+    # # select covid+ if necessary
+    # data_file = r'..\data\V15_COVID19\output\character\cp_pulmonary\matrix_cohorts_covid_4manuNegNoCovidV2_bool_pulmonary_incidence_2022-11-30.csv'
+    # cohort_df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    #
+    # col_names = pd.DataFrame(cohort_df.columns)
+    # cohort_df = cohort_df.loc[cohort_df['flag_incidence_pulmonary'] == 1, :]
+    # cohort_df.drop([x for x in cohort_df.columns if (x.startswith('med') or x.startswith('covidmed')
+    #                                                  or x.startswith('dx-t2e@')
+    #                                                  or x.startswith('dx-base@')
+    #                                                  or x.startswith('dx-out@')
+    #                                                  or x.startswith('dx-t2eall@')
+    #
+    #                                                  )
+    #                 ], axis=1, inplace=True)  #
+    # cohort_df.to_csv(r'..\data\V15_COVID19\output\character\cp_pulmonary\pulmonary_incidence_patient_list-simple_2022-11-30.csv')
+    #
+
+    cohort_df = pd.read_excel(
+        r'..\data\V15_COVID19\output\character\cp_pulmonary\pulmonary_incidence_patient_list-simple_2022-11-30.xlsx')
+    cohort_df = cohort_df.loc[(cohort_df['index date'] < datetime.datetime(2022, 3, 1, 0, 0)), :].copy()
+    print(list(cohort_df.columns))
+    cohort_df.head()
+
+    group_cols_dict = dict({"Female, Black/African American and/or Hispanic": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, Black/African American and/or Hispanic": ['Male', 'race_eth_combo', 'covid'],
+                            "Female, White Non-Hispanic": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, White Non-Hispanic": ['Male', 'race_eth_combo', 'covid'],
+                            "Female, Other Race and Ethnicity": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, Other Race and Ethnicity": ['Male', 'race_eth_combo', 'covid']
+                            })
+
+    race_eth_list = ["Black_AfAm_or_H", "Black_AfAm_or_H",
+                     "White_NH", "White_NH",
+                     "Other_Race_Eth", "Other_Race_Eth"]
+    count_list = [[3, 3], [2, 2], [3, 3], [2, 2], [2, 1], [1, 1]]
+
+    print("EXCELL INDEX NUMBERS TO INCLUDE IN CHART REVIEW")
+
+    selected_list = []
+    age_distribution = []
+    NO_RACE_SITE = ['pitt']
+    for site in ['mcw', 'ochsner', 'pitt', 'ufh', 'vumc']:
+        print('Site:', site)
+        site_selected_list = []
+        for i, key in enumerate(group_cols_dict.keys()):
+            print(key)
+
+            relevant_cols = ['Female', 'Male', 'Black or African American', 'White', 'Hispanic: Yes', 'Hispanic: No',
+                             'covid']
+            sub_df = cohort_df.loc[cohort_df['site'] == site, relevant_cols]
+            sub_df['race_eth_combo'] = sub_df.apply(write_race_eth_combo, axis=1)
+
+            # covid positive
+            print("  Covid (+)", count_list[i][0])
+            for j, col_name in enumerate(group_cols_dict[key]):
+                if j == 0:
+                    pos_df = sub_df[sub_df[col_name] == 1]
+                elif j == 2:
+                    pos_df = pos_df[pos_df[col_name] == 1]
+
+                if site not in NO_RACE_SITE:
+                    if j == 1:
+                        pos_df = pos_df[pos_df[col_name] == race_eth_list[i]]
+
+            # shuffle
+            pos_df = pos_df.sample(frac=1)
+            excel_index_keep = pos_df.index.values[:count_list[i][0]]
+            print(excel_index_keep)
+            site_selected_list.extend(excel_index_keep)
+
+            # covid negative
+            print("  Covid (-)", count_list[i][1])
+            for j, col_name in enumerate(group_cols_dict[key]):
+                if j == 0:
+                    neg_df = sub_df[sub_df[col_name] == 1]
+                elif j == 2:
+                    neg_df = neg_df[neg_df[col_name] == 0]
+                if site not in NO_RACE_SITE:
+                    if j == 1:
+                        neg_df = neg_df[neg_df[col_name] == race_eth_list[i]]
+
+            # shuffle
+            neg_df = neg_df.sample(frac=1)
+            excel_index_keep = neg_df.index.values[:count_list[i][1]]
+            print(excel_index_keep)
+            site_selected_list.extend(excel_index_keep)
+            print()
+
+        selected_list.extend(site_selected_list)
+        site_select_df = cohort_df.loc[site_selected_list, :]
+
+        age_distribution.append(
+            cohort_df.loc[cohort_df['site'] == site, ["age"]].describe().rename(columns={"index age": site + ' all'}))
+        age_distribution.append(site_select_df[["age"]].describe().rename(columns={"age": site + ' sample'}))
+
+        print(pd.concat(age_distribution, axis=1))
+        print()
+
+    print('len(selected_list):', len(selected_list))
+    cohort_df['race_eth_combo'] = cohort_df.apply(write_race_eth_combo, axis=1)
+    selected_df = cohort_df.loc[selected_list, :]
+    # selected_df.to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-withDOB.xlsx'.format(seed))
+    # age_distribution_df = pd.concat(age_distribution, axis=1)
+    # age_distribution_df.to_excel(
+    #     r'../data/V15_COVID19/output/character/cp_dm/diabetes_incidence_cases-sampled-seed{}-agedist-withDOB.xlsx'.format(
+    #         seed))
+    print('In total: selected_df.shape', selected_df.shape)
+    selected_df.to_excel(
+        r'../data/V15_COVID19/output/character/cp_pulmonary/pulmonary_incidence_list-sampled-seed{}-withDOB-v2norace.xlsx'.format(
+            seed))
+    age_distribution_df = pd.concat(age_distribution, axis=1)
+    age_distribution_df.to_excel(
+        r'../data/V15_COVID19/output/character/cp_pulmonary/pulmonary_incidence-sampled-seed{}-agedist-withDOB-v2norace.xlsx'.format(
+            seed))
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('Caution: pitt has no race information, thus only consider gender, NO_RACE_SITE', NO_RACE_SITE)
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+
+    # SET SEED
+    seed = 150
+
+    np.random.seed(seed=seed)
+
+    # select covid+ if necessary
+    # data_file = r'..\data\V15_COVID19\output\character\cp_cardio\matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL-anyPASC_cardiology_worsening_patient_list.csv'
+    # cohort_df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    #
+    # col_names = pd.DataFrame(cohort_df.columns)
+    # cohort_df = cohort_df.loc[cohort_df['flag_worsening_cardiology'] == 1, :]
+    # cohort_df.drop([x for x in cohort_df.columns if (x.startswith('med') or x.startswith('covidmed')
+    #                                                  or x.startswith('dx-t2e@')
+    #                                                  or x.startswith('dx-base@')
+    #                                                  or x.startswith('dx-out@')
+    #                                                  or x.startswith('dx-t2eall@')
+    #
+    #                                                  )
+    #                 ], axis=1, inplace=True)  #
+    # cohort_df.to_csv(r'..\data\V15_COVID19\output\character\cp_cardio\cardiology_worsening_patient_list-simple_2022-12-2.csv')
+    #
+
+    cohort_df = pd.read_excel(
+        r'..\data\V15_COVID19\output\character\cp_cardio\cardiology_worsening_patient_list-simple_2022-12-2.xlsx')
+    cohort_df = cohort_df.loc[(cohort_df['index date'] < datetime.datetime(2022, 3, 1, 0, 0)), :].copy()
+    print(list(cohort_df.columns))
+    cohort_df.head()
+
+    group_cols_dict = dict({"Female, Black/African American and/or Hispanic": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, Black/African American and/or Hispanic": ['Male', 'race_eth_combo', 'covid'],
+                            "Female, White Non-Hispanic": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, White Non-Hispanic": ['Male', 'race_eth_combo', 'covid'],
+                            "Female, Other Race and Ethnicity": ['Female', 'race_eth_combo', 'covid'],
+                            "Male, Other Race and Ethnicity": ['Male', 'race_eth_combo', 'covid']
+                            })
+
+    race_eth_list = ["Black_AfAm_or_H", "Black_AfAm_or_H",
+                     "White_NH", "White_NH",
+                     "Other_Race_Eth", "Other_Race_Eth"]
+    count_list = [[3, 3], [2, 2], [3, 3], [2, 2], [2, 1], [1, 1]]
+
+    print("EXCELL INDEX NUMBERS TO INCLUDE IN CHART REVIEW")
+
+    selected_list = []
+    age_distribution = []
+    NO_RACE_SITE = []
+    add_info = []
+    for site in ['wcm', 'nyu', 'mshs', 'columbia', 'montefiore']:
+        print('Site:', site)
+        site_selected_list = []
+        for i, key in enumerate(group_cols_dict.keys()):
+            print(key)
+
+            relevant_cols = ['Female', 'Male', 'Black or African American', 'White', 'Hispanic: Yes', 'Hispanic: No',
+                             'covid']
+            sub_df = cohort_df.loc[cohort_df['site'] == site, relevant_cols]
+            sub_df['race_eth_combo'] = sub_df.apply(write_race_eth_combo, axis=1)
+
+            # covid positive
+            print("  Covid (+)", count_list[i][0])
+            for j, col_name in enumerate(group_cols_dict[key]):
+                if j == 0:
+                    pos_df = sub_df[sub_df[col_name] == 1]
+                elif j == 2:
+                    pos_df = pos_df[pos_df[col_name] == 1]
+
+                if site not in NO_RACE_SITE:
+                    if j == 1:
+                        pos_df = pos_df[pos_df[col_name] == race_eth_list[i]]
+
+            # shuffle
+            pos_df = pos_df.sample(frac=1)
+            if pos_df.shape[0] < count_list[i][0]:
+                add_info.append([site, key, 'covid+', pos_df.shape[0], count_list[i][0],
+                                 'add:{}'.format(count_list[i][0] - pos_df.shape[0])])
+                print('pos_df.shape[0], count_list[i][0]', pos_df.shape[0], count_list[i][0])
+                print('Need add more patients in covid+, only consider gender')
+                for j, col_name in enumerate(group_cols_dict[key]):
+                    # if j == 2: # just  covid
+                    #     pos_df_add = sub_df[sub_df[col_name] == 1]
+
+                    if j == 0: # just gender and covid
+                        pos_df_add = sub_df[sub_df[col_name] == 1]
+                    elif j == 2:
+                        pos_df_add = pos_df_add[pos_df_add[col_name] == 1]
+
+                pos_df_add = pos_df_add.loc[~pos_df_add.index.isin(list(pos_df.index) + site_selected_list), :].sample(frac=1) # remove dumplicate from add
+                pos_df = pd.concat([pos_df, pos_df_add], axis=1)
+
+            excel_index_keep = pos_df.index.values[:count_list[i][0]]
+            print(excel_index_keep)
+            site_selected_list.extend(excel_index_keep)
+
+            # covid negative
+            print("  Covid (-)", count_list[i][1])
+            for j, col_name in enumerate(group_cols_dict[key]):
+                if j == 0:
+                    neg_df = sub_df[sub_df[col_name] == 1]
+                elif j == 2:
+                    neg_df = neg_df[neg_df[col_name] == 0]
+                if site not in NO_RACE_SITE:
+                    if j == 1:
+                        neg_df = neg_df[neg_df[col_name] == race_eth_list[i]]
+
+            # shuffle
+            neg_df = neg_df.sample(frac=1)
+            if neg_df.shape[0] < count_list[i][1]:
+                add_info.append([site, key, 'covid-', neg_df.shape[0], count_list[i][1],
+                                 'add:{}'.format(count_list[i][1] - neg_df.shape[0])])
+                print('neg_df.shape[0], count_list[i][0]', neg_df.shape[0], count_list[i][1])
+                print('Need add more patients in covid-, only consider gender')
+                for j, col_name in enumerate(group_cols_dict[key]):
+                    # if j == 2:  # just gender and covid
+                    #     neg_df_add = sub_df[sub_df[col_name] == 1]
+                    if j == 0:  # just gender and covid
+                        neg_df_add = sub_df[sub_df[col_name] == 1]
+                    elif j == 2:
+                        neg_df_add = neg_df_add[neg_df_add[col_name] == 0]
+
+                neg_df_add = neg_df_add.loc[~neg_df_add.index.isin(list(neg_df.index) + site_selected_list), :].sample(frac=1) # remove dumplicate from add
+                neg_df = pd.concat([neg_df, neg_df_add], axis=1)
+
+            excel_index_keep = neg_df.index.values[:count_list[i][1]]
+            print(excel_index_keep)
+            site_selected_list.extend(excel_index_keep)
+            print()
+
+        selected_list.extend(site_selected_list)
+        site_select_df = cohort_df.loc[site_selected_list, :]
+
+        age_distribution.append(
+            cohort_df.loc[cohort_df['site'] == site, ["age"]].describe().rename(columns={"index age": site + ' all'}))
+        age_distribution.append(site_select_df[["age"]].describe().rename(columns={"age": site + ' sample'}))
+
+        print(pd.concat(age_distribution, axis=1))
+        print()
+
+    print("add_info", add_info)
+    print('len(selected_list):', len(selected_list), 'len(set(selected_list)):', len(set(selected_list)))
+    cohort_df['race_eth_combo'] = cohort_df.apply(write_race_eth_combo, axis=1)
+    selected_df = cohort_df.loc[selected_list, :]
+
+    print('In total: selected_df.shape', selected_df.shape)
+    selected_df.to_excel(
+        r'../data/V15_COVID19/output/character/cp_cardio/worsen_samples/cardiology_worsening_list-sampled-seed{}-enrich.xlsx'.format(
+            seed))
+    age_distribution_df = pd.concat(age_distribution, axis=1)
+    age_distribution_df.to_excel(
+        r'../data/V15_COVID19/output/character/cp_cardio/worsen_samples/cardiology_worsening-sampled-seed{}-agedist-enrich.xlsx'.format(
+            seed))
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('Caution: pitt has no race information, thus only consider gender, NO_RACE_SITE', NO_RACE_SITE)
