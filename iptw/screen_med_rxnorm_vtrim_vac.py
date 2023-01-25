@@ -18,6 +18,7 @@ import itertools
 import functools
 from tqdm import tqdm
 import seaborn as sns
+import datetime
 
 print = functools.partial(print, flush=True)
 
@@ -140,10 +141,39 @@ if __name__ == "__main__":
     covs_columns += ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index']
     print('len(covs_columns):', len(covs_columns))
     df_covs = df.loc[:, covs_columns].astype('float')
-
     print('df.shape:', df.shape)
     print('df_covs.shape:', df_covs.shape)
 
+    ## store vaccine table
+    cols_ = ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index']
+    df_vax = df.loc[:, cols_].astype('float').copy()
+    # df_vax = df.loc[(df['index date'] >= datetime.datetime(2020, 12, 1, 0, 0)), cols_].astype('float').copy()
+    #
+    df_vax['n'] = 1
+    cols_ = ['n', ] + cols_
+    print('overall vaccine,', df_vax.shape[0])
+    print(df_vax.loc[:, cols_].mean(axis=0))
+    print(df_vax.loc[:, cols_].sum(axis=0))
+    print('covid+ vaccine', df_vax.loc[df_label==1, :].shape[0])
+    print(df_vax.loc[df_label==1, cols_].mean(axis=0))
+    print(df_vax.loc[df_label==1, cols_].sum(axis=0))
+    print('covid- vaccine', df_covs.loc[df_label==0, :].shape[0])
+    print(df_vax.loc[df_label == 0, cols_].mean(axis=0))
+    print(df_vax.loc[df_label == 0, cols_].sum(axis=0))
+    df_vax_sumary = pd.DataFrame(
+        data={'all sum':df_vax.loc[:, cols_].sum(axis=0),
+         'all mean': df_vax.loc[:, cols_].mean(axis=0),
+         'covid+ sum': df_vax.loc[df_label==1, cols_].sum(axis=0),
+         'covid+ mean': df_vax.loc[df_label==1, cols_].mean(axis=0),
+         'covid- sum': df_vax.loc[df_label == 0, cols_].sum(axis=0),
+         'covid- mean': df_vax.loc[df_label == 0, cols_].mean(axis=0),
+         }
+    )
+    # df_vax_sumary.to_csv(args.dataset + '-vax-table-after2020-12.csv')
+    df_vax_sumary.to_csv(args.dataset + '-vax-table.csv')
+
+    zz
+    ###
     # Load index information
     with open(r'../data/mapping/rxnorm_ingredient_mapping_combined_moietyfirst.pkl', 'rb') as f:
         rxnorm_ing = pickle.load(f)
