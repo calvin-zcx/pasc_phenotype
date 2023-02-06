@@ -52,8 +52,13 @@ if __name__ == '__main__':
     dfec_sum.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_info.csv')
     df = pd.concat(vdf, axis=0, ignore_index=True)
     df.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates.csv')
+
     dsum = df.sum()
+    dsum.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates_sum.csv')
+
     dmean = df.mean()
+    dmean.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates_mean.csv')
+
     dsmdf = pd.DataFrame({'sum': dsum[2:], 'mean':dmean})
     dsmdf.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates_summary.csv')
 

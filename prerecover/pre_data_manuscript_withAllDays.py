@@ -30,8 +30,8 @@ def parse_args():
     parser.add_argument('--cohorts', choices=['pasc_incidence', 'pasc_prevalence', 'covid',
                                               'covid_4screen', 'covid_4screen_Covid+',
                                               'covid_4manuscript', 'covid_4manuNegNoCovid',
-                                              'covid_4manuNegNoCovidV2'],
-                        default='covid_4manuNegNoCovidV2', help='cohorts')
+                                              'covid_4manuNegNoCovidV2', 'covid_4manuNegNoCovidV2age18'],
+                        default='covid_4manuNegNoCovidV2age18', help='cohorts')
     parser.add_argument('--dataset', default='mshs', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
@@ -218,13 +218,14 @@ def _encoding_yearmonth(index_date):
     "August 2020", "September 2020", "October 2020", "November 2020", "December 2020",
     "January 2021", "February 2021", "March 2021", "April 2021", "May 2021",
     "June 2021", "July 2021", "August 2021", "September 2021", "October 2021",
-    "November 2021", "December 2021",
-    "January 2022", "February 2022", "March 2022", "April 2022", "May 2022",
-    "June 2022", "July 2022", "August 2022", "September 2022", ]
+    "November 2021", "December 2021", "January 2022", "February 2022", "March 2022",
+    "April 2022", "May 2022", "June 2022", "July 2022", "August 2022",
+    "September 2022", "October 2022", "November 2022", "December 2022", "January 2023",
+    "February 2023",]
     :param index_date:
     :return:
     """
-    encoding = np.zeros((1, 31), dtype='int')
+    encoding = np.zeros((1, 36), dtype='int')
     year = index_date.year
     month = index_date.month
     pos = (month - 3) + (year - 2020) * 12
@@ -398,7 +399,12 @@ def _encoding_utilization(enc_list, index_date):
 
 def _encoding_index_period(index_date):
     # ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
-    encoding = np.zeros((1, 5), dtype='float')
+    # '03/20-06/20', '07/20-10/20', '11/20-02/21',
+    # '03/21-06/21', '07/21-10/21', '11/21-02/22',
+    # '03/22-06/22', '07/22-10/22'
+    # encoding = np.zeros((1, 5), dtype='float')
+    encoding = np.zeros((1, 8), dtype='float')
+
     # datetime.datetime(2020, 1, 1, 0, 0),
     # datetime.datetime(2020, 7, 1, 0, 0),
     # datetime.datetime(2020, 11, 1, 0, 0),
@@ -413,8 +419,18 @@ def _encoding_index_period(index_date):
         encoding[0, 2] = 1
     elif pd.to_datetime(index_date) < datetime.datetime(2021, 7, 1, 0, 0):
         encoding[0, 3] = 1
-    else:
+    # update 2023-2-6
+    elif pd.to_datetime(index_date) < datetime.datetime(2021, 11, 1, 0, 0):
         encoding[0, 4] = 1
+    elif pd.to_datetime(index_date) < datetime.datetime(2022, 3, 1, 0, 0):
+        encoding[0, 5] = 1
+    elif pd.to_datetime(index_date) < datetime.datetime(2022, 7, 1, 0, 0):
+        encoding[0, 6] = 1
+    elif pd.to_datetime(index_date) < datetime.datetime(2022, 11, 1, 0, 0):
+        encoding[0, 7] = 1
+
+    # else:
+    #     encoding[0, 4] = 1
 
     return encoding
 
@@ -1052,7 +1068,7 @@ def build_query_1and2_matrix(args):
             utilization_count_array = np.zeros((n, 4), dtype='int16')
             utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
             bmi_list = []
-            yearmonth_array = np.zeros((n, 31), dtype='int16')
+            yearmonth_array = np.zeros((n, 36), dtype='int16')
             yearmonth_column_names = [
                 "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
                 "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
@@ -1061,10 +1077,12 @@ def build_query_1and2_matrix(args):
                 "YM: November 2021", "YM: December 2021", "YM: January 2022",
                 "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
                 "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
+                "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
+                "YM: February 2023",
             ]
             #
             age_array = np.zeros((n, 6), dtype='int16')
-            age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years',
+            age_column_names = ['(18)20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years',
                                 '85+ years']
 
             gender_array = np.zeros((n, 3), dtype='int16')
@@ -1090,8 +1108,12 @@ def build_query_1and2_matrix(args):
                                         'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
                                         'emergency visits >=5']
 
-            index_period_array = np.zeros((n, 5), dtype='int16')
-            index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+            # index_period_array = np.zeros((n, 5), dtype='int16')
+            # index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21', '07/21-11/21']
+            index_period_array = np.zeros((n, 8), dtype='int16')
+            index_period_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
+                                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
+                                  '03/22-06/22', '07/22-10/22']
             #
 
             # newly add 2022-04-08

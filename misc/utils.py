@@ -383,6 +383,22 @@ def clean_date_str(x):
     return x
 
 
+def split_shell_file(fname, divide=2, skip_first=1):
+    f = open(fname, 'r')
+    content_list = f.readlines()
+    n = len(content_list)
+    n_d = np.ceil((n - skip_first) / divide)
+    seg = [0, ] + [int(i * n_d + skip_first) for i in range(1, divide)] + [n]
+    for i in range(divide):
+        fout_name = fname.split('.')
+        fout_name = ''.join(fout_name[:-1]) + '-' + str(i) + '.' + fout_name[-1]
+        fout = open(fout_name, 'w')
+        for l in content_list[seg[i]:seg[i + 1]]:
+            fout.write(l)
+        fout.close()
+    print('dump done')
+
+
 if __name__ == '__main__':
     start_time = time.time()
     # df = read_sas_2_df(infile=r'../data/V15_COVID19/COL/encounter.sas7bdat')

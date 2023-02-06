@@ -8,6 +8,8 @@ import pandas as pd
 # 2022-01-27 updates: align with CDC query and our morning discussion
 
 INDEX_AGE_MINIMUM = 20
+INDEX_AGE_MINIMUM_20 = 20
+INDEX_AGE_MINIMUM_18 = 18
 
 # BASELINE_LEFT = -540
 # change at 2022-02-09 by Tom meeting
