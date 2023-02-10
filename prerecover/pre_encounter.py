@@ -15,7 +15,7 @@ from collections import defaultdict
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess diagnosis')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='pitt', help='site dataset')
     args = parser.parse_args()
 
     args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset,
