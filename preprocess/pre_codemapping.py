@@ -1036,6 +1036,114 @@ def build_icd9_to_icd10():
     return icd9_icd10
 
 
+#
+def _pre_smm_blood_pcs():
+    dfselectpcs = pd.read_csv(r'../data/mapping/ICD-10-PCS Order File 2023/my_temp_code.csv')
+    dfpcs = pd.read_excel(r'../data/mapping/ICD-10-PCS Order File 2023/icd10pcs_order_2023_edit_simple_copy.xlsx',
+                          )
+    selectpcslist = dfselectpcs['pcs'].to_list()
+    selpcs = dfpcs.loc[dfpcs['icd10pcs'].isin(selectpcslist), :]
+
+    dfcom = df_combined = pd.merge(dfselectpcs, dfpcs, left_on='pcs', right_on='icd10pcs', how='left')
+    dfcom.to_csv(r'../data/mapping/ICD-10-PCS Order File 2023/my_temp_code_addinfo.csv')
+
+
+def ICD_to_PASC_Severe_Maternal_Morbidity():
+    # 2023-2-9
+    # To get code mapping from icd10 to Maternal PASC list using SMM
+    # https://www.cdc.gov/reproductivehealth/maternalinfanthealth/smm/severe-morbidity-ICD.htm.
+    # Data source: ../data/mapping/Severe Maternal Morbidity List-2023-02-08.xlsx
+
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/Severe Maternal Morbidity List-2023-02-08.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'Sheet1')
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    df_pasc_list['Code'] = df_pasc_list['Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    df_pasc_list['Comorbidity'] = df_pasc_list['Comorbidity'].apply(lambda x: 'smm:'+x.strip())
+
+    pasc_codes = df_pasc_list['Code']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        comorbidity = row['Comorbidity']
+        codetype = row['CodeType']
+        icd = row['Code']
+        icd_name = row['Description']
+        icd_pasc[icd] = [comorbidity, codetype, icd_name]
+
+    df_dim = df_pasc_list['Comorbidity'].value_counts()[df_pasc_list['Comorbidity'].unique()].reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_SMMpasc_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/SMMpasc_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
+def ICD_to_Obstetric_Comorbidity():
+    # 2023-2-9
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/Obstetric Comorbidity List-2023-02-08.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'Sheet1')
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    df_pasc_list['Code'] = df_pasc_list['Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    df_pasc_list['Comorbidity'] = df_pasc_list['Comorbidity'].apply(lambda x: 'obc:' + x.strip())
+
+    pasc_codes = df_pasc_list['Code']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled Obstetric Comorbidity list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        comorbidity = row['Comorbidity']
+        codetype = row['CodeType']
+        icd = row['Code']
+        icd_name = row['Description']
+        icd_pasc[icd] = [comorbidity, codetype, icd_name]
+
+    df_dim = df_pasc_list['Comorbidity'].value_counts()[df_pasc_list['Comorbidity'].unique()].reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_OBComorbidity_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/OBComorbidity_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1053,7 +1161,7 @@ if __name__ == '__main__':
     # ndc_rx = build_NDC_to_rxnorm()
 
     # 3. Build zip5/9 to adi mapping
-    zip_adi, zip5_df = zip_adi_mapping_2020()
+    # zip_adi, zip5_df = zip_adi_mapping_2020()
 
     # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
@@ -1076,5 +1184,10 @@ if __name__ == '__main__':
 
     # 10 build ICD10 to negative outcome control of PASC
     # icd_pasc, pasc_index, df_pasc_list = ICD_to_negative_control_pasc()
+
+    # 11 build comorbidities and outcome for pregnant women
+    # 2023-2-9
+    icd_SMMpasc, SMMpasc_index, df_SMMpasc = ICD_to_PASC_Severe_Maternal_Morbidity()
+    icd_OBC, OBC_index, df_OBC = ICD_to_Obstetric_Comorbidity()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

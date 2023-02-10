@@ -966,7 +966,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split(database='V15_COVID19', t
     print()
 
 
-def plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='V15_COVID19', type='cif', month=6, pasc=True,
+def plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='V15_COVID19', type='cif', month=6, pasc_flg=True,
                                                           star=False, select_criteria='', pvalue=0.05 / 596,
                                                           highlightcell=False):
     month_id = {2: 0, 3: 1, 4: 2, 5: 3, 6: 4}
@@ -1027,7 +1027,12 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='V15_COVID19'
         # df_select = df_select.loc[df_select['hr-w'] > 1, :]
         # df_select = df_select.loc[df_select['no. pasc in +'] >= 100, :]
         # df_select = df_select.loc[df_select['selected'] == 1, :]
-        df_select = df_select.loc[(df_select['selected'] == 1) | (df_select['selected insight'] == 1), :]
+        if database == 'oneflorida':
+            # df_select = df_select.loc[(df_select['selected'] == 1) | (df_select['selected insight'] == 1), :]
+            df_select = df_select.loc[(df_select['selected'] == 1) , :]
+
+        else:
+            df_select = df_select.loc[(df_select['selected'] == 1) | (df_select['selected oneflorida'] == 1), :]
 
     df_select['rank'] = df_select['cif-w-diff'].apply(lambda x: stringlist_2_list(x)[monthid])
     df_select = df_select.sort_values(by='rank', ascending=False)
@@ -1130,7 +1135,7 @@ def plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='V15_COVID19'
                 key_list.append(key)
                 p_val_hr.append(hrp)
 
-    if pasc:
+    if pasc_flg:
         # add pasc at last
         organ_n[-1] += 1
         labs.append(pasc_row[0])
@@ -2597,24 +2602,27 @@ if __name__ == '__main__':
     # 2022-09-22
     # dataset = 'oneflorida'  # 'V15_COVID19'  #
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database=dataset, type='cifdiff', month=6,
-    #                                                       pasc=True, star=True, highlightcell=True)
+    #                                                       pasc_flg=True, star=True, highlightcell=True)
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database=dataset, type='cif', month=6,
-    #                                                       pasc=True, star=True, highlightcell=True)
+    #                                                       pasc_flg=True, star=True, highlightcell=True)
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database=dataset, type='cifneg', month=6,
-    #                                                       pasc=True, star=True)
+    #                                                       pasc_flg=True, star=True)
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database=dataset, type='casepos', month=6,
-    #                                                       pasc=True, star=True, highlightcell=True)
+    #                                                       pasc_flg=True, star=True, highlightcell=True)
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database=dataset, type='hr-w-p', month=6,
-    #                                                       pasc=True, star=True, highlightcell=True)
-
+    #                                                       pasc_flg=True, star=True, highlightcell=True)
+    #
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='V15_COVID19', type='hr', month=6,
-    #                                                       pasc=True, star=True)
+    #                                                       pasc_flg=False, star=True, highlightcell=True)
+
+    plot_heatmap_for_dx_subgroup_absCumIncidence_split_V3(database='oneflorida', type='hr', month=6,
+                                                          pasc_flg=False, star=True, highlightcell=True)
 
     # 2022-09-27
-    plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant_V2(database='V15_COVID19', type='cifdiff',
-                                                                             month=6,
-                                                                             pasc=True,
-                                                                             star=True)
+    # plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant_V2(database='V15_COVID19', type='cifdiff',
+    #                                                                          month=6,
+    #                                                                          pasc=True,
+    #                                                                          star=True)
     # plot_heatmap_for_dx_subgroup_absCumIncidence_split_timeperiod_Variant_V2(database='oneflorida', type='cifdiff',
     #                                                                          month=6,
     #                                                                          pasc=True,

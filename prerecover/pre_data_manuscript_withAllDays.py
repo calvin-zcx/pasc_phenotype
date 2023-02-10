@@ -17,6 +17,7 @@ from misc import utils
 import eligibility_setting as ecs
 import functools
 import fnmatch
+
 # from lifelines import KaplanMeierFitter, CoxPHFitter
 
 print = functools.partial(print, flush=True)
@@ -144,9 +145,16 @@ def _load_mapping():
     covidmed_codes = utils.load(r'../data/mapping/query3_medication_codes.pkl')
     vaccine_codes = utils.load(r'../data/mapping/query3_vaccine_codes.pkl')
 
+    # 2023-2-09
+    icd_OBC = utils.load(r'../data/mapping/icd_OBComorbidity_mapping.pkl')
+    OBC_encoding = utils.load(r'../data/mapping/OBComorbidity_index_mapping.pkl')
+    icd_SMMpasc = utils.load(r'../data/mapping/icd_SMMpasc_mapping.pkl')
+    SMMpasc_encoding = utils.load(r'../data/mapping/SMMpasc_index_mapping.pkl')
+
     return icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding, \
-           rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-           ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes
+        rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
+        ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes, \
+        icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding
 
 
 def _encoding_age(age):
@@ -619,7 +627,6 @@ def _encoding_vaccine_4risk(pro_list, immun_list, vaccine_column_names, vaccine_
                 (px in vaccine_codes['janssen_booster']):
             only_2more.append((px_date, px))
 
-
     mrna = sorted(set(mrna), key=lambda x: x[0])
     jj = sorted(set(jj), key=lambda x: x[0])
     only_2more = sorted(set(only_2more), key=lambda x: x[0])
@@ -980,8 +987,9 @@ def build_query_1and2_matrix(args):
     print('In build_query_1and2_matrix...')
     # step 1: load encoding dictionary
     icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, \
-    icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
-    ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, vaccine_codes = _load_mapping()
+        icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding, \
+        ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, vaccine_codes, \
+        icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1015,7 +1023,6 @@ def build_query_1and2_matrix(args):
 
         print('Load cohorts pickle data file:', input_file)
         id_data = utils.load(input_file, chunk=4)
-
 
         # step 3: encoding cohorts baseline covariates into matrix
         # if args.positive_only:
@@ -1063,6 +1070,7 @@ def build_query_1and2_matrix(args):
 
             # newly add 2022-04-08
             zip_list = []  # newly add 2022-04-08
+            dob_list = []  # newly add 2023-2-9
             age_list = []
             adi_list = []
             utilization_count_array = np.zeros((n, 4), dtype='int16')
@@ -1206,7 +1214,7 @@ def build_query_1and2_matrix(args):
 
             column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
-                           ['zip', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
+                           ['zip', 'dob', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
                            age_column_names + \
                            gender_column_names + race_column_names + hispanic_column_names + \
                            social_column_names + utilization_column_names + index_period_names + \
@@ -1247,6 +1255,7 @@ def build_query_1and2_matrix(args):
 
             # newly add 2022-04-08
             zip_list.append(zipcode)
+            dob_list.append(birth_date)
             age_list.append(index_age)
             adi_list.append(nation_adi)
             # utilization count, postponed to below
@@ -1285,7 +1294,7 @@ def build_query_1and2_matrix(args):
                                                           index_date)
 
             covidmed_array[i, :], \
-            outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
+                outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
                 = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
 
             # outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
@@ -1309,6 +1318,7 @@ def build_query_1and2_matrix(args):
                                     np.array(maxfollowtime_list).reshape(-1, 1),
                                     death_array,
                                     np.asarray(zip_list).reshape(-1, 1),
+                                    np.asarray(dob_list).reshape(-1, 1),
                                     np.asarray(age_list).reshape(-1, 1),
                                     np.asarray(adi_list).reshape(-1, 1),
                                     utilization_count_array,
@@ -1363,7 +1373,8 @@ def build_query_1and2_matrix(args):
             selected_cols = [x for x in df_bool.columns if
                              (x.startswith('dx-base@') or
                               x.startswith('med-base@') or
-                              x.startswith('covidmed-base@'))] # x.startswith('med-out@') or x.startswith('covidmed-out@') or
+                              x.startswith(
+                                  'covidmed-base@'))]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
             # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]
