@@ -175,6 +175,30 @@ def _encoding_age(age):
     return encoding
 
 
+def _encoding_age_preg(age):
+    # 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+    # 'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years'
+    encoding = np.zeros((1, 6), dtype='int')
+    if age < 18:
+        pass
+    elif age < 25:
+        encoding[0, 0] = 1
+    elif age < 30:
+        encoding[0, 1] = 1
+    elif age < 35:
+        encoding[0, 2] = 1
+    elif age < 40:
+        encoding[0, 3] = 1
+    elif age < 45:
+        encoding[0, 4] = 1
+    elif age <= 50:
+        encoding[0, 5] = 1
+    else:
+        pass
+
+    return encoding
+
+
 def _encoding_gender(gender):
     encoding = np.zeros((1, 3), dtype='int')
     # female, Male, other/missing
@@ -1166,8 +1190,12 @@ def build_query_1and2_matrix(args):
             ]
             #
             age_array = np.zeros((n, 6), dtype='int16')
-            age_column_names = ['(18)20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years',
+            age_column_names = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years',
                                 '85+ years']
+
+            age_preg_array = np.zeros((n, 6), dtype='int16')
+            age_preg_column_names = ['pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+                                     'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years']
 
             gender_array = np.zeros((n, 3), dtype='int16')
             gender_column_names = ['Female', 'Male', 'Other/Missing']
@@ -1307,7 +1335,7 @@ def build_query_1and2_matrix(args):
             column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
                            ['zip', 'dob', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
-                           age_column_names + \
+                           age_column_names + age_preg_column_names + \
                            gender_column_names + race_column_names + hispanic_column_names + \
                            social_column_names + utilization_column_names + index_period_names + \
                            bmi_names + smoking_names + \
@@ -1356,6 +1384,8 @@ def build_query_1and2_matrix(args):
 
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age)
+            age_preg_array[i, :] = _encoding_age_preg(index_age)
+
             gender_array[i] = _encoding_gender(gender)
             race_array[i, :] = _encoding_race(race)
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
@@ -1424,6 +1454,7 @@ def build_query_1and2_matrix(args):
                                     np.asarray(bmi_list).reshape(-1, 1),
                                     yearmonth_array,
                                     age_array,
+                                    age_preg_array,
                                     gender_array,
                                     race_array,
                                     hispanic_array,
