@@ -1,6 +1,7 @@
 import sys
+
 # for linux env.
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import pandas as pd
 import time
 import pickle

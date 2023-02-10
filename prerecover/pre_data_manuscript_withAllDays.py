@@ -1249,7 +1249,7 @@ def build_query_1and2_matrix(args):
 
             # 2023-2-10 add Obstetric Comorbidity
             obcdx_array = np.zeros((n, len(OBC_encoding)), dtype='int16')  # 26-dim
-            obcdx_column_names = list(OBC_encoding.keys())
+            obcdx_column_names = list(OBC_encoding.keys())  # obc:
 
             # add covid medication
             covidmed_array = np.zeros((n, 25), dtype='int16')
@@ -1461,7 +1461,11 @@ def build_query_1and2_matrix(args):
             # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
             # df_bool = df_data_all_sites
             df_bool = df_data
-            selected_cols = [x for x in df_bool.columns if (x.startswith('DX:') or x.startswith('MEDICATION:'))]
+            selected_cols = [x for x in df_bool.columns if (
+                    x.startswith('DX:') or
+                    x.startswith('MEDICATION:') or
+                    x.startswith('obc:')
+            )]
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
             df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
                 (df_bool.loc[:, r'DX: Hypertension'] & (
@@ -1478,7 +1482,6 @@ def build_query_1and2_matrix(args):
                              (x.startswith('dx-base@') or
                               x.startswith('med-base@') or
                               x.startswith('covidmed-base@') or
-                              x.startswith('obc:') or
                               x.startswith('smm-base@')
                               )]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
