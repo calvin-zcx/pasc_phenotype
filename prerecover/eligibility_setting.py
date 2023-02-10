@@ -41,6 +41,10 @@ BMI_RIGHT = 7
 SMOKE_LEFT = -1095
 SMOKE_RIGHT = 7
 
+BASELINE_PREGNANCY_LEFT = -365
+BASELINE_PREGNANCY_RIGHT = 0
+
+
 print('Adopted Eligibility Setting:')
 print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
 
@@ -70,6 +74,9 @@ print("...BMI_RIGHT:", BMI_RIGHT)
 
 print("...SMOKE_LEFT:", SMOKE_LEFT)
 print("...SMOKE_RIGHT:", SMOKE_RIGHT)
+
+print("...BASELINE_PREGNANCY_LEFT:", BASELINE_PREGNANCY_LEFT)
+print("...BASELINE_PREGNANCY_RIGHT:", BASELINE_PREGNANCY_RIGHT)
 
 
 def _is_in_baseline(event_time, index_time):
@@ -174,6 +181,18 @@ def _is_in_smoke_period(event_time, index_time):
     try:
         return SMOKE_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
                                                                                        errors='coerce')).days <= SMOKE_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
+
+
+def _is_in_pregnancy_comorbidity_period(event_time, index_time):
+    # 1 year prior to baseline
+    # [-365, 0]
+    try:
+        return BASELINE_PREGNANCY_LEFT <= (pd.to_datetime(event_time, errors='coerce') - pd.to_datetime(index_time,
+                                                                                                  errors='coerce')).days <= BASELINE_PREGNANCY_RIGHT
     except Exception as e:
         print('[ERROR:]', e, file=sys.stderr)
         print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)

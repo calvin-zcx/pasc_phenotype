@@ -94,6 +94,8 @@ def read_encounter(input_file, output_file='', selected_patients={}):
             admit_source = row['ADMITTING_SOURCE']
             # didn't store discharge date. Currently only use encounter type for major focus
             dis_date = row["DISCHARGE_DATE"]
+            drg = row['DRG']
+            drg_type = row['DRG_TYPE']
 
             if pd.isna(admit_date):
                 n_no_date += 1
@@ -106,11 +108,11 @@ def read_encounter(input_file, output_file='', selected_patients={}):
                 n_discard_row += 1
             else:
                 if not selected_patients:
-                    id_enc[patid].append((admit_date, enc_type, enc_id))
+                    id_enc[patid].append((admit_date, enc_type, enc_id, drg, drg_type))
                     n_recorded_row += 1
                 else:
                     if patid in selected_patients:
-                        id_enc[patid].append((admit_date, enc_type, enc_id))
+                        id_enc[patid].append((admit_date, enc_type, enc_id, drg, drg_type))
                         n_recorded_row += 1
                     else:
                         n_not_in_list_row += 1

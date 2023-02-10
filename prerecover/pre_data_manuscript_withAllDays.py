@@ -33,7 +33,7 @@ def parse_args():
                                               'covid_4manuscript', 'covid_4manuNegNoCovid',
                                               'covid_4manuNegNoCovidV2', 'covid_4manuNegNoCovidV2age18'],
                         default='covid_4manuNegNoCovidV2age18', help='cohorts')
-    parser.add_argument('--dataset', default='mshs', help='site dataset')
+    parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
@@ -377,7 +377,7 @@ def _encoding_utilization(enc_list, index_date):
     # ['inpatient visits', 'outpatient visits', 'emergency visits', 'other visits']
     encoding = np.zeros((1, 4), dtype='float')
     for records in enc_list:
-        enc_date, type, enc_id = records
+        enc_date, type, enc_id = records[:3]
         if ecs._is_in_baseline(enc_date, index_date):
             if type == 'EI' or type == 'IP' or type == 'OS':
                 encoding[0, 0] += 1
@@ -482,6 +482,29 @@ def _encoding_dx(dx_list, dx_column_names, comorbidity_codes, index_date, pro_li
             px = px.replace('.', '').upper()
             code_set, code_set_wild = comorbidity_codes[r'DX: End Stage Renal Disease on Dialysis']
             if _is_in_code_set_with_wildchar(px, code_set, code_set_wild):
+                encoding[0, pos] += 1
+
+    return encoding
+
+
+def _encoding_dx_pregnancy(dx_list, icd_obcpasc, obcpasc_encoding, index_date):
+    # encoding 26 obstetric comorbidity codes in the baseline
+    encoding = np.zeros((1, len(obcpasc_encoding)), dtype='int')
+
+    for records in dx_list:
+        dx_date, icd = records[:2]
+        icd = icd.replace('.', '').upper()
+        # build baseline
+        if ecs._is_in_pregnancy_comorbidity_period(dx_date, index_date):
+            # 2022-02-27, change exact match to prefix match of PASC codes
+            flag, icdprefix = _prefix_in_set(icd, icd_obcpasc)
+            if flag:  # if icd in icd_pasc:
+                # if icdprefix != icd:
+                #     print(icd, icdprefix)
+                pasc_info = icd_obcpasc[icdprefix]
+                pasc = pasc_info[0]
+                rec = obcpasc_encoding[pasc]
+                pos = rec[0]
                 encoding[0, pos] += 1
 
     return encoding
@@ -821,6 +844,59 @@ def _encoding_outcome_dx_withalldays(dx_list, icd_pasc, pasc_encoding, index_dat
     return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
 
 
+def _encoding_outcome_severe_maternal_morbidity_withalldays(dx_list, icd_smm, smm_encoding, index_date, default_t2e,
+                                                            pro_list):
+    # 2022-02-18 initialize t2e:  last encounter, event, end of followup, whichever happens first
+    outcome_t2e = np.ones((1, len(smm_encoding)), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, len(smm_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(smm_encoding)), dtype='int')
+
+    # outcome_tlast = np.zeros((1, len(smm_encoding)), dtype='int')
+
+    outcome_t2eall = [''] * len(smm_encoding)
+
+    code_list = dx_list + pro_list
+
+    for records in code_list:
+        dx_date, icd = records[:2]
+        icd = icd.replace('.', '').upper()
+        # build baseline
+        if ecs._is_in_baseline(dx_date, index_date):
+            # 2022-02-27, change exact match to prefix match of PASC codes
+            flag, icdprefix = _prefix_in_set(icd, icd_smm)
+            if flag:  # if icd in icd_pasc:
+                pasc_info = icd_smm[icdprefix]
+                pasc = pasc_info[0]
+                rec = smm_encoding[pasc]
+                pos = rec[0]
+                outcome_baseline[0, pos] += 1
+
+        # build outcome
+        # definition of t2e might be problem when
+        if ecs._is_in_followup(dx_date, index_date):
+            days = (dx_date - index_date).days
+            flag, icdprefix = _prefix_in_set(icd, icd_smm)
+            if flag:  # if icd in icd_pasc:
+                pasc_info = icd_smm[icdprefix]
+                pasc = pasc_info[0]
+                rec = smm_encoding[pasc]
+                pos = rec[0]
+
+                outcome_t2eall[pos] += '{};'.format(days)
+                if outcome_flag[0, pos] == 0:
+                    # only records the first event and time, because sorted
+                    if days < outcome_t2e[0, pos]:
+                        outcome_t2e[0, pos] = days
+                    outcome_flag[0, pos] = 1
+                    # outcome_tlast[0, pos] = days
+                else:
+                    outcome_flag[0, pos] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
+
+
 def _encoding_outcome_med_rxnorm_ingredient(med_list, rxnorm_ing, ing_encoding, index_date, default_t2e, verbose=0):
     # encoding 434 top rxnorm ingredient drugs
     # initialize t2e:  last encounter,  end of followup, death, event, whichever happens first
@@ -1012,7 +1088,7 @@ def build_query_1and2_matrix(args):
     for site in tqdm(sites):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-withAllDays_{}.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-withAllDays-withPreg_{}.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1045,7 +1121,7 @@ def build_query_1and2_matrix(args):
         i = -1
         for pid, item in tqdm(id_data.items(), total=len(id_data), mininterval=10):
             # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
-            index_info, demo, dx, med, covid_lab, enc, procedure, obsgen, immun, death, vital = item
+            index_info, demo, dx, med, covid_lab, encounter, procedure, obsgen, immun, death, vital = item
             flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
@@ -1171,6 +1247,10 @@ def build_query_1and2_matrix(args):
                                     ]
             vaccine_array = np.zeros((n, 6), dtype='int16')
 
+            # 2023-2-10 add Obstetric Comorbidity
+            obcdx_array = np.zeros((n, len(OBC_encoding)), dtype='int16')  # 26-dim
+            obcdx_column_names = list(OBC_encoding.keys())
+
             # add covid medication
             covidmed_array = np.zeros((n, 25), dtype='int16')
             covidmed_column_names = [
@@ -1212,6 +1292,18 @@ def build_query_1and2_matrix(args):
                                        ['med-t2e@' + x for x in rxing_encoding.keys()] + \
                                        ['med-base@' + x for x in rxing_encoding.keys()]
 
+            # 2023-2-10 severe maternal morbidity
+            outcome_smm_flag = np.zeros((n, len(SMMpasc_encoding)), dtype='int16')  # 21
+            outcome_smm_t2e = np.zeros((n, len(SMMpasc_encoding)), dtype='int16')
+            outcome_smm_baseline = np.zeros((n, len(SMMpasc_encoding)), dtype='int16')
+            outcome_smm_t2eall = []
+
+            outcome_smm_column_names = ['smm-out@' + x for x in SMMpasc_encoding.keys()] + \
+                                       ['smm-t2e@' + x for x in SMMpasc_encoding.keys()] + \
+                                       ['smm-base@' + x for x in SMMpasc_encoding.keys()] + \
+                                       ['smm-t2eall@' + x for x in SMMpasc_encoding.keys()]
+
+            #
             column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup'] + death_column_names + \
                            ['zip', 'dob', 'age', 'adi'] + utilization_count_names + ['bmi'] + yearmonth_column_names + \
@@ -1219,8 +1311,8 @@ def build_query_1and2_matrix(args):
                            gender_column_names + race_column_names + hispanic_column_names + \
                            social_column_names + utilization_column_names + index_period_names + \
                            bmi_names + smoking_names + \
-                           dx_column_names + med_column_names + vaccine_column_names + covidmed_column_names + \
-                           outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names
+                           dx_column_names + med_column_names + vaccine_column_names + obcdx_column_names + covidmed_column_names + \
+                           outcome_covidmed_column_names + outcome_column_names + outcome_med_column_names + outcome_smm_column_names
 
             # if args.positive_only:
             #     if not flag:
@@ -1247,7 +1339,7 @@ def build_query_1and2_matrix(args):
             criticalcare_flag = _encoding_critical_care(procedure, index_date)
             criticalcare_list.append(criticalcare_flag)
 
-            maxfollowtime = _encoding_maxfollowtime(index_date, enc, dx, med)
+            maxfollowtime = _encoding_maxfollowtime(index_date, encounter, dx, med)
             maxfollowtime_list.append(maxfollowtime)
 
             # encode death
@@ -1269,7 +1361,7 @@ def build_query_1and2_matrix(args):
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             #
             social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
-            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(enc, index_date)
+            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(encounter, index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             #
 
@@ -1293,6 +1385,8 @@ def build_query_1and2_matrix(args):
             vaccine_array[i, :] = _encoding_vaccine_4risk(procedure, immun, vaccine_column_names, vaccine_codes,
                                                           index_date)
 
+            obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding, index_date)
+
             covidmed_array[i, :], \
                 outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
                 = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
@@ -1306,6 +1400,11 @@ def build_query_1and2_matrix(args):
 
             outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
                 _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
+
+            outcome_smm_flag[i, :], outcome_smm_t2e[i, :], outcome_smm_baseline[i, :], outcome_smm_t2eall_1row = \
+                _encoding_outcome_severe_maternal_morbidity_withalldays(
+                    dx, icd_SMMpasc, SMMpasc_encoding, index_date, default_t2e, procedure)
+            outcome_smm_t2eall.append(outcome_smm_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
@@ -1336,6 +1435,7 @@ def build_query_1and2_matrix(args):
                                     dx_array,
                                     med_array,
                                     vaccine_array,
+                                    obcdx_array,
                                     covidmed_array,
                                     outcome_covidmed_flag,
                                     outcome_covidmed_t2e,
@@ -1346,7 +1446,11 @@ def build_query_1and2_matrix(args):
                                     np.asarray(outcome_t2eall),
                                     outcome_med_flag,
                                     outcome_med_t2e,
-                                    outcome_med_baseline
+                                    outcome_med_baseline,
+                                    outcome_smm_flag,
+                                    outcome_smm_t2e,
+                                    outcome_smm_baseline,
+                                    np.asarray(outcome_smm_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)
@@ -1373,8 +1477,10 @@ def build_query_1and2_matrix(args):
             selected_cols = [x for x in df_bool.columns if
                              (x.startswith('dx-base@') or
                               x.startswith('med-base@') or
-                              x.startswith(
-                                  'covidmed-base@'))]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
+                              x.startswith('covidmed-base@') or
+                              x.startswith('obc:') or
+                              x.startswith('smm-base@')
+                              )]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
             # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]

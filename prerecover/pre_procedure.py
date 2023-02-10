@@ -100,7 +100,7 @@ def read_procedure(input_file, output_file='', selected_patients={}):
             px_date = utils.clean_date_str(row["PX_DATE"])
             admit_date = utils.clean_date_str(row['ADMIT_DATE'])
 
-            if pd.isna(px):
+            if pd.isna(px) or (px == ''):
                 n_no_px += 1
 
             if pd.isna(px_date):
@@ -109,7 +109,7 @@ def read_procedure(input_file, output_file='', selected_patients={}):
                 else:
                     n_no_date += 1
 
-            if pd.isna(px) or pd.isna(px_date):
+            if pd.isna(px) or pd.isna(px_date) or (px == ''):
                 n_discard_row += 1
             else:
                 if not selected_patients:
