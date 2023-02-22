@@ -260,7 +260,7 @@ if __name__ == "__main__":
     if args.site == 'all':
         sites = ['mcw', 'nebraska', 'utah', 'utsw',
                  'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh',  'usf', 'nch', 'miami',  # 'emory',
+                 'ufh',  'usf',  'miami',  # 'emory', 'nch',
                  'pitt', 'psu', 'temple', 'michigan',
                  'ochsner', 'ucsf', 'lsu',
                  'vumc']
@@ -309,7 +309,9 @@ if __name__ == "__main__":
                        [x for x in
                         list(df.columns)[
                         df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
-                        if not x.startswith('YM:')
+                        if (not x.startswith('YM:')) and (x not in ['Female', 'Male', 'Other/Missing',
+                                                                   'outpatient visits 0', 'outpatient visits 1-2',
+                                                                   'outpatient visits 3-4', 'outpatient visits >=5', ])
                         ]
 
         days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
