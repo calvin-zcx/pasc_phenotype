@@ -385,16 +385,17 @@ if __name__ == "__main__":
                                                                        random_state=args.random_seed).index
         else:
             print('replace=True')
-            print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
-                  args.negative_ratio * n_covid_pos,
-                  'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-                                                                       replace=True,
-                                                                       random_state=args.random_seed).index
-            # print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+            # print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
             #       args.negative_ratio * n_covid_pos,
             #       'n_covid_neg:', n_covid_neg)
-            # sampled_neg_index = covid_label[(covid_label == 0)].index
+            # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+            #                                                            replace=True,
+            #                                                            random_state=args.random_seed).index
+            print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+                  args.negative_ratio * n_covid_pos,
+                  'n_covid_pos:', n_covid_pos,
+                  'n_covid_neg:', n_covid_neg)
+            sampled_neg_index = covid_label[(covid_label == 0)].index
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
@@ -427,8 +428,8 @@ if __name__ == "__main__":
 
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
-            'C': 10 ** np.arange(-2, 1.5, 0.5),
-            'max_iter': [200],  # [100, 200, 500],
+            'C': [0.01,  0.1, 1., 10.],  #10 ** np.arange(-2, 1.5, 0.5),
+            'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
             covs_array, covid_label, verbose=0)
 
