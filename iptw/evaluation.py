@@ -553,7 +553,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cox_data = pd.DataFrame(
         {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights})
     try:
-        cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True, show_progress=True)
+        cph.fit(cox_data, 'T', 'event', weights_col='weights', robust=True, show_progress=False)
         HR = cph.hazard_ratios_['treatment']
         CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
         test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
@@ -564,7 +564,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
 
         cph_ori = CoxPHFitter() # penalizer=0.01
         cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
-        cph_ori.fit(cox_data_ori, 'T', 'event', show_progress=True)
+        cph_ori.fit(cox_data_ori, 'T', 'event', show_progress=False)
         HR_ori = cph_ori.hazard_ratios_['treatment']
         CI_ori = np.exp(cph_ori.confidence_intervals_.values.reshape(-1))
         test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
