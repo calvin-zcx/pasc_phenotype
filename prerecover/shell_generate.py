@@ -85,6 +85,8 @@ if __name__ == '__main__':
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
 
+    print('site_list:', len(site_list), site_list)
+
     with open(r'output\shells\shell_all_rerun.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
