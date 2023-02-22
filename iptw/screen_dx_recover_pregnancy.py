@@ -44,7 +44,7 @@ def parse_args():
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg'],
                         default='preg-pos-neg')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=5)  # 5
+    parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
 
     args = parser.parse_args()
@@ -276,8 +276,9 @@ if __name__ == "__main__":
     df_covs_list = []
     df_outcome_list = []
 
+    df_list = []
     for ith, site in tqdm(enumerate(sites)):
-        print('Loading: ', site)
+        print('Loading: ', ith, site)
         data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
         # Load Covariates Data
         print('Load data covariates file:', data_file)
@@ -286,77 +287,83 @@ if __name__ == "__main__":
                                       'flag_pregnancy_end_date'])
         # because a patid id may occur in multiple sites. patid were site specific
         print('df.shape:', df.shape)
-        df = select_subpopulation(df, args.severity)
-        # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
-        print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
-        col_names = pd.Series(df.columns)
-        df_info = df[['patid', 'site', 'index date', 'hospitalized',
-                      'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
-                      'flag_pregnancy', 'flag_delivery_date', 'flag_pregnancy_start_date',
-                      'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age']]  # 'Unnamed: 0',
-        df_info_list.append(df_info)
-        df_label = df['covid']
-        df_label_list.append(df_label)
+        df_list.append(df)
 
-        df_outcome_cols = ['death', 'death t2e'] + [x for x in
-                        list(df.columns)
-                        if x.startswith('dx') or x.startswith('smm')
-                        ]
-        df_outcome = df.loc[:, df_outcome_cols]  #.astype('float')
-        df_outcome_list.append(df_outcome)
+    # combine all sites and select subcohorts
+    df = pd.concat(df_list, ignore_index=True)
+    df = select_subpopulation(df, args.severity)
 
-        covs_columns = ['hospitalized', 'ventilation', 'criticalcare',] + \
-                       [x for x in
-                        list(df.columns)[
-                        df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
-                        if (not x.startswith('YM:')) and (x not in ['Female', 'Male', 'Other/Missing',
-                                                                   'outpatient visits 0', 'outpatient visits 1-2',
-                                                                   'outpatient visits 3-4', 'outpatient visits >=5', ])
-                        ]
+    # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
+    print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
+    col_names = pd.Series(df.columns)
+    df_info = df[['patid', 'site', 'index date', 'hospitalized',
+                  'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
+                  'flag_pregnancy', 'flag_delivery_date', 'flag_pregnancy_start_date',
+                  'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age']]  # 'Unnamed: 0',
+    # df_info_list.append(df_info)
+    df_label = df['covid']
+    # df_label_list.append(df_label)
 
-        days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
-        days = np.array(days).reshape((-1,1))
-        # days_norm = (days - days.min())/(days.max() - days.min())
-        spline = SplineTransformer(degree=3, n_knots=7)
-        days_sp = spline.fit_transform(np.array(days))  # identical
-        # days_norm_sp = spline.fit_transform(days_norm) # identical
+    df_outcome_cols = ['death', 'death t2e'] + [x for x in
+                    list(df.columns)
+                    if x.startswith('dx') or x.startswith('smm')
+                    ]
+    df_outcome = df.loc[:, df_outcome_cols]  #.astype('float')
+    # df_outcome_list.append(df_outcome)
 
-        print('len(covs_columns):', len(covs_columns))
+    covs_columns = ['hospitalized', 'ventilation', 'criticalcare',] + \
+                   [x for x in
+                    list(df.columns)[
+                    df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
+                    if (not x.startswith('YM:')) and (x not in ['Female', 'Male', 'Other/Missing',
+                                                               'outpatient visits 0', 'outpatient visits 1-2',
+                                                               'outpatient visits 3-4', 'outpatient visits >=5', ])
+                    ]
 
-        # delet old date feature and use spline
-        covs_columns = [x for x in covs_columns if x not in
-                        ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                         '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22'] ]
-        print('after delete 8 days len(covs_columns):', len(covs_columns))
-        df_covs = df.loc[:, covs_columns].astype('float')
+    days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
+    days = np.array(days).reshape((-1,1))
+    # days_norm = (days - days.min())/(days.max() - days.min())
+    spline = SplineTransformer(degree=3, n_knots=7)
+    days_sp = spline.fit_transform(np.array(days))  # identical
+    # days_norm_sp = spline.fit_transform(days_norm) # identical
 
-        new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
-        covs_columns += new_day_cols
-        print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
-        for i in range(days_sp.shape[1]):
-            print('add', i, new_day_cols[i])
-            df_covs[new_day_cols[i]] = days_sp[:, i]
+    print('len(covs_columns):', len(covs_columns))
 
-        # days between pregnancy and infection
-        days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
-        days_since_preg = np.array(days_since_preg).reshape((-1, 1))
-        spline = SplineTransformer(degree=3, n_knots=5)
-        days_since_preg_sp = spline.fit_transform(np.array(days_since_preg))  # identical
+    # delet old date feature and use spline
+    covs_columns = [x for x in covs_columns if x not in
+                    ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
+                     '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22'] ]
+    print('after delete 8 days len(covs_columns):', len(covs_columns))
+    df_covs = df.loc[:, covs_columns].astype('float')
 
-        new_days_since_preg_cols = ['days_since_preg_splie_{}'.format(i) for i in range(days_since_preg_sp.shape[1])]
-        covs_columns += new_days_since_preg_cols
-        print('after adding {} days len(covs_columns):'.format(days_since_preg_sp.shape[1]), len(covs_columns))
-        for i in range(days_since_preg_sp.shape[1]):
-            print('add', i, new_days_since_preg_cols[i])
-            df_covs[new_days_since_preg_cols[i]] = days_since_preg_sp[:, i]
+    new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
+    covs_columns += new_day_cols
+    print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
+    for i in range(days_sp.shape[1]):
+        print('add', i, new_day_cols[i])
+        df_covs[new_day_cols[i]] = days_sp[:, i]
 
-        df_covs_list.append(df_covs)
-        print(ith, site, 'df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
+    # days between pregnancy and infection
+    days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
+    days_since_preg = np.array(days_since_preg).reshape((-1, 1))
+    spline = SplineTransformer(degree=3, n_knots=5)
+    days_since_preg_sp = spline.fit_transform(np.array(days_since_preg))  # identical
 
-    df = pd.concat(df_outcome_list, ignore_index=True)
-    df_info = pd.concat(df_info_list, ignore_index=True)
-    df_label = pd.concat(df_label_list, ignore_index=True)
-    df_covs = pd.concat(df_covs_list, ignore_index=True)
+    new_days_since_preg_cols = ['days_since_preg_splie_{}'.format(i) for i in range(days_since_preg_sp.shape[1])]
+    covs_columns += new_days_since_preg_cols
+    print('after adding {} days len(covs_columns):'.format(days_since_preg_sp.shape[1]), len(covs_columns))
+    for i in range(days_since_preg_sp.shape[1]):
+        print('add', i, new_days_since_preg_cols[i])
+        df_covs[new_days_since_preg_cols[i]] = days_since_preg_sp[:, i]
+
+    # df_covs_list.append(df_covs)
+    print(ith, 'df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
+
+    # df = pd.concat(df_outcome_list, ignore_index=True)
+    # df_info = pd.concat(df_info_list, ignore_index=True)
+    # df_label = pd.concat(df_label_list, ignore_index=True)
+    # df_covs = pd.concat(df_covs_list, ignore_index=True)
+    df = df_outcome
 
     print('all',
           'df.shape', df.shape,
@@ -431,7 +438,7 @@ if __name__ == "__main__":
         if args.negative_ratio * n_covid_pos < n_covid_neg:
             print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
                   'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
                                                                        replace=False,
                                                                        random_state=args.random_seed).index
         else:

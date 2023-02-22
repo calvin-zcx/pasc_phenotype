@@ -380,7 +380,7 @@ if __name__ == "__main__":
         if args.negative_ratio * n_covid_pos < n_covid_neg:
             print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
                   'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
                                                                        replace=False,
                                                                        random_state=args.random_seed).index
         else:
