@@ -262,7 +262,7 @@ if __name__ == "__main__":
                  'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
                  'ufh',  'usf',  'miami',  # 'emory', 'nch',
                  'pitt', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf', 'lsu',
+                 'ochsner', 'ucsf', #'lsu',
                  'vumc']
 
         # sites = ['wcm', 'montefiore', 'mshs',]
