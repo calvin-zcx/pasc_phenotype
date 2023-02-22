@@ -224,6 +224,8 @@ def select_subpopulation(df, severity):
 
 if __name__ == "__main__":
     # python screen_dx_recover.py --site all --severity all 2>&1 | tee  log_recover/screen_dx_recover_all_all.txt
+    # python screen_dx_recover.py --site all --severity all --negative_ratio 1 --downsample_ratio 0.33 2>&1 | tee  log_recover/screen_dx_recover_all_all_neg1_downsample0.33.txt
+
     start_time = time.time()
     args = parse_args()
 
