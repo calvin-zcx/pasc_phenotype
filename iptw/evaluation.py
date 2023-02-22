@@ -549,7 +549,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # Competing risk sceneriao: 0 for censoring, 1 for target event, 2 for competing risk death
     # --> competing risk 2, death, as censoring in cox model. Only caring event 1
     # https://github.com/CamDavidsonPilon/lifelines/issues/619
-    cph = CoxPHFitter(penalizer=0.01)
+    cph = CoxPHFitter() # penalizer=0.01
     cox_data = pd.DataFrame(
         {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights})
     try:
@@ -562,7 +562,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
         hr_different_time = hr_different_time['treatment'].to_numpy()
 
-        cph_ori = CoxPHFitter(penalizer=0.01)
+        cph_ori = CoxPHFitter() # penalizer=0.01
         cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
         cph_ori.fit(cox_data_ori, 'T', 'event', show_progress=True)
         HR_ori = cph_ori.hazard_ratios_['treatment']
