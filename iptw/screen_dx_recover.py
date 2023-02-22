@@ -46,6 +46,8 @@ def parse_args():
 
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=float, default=3)  # 5
+    parser.add_argument('--downsample_ratio', type=float, default=1.0)  # 5
+
     parser.add_argument('--selectpasc', action='store_true')
 
     args = parser.parse_args()
@@ -204,14 +206,16 @@ def select_subpopulation(df, severity):
         df = df.loc[(df['07/21-11/21'] == 1), :].copy()
     elif severity == '1stwave':
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
-        df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
     elif severity == 'delta':
         print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'alpha':
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
-                    df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+                df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
 
@@ -235,7 +239,7 @@ if __name__ == "__main__":
     if args.site == 'all':
         sites = ['mcw', 'nebraska', 'utah', 'utsw',
                  'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh',  'usf', 'nch', 'miami',  # 'emory',
+                 'ufh', 'usf', 'nch', 'miami',  # 'emory',
                  'pitt', 'psu', 'temple', 'michigan',
                  'ochsner', 'ucsf', 'lsu',
                  'vumc']
@@ -258,7 +262,7 @@ if __name__ == "__main__":
             site)
         # Load Covariates Data
         print('Load data covariates file:', data_file)
-        df = pd.read_csv(data_file,  dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
         # because a patid id may occur in multiple sites. patid were site specific
         print('df.shape:', df.shape)
         df = select_subpopulation(df, args.severity)
@@ -272,21 +276,23 @@ if __name__ == "__main__":
         df_label_list.append(df_label)
 
         df_outcome_cols = ['death', 'death t2e'] + [x for x in
-                        list(df.columns)
-                        if x.startswith('dx')  # or x.startswith('med')
-                        ]
-        df_outcome = df.loc[:, df_outcome_cols]  #.astype('float')
+                                                    list(df.columns)
+                                                    if x.startswith('dx')  # or x.startswith('med')
+                                                    ]
+        df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
         df_outcome_list.append(df_outcome)
 
-        covs_columns = ['hospitalized', 'ventilation', 'criticalcare',] + \
+        covs_columns = ['hospitalized', 'ventilation', 'criticalcare', ] + \
                        [x for x in
                         list(df.columns)[
-                        df.columns.get_loc('20-<40 years'):(df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
+                        df.columns.get_loc('20-<40 years'):(
+                                    df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
                         if not x.startswith('YM:') or not x.startswith('pregage:')
-                        ] + ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index']
+                        ] + ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index',
+                             'No evidence - Pre-index']
 
-        days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
-        days = np.array(days).reshape((-1,1))
+        days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
+        days = np.array(days).reshape((-1, 1))
         # days_norm = (days - days.min())/(days.max() - days.min())
         spline = SplineTransformer(degree=3, n_knots=7)
         days_sp = spline.fit_transform(np.array(days))  # identical
@@ -297,7 +303,7 @@ if __name__ == "__main__":
         # delet old date feature and use spline
         covs_columns = [x for x in covs_columns if x not in
                         ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                         '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22'] ]
+                         '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22']]
         print('after delete 8 days len(covs_columns):', len(covs_columns))
         df_covs = df.loc[:, covs_columns].astype('float')
 
@@ -322,7 +328,6 @@ if __name__ == "__main__":
           'df_label.shape:', df_label.shape,
           'df_covs.shape:', df_covs.shape)
     print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
 
     # Load index information
     with open(r'../data/mapping/icd_pasc_mapping.pkl', 'rb') as f:
@@ -377,6 +382,14 @@ if __name__ == "__main__":
 
         print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
 
+        if args.downsample_ratio < 1:
+            print('args.downsample_ratio:', args.downsample_ratio,
+                  '{} --> {}'.format(n_covid_pos, int(n_covid_pos * args.downsample_ratio)))
+            n_covid_pos = int(n_covid_pos * args.downsample_ratio)
+            sampled_pos_index = covid_label[(covid_label == 1)].sample(n=n_covid_pos,
+                                                                       replace=False,
+                                                                       random_state=args.random_seed).index
+
         if args.negative_ratio * n_covid_pos < n_covid_neg:
             print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
                   'n_covid_neg:', n_covid_neg)
@@ -399,7 +412,11 @@ if __name__ == "__main__":
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
-        pos_neg_selected[covid_label[covid_label == 1].index] = True
+        if args.downsample_ratio < 1:
+            pos_neg_selected[sampled_pos_index] = True
+        else:
+            pos_neg_selected[covid_label[covid_label == 1].index] = True
+
         #
         pat_info = df_info.loc[pos_neg_selected, :]
         covid_label = df_label[pos_neg_selected]
@@ -446,7 +463,8 @@ if __name__ == "__main__":
         )
         out_file_balance = r'../data/recover/output/results/DX-{}{}/{}-{}-results.csv'.format(
             args.severity,
-            '-select' if args.selectpasc else '',
+            # '-select' if args.selectpasc else '', #downsample_ratio
+            '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #
             i,
             pasc)
         utils.check_and_mkdir(out_file_balance)
@@ -456,7 +474,7 @@ if __name__ == "__main__":
         df_summary.to_csv(
             '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.severity,
-                '-select' if args.selectpasc else '',
+                '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
                 i, pasc))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
@@ -464,12 +482,12 @@ if __name__ == "__main__":
         dfps.to_csv(
             '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.severity,
-                '-select' if args.selectpasc else '',
+                '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
                 i, pasc))
         try:
             figout = r'../data/recover/output/results/DX-{}{}/{}-{}-PS.png'.format(
                 args.severity,
-                '-select' if args.selectpasc else '',
+                '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
                 i, pasc)
             print('Dump ', figout)
 
@@ -492,7 +510,7 @@ if __name__ == "__main__":
             covid_label, iptw, pasc_flag, pasc_t2e,
             fig_outfile=r'../data/recover/output/results/DX-{}{}/{}-{}-km.png'.format(
                 args.severity,
-                '-select' if args.selectpasc else '',
+                '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
                 i, pasc),
             title=pasc)
 
@@ -522,7 +540,8 @@ if __name__ == "__main__":
                 'km-diff', 'km-diff-time', 'km-diff-p',
                 'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower", "cif_0_w_CIUpper",
+                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
+                "cif_0_w_CIUpper",
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
@@ -530,7 +549,9 @@ if __name__ == "__main__":
             if i % 50 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(r'../data/recover/output/results/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
-                    args.severity, '-select' if args.selectpasc else '', i))
+                    args.severity,
+                    '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                    i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
@@ -538,7 +559,8 @@ if __name__ == "__main__":
             df_causal.to_csv(
                 r'../data/recover/output/results/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.severity,
-                    '-select' if args.selectpasc else '',))
+                    '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -547,5 +569,6 @@ if __name__ == "__main__":
     df_causal.to_csv(
         r'../data/recover/output/results/DX-{}{}/causal_effects_specific.csv'.format(
             args.severity,
-            '-select' if args.selectpasc else ''))
+            '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else ''
+        ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
