@@ -216,22 +216,22 @@ def select_subpopulation(df, severity):
     if severity == 'preg-pos-neg':
         # select female
         print('Before selecting female, df.shape', df.shape)
-        df = df.loc[df['Female'] == 1, :].copy()
+        df = df.loc[df['Female'] == 1, :] #.copy()
         print('After selecting female, df.shape', df.shape)
 
         # select age
         print('Before selecting age <= 50, df.shape', df.shape)
-        df = df.loc[df['age'] <= 50, :].copy()
+        df = df.loc[df['age'] <= 50, :] #.copy()
         print('After selecting age <= 50, df.shape', df.shape)
 
         # select index date
         print('Before selecting index date < 2022-6-1, df.shape', df.shape)
-        df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :].copy()
+        df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :]#.copy()
         print('After selecting index date < 2022-6-1, df.shape', df.shape)
 
         # pregnant patients only
         print('Before selecting pregnant, df.shape', df.shape)
-        df = df.loc[df['flag_pregnancy'] == 1, :].copy()
+        df = df.loc[df['flag_pregnancy'] == 1, :]#.copy()
         print('After selecting pregnant, df.shape', df.shape)
 
         # infection during pregnancy period
