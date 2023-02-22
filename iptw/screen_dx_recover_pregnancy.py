@@ -265,7 +265,7 @@ if __name__ == "__main__":
                  'ochsner', 'ucsf', 'lsu',
                  'vumc']
 
-        sites = ['wcm', 'montefiore', 'mshs',]
+        # sites = ['wcm', 'montefiore', 'mshs',]
 
         print('len(sites), sites:', len(sites), sites)
     else:
@@ -477,7 +477,7 @@ if __name__ == "__main__":
 
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
-            'C': [10.],  # 0.01,  0.1, 1.,  #10 ** np.arange(-2, 1.5, 0.5),
+            'C': 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
             covs_array, covid_label, verbose=0)
