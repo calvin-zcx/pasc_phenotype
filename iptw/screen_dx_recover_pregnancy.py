@@ -506,7 +506,7 @@ if __name__ == "__main__":
             args.severity,
             '-select' if args.selectpasc else '',
             i,
-            pasc.replace(':', '-'))
+            pasc.replace(':', '-').replace('/', '-'))
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
@@ -515,7 +515,7 @@ if __name__ == "__main__":
             '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-')))
+                i, pasc.replace(':', '-').replace('/', '-')))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
@@ -523,12 +523,12 @@ if __name__ == "__main__":
             '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-')))
+                i, pasc.replace(':', '-').replace('/', '-')))
         try:
             figout = r'../data/recover/output/results/DX-{}{}/{}-{}-PS.png'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-'))
+                i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
 
             ax = plt.subplot(111)
@@ -551,7 +551,7 @@ if __name__ == "__main__":
             fig_outfile=r'../data/recover/output/results/DX-{}{}/{}-{}-km.png'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-')),
+                i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc)
 
         try:
