@@ -237,7 +237,7 @@ def select_subpopulation(df, severity):
         # infection during pregnancy period
         print('Before selecting infection in gestational period, df.shape', df.shape)
         df = df.loc[(df['index date'] >= df['flag_pregnancy_start_date']) & (
-                df['index date'] < df['flag_delivery_date']), :].copy()
+                df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
         print('After selecting infection in gestational period, df.shape', df.shape)
 
     return df
