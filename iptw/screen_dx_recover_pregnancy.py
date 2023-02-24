@@ -266,7 +266,7 @@ if __name__ == "__main__":
                  'vumc']
 
         # sites = ['wcm', 'montefiore', 'mshs',]
-
+        sites = ['wcm', ]
         print('len(sites), sites:', len(sites), sites)
     else:
         sites = [args.site, ]

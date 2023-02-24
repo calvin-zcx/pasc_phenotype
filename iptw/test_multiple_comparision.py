@@ -137,8 +137,7 @@ def add_test_to_old_results():
     print('Done')
 
 
-if __name__ == '__main__':
-
+def add_test_to_paper_2023_2_23():
     DATA = "FL"
 
     if DATA == 'INSIGHT':
@@ -194,4 +193,37 @@ if __name__ == '__main__':
             r'../data/oneflorida/output/character/outcome/MED-all-new-trim-vaccine/causal_effects_specific_med_oneflorida-MultiPval-DXMEDALL.xlsx',
             sheet_name='med')
 
+    print('Done')
+
+
+if __name__ == '__main__':
+
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/DX-all-downsample0.33/causal_effects_specific_downsample0.33.xlsx',
+    #     sheet_name='dx')
+
+    df = pd.read_excel(
+        r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg.xlsx',
+        sheet_name='dx')
+
+    df_select = df.loc[df['hr-w-p'].notna(), :]
+    p_all = df_select['hr-w-p']  # pd.concat([df_select['hr-w-p'], df_med_select['hr-w-p']])
+    df_p = multiple_test_correct(p_all, fdr_threshold=0.05)
+
+    # df_p_dx = df_p.iloc[:len(df_select['hr-w-p']), :]
+    # df_p_med = df_p.iloc[len(df_select['hr-w-p']):, :]
+
+    print('p_all.shape', p_all.shape, 'df_p.shape', df_p.shape)
+    # print('df_p_dx.shape', df_p_dx.shape, 'df_p_med.shape', df_p_med.shape)
+
+    dfm_dx = pd.merge(df, df_p, how='left', left_index=True, right_index=True)
+    # dfm_med = pd.merge(df_med, df_p_med, how='left', left_index=True, right_index=True)
+
+    # dfm_dx.to_excel(
+    #     r'../data/recover/output/results/DX-all-downsample0.33/causal_effects_specific_downsample0.33_aux_correctPvalue.xlsx',
+    #     sheet_name='dx')
+
+    dfm_dx.to_excel(
+        r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg_aux_correctPvalue.xlsx',
+        sheet_name='dx')
     print('Done')

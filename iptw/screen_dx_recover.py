@@ -41,7 +41,7 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha'],
+                                               '1stwave', 'delta', 'alpha', 'deltaAndBefore', 'omicron'],
                         default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
@@ -216,6 +216,12 @@ def select_subpopulation(df, severity):
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    elif severity == 'deltaAndBefore':
+        print('Considering patients in Delta wave and before, start to Nov.-30-2021')
+        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+    elif severity == 'omicron':
+        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
 
