@@ -469,10 +469,11 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/DX-{}{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/DX-{}{}{}/{}-{}-results.csv'.format(
             args.severity,
             # '-select' if args.selectpasc else '', #downsample_ratio
             '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #
+            '-neg{}'.format(args.negative_ratio),
             i,
             pasc)
         utils.check_and_mkdir(out_file_balance)
@@ -480,22 +481,25 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/DX-{}{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.severity,
                 '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                '-neg{}'.format(args.negative_ratio),
                 i, pasc))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/DX-{}{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.severity,
                 '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                '-neg{}'.format(args.negative_ratio),
                 i, pasc))
         try:
-            figout = r'../data/recover/output/results/DX-{}{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/DX-{}{}{}/{}-{}-PS.png'.format(
                 args.severity,
                 '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                '-neg{}'.format(args.negative_ratio),
                 i, pasc)
             print('Dump ', figout)
 
@@ -516,9 +520,10 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/DX-{}{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/DX-{}{}{}/{}-{}-km.png'.format(
                 args.severity,
                 '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                '-neg{}'.format(args.negative_ratio),
                 i, pasc),
             title=pasc)
 
@@ -556,18 +561,20 @@ if __name__ == "__main__":
 
             if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/recover/output/results/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    to_csv(r'../data/recover/output/results/DX-{}{}{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.severity,
                     '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                    '-neg{}'.format(args.negative_ratio),
                     i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/DX-{}{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.severity,
                     '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else '',
+                    '-neg{}'.format(args.negative_ratio),
                 ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -575,8 +582,9 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/DX-{}{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/DX-{}{}{}/causal_effects_specific.csv'.format(
             args.severity,
             '-downsample{:.2f}'.format(args.downsample_ratio) if args.downsample_ratio < 1 else '',  #'-select' if args.selectpasc else ''
+            '-neg{}'.format(args.negative_ratio),
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
