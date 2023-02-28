@@ -21,18 +21,21 @@ from functools import reduce
 print = functools.partial(print, flush=True)
 from misc import utils
 
-if __name__ == '__main__':
+def before_2023_2_23():
     start_time = time.time()
 
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('len(site_list)', len(site_list), site_list)
+
     vdfec = []
     vdf = []
     for i, site in tqdm(enumerate(site_list)):
         print(i, site)
         try:
-            df_ec = pd.read_csv(r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}_info.csv'.format(site, site))
+            df_ec = pd.read_csv(
+                r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2_{}_info.csv'.format(site, site))
             df_ec['n_site'] = 1
             vdfec.append(df_ec)
             data_file = r'../data/recover/output/{}/matrix_cohorts_covid_4manuNegNoCovidV2_boolbase-nout-withAllDays_{}.csv'.format(
@@ -59,8 +62,34 @@ if __name__ == '__main__':
     dmean = df.mean()
     dmean.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates_mean.csv')
 
-    dsmdf = pd.DataFrame({'sum': dsum[2:], 'mean':dmean})
+    dsmdf = pd.DataFrame({'sum': dsum[2:], 'mean': dmean})
     dsmdf.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2_all_covariates_summary.csv')
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('len(site_list)', len(site_list), site_list)
+
+    vdfec = []
+    for i, site in tqdm(enumerate(site_list)):
+        print(i, site)
+        try:
+            df_ec = pd.read_csv(r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2age18_{}_info.csv'.format(site, site))
+            df_ec['n_site'] = 1
+            vdfec.append(df_ec)
+
+        except Exception as e:
+            print('[ERROR:]', e, file=sys.stderr)
+            continue
+    dfec_sum = reduce(lambda x, y: x.add(y, fill_value=0), vdfec)
+    print(dfec_sum)
+    dfec_sum.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2age18_all_info.csv')
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 

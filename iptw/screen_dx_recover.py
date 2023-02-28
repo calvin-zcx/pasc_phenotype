@@ -276,6 +276,10 @@ if __name__ == "__main__":
         df = select_subpopulation(df, args.severity)
         # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
         print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
+        if df.shape[0] == 0:
+            print('0 selected patients in', site, args.severity, 'skip and continue')
+            continue
+
         col_names = pd.Series(df.columns)
         df_info = df[['patid', 'site', 'index date', 'hospitalized',
                       'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e']]  # 'Unnamed: 0',
