@@ -85,6 +85,7 @@ if __name__ == '__main__':
         ax.plot(ym, marker='o', linestyle='-')
         ax.set_ylabel('Covid case per month')
         ax.set_title(site, fontsize=14,)
+        plt.grid(axis='y')
         ax.set_xticklabels(labels, rotation = 45, ha='right')
         plt.tight_layout()
 
