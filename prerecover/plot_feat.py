@@ -28,7 +28,7 @@ if __name__ == '__main__':
 
     sites = ['mcw', 'nebraska', 'utah', 'utsw',
              'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-             'ufh', 'usf', 'nch', 'miami',   'emory',
+             'ufh', 'usf', 'nch', 'miami',  # 'emory',
              'pitt', 'psu', 'temple', 'michigan',
              'ochsner', 'ucsf', 'lsu',
              'vumc']
