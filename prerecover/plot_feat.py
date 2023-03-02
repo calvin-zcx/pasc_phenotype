@@ -28,10 +28,12 @@ if __name__ == '__main__':
 
     sites = ['mcw', 'nebraska', 'utah', 'utsw',
              'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-             'ufh', 'usf', 'nch', 'miami',  # 'emory',
+             'ufh', 'usf', 'nch', 'miami',   'emory',
              'pitt', 'psu', 'temple', 'michigan',
              'ochsner', 'ucsf', 'lsu',
              'vumc']
+
+    # sites = ['wcm', 'montefiore', 'mshs', ]
 
     site_month = {}
     for ith, site in tqdm(enumerate(sites)):
@@ -64,18 +66,50 @@ if __name__ == '__main__':
             "YM: February 2023",
         ]
 
+        labels = [
+                "March 2020", "April 2020", "May 2020", "June 2020", "July 2020",
+                "Aug. 2020", "Sept. 2020", "Oct. 2020", "Nov. 2020", "Dec. 2020",
+                "Jan. 2021", "Feb. 2021", "March 2021", "April 2021", "May 2021",
+                "June 2021", "July 2021", "Aug. 2021", "Sept. 2021", "Oct. 2021",
+                "Nov. 2021", "Dec. 2021", "Jan. 2022",
+                "Feb. 2022", "March 2022", "April 2022", "May 2022",
+                "June 2022", "July 2022", "Aug. 2022", "Sept. 2022",
+                "Oct. 2022", "Nov. 2022", "Dec. 2022", "Jan. 2023",
+                "Feb. 2023",
+        ]
+
         ym = df[yearmonth_column_names].sum()
         site_month[site] = ym
 
-        fig, ax = plt.subplots(figsize=(11, 8))
+        fig, ax = plt.subplots(figsize=(14, 6))
         ax.plot(ym, marker='o', linestyle='-')
         ax.set_ylabel('Covid case per month')
-        ax.set_title(site)
-        ax.set_xticklabels([x[4:] for x in yearmonth_column_names], rotation = 45)
+        ax.set_title(site, fontsize=14,)
+        ax.set_xticklabels(labels, rotation = 45, ha='right')
+        plt.tight_layout()
+
         figout = r'output/figure/dynamics/{}-{}.jpeg'.format(ith, site)
         utils.check_and_mkdir(figout)
 
         plt.savefig(figout)
+        # plt.show()
         plt.close()
+
+    sumall = sum(site_month.values())
+    fig, ax = plt.subplots(figsize=(14, 6))
+    ax.plot(sumall, marker='o', linestyle='-')
+    plt.grid(axis = 'y')
+
+    ax.set_ylabel('Covid case per month')
+    ax.set_title('ALL', fontsize=14, )
+    ax.set_xticklabels(labels, rotation=45, ha='right')
+    plt.tight_layout()
+
+    figout = r'output/figure/dynamics/{}-{}.jpeg'.format(ith, 'ALL')
+    utils.check_and_mkdir(figout)
+
+    plt.savefig(figout)
+    # plt.show()
+    plt.close()
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -202,8 +202,16 @@ if __name__ == '__main__':
     #     r'../data/recover/output/results/DX-all-downsample0.33/causal_effects_specific_downsample0.33.xlsx',
     #     sheet_name='dx')
 
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg.xlsx',
+    #     sheet_name='dx')
+
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/DX-all-downsample0.50/causal_effects_specific_dx-all-downsample0.5.xlsx',
+    #     sheet_name='dx')
+
     df = pd.read_excel(
-        r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg.xlsx',
+        r'../data/recover/output/results/DX-inpatienticu/causal_effects_specific-inpatienticu.xlsx',
         sheet_name='dx')
 
     df_select = df.loc[df['hr-w-p'].notna(), :]
@@ -223,7 +231,16 @@ if __name__ == '__main__':
     #     r'../data/recover/output/results/DX-all-downsample0.33/causal_effects_specific_downsample0.33_aux_correctPvalue.xlsx',
     #     sheet_name='dx')
 
+    # dfm_dx.to_excel(
+    #     r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg_aux_correctPvalue.xlsx',
+    #     sheet_name='dx')
+
+    # dfm_dx.to_excel(
+    #     r'../data/recover/output/results/DX-all-downsample0.50/causal_effects_specific_dx-all-downsample0.5_aux_correctPvalue.xlsx',
+    #     sheet_name='dx')
+
     dfm_dx.to_excel(
-        r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific_preg_pos_neg_aux_correctPvalue.xlsx',
+        r'../data/recover/output/results/DX-inpatienticu/causal_effects_specific-inpatienticu_aux_correctPvalue.xlsx',
         sheet_name='dx')
+
     print('Done')
