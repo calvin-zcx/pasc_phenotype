@@ -41,10 +41,11 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha', 'preg-pos-neg'],
-                        default='preg-pos-neg')
+                                               '1stwave', 'delta', 'alpha', 'preg-pos-neg',
+                                               'pospreg-posnonpreg'],
+                        default='pospreg-posnonpreg')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=10)  # 5
+    parser.add_argument('--negative_ratio', type=int, default=5)  # 5
     parser.add_argument('--selectpasc', action='store_true')
 
     args = parser.parse_args()
@@ -213,7 +214,7 @@ def select_subpopulation(df, severity):
     else:
         print('Considering ALL cohorts')
 
-    if severity == 'preg-pos-neg':
+    if severity == 'pospreg-posnonpreg':
         # select index date
         print('Before selecting index date < 2022-6-1, df.shape', df.shape)
         df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :]  # .copy()
@@ -229,22 +230,27 @@ def select_subpopulation(df, severity):
         df = df.loc[df['Female'] == 1, :] #.copy()
         print('After selecting female, df.shape', df.shape)
 
-        # pregnant patients only
-        print('Before selecting pregnant, df.shape', df.shape)
-        df = df.loc[df['flag_pregnancy'] == 1, :]#.copy()
-        print('After selecting pregnant, df.shape', df.shape)
+        # covid positive patients only
+        print('Before selecting covid+, df.shape', df.shape)
+        df = df.loc[df['covid'] == 1, :]  # .copy()
+        print('After selecting covid+, df.shape', df.shape)
 
-        # infection during pregnancy period
-        print('Before selecting infection in gestational period, df.shape', df.shape)
-        df = df.loc[(df['index date'] >= df['flag_pregnancy_start_date']) & (
-                df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
-        print('After selecting infection in gestational period, df.shape', df.shape)
+        # # pregnant patients only
+        # print('Before selecting pregnant, df.shape', df.shape)
+        # df = df.loc[df['flag_pregnancy'] == 1, :]#.copy()
+        # print('After selecting pregnant, df.shape', df.shape)
+        #
+        # # infection during pregnancy period
+        # print('Before selecting infection in gestational period, df.shape', df.shape)
+        # df = df.loc[(df['index date'] >= df['flag_pregnancy_start_date']) & (
+        #         df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
+        # print('After selecting infection in gestational period, df.shape', df.shape)
 
     return df
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy.py --site all --severity preg-pos-neg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_all_preg-pos-neg.txt
+    # python screen_dx_recover_pregnancy_cohort2.py --site all --severity pospreg-posnonpreg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort2_all_pospreg-posnonpreg.txt
     start_time = time.time()
     args = parse_args()
 
@@ -292,16 +298,43 @@ if __name__ == "__main__":
     # combine all sites and select subcohorts
     df = pd.concat(df_list, ignore_index=True)
     df = select_subpopulation(df, args.severity)
+    # --> 18-50 years old, female, covid+
+    print('Branching building two groups here:')
+    # group1: pregnant and covid+ in pregnancy
+    # pregnant patients only
+    print('Before selecting pregnant, df.shape', df.shape)
+    df1 = df.loc[df['flag_pregnancy'] == 1, :]
+    print('After selecting pregnant, df1.shape', df1.shape)
+
+    # infection during pregnancy period
+    print('Before selecting infection in gestational period, df1.shape', df1.shape)
+    df1 = df1.loc[(df1['index date'] >= df1['flag_pregnancy_start_date']) & (
+            df1['index date'] <= df1['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
+    print('After selecting infection in gestational period, df1.shape', df1.shape)
+
+    # group2: non-pregnant group
+    print('Before selecting non-pregnant, df.shape', df.shape)
+    df2 = df.loc[df['flag_pregnancy'] == 0, :].copy()
+    print('After selecting non-pregnant, df2.shape', df2.shape)
+
+    # combine df1 and df2 into df
+    df = pd.concat([df1, df2], ignore_index=True)
 
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
-    print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
+    print('Severity cohorts:', args.severity,
+          'df1.shape:', df1.shape,
+          'df2.shape:', df2.shape,
+          'df.shape:', df.shape,
+          )
+
     col_names = pd.Series(df.columns)
     df_info = df[['patid', 'site', 'index date', 'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
                   'flag_pregnancy', 'flag_delivery_date', 'flag_pregnancy_start_date',
                   'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age']]  # 'Unnamed: 0',
     # df_info_list.append(df_info)
-    df_label = df['covid']
+    # df_label = df['covid']
+    df_label = df['flag_pregnancy']
     # df_label_list.append(df_label)
 
     df_outcome_cols = ['death', 'death t2e'] + [x for x in
@@ -317,7 +350,14 @@ if __name__ == "__main__":
                     df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
                     if (not x.startswith('YM:')) and (x not in ['Female', 'Male', 'Other/Missing',
                                                                'outpatient visits 0', 'outpatient visits 1-2',
-                                                               'outpatient visits 3-4', 'outpatient visits >=5', ])
+                                                               'outpatient visits 3-4', 'outpatient visits >=5',
+                                                                'obc:Preterm birth (< 37 weeks)',
+                                                                'obc:Delivery BMI\xa0>\xa040',
+                                                                'obc:Preeclampsia without severe features or gestational hypertension',
+                                                                'obc:Preeclampsia with severe features',
+                                                                'obc:Placenta accreta spectrum', 'obc:Placental abruption',
+                                                                'obc:Twin/multiple pregnancy',
+                                                                'obc:Placenta previa, complete or partial'])
                     ]
 
     days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
@@ -343,18 +383,18 @@ if __name__ == "__main__":
         print('add', i, new_day_cols[i])
         df_covs[new_day_cols[i]] = days_sp[:, i]
 
-    # days between pregnancy and infection
-    days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
-    days_since_preg = np.array(days_since_preg).reshape((-1, 1))
-    spline = SplineTransformer(degree=3, n_knots=5)
-    days_since_preg_sp = spline.fit_transform(np.array(days_since_preg))  # identical
-
-    new_days_since_preg_cols = ['days_since_preg_splie_{}'.format(i) for i in range(days_since_preg_sp.shape[1])]
-    covs_columns += new_days_since_preg_cols
-    print('after adding {} days len(covs_columns):'.format(days_since_preg_sp.shape[1]), len(covs_columns))
-    for i in range(days_since_preg_sp.shape[1]):
-        print('add', i, new_days_since_preg_cols[i])
-        df_covs[new_days_since_preg_cols[i]] = days_since_preg_sp[:, i]
+    # # days between pregnancy and infection
+    # days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
+    # days_since_preg = np.array(days_since_preg).reshape((-1, 1))
+    # spline = SplineTransformer(degree=3, n_knots=5)
+    # days_since_preg_sp = spline.fit_transform(np.array(days_since_preg))  # identical
+    #
+    # new_days_since_preg_cols = ['days_since_preg_splie_{}'.format(i) for i in range(days_since_preg_sp.shape[1])]
+    # covs_columns += new_days_since_preg_cols
+    # print('after adding {} days len(covs_columns):'.format(days_since_preg_sp.shape[1]), len(covs_columns))
+    # for i in range(days_since_preg_sp.shape[1]):
+    #     print('add', i, new_days_since_preg_cols[i])
+    #     df_covs[new_days_since_preg_cols[i]] = days_since_preg_sp[:, i]
 
     # df_covs_list.append(df_covs)
     print(ith, 'df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
@@ -429,11 +469,14 @@ if __name__ == "__main__":
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
         # Select negative: pos : neg = 1:2 for IPTW
-        covid_label = df_label[idx]
+
+        covid_label = df_label[idx]  # actually current is the pregnant label
+
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
 
-        print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
+        # print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
+        print('n pregnant:', n_covid_pos, 'n not pregnant:', n_covid_neg, )
 
         if args.negative_ratio * n_covid_pos < n_covid_neg:
             print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
