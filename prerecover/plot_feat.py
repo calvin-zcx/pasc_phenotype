@@ -106,7 +106,7 @@ if __name__ == '__main__':
     ax.set_xticklabels(labels, rotation=45, ha='right')
     plt.tight_layout()
 
-    figout = r'output/figure/dynamics/{}-{}.jpeg'.format(ith, 'ALL')
+    figout = r'output/figure/dynamics/{}-{}.jpeg'.format(ith+1, 'ALL')
     utils.check_and_mkdir(figout)
 
     plt.savefig(figout)
