@@ -274,7 +274,7 @@ if __name__ == "__main__":
                  'ochsner', 'ucsf',  # 'lsu',
                  'vumc']
 
-        # sites = ['wcm', 'montefiore', 'mshs',]
+        sites = ['wcm', 'montefiore', 'mshs',]
         # sites = ['wcm', ]
         print('len(sites), sites:', len(sites), sites)
     else:
@@ -334,7 +334,10 @@ if __name__ == "__main__":
     df_info = df[['patid', 'site', 'index date', 'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
                   'flag_pregnancy', 'flag_delivery_date', 'flag_pregnancy_start_date',
-                  'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age']]  # 'Unnamed: 0',
+                  'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age',
+                  '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
+                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22'
+                  ]]  # 'Unnamed: 0',
     # df_info_list.append(df_info)
     # df_label = df['covid']
     df_label = df['flag_pregnancy']
@@ -511,7 +514,37 @@ if __name__ == "__main__":
         for _iii in range(1, len(match_index_list)):
             sampled_neg_index = sampled_neg_index.append(match_index_list[_iii])
 
-        print('Sampled with stratified, * folds, min. [args.negative_ratio * n_covid_pos:]', args.negative_ratio * n_covid_pos,
+        print('len(sampled_neg_index):', len(sampled_neg_index))
+
+        match2_cols = ['03/20-06/20', '07/20-10/20',
+                       '11/20-02/21', '03/21-06/21',
+                       '07/21-10/21', '11/21-02/22', '03/22-06/22', ]
+
+        match2_cols_prop = np.array(df_info.loc[(df_label == 1) & idx, match2_cols].mean().to_list())
+        match2_cols_n = match2_cols_prop * n_covid_pos * args.negative_ratio
+        match2_cols_in_0 = np.array(df_info.loc[(df_label == 0) & idx, match2_cols].sum().to_list())
+
+        match2_index_list = []
+        for mc, mn1, mn0 in zip(match2_cols, match2_cols_n, match2_cols_in_0):
+            mn_ = min(mn1, mn0)
+            mn_ = int(mn_)
+            match2_sampled_neg_index = df_label[(df_label == 0) & idx & (df_info[mc] == 1)].sample(
+                n=mn_,
+                replace=False,
+                random_state=args.random_seed).index
+            match2_index_list.append(match2_sampled_neg_index)
+
+        sampled2_neg_index = match2_index_list[0]
+        for _iii in range(1, len(match2_index_list)):
+            sampled2_neg_index = sampled2_neg_index.append(match2_index_list[_iii])
+
+        print('len(sampled2_neg_index):', len(sampled2_neg_index))
+
+        sampled_neg_index = sampled_neg_index.intersection(sampled2_neg_index)
+        print('after intersection, len(sampled_neg_index):', len(sampled_neg_index))
+
+        print('Sampled with stratified, * folds, min. [args.negative_ratio * n_covid_pos:]',
+              args.negative_ratio * n_covid_pos,
               'n_covid_pos:', n_covid_pos,
               'len(sampled_neg_index):', len(sampled_neg_index))
 
