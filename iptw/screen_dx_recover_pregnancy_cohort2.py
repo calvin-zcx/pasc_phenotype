@@ -346,11 +346,11 @@ if __name__ == "__main__":
                                                 ]
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
     # df_outcome_list.append(df_outcome)
-
-    covs_columns = ['hospitalized', 'ventilation', 'criticalcare', ] + \
+    # 'hospitalized',
+    covs_columns = ['ventilation', 'criticalcare', ] + \
                    [x for x in
                     list(df.columns)[
-                    df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
+                    df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Pulmonary hypertension'))]
                     if (not x.startswith('YM:')) and (
                                 x not in ['Female', 'Male', 'hospitalized', 'Other/Missing', 'DX: Pregnant',
                                           'No evidence - Post-index', 'Fully vaccinated - Post-index', 'Partially vaccinated - Post-index',
