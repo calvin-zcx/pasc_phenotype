@@ -516,6 +516,7 @@ if __name__ == "__main__":
 
         print('len(sampled_neg_index):', len(sampled_neg_index))
 
+        print('# stratum match/stratified sampling by index date')
         match2_cols = ['03/20-06/20', '07/20-10/20',
                        '11/20-02/21', '03/21-06/21',
                        '07/21-10/21', '11/21-02/22', '03/22-06/22', ]
@@ -540,11 +541,12 @@ if __name__ == "__main__":
 
         print('len(sampled2_neg_index):', len(sampled2_neg_index))
 
+        print('# intersection of stratum match/stratified sampling by age and index date:')
         sampled_neg_index = sampled_neg_index.intersection(sampled2_neg_index)
         print('after intersection, len(sampled_neg_index):', len(sampled_neg_index))
 
-        print('Sampled with stratified, * folds, min. [args.negative_ratio * n_covid_pos:]',
-              args.negative_ratio * n_covid_pos,
+        print('Sampled with stratified, * folds, min.--args.negative_ratio * n_covid_pos:--',
+              args.negative_ratio * n_covid_pos, '\n',
               'n_covid_pos:', n_covid_pos,
               'len(sampled_neg_index):', len(sampled_neg_index))
 
