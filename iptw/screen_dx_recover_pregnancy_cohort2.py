@@ -499,17 +499,17 @@ if __name__ == "__main__":
 
         match_index_list = []
         for mc, mn1, mn0 in zip(match_cols, match_cols_n, match_cols_in_0):
-            mn = min(mn1, mn0)
-            mn = int(mn)
+            mn_ = min(mn1, mn0)
+            mn_ = int(mn_)
             match_sampled_neg_index = df_label[(df_label == 0) & idx & (df_covs[mc] == 1)].sample(
-                n=mn,
+                n=mn_,
                 replace=False,
                 random_state=args.random_seed).index
             match_index_list.append(match_sampled_neg_index)
 
         sampled_neg_index = match_index_list[0]
-        for i in range(1, len(match_index_list)):
-            sampled_neg_index = sampled_neg_index.append(match_index_list[i])
+        for _iii in range(1, len(match_index_list)):
+            sampled_neg_index = sampled_neg_index.append(match_index_list[_iii])
 
         print('Sampled with stratified, * folds, min. [args.negative_ratio * n_covid_pos:]', args.negative_ratio * n_covid_pos,
               'n_covid_pos:', n_covid_pos,
