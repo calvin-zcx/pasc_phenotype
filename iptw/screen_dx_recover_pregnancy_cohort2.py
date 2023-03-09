@@ -205,11 +205,11 @@ def select_subpopulation(df, severity):
     elif severity == '1stwave':
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
-                    df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
+                df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
     elif severity == 'delta':
         print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
-                    df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+                df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'alpha':
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
@@ -275,7 +275,7 @@ if __name__ == "__main__":
                  'vumc']
 
         # sites = ['wcm', 'montefiore', 'mshs',]
-        # sites = ['wcm', ]
+        sites = ['wcm', ]
         print('len(sites), sites:', len(sites), sites)
     else:
         sites = [args.site, ]
@@ -352,17 +352,18 @@ if __name__ == "__main__":
                     list(df.columns)[
                     df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Pulmonary hypertension'))]
                     if (not x.startswith('YM:')) and (
-                                x not in ['Female', 'Male', 'hospitalized', 'Other/Missing', 'DX: Pregnant',
-                                          'No evidence - Post-index', 'Fully vaccinated - Post-index', 'Partially vaccinated - Post-index',
-                                          'outpatient visits 0', 'outpatient visits 1-2',
-                                          'outpatient visits 3-4', 'outpatient visits >=5',
-                                          'obc:Preterm birth (< 37 weeks)', 'obc:Gestational diabetes mellitus',
-                                          'obc:Delivery BMI\xa0>\xa040', 'obc:Previous cesarean birth',
-                                          'obc:Preeclampsia without severe features or gestational hypertension',
-                                          'obc:Preeclampsia with severe features',
-                                          'obc:Placenta accreta spectrum', 'obc:Placental abruption',
-                                          'obc:Twin/multiple pregnancy',
-                                          'obc:Placenta previa, complete or partial'])
+                            x not in ['Female', 'Male', 'hospitalized', 'Other/Missing', 'DX: Pregnant',
+                                      'No evidence - Post-index', 'Fully vaccinated - Post-index',
+                                      'Partially vaccinated - Post-index',
+                                      'outpatient visits 0', 'outpatient visits 1-2',
+                                      'outpatient visits 3-4', 'outpatient visits >=5',
+                                      'obc:Preterm birth (< 37 weeks)', 'obc:Gestational diabetes mellitus',
+                                      'obc:Delivery BMI\xa0>\xa040', 'obc:Previous cesarean birth',
+                                      'obc:Preeclampsia without severe features or gestational hypertension',
+                                      'obc:Preeclampsia with severe features',
+                                      'obc:Placenta accreta spectrum', 'obc:Placental abruption',
+                                      'obc:Twin/multiple pregnancy',
+                                      'obc:Placenta previa, complete or partial'])
                     ]
 
     days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
@@ -483,25 +484,56 @@ if __name__ == "__main__":
         # print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
         print('n pregnant:', n_covid_pos, 'n not pregnant:', n_covid_neg, )
 
-        if args.negative_ratio * n_covid_pos < n_covid_neg:
-            print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
-                  'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
-                                                                       replace=False,
-                                                                       random_state=args.random_seed).index
-        else:
-            print('replace=True')
-            # print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
-            #       args.negative_ratio * n_covid_pos,
-            #       'n_covid_neg:', n_covid_neg)
-            # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-            #                                                            replace=True,
-            #                                                            random_state=args.random_seed).index
-            print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
-                  args.negative_ratio * n_covid_pos,
-                  'n_covid_pos:', n_covid_pos,
-                  'n_covid_neg:', n_covid_neg)
-            sampled_neg_index = covid_label[(covid_label == 0)].index
+        print('# stratum match/stratified sampling by age group')
+        # stratum match/stratified sampling
+        match_cols = ['pregage:18-<25 years',
+                      'pregage:25-<30 years',
+                      'pregage:30-<35 years',
+                      'pregage:35-<40 years',
+                      'pregage:40-<45 years',
+                      'pregage:45-50 years', ]
+
+        match_cols_prop = np.array(df_covs.loc[(df_label == 1) & idx, match_cols].mean().to_list())
+        match_cols_n = match_cols_prop * n_covid_pos * args.negative_ratio
+        match_cols_in_0 = np.array(df_covs.loc[(df_label == 0) & idx, match_cols].sum().to_list())
+
+        match_index_list = []
+        for mc, mn1, mn0 in zip(match_cols, match_cols_n, match_cols_in_0):
+            mn = min(mn1, mn0)
+            mn = int(mn)
+            match_sampled_neg_index = df_label[(df_label == 0) & idx & (df_covs[mc] == 1)].sample(
+                n=mn,
+                replace=False,
+                random_state=args.random_seed).index
+            match_index_list.append(match_sampled_neg_index)
+
+        sampled_neg_index = match_index_list[0]
+        for i in range(1, len(match_index_list)):
+            sampled_neg_index = sampled_neg_index.append(match_index_list[i])
+
+        print('Sampled with stratified, * folds, min. [args.negative_ratio * n_covid_pos:]', args.negative_ratio * n_covid_pos,
+              'n_covid_pos:', n_covid_pos,
+              'len(sampled_neg_index):', len(sampled_neg_index))
+
+        # if args.negative_ratio * n_covid_pos < n_covid_neg:
+        #     print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
+        #           'n_covid_neg:', n_covid_neg)
+        #     sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
+        #                                                                replace=False,
+        #                                                                random_state=args.random_seed).index
+        # else:
+        #     print('replace=True')
+        #     # print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
+        #     #       args.negative_ratio * n_covid_pos,
+        #     #       'n_covid_neg:', n_covid_neg)
+        #     # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
+        #     #                                                            replace=True,
+        #     #                                                            random_state=args.random_seed).index
+        #     print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
+        #           args.negative_ratio * n_covid_pos,
+        #           'n_covid_pos:', n_covid_pos,
+        #           'n_covid_neg:', n_covid_neg)
+        #     sampled_neg_index = covid_label[(covid_label == 0)].index
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
