@@ -59,6 +59,7 @@ def parse_args():
     # utils.check_and_mkdir(args.save_model_filename)
     return args
 
+
 def _evaluation_helper(X, T, PS_logits, loss):
     y_pred_prob = logits_to_probability(PS_logits, normalized=False)
     auc = roc_auc_score(T, y_pred_prob)
@@ -202,14 +203,16 @@ def select_subpopulation(df, severity):
         df = df.loc[(df['07/21-11/21'] == 1), :].copy()
     elif severity == '1stwave':
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
-        df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
     elif severity == 'delta':
         print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
+                    df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'alpha':
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
-                    df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+                df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
 
@@ -226,12 +229,12 @@ def select_subpopulation(df, severity):
 
         # select female
         print('Before selecting female, df.shape', df.shape)
-        df = df.loc[df['Female'] == 1, :] #.copy()
+        df = df.loc[df['Female'] == 1, :]  # .copy()
         print('After selecting female, df.shape', df.shape)
 
         # pregnant patients only
         print('Before selecting pregnant, df.shape', df.shape)
-        df = df.loc[df['flag_pregnancy'] == 1, :]#.copy()
+        df = df.loc[df['flag_pregnancy'] == 1, :]  # .copy()
         print('After selecting pregnant, df.shape', df.shape)
 
         # infection during pregnancy period
@@ -260,9 +263,9 @@ if __name__ == "__main__":
     if args.site == 'all':
         sites = ['mcw', 'nebraska', 'utah', 'utsw',
                  'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh',  'usf',  'miami',  # 'emory', 'nch',
+                 'ufh', 'usf', 'miami',  # 'emory', 'nch',
                  'pitt', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf', #'lsu',
+                 'ochsner', 'ucsf',  # 'lsu',
                  'vumc']
 
         # sites = ['wcm', 'montefiore', 'mshs',]
@@ -282,7 +285,7 @@ if __name__ == "__main__":
         data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
         # Load Covariates Data
         print('Load data covariates file:', data_file)
-        df = pd.read_csv(data_file,  dtype={'patid': str, 'site': str, 'zip': str},
+        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
                          parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
                                       'flag_pregnancy_end_date'])
         # because a patid id may occur in multiple sites. patid were site specific
@@ -305,25 +308,28 @@ if __name__ == "__main__":
     # df_label_list.append(df_label)
 
     df_outcome_cols = ['death', 'death t2e'] + [x for x in
-                    list(df.columns)
-                    if x.startswith('dx') or x.startswith('smm')
-                    ]
-    df_outcome = df.loc[:, df_outcome_cols]  #.astype('float')
+                                                list(df.columns)
+                                                if x.startswith('dx') or x.startswith('smm')
+                                                ]
+    df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
     # df_outcome_list.append(df_outcome)
 
-    covs_columns = ['hospitalized', 'ventilation', 'criticalcare',] + \
+    covs_columns = ['hospitalized', 'ventilation', 'criticalcare', ] + \
                    [x for x in
                     list(df.columns)[
                     df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Delivery BMI\xa0>\xa040') + 1)]
                     if (not x.startswith('YM:')) and (x not in ['Female', 'Male', 'Other/Missing',
-                                                               'outpatient visits 0', 'outpatient visits 1-2',
-                                                               'outpatient visits 3-4', 'outpatient visits >=5', ])
+                                                                'No evidence - Post-index',
+                                                                'Fully vaccinated - Post-index',
+                                                                'Partially vaccinated - Post-index',
+                                                                'outpatient visits 0', 'outpatient visits 1-2',
+                                                                'outpatient visits 3-4', 'outpatient visits >=5', ])
                     ]
 
-    days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x:x.days)
-    days = np.array(days).reshape((-1,1))
+    days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
+    days = np.array(days).reshape((-1, 1))
     # days_norm = (days - days.min())/(days.max() - days.min())
-    spline = SplineTransformer(degree=3, n_knots=7)
+    spline = SplineTransformer(degree=3, n_knots=5)
     days_sp = spline.fit_transform(np.array(days))  # identical
     # days_norm_sp = spline.fit_transform(days_norm) # identical
 
@@ -332,7 +338,7 @@ if __name__ == "__main__":
     # delet old date feature and use spline
     covs_columns = [x for x in covs_columns if x not in
                     ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                     '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22'] ]
+                     '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22']]
     print('after delete 8 days len(covs_columns):', len(covs_columns))
     df_covs = df.loc[:, covs_columns].astype('float')
 
@@ -371,7 +377,6 @@ if __name__ == "__main__":
           'df_label.shape:', df_label.shape,
           'df_covs.shape:', df_covs.shape)
     print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
 
     # Load index information
     with open(r'../data/mapping/icd_pasc_mapping.pkl', 'rb') as f:
@@ -417,7 +422,6 @@ if __name__ == "__main__":
             pasc_flag = (df['smm-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['smm-t2e@' + pasc].astype('float')
             pasc_baseline = df['smm-base@' + pasc]
-
 
         # considering competing risks
         death_flag = df['death']
@@ -580,7 +584,8 @@ if __name__ == "__main__":
                 'km-diff', 'km-diff-time', 'km-diff-p',
                 'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower", "cif_0_w_CIUpper",
+                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
+                "cif_0_w_CIUpper",
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
@@ -596,7 +601,7 @@ if __name__ == "__main__":
             df_causal.to_csv(
                 r'../data/recover/output/results/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.severity,
-                    '-select' if args.selectpasc else '',))
+                    '-select' if args.selectpasc else '', ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
