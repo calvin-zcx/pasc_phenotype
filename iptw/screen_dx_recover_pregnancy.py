@@ -296,6 +296,9 @@ if __name__ == "__main__":
     df = pd.concat(df_list, ignore_index=True)
     df = select_subpopulation(df, args.severity)
 
+    # df.to_csv('preg_pos_neg.csv')
+    # sys.exit(-1)
+
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
     print('Severity cohorts:', args.severity, 'df.shape:', df.shape)
     col_names = pd.Series(df.columns)
