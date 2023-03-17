@@ -210,9 +210,19 @@ if __name__ == '__main__':
     #     r'../data/recover/output/results/DX-all-downsample0.50/causal_effects_specific_dx-all-downsample0.5.xlsx',
     #     sheet_name='dx')
 
-    df = pd.read_excel(
-        r'../data/recover/output/results/DX-pospreg-posnonpreg/causal_effects_specific-pospreg-posnonpreg.xlsx',
-        sheet_name='dx')
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/DX-pospreg-posnonpreg/causal_effects_specific-pospreg-posnonpreg.xlsx',
+    #     sheet_name='dx')
+
+    # infile = r'../data/recover/output/results/DX-all-neg1.0/causal_effects_specific-all-neg1.xlsx'
+    # infile = r'../data/recover/output/results/DX-deltaAndBefore-neg1.0/causal_effects_specific-deltaAndBefore-neg1.xlsx'
+    # infile = r'../data/recover/output/results/DX-omicron-neg1.0/causal_effects_specific-omicron-neg1.xlsx'
+    # infile = r'../data/recover/output/results/DX-pospreg-posnonpreg/causal_effects_specific-pospreg-posnonpreg.xlsx'
+    infile = r'../data/recover/output/results/DX-preg-pos-neg/causal_effects_specific-preg-pos-neg.xlsx'
+
+    outfile = infile.replace('.xlsx', '_aux_correctPvalue.xlsx')
+
+    df = pd.read_excel(infile, sheet_name='dx')
 
     df_select = df.loc[df['hr-w-p'].notna(), :]
     p_all = df_select['hr-w-p']  # pd.concat([df_select['hr-w-p'], df_med_select['hr-w-p']])
@@ -243,7 +253,9 @@ if __name__ == '__main__':
     #     r'../data/recover/output/results/DX-inpatienticu/causal_effects_specific-inpatienticu_aux_correctPvalue.xlsx',
     #     sheet_name='dx')
 
-    dfm_dx.to_excel(
-        r'../data/recover/output/results/DX-pospreg-posnonpreg/causal_effects_specific-pospreg-posnonpreg_aux_correctPvalue.xlsx',
-        sheet_name='dx')
+    # dfm_dx.to_excel(
+    #     r'../data/recover/output/results/DX-pospreg-posnonpreg/causal_effects_specific-pospreg-posnonpreg_aux_correctPvalue.xlsx',
+    #     sheet_name='dx')
+
+    dfm_dx.to_excel(outfile, sheet_name='dx')
     print('Done')
