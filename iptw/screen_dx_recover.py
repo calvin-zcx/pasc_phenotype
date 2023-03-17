@@ -41,7 +41,9 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha', 'deltaAndBefore', 'omicron'],
+                                               '1stwave', 'delta', 'alpha', 'deltaAndBefore', 'omicron',
+                                               'deltaAndBeforeoutpatient', 'deltaAndBeforeinpatienticu',
+                                               'omicronoutpatient', 'omicroninpatienticu'],
                         default='all')
 
     parser.add_argument("--random_seed", type=int, default=0)
@@ -222,6 +224,22 @@ def select_subpopulation(df, severity):
     elif severity == 'omicron':
         print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now')
         df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+    elif severity == 'deltaAndBeforeoutpatient':
+        print('Considering patients in Delta wave and before, start to Nov.-30-2021, and outpatient patients')
+        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :]
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif severity == 'deltaAndBeforeinpatienticu':
+        print('Considering patients in Delta wave and before, start to Nov.-30-2021, and inpatienticu')
+        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :]
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
+    elif severity == 'omicronoutpatient':
+        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and outpatient patients')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :]
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+    elif severity == 'omicroninpatienticu':
+        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and inpatienticu')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :]
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
 
