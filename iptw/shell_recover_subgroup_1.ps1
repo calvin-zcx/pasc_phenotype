@@ -7,7 +7,12 @@ mkdir log_recover
 #python screen_dx_recover.py --site all --severity omicron --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_omicron_neg1_downsample1.txt
 
 python screen_dx_recover.py --site all --severity female --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_female_neg1_downsample1.txtc
-python screen_dx_recover.py --site all --severity outpatient --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_outpatient_neg1_downsample1.txt
+python screen_dx_recover.py --site all --severity outpatient --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_outpatient_neg1_downsample1_try2.txt
 #python screen_dx_recover.py --site all --severity male --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_male_neg1_downsample1.txt
 #python screen_dx_recover.py --site all --severity above65 --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_above65_neg1_downsample1.txt
 #python screen_dx_recover.py --site all --severity less65 --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_less65_neg1_downsample1.txt
+
+python screen_dx_recover.py --site all --severity deltaAndBeforeoutpatient --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_deltaAndBeforeoutpatient_neg1_downsample1.txt
+python screen_dx_recover.py --site all --severity deltaAndBeforeinpatienticu --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_deltaAndBeforeinpatienticu_neg1_downsample1.txt
+python screen_dx_recover.py --site all --severity omicronoutpatient --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_omicronoutpatient_neg1_downsample1.txt
+python screen_dx_recover.py --site all --severity omicroninpatienticu --negative_ratio 1 --downsample_ratio 1 2>&1 | tee  log_recover/screen_dx_recover_all_omicroninpatienticu_neg1_downsample1.txt
