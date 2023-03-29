@@ -196,8 +196,7 @@ def add_test_to_paper_2023_2_23():
     print('Done')
 
 
-if __name__ == '__main__':
-
+def old_multi():
     # df = pd.read_excel(
     #     r'../data/recover/output/results/DX-all-downsample0.33/causal_effects_specific_downsample0.33.xlsx',
     #     sheet_name='dx')
@@ -259,3 +258,32 @@ if __name__ == '__main__':
 
     dfm_dx.to_excel(outfile, sheet_name='dx')
     print('Done')
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+
+    infile = r'../data/recover/output/results/DX-omicroninpatienticu-neg1.0/causal_effects_specific-omicroninpatienticu.csv'
+    infile = r'../data/recover/output/results/DX-omicronoutpatient-neg1.0/causal_effects_specific-omicronoutpatient.csv'
+    infile = r'../data/recover/output/results/DX-deltaAndBeforeoutpatient-neg1.0/causal_effects_specific-deltaAndBeforeoutpatient.csv'
+    infile = r'../data/recover/output/results/DX-deltaAndBeforeinpatienticu-neg1.0/causal_effects_specific-deltaAndBeforeinpatienticu.csv'
+
+    outfile = infile.replace('.csv', '_aux_correctPvalue.xlsx')
+
+    # df = pd.read_excel(infile, sheet_name='dx')
+    df = pd.read_csv(infile)
+
+    df_select = df.loc[df['hr-w-p'].notna(), :]
+    p_all = df_select['hr-w-p']  # pd.concat([df_select['hr-w-p'], df_med_select['hr-w-p']])
+    df_p = multiple_test_correct(p_all, fdr_threshold=0.05)
+
+    # df_p_dx = df_p.iloc[:len(df_select['hr-w-p']), :]
+    # df_p_med = df_p.iloc[len(df_select['hr-w-p']):, :]
+
+    print('p_all.shape', p_all.shape, 'df_p.shape', df_p.shape)
+    # print('df_p_dx.shape', df_p_dx.shape, 'df_p_med.shape', df_p_med.shape)
+
+    dfm_dx = pd.merge(df, df_p, how='left', left_index=True, right_index=True)
+
+    dfm_dx.to_excel(outfile, sheet_name='dx')
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
