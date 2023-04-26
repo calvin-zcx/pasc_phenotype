@@ -20,7 +20,7 @@ from tqdm import tqdm
 import datetime
 import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
-
+from collections import defaultdict
 print = functools.partial(print, flush=True)
 
 
@@ -267,8 +267,23 @@ if __name__ == "__main__":
     omiInlist = df_pasc.loc[df_pasc['risk_by omicron inpatienticu'] == 1, 'pasc'].to_list()
 
     pasc_simname = {}
+    pasc_organ = {}
     for index, rows in df_pasc.iterrows():
         pasc_simname[rows['pasc']] = (rows['PASC Name Simple'], rows['Organ Domain'])
+        pasc_organ[rows['pasc']] = rows['Organ Domain']
+
+    # organ_pasc_preOmiOutlist = {}
+    # organ_pasc_preOmiInlist = {}
+    # organ_pasc_omiOutlist = {}
+    # organ_pasc_omiInlist = {}
+    #
+    # organ_list = list(df_pasc['Organ Domain'].unique())
+    # for org in organ_list:
+    #     pasc_under_organ = df_pasc.loc[df_pasc['Organ Domain'] == org, 'pasc']
+    #     organ_pasc_preOmiOutlist[org] = [y for y in pasc_under_organ if y in preOmiOutlist]
+    #     organ_pasc_preOmiInlist[org] = [y for y in pasc_under_organ if y in preOmiInlist]
+    #     organ_pasc_omiOutlist[org] = [y for y in pasc_under_organ if y in omiOutlist]
+    #     organ_pasc_omiInlist[org] = [y for y in pasc_under_organ if y in omiInlist]
 
     print('In cohorts_characterization_build_data...')
     if args.site == 'all':
@@ -279,7 +294,8 @@ if __name__ == "__main__":
                  'ochsner', 'ucsf', 'lsu',
                  'vumc']
 
-        # sites = ['wcm', 'montefiore'] # , 'mshs',
+        # for debug purpose, comment out when running
+        # sites = ['wcm', 'montefiore']  # , 'mshs',
 
         print('len(sites), sites:', len(sites), sites)
     else:
@@ -305,6 +321,12 @@ if __name__ == "__main__":
         df['any_pasc_type'] = np.nan
         df['any_pasc_t2e'] = np.nan
         df['any_pasc_txt'] = ''
+
+        df['any_2dx_pasc_flag'] = 0
+        df['any_2dx_pasc_t2e'] = np.nan
+        df['any_2dx30day_pasc_flag'] = 0
+        df['any_2dx30day_pasc_t2e'] = np.nan
+
         for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
             # pasc_list = []
             if (rows['index date'] < datetime.datetime(2021, 12, 1, 0, 0)) and (
@@ -312,33 +334,42 @@ if __name__ == "__main__":
                 # 'deltaAndBeforeoutpatient':
                 # print('Considering patients in Delta wave and before, start to Nov.-30-2021, and outpatient patients')
                 pasc_list = preOmiOutlist
+                # organ_pasc = organ_pasc_preOmiOutlist
                 df.loc[index, 'any_pasc_type'] = 'preOmiOut'
             elif (rows['index date'] < datetime.datetime(2021, 12, 1, 0, 0)) and (
                     (rows['hospitalized'] == 1) or (rows['criticalcare'] == 1)):
                 # severity == 'deltaAndBeforeinpatienticu':
                 # print('Considering patients in Delta wave and before, start to Nov.-30-2021, and inpatienticu')
                 pasc_list = preOmiInlist
+                # organ_pasc = organ_pasc_preOmiInlist
                 df.loc[index, 'any_pasc_type'] = 'preOmiIn'
             elif (rows['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) and (
                     (rows['hospitalized'] == 0) and (rows['criticalcare'] == 0)):
                 # severity == 'omicronoutpatient':
                 # print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and outpatient patients')
                 pasc_list = omiOutlist
+                # organ_pasc = organ_pasc_omiOutlist
                 df.loc[index, 'any_pasc_type'] = 'omiOut'
             elif (rows['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) and (
                     (rows['hospitalized'] == 1) or (rows['criticalcare'] == 1)):
                 # severity == 'omicroninpatienticu':
                 # print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and inpatienticu')
                 pasc_list = omiInlist
+                # organ_pasc = organ_pasc_omiInlist
                 df.loc[index, 'any_pasc_type'] = 'omiIn'
             else:
                 print('Cannot stratified patients', ith, site, index)
                 continue
 
+            # for any 1 pasc
             t2e_list = []
             pasc_1_list = []
             pasc_1_name = []
             pasc_1_text = ''
+
+            # for any 2 pasc with different time intervals
+            sameorgan_pasc_2_list = defaultdict(list)
+
             for p in pasc_list:
                 if (rows['dx-out@' + p] > 0) and (rows['dx-base@' + p] == 0):
                     t2e_list.append(rows['dx-t2e@' + p])
@@ -346,13 +377,34 @@ if __name__ == "__main__":
                     pasc_1_name.append(pasc_simname[p])
                     pasc_1_text += (pasc_simname[p][0] + ';')
 
+                    sameorgan_pasc_2_list[pasc_organ[p]].append((p, rows['dx-t2e@' + p]))
+
             if len(t2e_list) > 0:
                 df.loc[index, 'any_pasc_flag'] = 1
                 df.loc[index, 'any_pasc_t2e'] = np.min(t2e_list)
                 df.loc[index, 'any_pasc_txt'] = pasc_1_text
 
+            for _k, _v in sameorgan_pasc_2_list.items():
+                _pasc_2_list = [_a[0] for _a in _v]
+                _pasc_2_t2e_list = [_a[1] for _a in _v]
+                all_time = np.array(_pasc_2_t2e_list)
+                t2e_min = all_time.min()
+                t2e_max = all_time.max()
+                if t2e_max - t2e_min >= 1:
+                    df.loc[index, 'any_2dx_pasc_flag'] = 1
+                    if np.isnan(rows['any_2dx_pasc_t2e']) or (rows['any_2dx_pasc_t2e'] < t2e_min):
+                        df.loc[index, 'any_2dx_pasc_t2e'] = t2e_min
+
+                if t2e_max - t2e_min >= 30:
+                    df.loc[index, 'any_2dx30day_pasc_flag'] = 1
+                    if np.isnan(rows['any_2dx30day_pasc_t2e']) or (rows['any_2dx30day_pasc_t2e'] < t2e_min):
+                        df.loc[index, 'any_2dx30day_pasc_t2e'] = t2e_min
+
+
         col_names = pd.Series(df.columns)
-        select_cols = col_names[:163].to_list() + ['any_pasc_flag', 'any_pasc_type', 'any_pasc_t2e', 'any_pasc_txt']
+        select_cols = col_names[:163].to_list() + ['any_pasc_flag', 'any_pasc_type', 'any_pasc_t2e', 'any_pasc_txt',
+                                                   'any_2dx_pasc_flag', 'any_2dx_pasc_t2e',
+                                                   'any_2dx30day_pasc_flag', 'any_2dx30day_pasc_t2e']
 
         df_info = df[select_cols]  # 'Unnamed: 0',
         df_info_list.append(df_info)
@@ -364,7 +416,7 @@ if __name__ == "__main__":
 
     print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    out_file_balance = r'../data/recover/output/results/anyPASC/anyPASC_stratified_period_severity_nsites-{}.csv'.format(len(sites))
+    out_file_balance = r'../data/recover/output/results/anyPASC2DX/anyPASC_2DX_stratified_period_severity_nsites-{}.csv'.format(len(sites))
     utils.check_and_mkdir(out_file_balance)
 
     df_info.to_csv(out_file_balance)
