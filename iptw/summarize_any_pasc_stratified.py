@@ -303,7 +303,7 @@ if __name__ == "__main__":
                  'vumc']
 
         # for debug purpose, comment out when running
-        sites = ['wcm', 'montefiore']  # , 'mshs',
+        # sites = ['wcm', 'montefiore']  # , 'mshs',
 
         print('len(sites), sites:', len(sites), sites)
     else:
