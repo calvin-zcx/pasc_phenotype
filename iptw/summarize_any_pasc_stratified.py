@@ -21,6 +21,7 @@ import datetime
 import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
 from collections import defaultdict
+
 print = functools.partial(print, flush=True)
 
 
@@ -107,6 +108,13 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     })
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
+
+
+def stringlist_2_list(s):
+    r = s.strip('][').replace(' ', '').split(';')
+    # r = list(map(float, r))
+    r = [float(x) for x in r if x != '']
+    return r
 
 
 def select_subpopulation(df, severity):
@@ -295,7 +303,7 @@ if __name__ == "__main__":
                  'vumc']
 
         # for debug purpose, comment out when running
-        # sites = ['wcm', 'montefiore']  # , 'mshs',
+        sites = ['wcm', 'montefiore']  # , 'mshs',
 
         print('len(sites), sites:', len(sites), sites)
     else:
@@ -377,7 +385,9 @@ if __name__ == "__main__":
                     pasc_1_name.append(pasc_simname[p])
                     pasc_1_text += (pasc_simname[p][0] + ';')
 
-                    sameorgan_pasc_2_list[pasc_organ[p]].append((p, rows['dx-t2e@' + p]))
+                    _t2eall = stringlist_2_list(rows['dx-t2eall@' + p])
+                    for _t2e in _t2eall:
+                        sameorgan_pasc_2_list[pasc_organ[p]].append((p, _t2e))
 
             if len(t2e_list) > 0:
                 df.loc[index, 'any_pasc_flag'] = 1
@@ -400,7 +410,6 @@ if __name__ == "__main__":
                     if np.isnan(rows['any_2dx30day_pasc_t2e']) or (rows['any_2dx30day_pasc_t2e'] < t2e_min):
                         df.loc[index, 'any_2dx30day_pasc_t2e'] = t2e_min
 
-
         col_names = pd.Series(df.columns)
         select_cols = col_names[:163].to_list() + ['any_pasc_flag', 'any_pasc_type', 'any_pasc_t2e', 'any_pasc_txt',
                                                    'any_2dx_pasc_flag', 'any_2dx_pasc_t2e',
@@ -416,7 +425,8 @@ if __name__ == "__main__":
 
     print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    out_file_balance = r'../data/recover/output/results/anyPASC2DX/anyPASC_2DX_stratified_period_severity_nsites-{}.csv'.format(len(sites))
+    out_file_balance = r'../data/recover/output/results/anyPASC2DX/anyPASC_2DX_stratified_period_severity_nsites-{}.csv'.format(
+        len(sites))
     utils.check_and_mkdir(out_file_balance)
 
     df_info.to_csv(out_file_balance)
