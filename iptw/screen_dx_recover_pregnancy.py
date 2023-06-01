@@ -270,6 +270,7 @@ if __name__ == "__main__":
 
         # sites = ['wcm', 'montefiore', 'mshs',]
         # sites = ['wcm', ]
+        # sites = ['pitt', ]
         print('len(sites), sites:', len(sites), sites)
     else:
         sites = [args.site, ]
@@ -297,6 +298,7 @@ if __name__ == "__main__":
     df = select_subpopulation(df, args.severity)
 
     # df.to_csv('preg_pos_neg.csv')
+    # df.to_csv('preg_pos_neg_pitt.csv')
     # sys.exit(-1)
 
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'

@@ -276,6 +276,7 @@ if __name__ == "__main__":
 
         # sites = ['wcm', 'montefiore', 'mshs',]
         # sites = ['wcm', ]
+        # sites = ['pitt', ]
         print('len(sites), sites:', len(sites), sites)
     else:
         sites = [args.site, ]
@@ -323,6 +324,9 @@ if __name__ == "__main__":
     # combine df1 and df2 into df
     df = pd.concat([df1, df2], ignore_index=True)
 
+    # df.to_csv('pos_preg_femalenot_pitt.csv')
+    # df.to_csv('pos_preg_femalenot.csv')
+    # zz
     # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
     print('Severity cohorts:', args.severity,
           'df1.shape:', df1.shape,

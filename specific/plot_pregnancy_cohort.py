@@ -30,6 +30,8 @@ if __name__ == '__main__':
                      parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
                                   'flag_pregnancy_end_date'])
     print('all df.shape:', df.shape)
+    zz
+
     df = df.loc[df['covid']==0, :]
     print('covid positive df.shape:', df.shape)
 
