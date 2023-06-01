@@ -1132,17 +1132,15 @@ def build_query_1and2_matrix(args):
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
-    # if args.dataset == 'ALL':
-    #     sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
-    # else:
-    #     sites = [args.dataset, ]
-    # sites = [args.dataset, ]
-    sites = ['mcw', 'nebraska', 'utah', 'utsw',
-             'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-             'ufh', 'usf', 'miami', 'nch',  # 'emory',
-             'pitt', 'psu', 'temple', 'michigan',
-             'ochsner', 'ucsf',  'lsu',
-             'vumc']
+    if args.dataset == 'all':
+        sites = ['mcw', 'nebraska', 'utah', 'utsw',
+                 'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
+                 'ufh', 'usf', 'miami', 'nch',  # 'emory',
+                 'pitt', 'psu', 'temple', 'michigan',
+                 'ochsner', 'ucsf', 'lsu',
+                 'vumc']
+    else:
+        sites = [args.dataset, ]
 
     # sites = [ 'wcm',]
 

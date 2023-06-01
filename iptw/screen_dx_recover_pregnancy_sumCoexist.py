@@ -20,7 +20,7 @@ from tqdm import tqdm
 import datetime
 import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
-from collections import defaultdict
+import os.path
 
 print = functools.partial(print, flush=True)
 
@@ -42,15 +42,10 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha', 'deltaAndBefore', 'omicron',
-                                               'deltaAndBeforeoutpatient', 'deltaAndBeforeinpatienticu',
-                                               'omicronoutpatient', 'omicroninpatienticu'],
-                        default='all')
-
+                                               '1stwave', 'delta', 'alpha', 'preg-pos-neg'],
+                        default='preg-pos-neg')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=float, default=3)  # 5
-    parser.add_argument('--downsample_ratio', type=float, default=1.0)  # 5
-
+    parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
 
     args = parser.parse_args()
@@ -108,13 +103,6 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     })
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
-
-
-def stringlist_2_list(s):
-    r = s.strip('][').replace(' ', '').split(';')
-    # r = list(map(float, r))
-    r = [float(x) for x in r if x != '']
-    return r
 
 
 def select_subpopulation(df, severity):
@@ -226,37 +214,41 @@ def select_subpopulation(df, severity):
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
-    elif severity == 'deltaAndBefore':
-        print('Considering patients in Delta wave and before, start to Nov.-30-2021')
-        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
-    elif severity == 'omicron':
-        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
-    elif severity == 'deltaAndBeforeoutpatient':
-        print('Considering patients in Delta wave and before, start to Nov.-30-2021, and outpatient patients')
-        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :]
-        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
-    elif severity == 'deltaAndBeforeinpatienticu':
-        print('Considering patients in Delta wave and before, start to Nov.-30-2021, and inpatienticu')
-        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :]
-        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
-    elif severity == 'omicronoutpatient':
-        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and outpatient patients')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :]
-        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
-    elif severity == 'omicroninpatienticu':
-        print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and inpatienticu')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :]
-        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :].copy()
     else:
         print('Considering ALL cohorts')
+
+    if severity == 'preg-pos-neg':
+        # select index date
+        print('Before selecting index date < 2022-6-1, df.shape', df.shape)
+        df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :]  # .copy()
+        print('After selecting index date < 2022-6-1, df.shape', df.shape)
+
+        # select age
+        print('Before selecting age <= 50, df.shape', df.shape)
+        df = df.loc[df['age'] <= 50, :]  # .copy()
+        print('After selecting age <= 50, df.shape', df.shape)
+
+        # select female
+        print('Before selecting female, df.shape', df.shape)
+        df = df.loc[df['Female'] == 1, :]  # .copy()
+        print('After selecting female, df.shape', df.shape)
+
+        # pregnant patients only
+        print('Before selecting pregnant, df.shape', df.shape)
+        df = df.loc[df['flag_pregnancy'] == 1, :]  # .copy()
+        print('After selecting pregnant, df.shape', df.shape)
+
+        # infection during pregnancy period
+        print('Before selecting infection in gestational period, df.shape', df.shape)
+        df = df.loc[(df['index date'] >= df['flag_pregnancy_start_date']) & (
+                df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
+        print('After selecting infection in gestational period, df.shape', df.shape)
 
     return df
 
 
 if __name__ == "__main__":
-    # python summarize_any_pasc_stratified.py --site all --severity all 2>&1 | tee  log_recover/summarize_any_pasc_stratified_all.txt
-
+    # python screen_dx_recover_pregnancy.py --site all --severity preg-pos-neg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_all_preg-pos-neg.txt
     start_time = time.time()
     args = parse_args()
 
@@ -268,170 +260,88 @@ if __name__ == "__main__":
     # print('save_model_filename', args.save_model_filename)
 
     # %% 1. Load  Data
-    df_pasc = pd.read_excel(r'any_pasc_recover_summary_cxzang-20230323.xlsx', sheet_name='dx')
-    preOmiOutlist = df_pasc.loc[df_pasc['risk_by deltaAndBefore outpatient'] == 1, 'pasc'].to_list()
-    preOmiInlist = df_pasc.loc[df_pasc['risk_by deltaAndBefore inpatienticu'] == 1, 'pasc'].to_list()
-    omiOutlist = df_pasc.loc[df_pasc['risk_by omicron outpatient'] == 1, 'pasc'].to_list()
-    omiInlist = df_pasc.loc[df_pasc['risk_by omicron inpatienticu'] == 1, 'pasc'].to_list()
-
-    pasc_simname = {}
-    pasc_organ = {}
-    for index, rows in df_pasc.iterrows():
-        pasc_simname[rows['pasc']] = (rows['PASC Name Simple'], rows['Organ Domain'])
-        pasc_organ[rows['pasc']] = rows['Organ Domain']
-
-    # organ_pasc_preOmiOutlist = {}
-    # organ_pasc_preOmiInlist = {}
-    # organ_pasc_omiOutlist = {}
-    # organ_pasc_omiInlist = {}
-    #
-    # organ_list = list(df_pasc['Organ Domain'].unique())
-    # for org in organ_list:
-    #     pasc_under_organ = df_pasc.loc[df_pasc['Organ Domain'] == org, 'pasc']
-    #     organ_pasc_preOmiOutlist[org] = [y for y in pasc_under_organ if y in preOmiOutlist]
-    #     organ_pasc_preOmiInlist[org] = [y for y in pasc_under_organ if y in preOmiInlist]
-    #     organ_pasc_omiOutlist[org] = [y for y in pasc_under_organ if y in omiOutlist]
-    #     organ_pasc_omiInlist[org] = [y for y in pasc_under_organ if y in omiInlist]
-
     print('In cohorts_characterization_build_data...')
     if args.site == 'all':
         sites = ['mcw', 'nebraska', 'utah', 'utsw',
                  'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh', 'usf', 'nch', 'miami',  # 'emory',
+                 'ufh', 'usf', 'miami',  # 'emory', 'nch',
                  'pitt', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf', 'lsu',
+                 'ochsner', 'ucsf',  # 'lsu',
                  'vumc']
 
-        # for debug purpose, comment out when running
-        # sites = ['wcm', 'montefiore']  # , 'mshs',
-
+        # sites = ['wcm', 'montefiore', 'mshs', ]
+        # sites = ['wcm', ]
         print('len(sites), sites:', len(sites), sites)
     else:
         sites = [args.site, ]
 
     df_info_list = []
+    df_label_list = []
+    df_covs_list = []
+    df_outcome_list = []
 
+    df_list = []
     for ith, site in tqdm(enumerate(sites)):
-        print('Loading: ', site)
-        data_file = r'../data/recover/output/{}/matrix_cohorts_covid_4manuNegNoCovidV2age18_boolbase-nout-withAllDays-withPreg_{}.csv'.format(
-            site,
-            site)
+        print('Loading: ', ith, site)
+        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}_withPreeclampsia.csv'.format(site)
         # Load Covariates Data
-        print('Load data covariates file:', data_file)
-        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        if os.path.isfile(data_file):
+            print('Load data covariates file:', data_file)
+            df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                             parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
+                                          'flag_pregnancy_end_date'])
+        else:
+            print(data_file, 'not exist')
+
         # because a patid id may occur in multiple sites. patid were site specific
-        print('df.shape:', df.shape)
-        if df.shape[0] == 0:
-            print('0 selected patients in', site, args.severity, 'skip and continue')
-            continue
+        print('all df.shape:', df.shape)
+        df = select_subpopulation(df, args.severity)
+        print('select df.shape:', df.shape)
+        df_list.append(df)
 
-        df['any_pasc_flag'] = 0
-        df['any_pasc_type'] = np.nan
-        df['any_pasc_t2e'] = np.nan
-        df['any_pasc_txt'] = ''
+    # combine all sites and select subcohorts
+    df = pd.concat(df_list, ignore_index=True)
+    # df = select_subpopulation(df, args.severity)
+    print('df.shape:', df.shape)
+    # df.to_csv('preg_pos_neg.csv')
+    # sys.exit(-1)
 
-        df['any_2dx_pasc_flag'] = 0
-        df['any_2dx_pasc_t2e'] = np.nan
-        df['any_2dx30day_pasc_flag'] = 0
-        df['any_2dx30day_pasc_t2e'] = np.nan
+    df['liver'] = (df['dx-out@Other specified and unspecified liver disease'] >= 1).astype('int')
+    df['out-Severe preeclampsia'] = (df['out-Severe preeclampsia'] >= 1).astype('int')
+    df['out-Gestational hypertension'] = (df['out-Gestational hypertension'] >= 1).astype('int')
+    df['base-Severe preeclampsia'] = (df['base-Severe preeclampsia'] >= 1).astype('int')
+    df['base-Gestational hypertension'] = (df['base-Gestational hypertension'] >= 1).astype('int')
+    sel_cos = ['liver', 'out-Severe preeclampsia', 'out-Gestational hypertension',
+               'base-Severe preeclampsia', 'base-Gestational hypertension']
+    df_all = df.loc[:, sel_cos]
+    df_pos = df.loc[df['covid'] == 1, sel_cos]
+    df_neg = df.loc[df['covid'] == 0, sel_cos]
 
-        for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-            # pasc_list = []
-            if (rows['index date'] < datetime.datetime(2021, 12, 1, 0, 0)) and (
-                    (rows['hospitalized'] == 0) and (rows['criticalcare'] == 0)):
-                # 'deltaAndBeforeoutpatient':
-                # print('Considering patients in Delta wave and before, start to Nov.-30-2021, and outpatient patients')
-                pasc_list = preOmiOutlist
-                # organ_pasc = organ_pasc_preOmiOutlist
-                df.loc[index, 'any_pasc_type'] = 'preOmiOut'
-            elif (rows['index date'] < datetime.datetime(2021, 12, 1, 0, 0)) and (
-                    (rows['hospitalized'] == 1) or (rows['criticalcare'] == 1)):
-                # severity == 'deltaAndBeforeinpatienticu':
-                # print('Considering patients in Delta wave and before, start to Nov.-30-2021, and inpatienticu')
-                pasc_list = preOmiInlist
-                # organ_pasc = organ_pasc_preOmiInlist
-                df.loc[index, 'any_pasc_type'] = 'preOmiIn'
-            elif (rows['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) and (
-                    (rows['hospitalized'] == 0) and (rows['criticalcare'] == 0)):
-                # severity == 'omicronoutpatient':
-                # print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and outpatient patients')
-                pasc_list = omiOutlist
-                # organ_pasc = organ_pasc_omiOutlist
-                df.loc[index, 'any_pasc_type'] = 'omiOut'
-            elif (rows['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) and (
-                    (rows['hospitalized'] == 1) or (rows['criticalcare'] == 1)):
-                # severity == 'omicroninpatienticu':
-                # print('Considering patients in Omicon and after wave, Dec 1, 2021 to Now, and inpatienticu')
-                pasc_list = omiInlist
-                # organ_pasc = organ_pasc_omiInlist
-                df.loc[index, 'any_pasc_type'] = 'omiIn'
-            else:
-                print('Cannot stratified patients', ith, site, index)
-                continue
+    def cal_stat(_df, c1, c2):
+        n = len(_df)
+        n1 = (_df[c1]>=1).sum()
+        m1 = (_df[c1]>=1).mean()
+        n2 = (_df[c2]>=1).sum()
+        m2 = (_df[c2] >= 1).mean()
+        n12 = (_df.loc[_df[c1]>=1, c2]>=1).sum()
+        m12 = (_df.loc[_df[c1]>=1, c2]>=1).mean()
+        n21 = (_df.loc[_df[c2] >= 1, c1] >= 1).sum()
+        m21 = (_df.loc[_df[c2] >= 1, c1] >= 1).mean()
+        # print('c1\tc2\tc21')
+        print(n,
+              '\t',  '{} ({:.2f}%)'.format(n1, m1*100),
+              '\t',  '{} ({:.2f}%)'.format(n2, m2*100),
+              '\t',  '{} ({:.2f}%)'.format(n12, m12*100),
+              '\t',  '{} ({:.2f}%)'.format(n21, m21*100))
 
-            # for any 1 pasc
-            t2e_list = []
-            pasc_1_list = []
-            pasc_1_name = []
-            pasc_1_text = ''
 
-            # for any 2 pasc with different time intervals
-            sameorgan_pasc_2_list = defaultdict(list)
+    cal_stat(df_pos, 'liver', 'out-Severe preeclampsia')
+    cal_stat(df_neg, 'liver', 'out-Severe preeclampsia')
+    cal_stat(df_all, 'liver', 'out-Severe preeclampsia')
 
-            for p in pasc_list:
-                if (rows['dx-out@' + p] > 0) and (rows['dx-base@' + p] == 0):
-                    t2e_list.append(rows['dx-t2e@' + p])
-                    pasc_1_list.append(p)
-                    pasc_1_name.append(pasc_simname[p])
-                    pasc_1_text += (pasc_simname[p][0] + ';')
+    cal_stat(df_pos, 'liver', 'out-Gestational hypertension')
+    cal_stat(df_neg, 'liver', 'out-Gestational hypertension')
+    cal_stat(df_all, 'liver', 'out-Gestational hypertension')
 
-                    _t2eall = stringlist_2_list(rows['dx-t2eall@' + p])
-                    for _t2e in _t2eall:
-                        sameorgan_pasc_2_list[pasc_organ[p]].append((p, _t2e))
 
-            if len(t2e_list) > 0:
-                df.loc[index, 'any_pasc_flag'] = 1
-                df.loc[index, 'any_pasc_t2e'] = np.min(t2e_list)
-                df.loc[index, 'any_pasc_txt'] = pasc_1_text
-
-            for _k, _v in sameorgan_pasc_2_list.items():
-                _pasc_2_list = [_a[0] for _a in _v]
-                _pasc_2_t2e_list = [_a[1] for _a in _v]
-                all_time = np.array(_pasc_2_t2e_list)
-                t2e_min = all_time.min()
-                t2e_max = all_time.max()
-                if t2e_max - t2e_min >= 1:
-                    df.loc[index, 'any_2dx_pasc_flag'] = 1
-                    if np.isnan(rows['any_2dx_pasc_t2e']) or (rows['any_2dx_pasc_t2e'] < t2e_min):
-                        df.loc[index, 'any_2dx_pasc_t2e'] = t2e_min
-
-                if t2e_max - t2e_min >= 30:
-                    df.loc[index, 'any_2dx30day_pasc_flag'] = 1
-                    if np.isnan(rows['any_2dx30day_pasc_t2e']) or (rows['any_2dx30day_pasc_t2e'] < t2e_min):
-                        df.loc[index, 'any_2dx30day_pasc_t2e'] = t2e_min
-
-        col_names = pd.Series(df.columns)
-        select_cols = col_names[:163].to_list() + ['any_pasc_flag', 'any_pasc_type', 'any_pasc_t2e', 'any_pasc_txt',
-                                                   'any_2dx_pasc_flag', 'any_2dx_pasc_t2e',
-                                                   'any_2dx30day_pasc_flag', 'any_2dx30day_pasc_t2e']
-
-        df_info = df[select_cols]  # 'Unnamed: 0',
-        df_info_list.append(df_info)
-        print(ith, site, 'df.shape:', df.shape, 'df_info.shape:', df_info.shape)
-
-    df_info = pd.concat(df_info_list, ignore_index=True)
-
-    print('all df_info.shape:', df_info.shape)
-
-    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
-    out_file_balance = r'../data/recover/output/results/anyPASC2DX/anyPASC_2DX_stratified_period_severity_nsites-{}.csv'.format(
-        len(sites))
-    utils.check_and_mkdir(out_file_balance)
-
-    df_info.to_csv(out_file_balance)
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
-
-    print(df_info.loc[(df_info['covid']==1) & (df_info['any_2dx_pasc_flag']==1), 'any_2dx_pasc_flag'].sum())
-    print(df_info.loc[(df_info['covid']==1) & (df_info['any_2dx30day_pasc_flag']==1), 'any_2dx30day_pasc_flag'].sum())
