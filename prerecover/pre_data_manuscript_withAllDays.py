@@ -1139,7 +1139,7 @@ def build_query_1and2_matrix(args):
 
         # print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
-        adi_value_list = [v[1][7] for key, v in id_data.items()]
+        adi_value_list = [v[1][7] for key, v in id_data.items() if len(v[1])>0]
         adi_value_default = np.nanmedian(adi_value_list)
 
         i = -1
