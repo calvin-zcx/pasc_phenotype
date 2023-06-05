@@ -1147,6 +1147,9 @@ def build_query_1and2_matrix(args):
             # for i, (pid, item) in tqdm(enumerate(id_data.items()), total=len(id_data)):
             index_info, demo, dx, med, covid_lab, encounter, procedure, obsgen, immun, death, vital = item
             flag, index_date, covid_loinc, flag_name, index_age, index_enc_id = index_info
+            if len(demo) == 0:
+                print(pid, ':Warning! no demo info, skip this patient')
+                continue
             birth_date, gender, race, hispanic, zipcode, state, city, nation_adi, state_adi = demo
 
             # transform Timestamp to datetime.date when using sql and csv mixture types
