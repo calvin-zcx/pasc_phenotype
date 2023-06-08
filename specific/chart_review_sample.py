@@ -812,7 +812,7 @@ def brain_fog():
 
                     pos_df_add = pos_df_add.loc[~pos_df_add.index.isin(list(pos_df.index) + site_selected_list),
                                  :].sample(frac=1)  # remove dumplicate from add
-                    pos_df = pd.concat([pos_df, pos_df_add], axis=1)
+                    pos_df = pd.concat([pos_df, pos_df_add], axis=0)
 
                 excel_index_keep = pos_df.index.values[:count_list[i][0]]
                 print(excel_index_keep)
@@ -846,7 +846,7 @@ def brain_fog():
 
                     neg_df_add = neg_df_add.loc[~neg_df_add.index.isin(list(neg_df.index) + site_selected_list),
                                  :].sample(frac=1)  # remove dumplicate from add
-                    neg_df = pd.concat([neg_df, neg_df_add], axis=1)
+                    neg_df = pd.concat([neg_df, neg_df_add], axis=0)
 
                 excel_index_keep = neg_df.index.values[:count_list[i][1]]
                 print(excel_index_keep)
@@ -986,7 +986,7 @@ if __name__ == '__main__':
 
                     pos_df_add = pos_df_add.loc[~pos_df_add.index.isin(list(pos_df.index) + site_selected_list),
                                  :].sample(frac=1)  # remove dumplicate from add
-                    pos_df = pd.concat([pos_df, pos_df_add], axis=1)
+                    pos_df = pd.concat([pos_df, pos_df_add], axis=0)
 
                 excel_index_keep = pos_df.index.values[:count_list[i][0]]
                 print(excel_index_keep)
@@ -1020,7 +1020,7 @@ if __name__ == '__main__':
 
                     neg_df_add = neg_df_add.loc[~neg_df_add.index.isin(list(neg_df.index) + site_selected_list),
                                  :].sample(frac=1)  # remove dumplicate from add
-                    neg_df = pd.concat([neg_df, neg_df_add], axis=1)
+                    neg_df = pd.concat([neg_df, neg_df_add], axis=0)
 
                 excel_index_keep = neg_df.index.values[:count_list[i][1]]
                 print(excel_index_keep)
