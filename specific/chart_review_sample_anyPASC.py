@@ -42,8 +42,7 @@ if __name__ == '__main__':
 
     # #
     # # select covid+ if necessary
-    # data_file = r'.
-    # .\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-21.csv'
+    # data_file = r'..\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-22.csv'
     # cohort_df = pd.read_csv(data_file,
     #                         dtype={'patid': str, 'site': str, 'zip': str},
     #                         parse_dates=['index date'],
@@ -63,26 +62,27 @@ if __name__ == '__main__':
     #                                                  )
     #                 ], axis=1, inplace=True)  #
     # print(cohort_df.shape)
-    # cohort_df.to_csv(r'..\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-21-simple.csv')
+    # cohort_df.to_csv(r'..\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-22-simple.csv')
     # zz
 
     # SET SEED
-    anypasc_type = 'persistent2dx'  # 'sustained2dx30d'
+    anypasc_type = 'sustained2dx30d'  # 'persistent2dx'  #
     seed = 0
-    for seed in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 150, 155]:
+    for seed in [0, 1, 2, 3, 4, 5,]:  # 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 150, 155
 
         np.random.seed(seed=seed)
 
         cohort_df = pd.read_excel(
-            r'..\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-21-simple-revised.xlsx')
+            r'..\data\recover\output\results\anyPASC2DX\anyPASC_2DX_stratified_period_severity_nsites-22-simple-revised.xlsx')
         # cohort_df = cohort_df.loc[(cohort_df['index date'] < datetime.datetime(2022, 3, 1, 0, 0)), :].copy()
         print('all', cohort_df.shape)
         cohort_df = cohort_df.loc[(cohort_df['age'] >= 20), :].copy()
         print('age>=20', cohort_df.shape)
 
         if anypasc_type == 'persistent2dx':
-            cohort_df = cohort_df.loc[(cohort_df['any_2dx_pasc_flag'] == 1), :].copy() # should we exclude any_2dx30day_pasc_flag==1 case?
-            print('persistent2dx', cohort_df.shape)
+            cohort_df = cohort_df.loc[(cohort_df['any_2dx_pasc_flag'] == 1) & (cohort_df['any_2dx30day_pasc_flag'] != 1), :].copy()
+            # should we exclude any_2dx30day_pasc_flag==1 case? Yes
+            print('persistent2dx but not sustained2dx30d', cohort_df.shape)
         elif anypasc_type == 'sustained2dx30d':
             cohort_df = cohort_df.loc[(cohort_df['any_2dx30day_pasc_flag'] == 1), :].copy()
             print('sustained2dx30d', cohort_df.shape)
@@ -114,11 +114,10 @@ if __name__ == '__main__':
         age_distribution = []
         NO_RACE_SITE = []
         add_info = []
-        for site in ['miami', 'usf', 'nebraska',
-                     'lsu', ]:
-            # 'mcw', 'ochsner', 'pitt', 'ufh', # miami has no race, all missing
-            #
-            #
+        for site in ['emory', 'miami', 'usf', 'nebraska', 'lsu', ]:
+            # 'mcw', 'ochsner', 'pitt', 'ufh', # miami has no race, all missing. once updated, changed
+            # emory has been updated also
+            site_selected_list_4period = []
             for period in ['preOmiOut', 'preOmiIn', 'omiOut', 'omiIn']:
                 print('period:', period, 'Site:', site)
                 site_selected_list = []
@@ -150,15 +149,21 @@ if __name__ == '__main__':
                         add_info.append([site, key, 'covid+', pos_df.shape[0], count_list[i][0],
                                          'add:{}'.format(count_list[i][0] - pos_df.shape[0])])
                         print('pos_df.shape[0], count_list[i][0]', pos_df.shape[0], count_list[i][0])
-                        print('Need add more patients in covid+, only consider gender')
+                        # print('Need add more patients in covid+, only consider gender')
+                        print('Need add more patients in covid+, no gender or race constraints')
+
                         for j, col_name in enumerate(group_cols_dict[key]):
                             # if j == 2: # just  covid
                             #     pos_df_add = sub_df[sub_df[col_name] == 1]
 
-                            if j == 0:  # just gender and covid
+                            # if j == 0:  # just gender and covid
+                            #     pos_df_add = sub_df[sub_df[col_name] == 1]
+                            # elif j == 2:
+                            #     pos_df_add = pos_df_add[pos_df_add[col_name] == 1]
+
+                            # just consider covid
+                            if j == 2:
                                 pos_df_add = sub_df[sub_df[col_name] == 1]
-                            elif j == 2:
-                                pos_df_add = pos_df_add[pos_df_add[col_name] == 1]
 
                         pos_df_add = pos_df_add.loc[~pos_df_add.index.isin(list(pos_df.index) + site_selected_list),
                                      :].sample(frac=1)  # remove dumplicate from add
@@ -167,6 +172,7 @@ if __name__ == '__main__':
                     excel_index_keep = pos_df.index.values[:count_list[i][0]]
                     print(excel_index_keep)
                     site_selected_list.extend(excel_index_keep)
+                    site_selected_list_4period.extend(excel_index_keep)
 
                     # covid negative
                     print("  Covid (-)", count_list[i][1])
@@ -185,14 +191,19 @@ if __name__ == '__main__':
                         add_info.append([site, key, 'covid-', neg_df.shape[0], count_list[i][1],
                                          'add:{}'.format(count_list[i][1] - neg_df.shape[0])])
                         print('neg_df.shape[0], count_list[i][0]', neg_df.shape[0], count_list[i][1])
-                        print('Need add more patients in covid-, only consider gender')
+                        # print('Need add more patients in covid-, only consider gender')
+                        print('Need add more patients in covid-, no gender or race constraints')
+
                         for j, col_name in enumerate(group_cols_dict[key]):
                             # if j == 2:  # just gender and covid
                             #     neg_df_add = sub_df[sub_df[col_name] == 1]
-                            if j == 0:  # just gender and covid
-                                neg_df_add = sub_df[sub_df[col_name] == 1]
-                            elif j == 2:
-                                neg_df_add = neg_df_add[neg_df_add[col_name] == 0]
+                            # if j == 0:  # just gender and covid
+                            #     neg_df_add = sub_df[sub_df[col_name] == 1]
+                            # elif j == 2:
+                            #     neg_df_add = neg_df_add[neg_df_add[col_name] == 0]
+
+                            if j == 2:  # just consider covid
+                                neg_df_add = sub_df[sub_df[col_name] == 0]
 
                         neg_df_add = neg_df_add.loc[~neg_df_add.index.isin(list(neg_df.index) + site_selected_list),
                                      :].sample(frac=1)  # remove dumplicate from add
@@ -201,18 +212,19 @@ if __name__ == '__main__':
                     excel_index_keep = neg_df.index.values[:count_list[i][1]]
                     print(excel_index_keep)
                     site_selected_list.extend(excel_index_keep)
+                    site_selected_list_4period.extend(excel_index_keep)
                     print()
 
                 selected_list.extend(site_selected_list)
-                site_select_df = cohort_df.loc[site_selected_list, :]
 
-                age_distribution.append(
-                    cohort_df.loc[cohort_df['site'] == site, ["age"]].describe().rename(
-                        columns={"index age": site + ' all'}))
-                age_distribution.append(site_select_df[["age"]].describe().rename(columns={"age": site + ' sample'}))
+            site_select_df_4period = cohort_df.loc[site_selected_list_4period, :]
 
-                print(pd.concat(age_distribution, axis=1))
-                print()
+            age_distribution.append(
+                cohort_df.loc[cohort_df['site'] == site, ["age"]].describe().rename(
+                    columns={"index age": site + ' all'}))
+            age_distribution.append(site_select_df_4period[["age"]].describe().rename(columns={"age": site + ' sample'}))
+            print(pd.concat(age_distribution, axis=1))
+            print()
 
         print("add_info", add_info)
         print('len(selected_list):', len(selected_list), 'len(set(selected_list)):', len(set(selected_list)))
@@ -230,4 +242,4 @@ if __name__ == '__main__':
 
         print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    print('Caution: pitt has no race information, thus only consider gender, NO_RACE_SITE', NO_RACE_SITE)
+    #print('Caution: pitt has no race information, thus only consider gender, NO_RACE_SITE', NO_RACE_SITE)
