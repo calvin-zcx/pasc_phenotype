@@ -213,6 +213,7 @@ def combine_risk_p_value_with_interaction(database='INSIGHT', severity='all'):
     print('Done')
     return df_row
 
+
 """
 def plot_heatmap_for_risk_grouped_by_organ(database='INSIGHT', star=False, pvalue=0.01):
     df_pasc_info = pd.read_excel(
@@ -532,7 +533,6 @@ def build_heat_map_from_selected_rows(database='INSIGHT',
         covs = covs_new
         print('after drop, len(covs):', len(covs))
 
-
     n_cov = len(covs)
     n_pasc = len(pascs)
     print('n_cov:', n_cov, 'n_pasc:', n_pasc)
@@ -798,8 +798,8 @@ def build_heat_map_from_inpatient_vs_outpatient(database='INSIGHT',
     right = 0.87
     bottom = 0.1
     top = 0.85
-    fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(14, 13), gridspec_kw=gridspec_kw) #, constrained_layout=True)
-    plt.subplots_adjust(left=0.15, bottom=0.05,  wspace=0.08 * 1.8 )
+    fig, axes = plt.subplots(ncols=2, nrows=1, figsize=(14, 13), gridspec_kw=gridspec_kw)  # , constrained_layout=True)
+    plt.subplots_adjust(left=0.15, bottom=0.05, wspace=0.08 * 1.8)
     sns.heatmap(df_data1, ax=axes[0], yticklabels=pascs, annot=True, **heatmapkws)
     sns.heatmap(df_data2, ax=axes[1], yticklabels=False, annot=True, **heatmapkws)
 
@@ -848,13 +848,378 @@ def build_heat_map_from_inpatient_vs_outpatient(database='INSIGHT',
     return df_data1, df_data2
 
 
+def build_heat_map_from_selected_rows_plot_interaction(
+        database='INSIGHT',
+        p_val_threshold=0.05 / 89,
+        selected_cols=False,
+        interactionge1=False,
+        interact_p_val_threhold=None,
+        severity='all',
+        drop_cols=[],
+        highlightinterle1=True):
+    if database == 'OneFlorida':
+        dir_path = 'output/factors/OneFlorida/elix/'
+    else:
+        dir_path = 'output/factors/INSIGHT/elix/'
+
+    df_row = pd.read_csv(dir_path + 'combined_row_format_with_interaction-{}.csv'.format(severity))
+    print('df_row.shape:', df_row.shape)
+    if not interactionge1:
+        df = df_row.loc[(df_row['p-Value'] < p_val_threshold) & (df_row['HR'] > 1), :].copy()
+    else:
+        df = df_row.loc[(df_row['p-Value'] < p_val_threshold) & (df_row['HR'] > 1) & (df_row['HR_inter'] > 1), :].copy()
+
+    if interact_p_val_threhold is not None:
+        df = df.loc[(df['p-Value_inter'] < interact_p_val_threhold), :].copy()
+
+    df['count'] = df['covariate'].apply(lambda x: (df['covariate'] == x).sum())
+    df = df.sort_values(by=['count'], ascending=False)
+
+    print('df.shape:', df.shape)
+
+    # df = df.drop(df[df['covariate'] == 'outpatient visits 0'].index, axis=0)
+
+    print('after drop df.shape:', df.shape)
+
+    covs = list(df['covariate'].unique())
+    pascs = list(df['pasc'].unique())
+
+    cov_name, pasc_name_list = collect_covariate_name()
+
+    pasc_new = []
+    for key in pasc_name_list:
+        if key in pascs:
+            pasc_new.append(key)
+    assert len(pasc_new) == len(pascs)
+    pascs = pasc_new
+
+    if selected_cols:
+        covs = [
+            'hospitalized',
+            'icu',
+            '20-<40 years',
+            '65-<75 years',
+            '75+ years',
+            'Female',
+            '03/20-06/20',
+            '07/21-11/21',
+            'num_Comorbidity>=5',
+            'DX: Arrythmia',
+            'DX: Cancer',
+            'DX: Chronic Kidney Disease',
+            'DX: Cirrhosis',
+            'DX: Coagulopathy',
+            'DX: Dementia',
+            'DX: End Stage Renal Disease on Dialysis',
+            'DX: Mental Health Disorders',
+            'DX: Pregnant',
+            'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)',
+            'DX: Weight Loss',
+            'BMI: <18.5 under weight',
+            'BMI: >=30 obese ',
+        ]
+    else:
+        covs_new = []
+        for key, value in cov_name.items():
+            if key in covs:
+                covs_new.append(key)
+        assert len(covs_new) == len(covs)
+        covs = covs_new
+
+    if drop_cols:
+        print('drop columns: ', drop_cols)
+        print('before drop, len(covs):', len(covs))
+        covs_new = [x for x in covs if x not in drop_cols]
+        covs = covs_new
+        print('after drop, len(covs):', len(covs))
+
+    n_cov = len(covs)
+    n_pasc = len(pascs)
+    print('n_cov:', n_cov, 'n_pasc:', n_pasc)
+
+    cov_id = {c: i for i, c in zip(range(n_cov), covs)}
+    pasc_id = {c: i for i, c in zip(range(n_pasc), pascs)}
+    data = np.empty((n_pasc, n_cov,))
+    data[:] = np.nan
+    highlight_cell = []
+
+    for key, row in df.iterrows():
+        cov = row['covariate']
+        pasc = row['pasc']
+        # hr = row['HR']
+        hr = row['HR_inter']
+        hr_l = row['CI-95% lower-bound']
+        hr_u = row['CI-95% upper-bound']
+        pval = row['p-Value']
+        hr_int = row['HR_inter']
+        p_int = row['p-Value_inter']
+        # if p_int > 0.05:
+        #     continue
+
+        i = pasc_id[pasc]
+        if cov not in cov_id:
+            print(cov, 'not in cov_id')
+            continue
+        j = cov_id[cov]
+        data[i, j] = hr
+        if hr_int <= 1:
+            highlight_cell.append((j, i))
+
+    df_data = pd.DataFrame(data, index=pascs,
+                           columns=covs)  # [re.sub("\(.*?\)", "", x.replace('DX: ', '')) for x in covs])
+
+    # if drop_cols:
+    #     print('drop columns: ', drop_cols)
+    #     print('before drop, df_data.shape:', df_data.shape)
+    #     df_data = df_data.drop(columns=drop_cols)
+    #     print('after drop, df_data.shape:', df_data.shape)
+
+    df_data = df_data.rename(columns=cov_name)
+    # {'icu': 'ICU', '75+ years': '≥ 75 years', 'hospitalized': 'Hospitalized',
+    #                                   'End Stage Renal Disease on Dialysis': 'End Stage Renal Disease',
+    #                                   'Pulmonary Circulation Disorder  ': 'Pulmonary Circulation Disorder',
+    #                                   'num_Comorbidity>=5': '>= 5 Comorbidities',
+    #                                   'BMI: <18.5 under weight': 'Under weight (BMI < 18.5)',
+    #                                   'BMI: >=30 obese ': 'Obese (BMI ≥ 30)',
+    #                                   '20-<40 years': '20-39 years', '65-<75 years': '65-74 years'})
+    fig = plt.figure(figsize=(14, 15))  # Set the figure size
+    # cmap = sns.diverging_palette(240, 10, as_cmap=True)
+    fig.add_subplot(111)
+    ax = sns.heatmap(df_data, cbar=1, linewidths=2, vmax=5, vmin=1,
+                     square=True, annot=True, fmt=".1f", cmap='Blues',
+                     linecolor='#D3D3D3', cbar_kws={"shrink": .9})
+    plt.tick_params(axis='both', which='major', labelsize=10, labelbottom=False, bottom=False, top=False, labeltop=True)
+
+    plt.setp(ax.get_xticklabels(), rotation=-45, ha="right",
+             rotation_mode="anchor")
+    if n_cov < 35:
+        ax.set_xticklabels(ax.get_xmajorticklabels(), fontsize=14)
+        ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize=14)
+
+    if highlightinterle1:
+        for cell in highlight_cell:
+            ax.add_patch(Rectangle(cell, 1, 1, fill=False, edgecolor='crimson', lw=2))
+
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="10%", pad=0.1)
+    # plt.colorbar(ax.get_children()[0], shrink=0.5, cax=cax)
+    plt.tight_layout()
+    utils.check_and_mkdir(dir_path + 'figure/')
+
+    plt.savefig(dir_path + 'figure/marginal-risk_heat_map_{}-p{:.6f}-{}-{}{}{}.png'.format( # -pint005
+        severity,
+        p_val_threshold,
+        '-interHRGe1' if interactionge1 else '-interHRNotUsed',
+        '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
+    ), bbox_inches='tight', dpi=600)
+
+    plt.savefig(dir_path + 'figure/marginal-risk_heat_map_{}-p{:.6f}-{}-{}{}{}.pdf'.format( # -pint005
+        severity,
+        p_val_threshold,
+        '-interHRGe1' if interactionge1 else '-interHRNotUsed',
+        '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
+    ), bbox_inches='tight', dpi=600)
+
+    plt.show()
+
+    return df_row, df, df_data
+
+
+def build_heat_map_from_selected_rows_plot_filteringByinteraction(
+        database='INSIGHT',
+        p_val_threshold=0.05 / 89,
+        selected_cols=False,
+        interactionge1=False,
+        interact_p_val_threhold=None,
+        severity='all',
+        drop_cols=[],
+        highlightinterle1=True):
+    if database == 'OneFlorida':
+        dir_path = 'output/factors/OneFlorida/elix/'
+    else:
+        dir_path = 'output/factors/INSIGHT/elix/'
+
+    df_row = pd.read_csv(dir_path + 'combined_row_format_with_interaction-{}.csv'.format(severity))
+    print('df_row.shape:', df_row.shape)
+    if not interactionge1:
+        df = df_row.loc[(df_row['p-Value'] < p_val_threshold) & (df_row['HR'] > 1), :].copy()
+    else:
+        df = df_row.loc[(df_row['p-Value'] < p_val_threshold) & (df_row['HR'] > 1) & (df_row['HR_inter'] > 1), :].copy()
+
+    if interact_p_val_threhold is not None:
+        df = df.loc[(df['p-Value_inter'] < interact_p_val_threhold), :].copy()
+
+    df['count'] = df['covariate'].apply(lambda x: (df['covariate'] == x).sum())
+    df = df.sort_values(by=['count'], ascending=False)
+
+    print('df.shape:', df.shape)
+
+    # df = df.drop(df[df['covariate'] == 'outpatient visits 0'].index, axis=0)
+
+    print('after drop df.shape:', df.shape)
+
+    covs = list(df['covariate'].unique())
+    pascs = list(df['pasc'].unique())
+
+    cov_name, pasc_name_list = collect_covariate_name()
+
+    pasc_new = []
+    for key in pasc_name_list:
+        if key in pascs:
+            pasc_new.append(key)
+    assert len(pasc_new) == len(pascs)
+    pascs = pasc_new
+
+    if selected_cols:
+        covs = [
+            'hospitalized',
+            'icu',
+            '20-<40 years',
+            '65-<75 years',
+            '75+ years',
+            'Female',
+            '03/20-06/20',
+            '07/21-11/21',
+            'num_Comorbidity>=5',
+            'DX: Arrythmia',
+            'DX: Cancer',
+            'DX: Chronic Kidney Disease',
+            'DX: Cirrhosis',
+            'DX: Coagulopathy',
+            'DX: Dementia',
+            'DX: End Stage Renal Disease on Dialysis',
+            'DX: Mental Health Disorders',
+            'DX: Pregnant',
+            'DX: Pulmonary Circulation Disorder  (PULMCR_ELIX)',
+            'DX: Weight Loss',
+            'BMI: <18.5 under weight',
+            'BMI: >=30 obese ',
+        ]
+    else:
+        covs_new = []
+        for key, value in cov_name.items():
+            if key in covs:
+                covs_new.append(key)
+        assert len(covs_new) == len(covs)
+        covs = covs_new
+
+    if drop_cols:
+        print('drop columns: ', drop_cols)
+        print('before drop, len(covs):', len(covs))
+        covs_new = [x for x in covs if x not in drop_cols]
+        covs = covs_new
+        print('after drop, len(covs):', len(covs))
+
+    n_cov = len(covs)
+    n_pasc = len(pascs)
+    print('n_cov:', n_cov, 'n_pasc:', n_pasc)
+
+    cov_id = {c: i for i, c in zip(range(n_cov), covs)}
+    pasc_id = {c: i for i, c in zip(range(n_pasc), pascs)}
+    data = np.empty((n_pasc, n_cov,))
+    data[:] = np.nan
+    highlight_cell = []
+
+    for key, row in df.iterrows():
+        cov = row['covariate']
+        pasc = row['pasc']
+        hr = row['HR']
+        # hr = row['HR_inter']
+        hr_l = row['CI-95% lower-bound']
+        hr_u = row['CI-95% upper-bound']
+        pval = row['p-Value']
+        hr_int = row['HR_inter']
+        p_int = row['p-Value_inter']
+        # if p_int > 0.05:
+        #     continue
+
+        i = pasc_id[pasc]
+        if cov not in cov_id:
+            print(cov, 'not in cov_id')
+            continue
+        j = cov_id[cov]
+        data[i, j] = hr
+        # if hr_int <= 1:
+        #     highlight_cell.append((j, i))
+
+        if p_int > 0.05:
+            highlight_cell.append((j, i))
+
+    df_data = pd.DataFrame(data, index=pascs,
+                           columns=covs)  # [re.sub("\(.*?\)", "", x.replace('DX: ', '')) for x in covs])
+
+    # if drop_cols:
+    #     print('drop columns: ', drop_cols)
+    #     print('before drop, df_data.shape:', df_data.shape)
+    #     df_data = df_data.drop(columns=drop_cols)
+    #     print('after drop, df_data.shape:', df_data.shape)
+
+    df_data = df_data.rename(columns=cov_name)
+    # {'icu': 'ICU', '75+ years': '≥ 75 years', 'hospitalized': 'Hospitalized',
+    #                                   'End Stage Renal Disease on Dialysis': 'End Stage Renal Disease',
+    #                                   'Pulmonary Circulation Disorder  ': 'Pulmonary Circulation Disorder',
+    #                                   'num_Comorbidity>=5': '>= 5 Comorbidities',
+    #                                   'BMI: <18.5 under weight': 'Under weight (BMI < 18.5)',
+    #                                   'BMI: >=30 obese ': 'Obese (BMI ≥ 30)',
+    #                                   '20-<40 years': '20-39 years', '65-<75 years': '65-74 years'})
+    fig = plt.figure(figsize=(14, 15))  # Set the figure size
+    # cmap = sns.diverging_palette(240, 10, as_cmap=True)
+    fig.add_subplot(111)
+    ax = sns.heatmap(df_data, cbar=1, linewidths=2, vmax=5, vmin=1,
+                     square=True, annot=True, fmt=".1f", cmap='Blues',
+                     linecolor='#D3D3D3', cbar_kws={"shrink": .9})
+    plt.tick_params(axis='both', which='major', labelsize=10, labelbottom=False, bottom=False, top=False, labeltop=True)
+
+    plt.setp(ax.get_xticklabels(), rotation=-45, ha="right",
+             rotation_mode="anchor")
+    if n_cov < 35:
+        ax.set_xticklabels(ax.get_xmajorticklabels(), fontsize=14)
+        ax.set_yticklabels(ax.get_ymajorticklabels(), fontsize=14)
+
+    if highlightinterle1:
+        for cell in highlight_cell:
+            ax.add_patch(Rectangle(cell, 1, 1, fill=False, edgecolor='crimson', lw=2))
+
+    # divider = make_axes_locatable(ax)
+    # cax = divider.append_axes("right", size="10%", pad=0.1)
+    # plt.colorbar(ax.get_children()[0], shrink=0.5, cax=cax)
+    plt.tight_layout()
+    utils.check_and_mkdir(dir_path + 'figure/')
+
+    plt.savefig(dir_path + 'figure/revisehighlight-risk_heat_map_{}-p{:.6f}-{}-{}{}{}-pint005.png'.format(
+        severity,
+        p_val_threshold,
+        '-interHRGe1' if interactionge1 else '-interHRNotUsed',
+        '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
+    ), bbox_inches='tight', dpi=600)
+
+    plt.savefig(dir_path + 'figure/revisehighlight-risk_heat_map_{}-p{:.6f}-{}-{}{}{}-pint005.pdf'.format(
+        severity,
+        p_val_threshold,
+        '-interHRGe1' if interactionge1 else '-interHRNotUsed',
+        '-interP{}'.format(interact_p_val_threhold) if interact_p_val_threhold is not None else '-interPNotUsed',
+        '-dropcols' if drop_cols else '-fullcols',
+        '-highlightinterle1' if highlightinterle1 else '-Nohighlight',
+    ), bbox_inches='tight', dpi=600)
+
+    plt.show()
+
+    return df_row, df, df_data
+
+
 if __name__ == '__main__':
     start_time = time.time()
     # manhattan_plt(database='INSIGHT', )
-    database = 'OneFlorida'  # 'INSIGHT'
-    df_row = combine_risk_p_value_with_interaction(database=database, severity='all')
-    df_row = combine_risk_p_value_with_interaction(database=database, severity='inpatienticu')
-    df_row = combine_risk_p_value_with_interaction(database=database, severity='outpatient')
+    database = 'INSIGHT'  # 'OneFlorida'  # 'INSIGHT'
+    # df_row = combine_risk_p_value_with_interaction(database=database, severity='all')
+    # df_row = combine_risk_p_value_with_interaction(database=database, severity='inpatienticu')
+    # df_row = combine_risk_p_value_with_interaction(database=database, severity='outpatient')
 
     # df_hr, df_p, df_row = combine_risk_p_value(database='INSIGHT')
     # plot_heatmap_for_risk_grouped_by_organ(database='INSIGHT', star=False, pvalue=0.05)
@@ -873,6 +1238,31 @@ if __name__ == '__main__':
     #                                                                             '03/21-06/21'])
 
     severity = 'all'
+    # revised 2023 6 19
+    # df_row, df, df_data = build_heat_map_from_selected_rows_plot_interaction(
+    #     database=database, p_val_threshold=0.05 / 89,
+    #     selected_cols=False, interactionge1=True,
+    #     severity=severity,
+    #     drop_cols=['Missing',
+    #                'inpatient visits 1-2',
+    #                'inpatient visits >=3',
+    #                'Smoker: missing',
+    #                '03/21-06/21'])
+
+    df_row, df, df_data = build_heat_map_from_selected_rows_plot_filteringByinteraction(
+        database=database, p_val_threshold=0.05 / 89,
+        selected_cols=False, interactionge1=True,
+        severity=severity,
+        drop_cols=['Missing',
+                   'inpatient visits 1-2',
+                   'inpatient visits >=3',
+                   'Smoker: missing',
+                   '03/21-06/21'])
+
+    zz
+
+    # original version
+
     df_row, df, df_data = build_heat_map_from_selected_rows(database=database, p_val_threshold=0.05 / 89,
                                                             selected_cols=False, interactionge1=False,
                                                             severity=severity)
