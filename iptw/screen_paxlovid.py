@@ -258,7 +258,8 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0 ):
     ctrl_list = []
     n_no_match = 0
     for index, rows in tqdm(df_case.iterrows(), total=df_case.shape[0]):
-
+        if index == 275:
+            print(275, 'debug')
         boolidx = df_ctrl[cols_to_match[0]] == rows[cols_to_match[0]]
         for c in cols_to_match[1:]:
             boolidx &= df_ctrl[c] == rows[c]
@@ -353,6 +354,10 @@ if __name__ == "__main__":
     print('Considering outpatient cohorts')
     df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
 
+    # "YM: November 2022", "YM: December 2022", "YM: January 2023", "YM: February 2023",
+    df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
+                         df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
+
     df_pos = df.loc[df["Paxlovid"] >= 1, :].copy()
     df_neg = df.loc[df["Paxlovid"] == 0, :].copy()
 
@@ -361,18 +366,19 @@ if __name__ == "__main__":
     sex_col = ['Female', 'Male', 'Other/Missing']
     race_col = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
     eth_col = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-    period_col = [
-        # "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
-        # "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
-        # "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
-        # "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
-        # "YM: November 2021",
-        "YM: December 2021", "YM: January 2022",
-        "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
-        "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
-        "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
-        "YM: February 2023",
-    ]
+    # period_col = [
+    #     # "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
+    #     # "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
+    #     # "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
+    #     # "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
+    #     # "YM: November 2021",
+    #     "YM: December 2021", "YM: January 2022",
+    #     "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
+    #     "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
+    #     "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
+    #     "YM: February 2023",
+    # ]
+    period_col = ['11/21-02/22',  '03/22-06/22', '07/22-10/22', '11/22-02/23']
     adi_col = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
                'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
     dx_col = ["DX: Asthma", "DX: Cancer", "DX: Chronic Kidney Disease",
