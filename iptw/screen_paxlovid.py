@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
+    parser.add_argument('--build_data', action='store_true')
 
     args = parser.parse_args()
 
@@ -252,6 +253,33 @@ def select_subpopulation(df, severity):
     return df
 
 
+def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0 ):
+    print('len(case)', len(df_case), 'len(ctrl)', len(df_ctrl))
+    ctrl_list = []
+    n_no_match = 0
+    for index, rows in tqdm(df_case.iterrows(), total=df_case.shape[0]):
+
+        boolidx = df_ctrl[cols_to_match[0]] == rows[cols_to_match[0]]
+        for c in cols_to_match[1:]:
+            boolidx &= df_ctrl[c] == rows[c]
+        sub_df = df_ctrl.loc[boolidx, :]
+        if len(sub_df) >= kmatch:
+            _add_index = sub_df.sample(n=kmatch, replace=False, random_state=random_seed).index
+        else:
+            _add_index = []
+            n_no_match += 1
+            print('No match for', index)
+        ctrl_list.extend(_add_index)
+        # df_ctrl.drop(_add_index, inplace=True)
+        if len(_add_index) > 0:
+            df_ctrl = df_ctrl[~df_ctrl.index.isin(_add_index)]
+        if len(df_ctrl) == 0:
+            break
+
+    print('Done, {}/{} no match'.format(n_no_match, len(df_case)))
+    return ctrl_list
+
+
 if __name__ == "__main__":
     # python screen_dx_recover_pregnancy_cohort2.py --site all --severity pospreg-posnonpreg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort2_all_pospreg-posnonpreg.txt
     start_time = time.time()
@@ -264,50 +292,106 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
     # print('save_model_filename', args.save_model_filename)
 
-    # %% 1. Load  Data
+    # %% Step 1. Build or Load  Data
     print('In cohorts_characterization_build_data...')
-    if args.site == 'all':
-        sites = ['mcw', 'nebraska', 'utah', 'utsw',
-                 'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh', 'usf', 'miami',  'emory', 'nch',
-                 'pitt', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf',  'lsu',
-                 'vumc']
+    if args.build_data:
+        if args.site == 'all':
+            sites = ['mcw', 'nebraska', 'utah', 'utsw',
+                     'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
+                     'ufh', 'usf', 'miami',  'emory', 'nch',
+                     'pitt', 'psu', 'temple', 'michigan',
+                     'ochsner', 'ucsf',  'lsu',
+                     'vumc']
 
-        # sites = ['wcm', 'montefiore', 'mshs',]
-        # sites = ['wcm', ]
-        # sites = ['pitt', ]
-        print('len(sites), sites:', len(sites), sites)
+            # sites = ['wcm', 'montefiore', 'mshs',]
+            # sites = ['wcm', ]
+            # sites = ['pitt', ]
+            print('len(sites), sites:', len(sites), sites)
+        else:
+            sites = [args.site, ]
+
+        df_info_list = []
+        df_label_list = []
+        df_covs_list = []
+        df_outcome_list = []
+
+        df_list = []
+        for ith, site in tqdm(enumerate(sites)):
+            print('Loading: ', ith, site)
+            data_file = r'../data/recover/output/{}/matrix_cohorts_covid_4manuNegNoCovidV2age18_boolbase-nout-withAllDays-withPreg_{}.csv'.format(
+                site,
+                site)
+            # Load Covariates Data
+            df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+            print('df.shape:', df.shape)
+            df_list.append(df)
+
+        # combine all sites and select subcohorts
+        df = pd.concat(df_list, ignore_index=True)
+        print('over all: df.shape:', df.shape)
+        print('pax in all:', len(df), df['Paxlovid'].sum(), df['Paxlovid'].mean())
+        print('pax in pos:', len(df.loc[df['covid'] == 1, :]), df.loc[df['covid'] == 1, 'Paxlovid'].sum(), df.loc[df['covid'] == 1, 'Paxlovid'].mean())
+        print('pax in neg:', len(df.loc[df['covid'] == 0, :]), df.loc[df['covid'] == 0, 'Paxlovid'].sum(), df.loc[df['covid'] == 0, 'Paxlovid'].mean())
+
+        df = df.loc[df['covid'] == 1, :].copy()
+        print('covid+: df.shape:', df.shape)
+        df.to_csv('recover_covid_pos.csv')
     else:
-        sites = [args.site, ]
-
-    df_info_list = []
-    df_label_list = []
-    df_covs_list = []
-    df_outcome_list = []
-
-    df_list = []
-    for ith, site in tqdm(enumerate(sites)):
-        print('Loading: ', ith, site)
-        data_file = r'../data/recover/output/{}/matrix_cohorts_covid_4manuNegNoCovidV2age18_boolbase-nout-withAllDays-withPreg_{}.csv'.format(
-            site,
-            site)
-        # Load Covariates Data
+        data_file = 'recover_covid_pos.csv'
+        print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
         print('df.shape:', df.shape)
-        df_list.append(df)
 
-    # combine all sites and select subcohorts
-    df = pd.concat(df_list, ignore_index=True)
-    print('over all: df.shape:', df.shape)
-    print('pax in all:', len(df), df['Paxlovid'].sum(), df['Paxlovid'].mean())
-    print('pax in pos:', len(df.loc[df['covid'] == 1, :]), df.loc[df['covid'] == 1, 'Paxlovid'].sum(), df.loc[df['covid'] == 1, 'Paxlovid'].mean())
-    print('pax in neg:', len(df.loc[df['covid'] == 0, :]), df.loc[df['covid'] == 0, 'Paxlovid'].sum(), df.loc[df['covid'] == 0, 'Paxlovid'].mean())
+    # pre-process data a little bit
+    print('Considering inpatient/hospitalized cohorts but not ICU')
+    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    print('Considering ICU (hospitalized ventilation or critical care) cohorts')
+    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
+    print('Considering inpatient/hospitalized including icu cohorts')
+    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
+    print('Considering outpatient cohorts')
+    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
 
-    df = df.loc[df['covid'] == 1, :].copy()
-    print('covid+: df.shape:', df.shape)
-    df.to_csv('recover_covid_pos.csv')
+    df_pos = df.loc[df["Paxlovid"] >= 1, :].copy()
+    df_neg = df.loc[df["Paxlovid"] == 0, :].copy()
 
+    acute_col = ['outpatient', 'hospitalized', 'icu', 'ventilation']
+    age_col = ['20-<40 years', '40-<55 years', '55-<65 years', '65-<75 years', '75-<85 years', '85+ years']
+    sex_col = ['Female', 'Male', 'Other/Missing']
+    race_col = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
+    eth_col = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+    period_col = [
+        # "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
+        # "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
+        # "YM: January 2021", "YM: February 2021", "YM: March 2021", "YM: April 2021", "YM: May 2021",
+        # "YM: June 2021", "YM: July 2021", "YM: August 2021", "YM: September 2021", "YM: October 2021",
+        # "YM: November 2021",
+        "YM: December 2021", "YM: January 2022",
+        "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
+        "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
+        "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
+        "YM: February 2023",
+    ]
+    adi_col = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+               'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+    dx_col = ["DX: Asthma", "DX: Cancer", "DX: Chronic Kidney Disease",
+              "DX: Congestive Heart Failure", "DX: End Stage Renal Disease on Dialysis",
+              "DX: Hypertension", "DX: Pregnant",
+              ]
+    cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + adi_col + dx_col
+    ctrl_list = exact_match_on(df_pos, df_neg, 10, cols_to_match, )
+
+    print('len(ctrl_list)', len(ctrl_list))
+    neg_selected = pd.Series(False, index=df_neg.index)
+    neg_selected[ctrl_list] = True
+    df_ctrl = df_neg.loc[neg_selected, :]
+    print('len(df_pos):', len(df_pos),
+          'len(df_neg):', len(df_neg),
+          'len(df_ctrl):', len(df_ctrl), )
+
+    df_pos.to_csv('recover_covid_pos-with-pax.csv')
+    df_ctrl.to_csv('recover_covid_pos-without-pax-matched.csv')
     zz
 
     df = select_subpopulation(df, args.severity)
