@@ -358,6 +358,10 @@ if __name__ == "__main__":
     df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
                          df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
 
+    selected_cols = [x for x in df.columns if x.startswith('DX:')]
+    df['n_baseline_condition'] = df[selected_cols].sum(axis=1)
+    df['any_baseline_condition'] = (df['n_baseline_condition'] >= 1).astype('int')
+
     df_pos = df.loc[df["Paxlovid"] >= 1, :].copy()
     df_neg = df.loc[df["Paxlovid"] == 0, :].copy()
 
@@ -385,7 +389,9 @@ if __name__ == "__main__":
               "DX: Congestive Heart Failure", "DX: End Stage Renal Disease on Dialysis",
               "DX: Hypertension", "DX: Pregnant",
               ]
-    cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + adi_col + dx_col
+    # cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + adi_col + dx_col
+    cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + ['any_baseline_condition', ]
+
     ctrl_list = exact_match_on(df_pos, df_neg, 10, cols_to_match, )
 
     print('len(ctrl_list)', len(ctrl_list))
@@ -396,8 +402,8 @@ if __name__ == "__main__":
           'len(df_neg):', len(df_neg),
           'len(df_ctrl):', len(df_ctrl), )
 
-    df_pos.to_csv('recover_covid_pos-with-pax.csv')
-    df_ctrl.to_csv('recover_covid_pos-without-pax-matched.csv')
+    df_pos.to_csv('recover_covid_pos-with-pax-V2.csv')
+    df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V2.csv')
     zz
 
     df = select_subpopulation(df, args.severity)
