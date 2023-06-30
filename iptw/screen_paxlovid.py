@@ -391,6 +391,7 @@ if __name__ == "__main__":
               ]
     # cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + adi_col + dx_col
     cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + ['any_baseline_condition', ]
+    cols_to_match = ['site',] + acute_col + age_col + race_col + period_col + ['any_baseline_condition', ]
 
     ctrl_list = exact_match_on(df_pos, df_neg, 10, cols_to_match, )
 
@@ -402,8 +403,8 @@ if __name__ == "__main__":
           'len(df_neg):', len(df_neg),
           'len(df_ctrl):', len(df_ctrl), )
 
-    df_pos.to_csv('recover_covid_pos-with-pax-V2.csv')
-    df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V2.csv')
+    df_pos.to_csv('recover_covid_pos-with-pax-V3.csv')
+    df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V3.csv')
     zz
 
     df = select_subpopulation(df, args.severity)
