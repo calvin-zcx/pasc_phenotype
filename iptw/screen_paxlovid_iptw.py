@@ -588,7 +588,7 @@ if __name__ == "__main__":
                         cox_w[4], model.best_hyper_paras]
             causal_results.append(_results)
             results_columns_name = [
-                'i', 'pasc', 'covid+', 'covid-',
+                'i', 'pasc', 'case+', 'ctrl-',
                 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',

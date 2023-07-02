@@ -34,7 +34,18 @@ def table1_cohorts_characterization_analyse():
     # severity in 'hospitalized', 'ventilation', None
 
     data_file = r'recover_covid_pos.csv'
-    df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+    # df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+
+    df1 = pd.read_csv('recover_covid_pos-with-pax-V3.csv', dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date'])
+    df2 = pd.read_csv('recover_covid_pos-without-pax-matched-V3.csv', dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date'])
+    df = pd.concat([df1, df2], ignore_index=True)
+    print('df1.shape', df1.shape,
+          'df2.shape', df2.shape,
+          'df.shape', df.shape, )
+    out_file = r'recover_covid_pos_paxlovid_covaraite_summary.xlsx'
+    out_file = r'recover_covid_pos_paxlovid_covaraite_summary-matched-V3.xlsx'
 
     # pre-process acute severity info
     print('Considering inpatient/hospitalized cohorts but not ICU')
@@ -86,7 +97,6 @@ def table1_cohorts_characterization_analyse():
 
     df_pos = df.loc[df["Paxlovid"] >= 1, :]
     df_neg = df.loc[df["Paxlovid"] == 0, :]
-    out_file = r'recover_covid_pos_paxlovid_covaraite_summary.xlsx'
     output_columns = ['All Lab-confirmed COVID+', 'COVID+ w/ Pax prescribed', 'COVID+ w/o Pax prescribed', 'SMD']
 
     print('Load data covariates file:', data_file, df.shape)
@@ -303,7 +313,7 @@ def table1_cohorts_characterization_analyse():
     # part 1
     col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
-                 '03/22-06/22', '07/22-10/22']
+                 '03/22-06/22', '07/22-10/22', '11/22-02/23']
     row_names.extend(col_names)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
