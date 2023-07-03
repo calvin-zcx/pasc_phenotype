@@ -257,15 +257,23 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0 ):
     print('len(case)', len(df_case), 'len(ctrl)', len(df_ctrl))
     ctrl_list = []
     n_no_match = 0
+    n_fewer_match = 0
     for index, rows in tqdm(df_case.iterrows(), total=df_case.shape[0]):
-        if index == 275:
-            print(275, 'debug')
+        # if index == 275 or index == 1796:
+        #     print(275, 'debug')
+        #     print(1796, 'debug')
+        # else:
+        #     continue
         boolidx = df_ctrl[cols_to_match[0]] == rows[cols_to_match[0]]
         for c in cols_to_match[1:]:
             boolidx &= df_ctrl[c] == rows[c]
         sub_df = df_ctrl.loc[boolidx, :]
         if len(sub_df) >= kmatch:
             _add_index = sub_df.sample(n=kmatch, replace=False, random_state=random_seed).index
+        elif len(sub_df) > 0:
+            n_fewer_match += 1
+            _add_index = sub_df.sample(frac=1, replace=False, random_state=random_seed).index
+            print(len(sub_df), ' match for', index)
         else:
             _add_index = []
             n_no_match += 1
@@ -277,7 +285,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0 ):
         if len(df_ctrl) == 0:
             break
 
-    print('Done, {}/{} no match'.format(n_no_match, len(df_case)))
+    print('Done, total {}:{} no match, {} fewer match'.format(len(df_case), n_no_match, n_fewer_match))
     return ctrl_list
 
 
@@ -394,6 +402,7 @@ if __name__ == "__main__":
     # cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + adi_col + dx_col
     cols_to_match = ['site',] + acute_col + age_col + sex_col + race_col + eth_col + period_col + ['any_baseline_condition', ]
     cols_to_match = ['site',] + acute_col + age_col + race_col + period_col + ['any_baseline_condition', ]
+    cols_to_match = acute_col + age_col + race_col + period_col + ['any_baseline_condition', ]
 
     ctrl_list = exact_match_on(df_pos, df_neg, 10, cols_to_match, )
 
@@ -405,7 +414,7 @@ if __name__ == "__main__":
           'len(df_neg):', len(df_neg),
           'len(df_ctrl):', len(df_ctrl), )
 
-    df_pos.to_csv('recover_covid_pos-with-pax-V5.csv')
-    df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V5.csv')
+    df_pos.to_csv('recover_covid_pos-with-pax-V6.csv')
+    df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V6.csv')
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

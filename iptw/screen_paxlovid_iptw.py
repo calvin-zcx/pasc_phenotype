@@ -299,9 +299,9 @@ if __name__ == "__main__":
     # # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
     # print('df.shape:', df.shape)
 
-    df1 = pd.read_csv('recover_covid_pos-with-pax-V3.csv', dtype={'patid': str, 'site': str, 'zip': str},
+    df1 = pd.read_csv('recover_covid_pos-with-pax-V6.csv', dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date'])
-    df2 = pd.read_csv('recover_covid_pos-without-pax-matched-V3.csv', dtype={'patid': str, 'site': str, 'zip': str},
+    df2 = pd.read_csv('recover_covid_pos-without-pax-matched-V6.csv', dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date'])
     df = pd.concat([df1, df2], ignore_index=True)
     print('df1.shape', df1.shape,
