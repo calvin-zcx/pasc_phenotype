@@ -312,7 +312,7 @@ if __name__ == "__main__":
                      'ochsner', 'ucsf',  'lsu',
                      'vumc']
 
-            # sites = ['wcm', 'montefiore', 'mshs',]
+            # sites = ['wcm', 'montefiore', 'mshs', 'columbia', 'nyu', ]
             # sites = ['wcm', ]
             # sites = ['pitt', ]
             print('len(sites), sites:', len(sites), sites)
