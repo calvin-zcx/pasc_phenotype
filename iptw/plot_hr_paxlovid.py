@@ -38,8 +38,17 @@ def plot_forest_for_dx_organ_pax(database='recover', star=True, text_right=False
     # df = pd.read_excel(
     #     r'../data/recover/output/results/Paxlovid-malenarrow/causal_effects_specific_male.xlsx',
     #     sheet_name='dx')
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/Paxlovid-above65narrow/causal_effects_specific_above65.xlsx',
+    #     sheet_name='dx')
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/Paxlovid-outpatientnarrow/causal_effects_specific_outpatient.xlsx',
+    #     sheet_name='dx')
+    # df = pd.read_excel(
+    #     r'../data/recover/output/results/Paxlovid-femalenarrow/causal_effects_specific_female.xlsx',
+    #     sheet_name='dx')
     df = pd.read_excel(
-        r'../data/recover/output/results/Paxlovid-above65narrow/causal_effects_specific_above65.xlsx',
+        r'../data/recover/output/results/Paxlovid-inpatienticunarrow/causal_effects_specific_inpatienticu.xlsx',
         sheet_name='dx')
 
     df_select = df.sort_values(by='hr-w', ascending=True)
@@ -160,7 +169,7 @@ def plot_forest_for_dx_organ_pax(database='recover', star=True, text_right=False
     ax.spines['bottom'].set_visible(True)
     ax.spines['left'].set_visible(False)
     plt.tight_layout()
-    output_dir = r'../data/recover/output/results/Paxlovid-above65narrow/figure/'
+    output_dir = r'../data/recover/output/results/Paxlovid-inpatienticunarrow/figure/'
     check_and_mkdir(output_dir)
     plt.savefig(output_dir + 'hr_2CIF-V5.png', bbox_inches='tight', dpi=600)
 
