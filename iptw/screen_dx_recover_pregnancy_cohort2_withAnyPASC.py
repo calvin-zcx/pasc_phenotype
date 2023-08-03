@@ -397,7 +397,7 @@ if __name__ == "__main__":
 
     df_outcome_cols = ['death', 'death t2e'] + [x for x in
                                                 list(df.columns)
-                                                if x.startswith('dx') or x.startswith('smm')
+                                                if x.startswith('dx') or x.startswith('smm') or x.startswith('any_pasc')
                                                 ]
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
     # df_outcome_list.append(df_outcome)
@@ -482,13 +482,17 @@ if __name__ == "__main__":
         record_example = next(iter(icd_pasc.items()))
         print('e.g.:', record_example)
 
+    pasc_encoding = {}
+    pasc_encoding['any_pasc'] = [np.nan, np.nan]
     with open(r'../data/mapping/pasc_index_mapping.pkl', 'rb') as f:
-        pasc_encoding = pickle.load(f)
-        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(pasc_encoding))
-        record_example = next(iter(pasc_encoding.items()))
+        _pasc_encoding = pickle.load(f)
+        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(_pasc_encoding))
+        record_example = next(iter(_pasc_encoding.items()))
         print('e.g.:', record_example)
 
+    pasc_encoding.update(_pasc_encoding)
     SMMpasc_encoding = utils.load(r'../data/mapping/SMMpasc_index_mapping.pkl')
+    pasc_encoding.update(SMMpasc_encoding)
 
     # %% 2. PASC specific cohorts for causal inference
     # if args.selectpasc:
@@ -500,8 +504,8 @@ if __name__ == "__main__":
     #     selected_list = df_select.index.tolist()
     #     print('Selected: len(selected_list):', len(selected_list))
     #     print(df_select['PASC Name Simple'])
-    # pasc_encoding.update(SMMpasc_encoding)
-    pasc_encoding['any_pasc'] = [np.nan, np.nan]
+
+
 
     causal_results = []
     results_columns_name = []
@@ -511,21 +515,20 @@ if __name__ == "__main__":
         #     if i not in selected_list:
         #         print('Skip:', i, pasc, 'because args.selectpasc, p<=0.05, hr > 1 in Insight')
         #         continue
-        print('\n In screening:', i, pasc)
-        if pasc.startswith('dx-'):
-            pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dx-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dx-base@' + pasc]
-        elif pasc.startswith('smm-'):
+        print('\n In c:', i, pasc)
+
+        if pasc.startswith('smm'):
             pasc_flag = (df['smm-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['smm-t2e@' + pasc].astype('float')
             pasc_baseline = df['smm-base@' + pasc]
-        elif pasc== 'any_pasc':
+        elif pasc == 'any_pasc':
             pasc_flag = df['any_pasc_flag'].astype('int')
             pasc_t2e = df['any_pasc_t2e'].astype('float')
             pasc_baseline = df['any_pasc_baseline']
         else:
-            raise ValueError
+            pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dx-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dx-base@' + pasc]
 
         # considering competing risks
         death_flag = df['death']
