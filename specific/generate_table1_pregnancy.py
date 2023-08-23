@@ -25,33 +25,51 @@ print = functools.partial(print, flush=True)
 # from iptw.PSModels import ml
 # from iptw.evaluation import *
 
+def add_col(df):
+    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    print('Considering ICU (hospitalized ventilation or critical care) cohorts')
+    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
+    print('Considering inpatient/hospitalized including icu cohorts')
+    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
+    print('Considering outpatient cohorts')
+    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
+
+    # "YM: November 2022", "YM: December 2022", "YM: January 2023", "YM: February 2023",
+    df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
+                          df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
+    df['Type 1 or 2 Diabetes Diagnosis'] = ((df["DX: Diabetes Type 1"] + df["DX: Diabetes Type 2"]) >= 1).astype('int')
+
+    return df
 
 def table1_cohorts_characterization_analyse(pivot='covid'):
     # severity in 'hospitalized', 'ventilation', None
 
-    data_file2 = r'pos_preg_femalenot.csv'
+    # data_file2 = r'preg_output/pos_preg_femalenot.csv'
 
     if pivot == 'covid':
-        data_file = r'preg_pos_neg.csv'
+        data_file = r'preg_output/preg_pos_neg.csv'
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        df = add_col(df)
         pcol = 'covid'
         df_pos = df.loc[df["covid"] == 1, :]
         df_neg = df.loc[df["covid"] == 0, :]
-        out_file = r'preg_pos_neg_covaraite_summary.xlsx'
+        out_file = r'preg_pos_neg_covaraite_summary_v2.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Pregnant COVID Negative', 'SMD']
     elif pivot == 'pregnancy':
-        data_file = r'pos_preg_femalenot.csv'
+        data_file = r'preg_output/pos_preg_femalenot.csv'
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        df = add_col(df)
         pcol = 'flag_pregnancy'
         df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_v2.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Non-Pregnant COVID Positive', 'SMD']
 
     else:
         raise ValueError
 
     print('Load data covariates file:', data_file, df.shape, pcol)
+
 
     def _n_str(n):
         return '{:,}'.format(n)
@@ -88,6 +106,14 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         _n_str(len(df_neg)),
         np.nan
     ])
+
+    row_names.append('Acute severity — no. (%)')
+    records.append([])
+    col_names = ['outpatient', 'inpatient', 'icu', 'inpatienticu']
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+         for c in col_names])
 
     # age
     row_names.append('Median age (IQR) — yr')
@@ -252,7 +278,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     # part 1
     col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
-                 '03/22-06/22', '07/22-10/22']
+                 '03/22-06/22', '07/22-10/22', '11/22-02/23']
     row_names.extend(col_names)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
@@ -281,12 +307,14 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
 
     # Coexisting coditions
     row_names.append('Coexisting conditions — no. (%)')
+
     records.append([])
     col_names = ["DX: Alcohol Abuse", "DX: Anemia", "DX: Arrythmia", "DX: Asthma", "DX: Cancer",
                  "DX: Chronic Kidney Disease", "DX: Chronic Pulmonary Disorders", "DX: Cirrhosis",
                  "DX: Coagulopathy", "DX: Congestive Heart Failure",
                  "DX: COPD", "DX: Coronary Artery Disease", "DX: Dementia", "DX: Diabetes Type 1",
-                 "DX: Diabetes Type 2", "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
+                 "DX: Diabetes Type 2", 'Type 1 or 2 Diabetes Diagnosis',
+                 "DX: End Stage Renal Disease on Dialysis", "DX: Hemiplegia",
                  "DX: HIV", "DX: Hypertension", "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis",
                  "DX: Inflammatory Bowel Disorder", "DX: Lupus or Systemic Lupus Erythematosus",
                  "DX: Mental Health Disorders", "DX: Multiple Sclerosis", "DX: Parkinson's Disease",
@@ -317,7 +345,8 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
                      "Chronic Kidney Disease", "Chronic Pulmonary Disorders", "Cirrhosis",
                      "Coagulopathy", "Congestive Heart Failure",
                      "COPD", "Coronary Artery Disease", "Dementia", "Diabetes Type 1",
-                     "Diabetes Type 2", "End Stage Renal Disease on Dialysis", "Hemiplegia",
+                     "Diabetes Type 2", 'Type 1 or 2 Diabetes Diagnosis',
+                     "End Stage Renal Disease on Dialysis", "Hemiplegia",
                      "HIV", "Hypertension", "Hypertension and Type 1 or 2 Diabetes Diagnosis",
                      "Inflammatory Bowel Disorder", "Lupus or Systemic Lupus Erythematosus",
                      "Mental Health Disorders", "Multiple Sclerosis", "Parkinson's Disease",
