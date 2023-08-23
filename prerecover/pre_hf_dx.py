@@ -114,7 +114,7 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
         n_hf_rows += len(chunk_hf_records)
 
         # cnt.update(chunk_covid_records['RESULT_QUAL'])
-        cnt_code.update(chunk_dx)
+        cnt_code.update(chunk_hf_records['DX'])
 
         # # monte case, too large, error. other sites ok
         # dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
