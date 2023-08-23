@@ -49,7 +49,7 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
     print('in heart_failure_dx.xlsx')
     # step 1: load covid lab test codes, may be updated by:
     print('Step 1: load heart failure (comprehensive) dx codes')
-    df_hf = pd.read_excel(r'../data/mapping/heart_failure_dx.xlsx', sheet_name='dx')
+    df_hf = pd.read_excel(r'../data/mapping/heart_failure_dx.xlsx', sheet_name='dx', dtype=str)
 
     print('df_hf.shape:', df_hf.shape)
     code_set = set(df_hf['dx code'].to_list())

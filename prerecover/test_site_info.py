@@ -45,7 +45,7 @@ if __name__ == '__main__':
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
-    site_list = site_list.to_list() + ['duke', 'intermountain', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest']
+    site_list = site_list.to_list() + ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest']
     print('len(site_list):', len(site_list), site_list)
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
@@ -77,7 +77,7 @@ if __name__ == '__main__':
                   'demographic': 'birth_date',
                   'diagnosis': 'admit_date', 'dispensing': 'dispense_date',
                   'encounter': 'admit_date', 'enrollment': 'enr_start_date',
-                  'immunization': 'vx_record_date', 'lab_result_cm': 'lab_order_date',
+                  'immunization': 'vx_record_date', 'lab_result_cm': 'result_date',  # 'lab_order_date',
                   'lds_address_history': 'address_period_start',
                   'med_admin': 'medadmin_start_date', 'obs_clin': 'obsclin_start_date', 'obs_gen': 'obsgen_start_date',
                   'pcornet_trial': 'trial_enroll_date', 'prescribing': 'rx_order_date', 'pro_cm': 'pro_time',
