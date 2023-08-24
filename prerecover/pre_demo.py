@@ -1,6 +1,7 @@
 import sys
+
 # for linux env.
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import pandas as pd
 import time
 import pickle
@@ -89,7 +90,7 @@ def read_address(input_file):
             zipcode = np.nan
             n_no_zip += 1
 
-        if isinstance(zipcode, str) and len(zipcode)>=5:
+        if isinstance(zipcode, str) and len(zipcode) >= 5:
             zipcode5 = zipcode[:5]
         else:
             zipcode5 = np.nan
@@ -119,9 +120,9 @@ def read_address(input_file):
     print('Read sql table:', table_name)
     df_dem = load_whole_table_from_sql(table_name)
     print('df_dem.shape', df_dem.shape, 'df_dem.columns:', df_dem.columns)
-    if ('ZIPCODE' in df_dem.columns) :
+    if 'ZIPCODE' in df_dem.columns:
         zcol = 'ZIPCODE'
-    elif ('ZIP_CODE' in df_dem.columns):
+    elif 'ZIP_CODE' in df_dem.columns:
         zcol = 'ZIP_CODE'
     else:
         zcol = ''
@@ -159,7 +160,7 @@ def read_address(input_file):
                     rec = id_zip[patid]
                     if pd.isna(rec[0]):
                         id_zip[patid] = [zipcode, rec[1], rec[2]] + adi
-                        n_add_zip_from_demo +=1
+                        n_add_zip_from_demo += 1
 
     print('n_add_zip_from_demo:', n_add_zip_from_demo)
     print('len(id_zip):', len(id_zip))
