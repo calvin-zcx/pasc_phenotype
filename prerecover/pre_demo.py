@@ -58,12 +58,13 @@ def read_address(input_file):
     table_name = input_file  # '{}.lds_address_history'.format(args.dataset, )
     print('Read sql table:', table_name)
     df = load_whole_table_from_sql(table_name)
-    df = df.sort_values(by=['ADDRESS_PERIOD_START'])  # tring to use the latest address
+    df = df.sort_values(by=['PATID', 'ADDRESS_PERIOD_START'])  # tring to use the latest address
     print('df.shape', df.shape, 'df.columns:', df.columns)
 
     # 2. load zip adi dictionary, using updated aid from 2020 version
-    with open(r'../data/mapping/zip9or5_adi_mapping_2021.pkl', 'rb') as f:
-        # with open(r'../data/mapping/zip9or5_adi_mapping_2020.pkl', 'rb') as f:
+    # still use 2020 version rather than 2021 due to large missingness in 2021 version
+    with open(r'../data/mapping/zip9or5_adi_mapping_2020.pkl', 'rb') as f:
+        # with open(r'../data/mapping/zip9or5_adi_mapping_2021.pkl', 'rb') as f:
         # with open(r'../data/mapping/zip9or5_adi_mapping.pkl', 'rb') as f:
         zip_adi = pickle.load(f)
         print('load zip9or5_adi_mapping.pkl file done! len(zip_adi):', len(zip_adi))
@@ -95,6 +96,8 @@ def read_address(input_file):
         else:
             zipcode5 = np.nan
 
+        # if zip9 no adi, try to use zip5 to impute
+        # if zip5, and no adi, just rewrite nan to nan
         if pd.notna(zipcode) and (zipcode in zip_adi):
             adi = zip_adi[zipcode]
             n_has_adi += 1
