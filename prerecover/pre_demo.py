@@ -61,7 +61,8 @@ def read_address(input_file):
     print('df.shape', df.shape, 'df.columns:', df.columns)
 
     # 2. load zip adi dictionary, using updated aid from 2020 version
-    with open(r'../data/mapping/zip9or5_adi_mapping_2020.pkl', 'rb') as f:
+    with open(r'../data/mapping/zip9or5_adi_mapping_2021.pkl', 'rb') as f:
+        # with open(r'../data/mapping/zip9or5_adi_mapping_2020.pkl', 'rb') as f:
         # with open(r'../data/mapping/zip9or5_adi_mapping.pkl', 'rb') as f:
         zip_adi = pickle.load(f)
         print('load zip9or5_adi_mapping.pkl file done! len(zip_adi):', len(zip_adi))
@@ -88,9 +89,21 @@ def read_address(input_file):
             zipcode = np.nan
             n_no_zip += 1
 
+        if isinstance(zipcode, str) and len(zipcode)>=5:
+            zipcode5 = zipcode[:5]
+        else:
+            zipcode5 = np.nan
+
         if pd.notna(zipcode) and (zipcode in zip_adi):
             adi = zip_adi[zipcode]
             n_has_adi += 1
+            if pd.isna(adi[0]):
+                if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                    adi[0] = zip_adi[zipcode5][0]
+
+            if pd.isna(adi[1]):
+                if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                    adi[1] = zip_adi[zipcode5][1]
         else:
             adi = [np.nan, np.nan]
 
@@ -121,8 +134,21 @@ def read_address(input_file):
             zipcode = row[zcol]
             if isinstance(zipcode, str):
                 zipcode = zipcode.strip().replace('-', '')
+                if isinstance(zipcode, str) and len(zipcode) >= 5:
+                    zipcode5 = zipcode[:5]
+                else:
+                    zipcode5 = np.nan
+
                 if pd.notna(zipcode) and (zipcode in zip_adi):
                     adi = zip_adi[zipcode]
+
+                    if pd.isna(adi[0]):
+                        if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                            adi[0] = zip_adi[zipcode5][0]
+
+                    if pd.isna(adi[1]):
+                        if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                            adi[1] = zip_adi[zipcode5][1]
                 else:
                     adi = [np.nan, np.nan]
 
