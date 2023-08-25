@@ -23,7 +23,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
-    args.output_file = r'../data/recover/output/{}/diagnosis_anyHF_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output_hf/{}/diagnosis_anyHF_{}.csv'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
