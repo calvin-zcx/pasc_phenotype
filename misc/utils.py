@@ -17,6 +17,7 @@ import argparse
 import csv
 import functools
 import requests
+
 print = functools.partial(print, flush=True)
 # import joblib
 import re
@@ -123,7 +124,7 @@ def ndc_normalization(x):
             ndc = a + b + c
         elif (na == 5) and (nb == 4) and (nc == 1):
             ndc = a + b + '0' + c
-        elif (na == 5) and (nb == 3) and (nc == 2): # MTHSPL
+        elif (na == 5) and (nb == 3) and (nc == 2):  # MTHSPL
             ndc = a + '0' + b + c
         elif (na == 4) and (nb == 4) and (nc == 2):
             ndc = '0' + a + b + c
@@ -474,7 +475,7 @@ def load_icd_to_ccw(path):
         data = json.load(f)
         print('len(ccw_codes):', len(data))
         name_id = {x: str(i) for i, x in enumerate(data.keys())}
-        id_name = {v:k for k, v in name_id.items()}
+        id_name = {v: k for k, v in name_id.items()}
         n_dx = 0
         icd_ccwid = {}
         icd_ccwname = {}
@@ -489,6 +490,7 @@ def load_icd_to_ccw(path):
                     icddot_ccwid[icd] = name_id.get(name)
         data_info = (name_id, id_name, data)
         return icd_ccwid, icd_ccwname, data_info
+
 
 if __name__ == '__main__':
     start_time = time.time()
