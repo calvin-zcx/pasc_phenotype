@@ -35,8 +35,9 @@ def shell_for_each(site_list = []):
     with open(r'shell_hr_dxselect.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_hf_dx.py --dataset nyu 2>&1 | tee  log\pre_hf_dx_nyu.txt
-python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+            cmdstr = """#python pre_hf_dx.py --dataset nyu 2>&1 | tee  log\pre_hf_dx_nyu.txt
+#python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+python pre_hf_pat_list.py --dataset nyu 2>&1 | tee  log\pre_hf_pat_list_nyu.txt 
 """.replace('nyu', site)
 
             f.write(cmdstr)

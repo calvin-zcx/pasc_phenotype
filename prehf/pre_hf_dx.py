@@ -73,16 +73,9 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
         stream_results=True, max_row_buffer=chunksize
     )
 
-    # id_dx = defaultdict(list)
     i = 0
     n_rows = 0
     dfs = []
-    n_no_dx = 0
-    n_no_date = 0
-    n_discard_row = 0
-    n_recorded_row = 0
-    n_not_in_list_row = 0
-
     dfs_hf = []
     n_hf_rows = 0
     patid_set = set([])
@@ -104,6 +97,7 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
 
         chunk_dx = chunk['DX'].apply(lambda x: x.strip().replace('.', '').upper() if isinstance(x, str) else x)
         chunk_hf_records = chunk.loc[chunk_dx.isin(code_set), :]
+        chunk_hf_records.rename(columns=lambda x: x.upper(), inplace=True)
         dfs_hf.append(chunk_hf_records)
         # only select cohorts with HF dx.
 
@@ -113,7 +107,6 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
         n_rows += len(chunk)
         n_hf_rows += len(chunk_hf_records)
 
-        # cnt.update(chunk_covid_records['RESULT_QUAL'])
         cnt_code.update(chunk_hf_records['DX'])
 
         # # monte case, too large, error. other sites ok
@@ -123,8 +116,7 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
         if i % 50 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs), 'len(dfs_hf):', len(dfs_hf),
                   'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-            # print('n_rows:', n_rows, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
-            #       'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
+
             print('n_rows:', n_rows, 'n_hf_rows:', n_hf_rows, )
             print('len(patid_set):', len(patid_set))
             print('len(patid_hf_set):', len(patid_hf_set))
@@ -134,10 +126,6 @@ def read_diagnosis_4_hf(args, chunksize=100000, ):
     print('len(patid_hf_set):', len(patid_hf_set))
     print('HF DX Counter:', cnt_code)
 
-    # print('n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
-    #       'n_recorded_row:', n_recorded_row, 'n_not_in_list_row:', n_not_in_list_row)
-
-    # print('len(id_dx):', len(id_dx))
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
     print('Time range of diagnosis table of all patients:',
@@ -167,6 +155,6 @@ if __name__ == '__main__':
     args = parse_args()
     print('Selected site:', args.dataset)
     print('args:', args)
-    df = read_diagnosis_4_hf(args,)
+    df = read_diagnosis_4_hf(args, )
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
