@@ -37,7 +37,8 @@ def shell_for_each(site_list = []):
             site = site.strip()
             cmdstr = """#python pre_hf_dx.py --dataset nyu 2>&1 | tee  log\pre_hf_dx_nyu.txt
 #python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
-python pre_hf_pat_list.py --dataset nyu 2>&1 | tee  log\pre_hf_pat_list_nyu.txt 
+#python pre_hf_pat_list.py --dataset nyu 2>&1 | tee  log\pre_hf_pat_list_nyu.txt
+python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
 """.replace('nyu', site)
 
             f.write(cmdstr)

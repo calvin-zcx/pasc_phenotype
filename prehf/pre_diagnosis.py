@@ -21,8 +21,8 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file = r'../data/recover/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
+    args.patient_list_file = r'../data/recover/output_hf/{}/patient_hf_list_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output_hf/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
@@ -163,11 +163,8 @@ def read_diagnosis(input_file, output_file='', selected_patients={}):
 
 
 if __name__ == '__main__':
-    # python pre_diagnosis.py --dataset COL 2>&1 | tee  log/pre_diagnosis_COL.txt
     # python pre_diagnosis.py --dataset WCM 2>&1 | tee  log/pre_diagnosis_WCM.txt
-    # python pre_diagnosis.py --dataset NYU 2>&1 | tee  log/pre_diagnosis_NYU.txt
-    # python pre_diagnosis.py --dataset MONTE 2>&1 | tee  log/pre_diagnosis_MONTE.txt
-    # python pre_diagnosis.py --dataset MSHS 2>&1 | tee  log/pre_diagnosis_MSHS.txt
+
     start_time = time.time()
     args = parse_args()
     print('Selected site:', args.dataset)
@@ -176,4 +173,5 @@ if __name__ == '__main__':
         print('len(selected_patients):', len(selected_patients))
 
     id_dx, df = read_diagnosis(args.input_file, args.output_file, selected_patients)
+    print('len(selected_patients)', len(selected_patients), 'len(id_dx)', len(id_dx))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
