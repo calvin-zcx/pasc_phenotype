@@ -526,7 +526,7 @@ def get_ndc_from_rxnorm(rxlist):
             result = [ndc, 'ndc11', info[0], info[1], info[2], info[3], info[4], sourcequery]
             result_list.append(result)
 
-    print('scan rx', len(df), '\n',
+    print('scan rx', len(rxlist), '\n',
           "n_rx_find_ndc_by_api", n_rx_find_ndc_by_api, '\n',
           "n_ndc_from_api", n_ndc_from_api, '\n',
           "n_ndc_no_info", n_ndc_no_info)
