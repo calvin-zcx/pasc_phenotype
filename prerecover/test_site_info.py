@@ -45,7 +45,7 @@ if __name__ == '__main__':
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
-    site_list = site_list.to_list() + ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest']
+    site_list = site_list.to_list() + ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest', 'musc']
     print('len(site_list):', len(site_list), site_list)
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
