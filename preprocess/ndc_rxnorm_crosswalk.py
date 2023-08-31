@@ -445,9 +445,221 @@ def compare_t2dm_cdc_recover_med():
     return df1, df2, df_1m2
 
 
+# 2023-08-31 for adrd drugs
+def get_rx_from_namestr(drugname):
+    """https://rxnav.nlm.nih.gov/REST/drugs.json?name=donepezil"""
+    url_str = "https://rxnav.nlm.nih.gov/REST/drugs.json?name={}".format(drugname)
+    r = requests.get(url_str)
+    data = r.json()
+
+    rlist = []
+    if ("drugGroup" in data) and ('conceptGroup' in data['drugGroup']):
+        data = data['drugGroup']['conceptGroup']
+        for con in data:
+            # tty = con['tty']
+            if 'conceptProperties' in con:
+                for c2 in con['conceptProperties']:
+                    rx = c2['rxcui']
+                    name = c2['name']
+                    synonym = c2['synonym']
+                    tty = c2['tty']
+                    rlist.append((rx, 'rxcui', name, synonym, tty, url_str))
+
+    df = pd.DataFrame(rlist, columns=['code', 'code type', 'name', 'synonym', 'tty', 'query source'])
+    return df
+
+
+def get_allrelated_from_rx(drugrx):
+    """https://rxnav.nlm.nih.gov/REST/drugs.json?name=donepezil"""
+    url_str = "https://rxnav.nlm.nih.gov/REST/rxcui/{}/allrelated.json".format(drugrx)
+    r = requests.get(url_str)
+    data = r.json()
+
+    rlist = []
+    if ("allRelatedGroup" in data) and ('conceptGroup' in data['allRelatedGroup']):
+        data = data['allRelatedGroup']['conceptGroup']
+        for con in data:
+            # tty = con['tty']
+            if 'conceptProperties' in con:
+                for c2 in con['conceptProperties']:
+                    rx = c2['rxcui']
+                    name = c2['name']
+                    synonym = c2['synonym']
+                    tty = c2['tty']
+                    rlist.append((rx, 'rxcui', name, synonym, tty, url_str))
+
+    df = pd.DataFrame(rlist, columns=['code', 'code type', 'name', 'synonym', 'tty', 'query source'])
+    return df
+
+
+def get_ndc_from_rxnorm(rxlist):
+    print('len(rxlist):', len(rxlist), rxlist)
+
+    n_rx_find_ndc_by_api = 0
+    n_ndc_from_api = 0
+    n_ndc_no_info = 0
+
+    result_list = []
+    col_names = ['code', 'code type', 'name', 'status', 'rxcui', 'rxcui per ndcHistory', 'ndcHistory', 'query source']
+
+    for rx in tqdm(rxlist, total=len(rxlist)):
+        ndc_list = get_ndc_list_from_rxnorm_by_api(rx)
+        sourcequery = 'https://rxnav.nlm.nih.gov/REST/rxcui/{}/allhistoricalndcs.json?history=1'.format(rx)
+        n_ndc_from_api += len(ndc_list)
+        if len(ndc_list) > 0:
+            n_rx_find_ndc_by_api += 1
+
+        print(rx, ndc_list.keys(), len(ndc_list))
+        # ndc list can be enriched by Mark doc
+        for key, value in ndc_list.items():
+            result = []
+            ndc = key
+            st = value[0]
+            et = value[1]
+            source = value[2]
+            info = get_ndc_status_by_api(ndc)
+            if len(info) == 0:
+                n_ndc_no_info += 1
+                print(n_ndc_no_info, 'ndc', ndc, 'not found information')
+                continue
+
+            result = [ndc, 'ndc11', info[0], info[1], info[2], info[3], info[4], sourcequery]
+            result_list.append(result)
+
+    print('scan rx', len(rxlist), '\n',
+          "n_rx_find_ndc_by_api", n_rx_find_ndc_by_api, '\n',
+          "n_ndc_from_api", n_ndc_from_api, '\n',
+          "n_ndc_no_info", n_ndc_no_info)
+
+    df_result = pd.DataFrame(result_list, columns=col_names, dtype=str)
+    print(df_result.shape)
+    return df_result
+
+
+def generate_demential_drug_list():
+    ## 1. donepezil
+    # codes for denopezil
+    df = get_rx_from_namestr("donepezil")
+    df.to_csv('../prehf/output/denepezil.csv')
+    df2 = get_allrelated_from_rx("135446")
+    df2.to_csv('../prehf/output/denepezil-135446.csv')
+    df3 = get_allrelated_from_rx("236559")
+    df3.to_csv('../prehf/output/denepezil-236559.csv')
+    # df4 = get_allrelated_from_rx("1602583")
+    # df4.to_csv('../prehf/output/denepezil-1602583.csv')
+    df_rx = pd.concat([df, df2, df3], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prehf/output/denepezil-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prehf/output/denepezil-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'denepezil'
+    df_merge.to_excel('../prehf/output/denepezil-ndc-rxnom-merged.xlsx', )
+
+    ## codes for tacrine
+    df = get_rx_from_namestr("tacrine")
+    df.to_csv('../prehf/output/tacrine.csv')
+    df2 = get_allrelated_from_rx("10318")
+    df2.to_csv('../prehf/output/tacrine-10318.csv')
+    df3 = get_allrelated_from_rx("235972")
+    df3.to_csv('../prehf/output/tacrine-235972.csv')
+
+    df_rx = pd.concat([df, df2, df3], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prehf/output/tacrine-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prehf/output/tacrine-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'tacrine'
+    df_merge.to_excel('../prehf/output/tacrine-ndc-rxnom-merged.xlsx', )
+
+    ## code for rivastigmine
+    df = get_rx_from_namestr("rivastigmine")
+    df.to_csv('../prehf/output/rivastigmine.csv')
+    df2 = get_allrelated_from_rx("183379")
+    df2.to_csv('../prehf/output/rivastigmine-183379.csv')
+
+    df_rx = pd.concat([df, df2, ], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prehf/output/rivastigmine-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prehf/output/rivastigmine-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'rivastigmine'
+    df_merge.to_excel('../prehf/output/rivastigmine-ndc-rxnom-merged.xlsx', )
+
+    ## code for galantamine
+    df = get_rx_from_namestr("galantamine")
+    df.to_csv('../prehf/output/galantamine.csv')
+    df2 = get_allrelated_from_rx("4637")
+    df2.to_csv('../prehf/output/galantamine-4637.csv')
+
+    df_rx = pd.concat([df, df2, ], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prehf/output/galantamine-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prehf/output/galantamine-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'galantamine'
+    df_merge.to_excel('../prehf/output/galantamine-ndc-rxnom-merged.xlsx', )
+
+    # code for memantine
+    df = get_rx_from_namestr("memantine")
+    df.to_csv('../prehf/output/memantine.csv')
+    df2 = get_allrelated_from_rx("6719")
+    df2.to_csv('../prehf/output/memantine-6719.csv')
+    df3 = get_allrelated_from_rx("236685")
+    df3.to_csv('../prehf/output/memantine-236685.csv')
+
+    df_rx = pd.concat([df, df2, df3], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prehf/output/memantine-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prehf/output/memantine-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'memantine'
+    df_merge.to_excel('../prehf/output/memantine-ndc-rxnom-merged.xlsx', )
+
+    # combine codes
+    df1 = pd.read_excel('../prehf/output/denepezil-ndc-rxnom-merged.xlsx', dtype=str)
+    df2 = pd.read_excel('../prehf/output/memantine-ndc-rxnom-merged.xlsx', dtype=str)
+    df3 = pd.read_excel('../prehf/output/tacrine-ndc-rxnom-merged.xlsx', dtype=str)
+    df4 = pd.read_excel('../prehf/output/rivastigmine-ndc-rxnom-merged.xlsx', dtype=str)
+    df5 = pd.read_excel('../prehf/output/galantamine-ndc-rxnom-merged.xlsx', dtype=str)
+    df_merge = pd.concat([df1, df2, df3, df4, df5], ignore_index=True, sort=False)
+    df_merge_nodup = df_merge.drop_duplicates(['code', 'code type', "name", ])
+
+    df_merge_nodup.to_excel('../prehf/output/dementia-drug-merged.xlsx', )
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
+
+    ## 2023-8-31
+    # generate dementia drug list
+
+    ## end 2023-8-31
 
     # ndc_list = get_ndc_list_from_rxnorm_by_api("213269")
     # info = get_ndc_status_by_api("00069420030")
