@@ -28,13 +28,11 @@ def parse_args():
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     args = parser.parse_args()
 
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
     args.prescribe_file = r'{}.prescribing'.format(args.dataset)
 
     args.med_admin_output = r'../data/recover/output/{}/covid_med_admin_{}.csv'.format(args.dataset, args.dataset)
     args.prescribe_output = r'../data/recover/output/{}/covid_prescribing_{}.csv'.format(args.dataset, args.dataset)
-    args.output_file = r'../data/recover/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -189,14 +187,6 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    n_no_rxnorm = 0
-    n_no_date = 0
-    n_no_days_supply = 0
-
-    n_discard_row = 0
-    n_recorded_row = 0
-    n_not_in_list_row = 0
-
     for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
         i += 1
         if chunk.empty:
@@ -209,8 +199,8 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
             print('chunk.columns', chunk.columns)
 
         select_id = chunk['MEDADMIN_CODE'].isin(code_set)
-        if 'RAW_MEDADMIN_MED_NAME' in chunk.columns:
-            select_id = select_id | chunk['RAW_MEDADMIN_MED_NAME'].isin(code_set)
+        if 'RAW_MEDADMIN_CODE' in chunk.columns:
+            select_id = select_id | chunk['RAW_MEDADMIN_CODE'].isin(code_set)
 
         chunk_covid_records = chunk.loc[select_id, :].copy()
         dfs_covid.append(chunk_covid_records)
@@ -221,7 +211,7 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
         n_rows += len(chunk)
         n_covid_rows += len(chunk_covid_records)
 
-        cnt_code.update(chunk_covid_records['RAW_MEDADMIN_MED_NAME'])
+        cnt_code.update(chunk_covid_records['MEDADMIN_CODE'])
         dfs.append(chunk[["MEDADMIN_START_DATE"]])
         if i % 25 == 0:
             print('chunk:', i, 'len(dfs):', len(dfs), 'len(dfs_covid):', len(dfs_covid),
