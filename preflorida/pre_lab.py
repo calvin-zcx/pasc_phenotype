@@ -141,8 +141,8 @@ def read_lab_and_count_covid(args, chunksize=100000, debug=False):
 
 
 if __name__ == '__main__':
-    # python pre_lab.py --dataset covid_database 2>&1 | tee  log/pre_lab_COL.txt
-    # python pre_lab.py --dataset main_database 2>&1 | tee  log/pre_lab_WCM.txt
+    # python pre_lab_4covid.py --dataset covid_database 2>&1 | tee  log/pre_lab_COL.txt
+    # python pre_lab_4covid.py --dataset main_database 2>&1 | tee  log/pre_lab_WCM.txt
     start_time = time.time()
     args = parse_args()
     print(args)

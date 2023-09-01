@@ -31,7 +31,7 @@ def shell_for_each():
 
     for i, site in enumerate(site_list):
         site = site.strip()
-        cmdstr = """python pre_lab.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
+        cmdstr = """python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
     python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
     python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
@@ -90,7 +90,7 @@ def shell_2023_4_6():
     with open(r'output\shells\shell_all_rerun.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_lab.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
+            cmdstr = """python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_nyu.txt
     python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
     python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
@@ -146,7 +146,7 @@ if __name__ == '__main__':
     with open(r'output\shells\shell_all_2023-6.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_lab.py --dataset emory 2>&1 | tee  log\pre_lab_emory_2023_6.txt
+            cmdstr = """python pre_lab_4covid.py --dataset emory 2>&1 | tee  log\pre_lab_emory_2023_6.txt
 python pre_demo.py --dataset emory 2>&1 | tee  log\pre_demo_emory_2023_6.txt
 python pre_covid_lab.py --dataset emory 2>&1 | tee  log\pre_covid_lab_emory_2023_6.txt
 python pre_diagnosis.py --dataset emory 2>&1 | tee  log/pre_diagnosis_emory_2023_6.txt
