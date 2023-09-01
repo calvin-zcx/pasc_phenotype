@@ -23,7 +23,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
-    args.output_file = r'../data/recover/output_/{}/covid_diagnosis_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output/{}/covid_diagnosis_{}.csv'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
@@ -92,7 +92,7 @@ def read_diagnosis_4_covid(args, chunksize=100000, ):
             print('chunk.columns', chunk.columns)
 
         chunk_dx = chunk['DX'].apply(lambda x: x.strip().replace('.', '').upper() if isinstance(x, str) else x)
-        chunk_covid_records = chunk.loc[chunk_dx.isin(code_set), :]
+        chunk_covid_records = chunk.loc[chunk_dx.isin(code_set), :].copy()
         chunk_covid_records.rename(columns=lambda x: x.upper(), inplace=True)
         dfs_covid.append(chunk_covid_records)
         # only select cohorts with covid dx.
