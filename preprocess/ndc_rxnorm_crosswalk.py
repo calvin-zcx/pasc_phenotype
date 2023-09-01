@@ -652,12 +652,55 @@ def generate_demential_drug_list():
     df_merge_nodup.to_excel('../prehf/output/dementia-drug-merged.xlsx', )
 
 
+def generate_covid_drug_list():
+    pass
+    df = get_rx_from_namestr("paxlovid")
+    df.to_csv('../prerecover/output/paxlovid.csv')
+    df2 = get_allrelated_from_rx("2599543")
+    df2.to_csv('../prerecover/output/paxlovid-2599543.csv')
+    df3 = get_allrelated_from_rx("2587899")
+    df3.to_csv('../prerecover/output/paxlovid-2587899.csv')
+    df_rx = pd.concat([df, df2, df3], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prerecover/output/paxlovid-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prerecover/output/paxlovid-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'paxlovid'
+    df_merge.to_excel('../prerecover/output/paxlovid-ndc-rxnom-merged.xlsx', )
+
+    ##
+    df = get_rx_from_namestr("remdesivir")
+    df.to_csv('../prerecover/output/remdesivir.csv')
+    df2 = get_allrelated_from_rx("2284718")
+    df2.to_csv('../prerecover/output/remdesivir-2284718.csv')
+
+    df_rx = pd.concat([df, df2, ], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_csv('../prerecover/output/remdesivir-combined-nodup-rxcui.csv')
+
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prerecover/output/remdesivir-combined-nodup-NDC.csv', )
+
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = 'remdesivir'
+    df_merge.to_excel('../prerecover/output/remdesivir-ndc-rxnom-merged.xlsx', )
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
 
     ## 2023-8-31
     # generate dementia drug list
+    # generate covid drug list
+
 
     ## end 2023-8-31
 
