@@ -30,9 +30,11 @@ def parse_args():
 
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
     args.prescribe_file = r'{}.prescribing'.format(args.dataset)
+    args.dispensing_file = r'{}.dispensing'.format(args.dataset)
 
     args.med_admin_output = r'../data/recover/output/{}/covid_med_admin_{}.csv'.format(args.dataset, args.dataset)
     args.prescribe_output = r'../data/recover/output/{}/covid_prescribing_{}.csv'.format(args.dataset, args.dataset)
+    args.dispensing_output = r'../data/recover/output/{}/covid_dispensing_{}.csv'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -81,7 +83,7 @@ def read_prescribing_4_covid(input_file, output_file, code_set, chunksize=100000
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -187,7 +189,7 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -248,6 +250,111 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
     return dfs_covid_all
 
 
+def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000):
+    """
+    :param selected_patients:
+    :param output_file:
+    :param input_file: input dispensing file with std format
+    :param out_file: output id_code-list[patid] = [(start_time, rxnorm, days), ...]  sorted by start_time pickle
+    :return: id_code-list[patid] = [(start_time, rxnorm, days), ...]  sorted by start_time pickle
+    :Notice:
+        discard rows with NULL start_date or rxnorm
+        Only applied to COL data, no WCM
+        1.COL data: e.g:
+        df.shape: (6890724, 32)
+
+        2. WCM data: e.g.
+        df.shape: (0, 21)
+    """
+    start_time = time.time()
+    print('In dispensing, input_file:', input_file, 'output_file:', output_file)
+    connect_string, cred_dict = load_sql_credential()
+    table_name = input_file
+    table_size = get_table_size(connect_string, table_name)
+    table_rows = get_table_rows(connect_string, table_name)
+    print('Read sql table:', table_name, '| Table size:', table_size, '| No. of rows:', table_rows)
+    n_chunk = int(np.ceil(table_rows / chunksize))
+    sql_query = """select * from {};
+                       """.format(table_name)
+
+    print('read:', sql_query)
+    engine = create_engine(connect_string)
+    connection = engine.connect().execution_options(
+        stream_results=True, max_row_buffer=chunksize
+    )
+
+    # id_med = defaultdict(set)
+    i = 0
+    n_rows = 0
+    dfs = []
+    dfs_covid = []
+    n_covid_rows = 0
+    patid_set = set([])
+    patid_covid_set = set([])
+    # cnt = Counter([])
+    cnt_code = Counter([])
+
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
+        i += 1
+        if chunk.empty:
+            print("ERROR: Empty chunk! break!")
+            break
+        n_rows += len(chunk)
+        chunk.rename(columns=lambda x: x.upper(), inplace=True)
+        if i == 1:
+            print('chunk.shape', chunk.shape)
+            print('chunk.columns', chunk.columns)
+
+        select_id = chunk['NDC'].isin(code_set)
+        if 'RAW_NDC' in chunk.columns:
+            select_id = select_id | chunk['RAW_NDC'].isin(code_set)
+
+        chunk_covid_records = chunk.loc[select_id, :].copy()
+        dfs_covid.append(chunk_covid_records)
+
+        patid_set.update(chunk['PATID'])
+        patid_covid_set.update(chunk_covid_records['PATID'])
+
+        n_rows += len(chunk)
+        n_covid_rows += len(chunk_covid_records)
+
+        cnt_code.update(chunk_covid_records['NDC'])
+        dfs.append(chunk[["DISPENSE_DATE"]])
+        if i % 25 == 0:
+            print('chunk:', i, 'len(dfs):', len(dfs), 'len(dfs_covid):', len(dfs_covid),
+                  'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+            print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows, )
+            print('len(patid_set):', len(patid_set))
+            print('len(patid_covid_set):', len(patid_covid_set))
+
+    print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows, '#chunk: ', i, 'chunk size:', chunksize)
+    print('len(patid_set):', len(patid_set))
+    print('len(patid_covid_set):', len(patid_covid_set))
+    print('covid DX Counter:', cnt_code)
+
+    dfs = pd.concat(dfs)
+    print('dfs.shape', dfs.shape)
+    print('Time range of diagnosis table of all patients:',
+          pd.to_datetime(dfs["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
+
+    dfs_covid_all = pd.concat(dfs_covid)
+    print('dfs_covid_all.shape', dfs_covid_all.shape)
+    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
+    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    print('Time range of diagnosis table of selected covid patients:',
+          pd.to_datetime(dfs_covid_all["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
+
+    print('Output file:', output_file)
+    utils.check_and_mkdir(output_file)
+    dfs_covid_all.to_csv(output_file, index=False)
+
+    connection.close()
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return dfs_covid_all
+
+
 if __name__ == '__main__':
     # python pre_med_4covid.py --dataset wcm 2>&1 | tee  log/pre_med_4covid_wcm.txt
 
@@ -270,5 +377,9 @@ if __name__ == '__main__':
     print("step 2. extract covid drug from med_admin")
     df_med2 = read_med_admin_4_covid(args.med_admin_file, args.med_admin_output, code_set)
     print('read_med_admin done, len(df_med2):', df_med2.shape)
+
+    print("step 3. extract covid drug from dispensing")
+    df_med3 = read_dispensing_4_covid(args.dispensing_file, args.dispensing_output, code_set)
+    print('read_med_admin done, len(df_med3):', df_med3.shape)
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
