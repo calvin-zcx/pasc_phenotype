@@ -179,10 +179,10 @@ def shell_lab_dx_med_4covid():
     with open(r'shell_all_202309.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
-python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
+            cmdstr = """#python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
+#python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
 python pre_med_4covid.py --dataset nyu 2>&1 | tee  log\pre_med_4covid_nyu.txt
-python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+#python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')

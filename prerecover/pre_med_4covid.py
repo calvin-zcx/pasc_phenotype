@@ -25,7 +25,7 @@ from datetime import datetime, date
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess medication table')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='nebraska', help='site dataset')
     args = parser.parse_args()
 
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
@@ -83,7 +83,7 @@ def read_prescribing_4_covid(input_file, output_file, code_set, chunksize=100000
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=3):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -189,7 +189,7 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=3):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -202,6 +202,7 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
 
         select_id = chunk['MEDADMIN_CODE'].isin(code_set)
         if 'RAW_MEDADMIN_CODE' in chunk.columns:
+            # can be ndc code, type ND, not ndc11, say with NDC: prefix, or with - -
             select_id = select_id | chunk['RAW_MEDADMIN_CODE'].isin(code_set)
 
         chunk_covid_records = chunk.loc[select_id, :].copy()
@@ -294,7 +295,7 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
     # cnt = Counter([])
     cnt_code = Counter([])
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=3):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -307,6 +308,7 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
 
         select_id = chunk['NDC'].isin(code_set)
         if 'RAW_NDC' in chunk.columns:
+            # raw NDC might be not NDC11, say with NDC: prefix, or with --, but not complicate here
             select_id = select_id | chunk['RAW_NDC'].isin(code_set)
 
         chunk_covid_records = chunk.loc[select_id, :].copy()
@@ -368,8 +370,8 @@ if __name__ == '__main__':
     code_set = set(df_drug['code1'].to_list())
     print('Selected all Covid related drug codes: ', df_drug, code_set)
     print('len(code_set):', len(code_set))
-
     print('args.dataset:', args.dataset)
+
     print("step 1. extract covid drug from prescribe")
     df_med1 = read_prescribing_4_covid(args.prescribe_file, args.prescribe_output, code_set)
     print('read_prescribing done, len(df_med1):', df_med1.shape)

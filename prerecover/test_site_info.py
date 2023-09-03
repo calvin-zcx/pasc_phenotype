@@ -45,7 +45,8 @@ if __name__ == '__main__':
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
-    site_list = site_list.to_list() + ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest',  'musc']
+    # ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest',  'musc']
+    site_list = site_list.to_list() + ['northwestern', 'wakeforest',]  # these two sites with label 0
     print('len(site_list):', len(site_list), site_list)
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
@@ -114,8 +115,8 @@ if __name__ == '__main__':
     date_time = now.strftime("%Y-%m-%d")  # now.strftime("%m/%d/%Y, %H:%M:%S")
 
     pd_results = pd.concat(results, ignore_index=True)
-    df_combined = pd.merge(pd_results, df_site.loc[df_site['selected'] == 1], left_on='site', right_on='Schema name',
-                           how='left')
+    df_combined = pd.merge(pd_results, df_site, left_on='site', right_on='Schema name',
+                           how='left') # df_site.loc[df_site['selected'] == 1]
     df_combined.to_csv('output/db_info/site_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)
