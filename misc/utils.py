@@ -401,6 +401,23 @@ def split_shell_file(fname, divide=2, skip_first=1):
     print('dump done')
 
 
+def split_shell_file_bydelta(fname, delta, skip_first=1):
+    f = open(fname, 'r')
+    content_list = f.readlines()
+    n = len(content_list)
+    divide = int(np.ceil((n - skip_first) / delta))
+
+    seg = [0, ] + [int(i * delta + skip_first) for i in range(1, divide)] + [n]
+    for i in range(divide):
+        fout_name = fname.split('.')
+        fout_name = ''.join(fout_name[:-1]) + '-' + str(i) + '.' + fout_name[-1]
+        fout = open(fout_name, 'w')
+        for l in content_list[seg[i]:seg[i + 1]]:
+            fout.write(l)
+        fout.close()
+    print('dump done')
+
+
 def is_mci(code):
     """
         ICD9

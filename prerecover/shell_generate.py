@@ -188,7 +188,13 @@ python pre_covid_records.py --dataset nyu 2>&1 | tee  log\pre_covid_records_nyu.
             f.write(cmdstr)
             print(i, site, 'done')
 
-    utils.split_shell_file(r"shell_all_202309.ps1", divide=5, skip_first=0)
+    # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
+    # of shells
+    divide = 5
+    npersite = cmdstr.count('\n')
+    siteperdivide = int(np.ceil(len(site_list)/divide))
+    ndelta = npersite * siteperdivide
+    utils.split_shell_file_bydelta(r"shell_all_202309.ps1", delta=ndelta, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     # not using this, change to pre_covid_records.py
