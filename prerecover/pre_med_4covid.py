@@ -335,6 +335,7 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
     print('len(patid_covid_set):', len(patid_covid_set))
     print('covid DX Counter:', cnt_code)
 
+    # dfs and dfs_convid can be empty, then error raise. but it is OK.
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
     print('Time range of diagnosis table of all patients:',
