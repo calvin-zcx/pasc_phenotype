@@ -19,7 +19,7 @@ from misc.utils import clean_date_str
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='nyu', help='site dataset')
+    parser.add_argument('--dataset', default='nebraska', help='site dataset')
     args = parser.parse_args()
 
     args.input_lab = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -457,7 +457,7 @@ def read_covid_med_admin(input_file, id_demo):
     print('In read_covid_med_admin, input_file:', input_file)
 
     try:
-        df = pd.read_csv(input_file, dtype=str, parse_dates=['MEDADMIN_START_DATE', 'MEDADMIN_STOP_DATE',])
+        df = pd.read_csv(input_file, dtype=str, parse_dates=['MEDADMIN_START_DATE', 'MEDADMIN_STOP_DATE', ])
     except Exception as e:
         print(e)
         return defaultdict(list), None
@@ -559,6 +559,127 @@ def read_covid_med_admin(input_file, id_demo):
     return id_med, df
 
 
+def read_covid_dispensing(input_file, id_demo):
+    """
+    :param selected_patients:
+    :param output_file:
+    :param input_file: input dispensing file with std format
+    :param out_file: output id_code-list[patid] = [(start_time, rxnorm, days), ...]  sorted by start_time pickle
+    :return: id_code-list[patid] = [(start_time, rxnorm, days), ...]  sorted by start_time pickle
+    :Notice:
+        discard rows with NULL start_date or rxnorm
+        1.COL data: e.g:
+        df.shape: (3119792, 32)
+
+        2. WCM data: e.g.
+        df.shape: (48987841, 32)
+    """
+    start_time = time.time()
+    print('In read_covid_dispensing, input_file:', input_file)
+    try:
+        df = pd.read_csv(input_file, dtype=str, parse_dates=['DISPENSE_DATE', ])
+    except Exception as e:
+        print(e)
+        return defaultdict(list), None
+
+    df.rename(columns=lambda x: x.upper(), inplace=True)
+    print('df.shape', df.shape)
+    print('df.columns', df.columns)
+    print('Unique patid:', len(df['PATID'].unique()))
+    print('Time range of All Covid dx:', df["DISPENSE_DATE"].describe(datetime_is_numeric=True))
+
+    id_med = defaultdict(list)
+    i = 0
+    # n_rows = 0
+    # dfs = []
+
+    n_no_rxnorm = 0
+    n_no_date = 0
+    n_no_days_supply = 0
+
+    n_discard_row = 0
+    n_recorded_row = 0
+    # n_not_in_list_row = 0
+    n_no_dob_row = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=3):
+        i += 1
+        patid = row['PATID']
+        rx_order_date = row['DISPENSE_DATE']
+        # rx_start_date = row['RX_START_DATE']
+        # rx_end_date = row['RX_END_DATE']
+        rxnorm = row['NDC']
+        rx_days = row['DISPENSE_SUP']
+
+        if 'RAW_NDC' in row.index:
+            raw_rxnorm = row['RAW_NDC']
+        else:
+            raw_rxnorm = np.nan
+
+        encid = ''  # row['ENCOUNTERID']  # no enc id in dispense table
+        dispense_source = row['DISPENSE_SOURCE']
+
+        # start_date
+        if pd.notna(rx_order_date):
+            start_date = rx_order_date
+        else:
+            start_date = np.nan
+            n_no_date += 1
+
+        # rxrnom
+        if pd.isna(rxnorm):
+            if pd.notna(raw_rxnorm):
+                rxnorm = raw_rxnorm
+            else:
+                n_no_rxnorm += 1
+                rxnorm = np.nan
+
+        # days supply
+        if pd.notna(rx_days) and rx_days:
+            days = int(float(rx_days))
+        else:
+            days = -1
+            n_no_days_supply += 1
+
+        if pd.isna(rxnorm) or pd.isna(start_date):
+            n_discard_row += 1
+        else:
+            if patid in id_demo:
+                if pd.notna(id_demo[patid][0]):
+                    age = (start_date - pd.to_datetime(id_demo[patid][0])).days / 365
+                else:
+                    age = np.nan
+            else:
+                print('No age information for:', index, i, patid, start_date, )
+                age = np.nan
+                n_no_dob_row += 1
+
+            # (date, code, result_label,  age,  enc_id, encounter_type, CP-method )
+            # e.g., nebraska, can records, same day, same rxnorm, but without encid
+            # no encounter id, thus '', using dispense_source for encounter type
+            """ dispense_source: 
+            OD=Order/EHR BI=Billing CL=Claim 
+            PM=Pharmacy Benefit Manager DR=Derived NI=No information UN=Unknown OT=Other """
+            id_med[patid].append((start_date, rxnorm, 'Positive', age, encid, dispense_source, 'med-dispense'))
+            n_recorded_row += 1
+
+    print('Readlines:', i, 'n_no_rxnorm:', n_no_rxnorm, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
+          'n_recorded_row:', n_recorded_row, 'n_no_dob_row:', n_no_dob_row, 'n_no_days_supply', n_no_days_supply,
+          'len(id_med):', len(id_med))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('len(id_med):', len(id_med))
+
+    # sort
+    print('Sort med list in id_med by time')
+    for patid, med_list in id_med.items():
+        med_list_sorted = sorted(set(med_list), key=lambda x: x[0])
+        id_med[patid] = med_list_sorted
+
+    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return id_med, df
+
+
 def data_analysis(id_lab):
     cnt = []
     for k, v in id_lab.items():
@@ -615,17 +736,27 @@ if __name__ == '__main__':
         id_demo = pickle.load(f)
         print('load', args.demo_file, 'demo information: len(id_demo):', len(id_demo))
 
-    # id_lab, df_pcr, df = read_covid_lab_and_generate_label(args.input_lab, args.output_file_lab, id_demo)
-    #
-    # id_dx, df_dx = read_covid_diagnosis(args.input_diagnosis, id_demo)
-    #
-    # id_labdx = combine_2_id_records(id_lab, id_dx, output_file=args.output_file_labdx)
+    # covid CP from lab
+    id_lab, df_pcr, df = read_covid_lab_and_generate_label(args.input_lab, args.output_file_lab, id_demo)
 
-    # id_medpre, df_medpre = read_covid_prescribing(args.input_prescribing, id_demo)
+    # covid CP from dx
+    id_dx, df_dx = read_covid_diagnosis(args.input_diagnosis, id_demo)
+    id_labdx = combine_2_id_records(id_lab, id_dx, output_file=args.output_file_labdx)
+
+    # covid CP from med
+    id_medpre, df_medpre = read_covid_prescribing(args.input_prescribing, id_demo)
     id_medmedadmin, df_medmedadmin = read_covid_med_admin(args.input_med_admin, id_demo)
+    id_meddispensing, df_meddispensing = read_covid_dispensing(args.input_dispensing, id_demo)
 
-    print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
-    print('PCR/Antigen-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
-    print('PCR/Antigen-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))
-    print('PCR/Antigen-test #negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
+    id_med1 = combine_2_id_records(id_medpre, id_medmedadmin)
+    id_med = combine_2_id_records(id_med1, id_meddispensing)
+
+    id_labdxmed = combine_2_id_records(id_labdx, id_med, output_file=args.output_file_labdxmed)
+
+    print('len(id_lab)', len(id_lab), 'len(id_labdx)', len(id_labdx), 'len(id_labdxmed)', len(id_labdxmed))
+
+    # print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
+    # print('PCR/Antigen-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))
+    # print('PCR/Antigen-test #positive:', len(df_pcr.loc[df_pcr['covid_positive'], 'PATID'].unique()))
+    # print('PCR/Antigen-test #negative:', len(df_pcr.loc[~df_pcr['covid_positive'], 'PATID'].unique()))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

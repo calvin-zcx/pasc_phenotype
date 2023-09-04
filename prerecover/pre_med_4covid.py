@@ -25,7 +25,7 @@ from datetime import datetime, date
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess medication table')
-    parser.add_argument('--dataset', default='columbia', help='site dataset')
+    parser.add_argument('--dataset', default='nebraska', help='site dataset')
     args = parser.parse_args()
 
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
