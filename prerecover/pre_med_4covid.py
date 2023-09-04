@@ -336,10 +336,16 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
     print('covid DX Counter:', cnt_code)
 
     # dfs and dfs_convid can be empty, then error raise. but it is OK.
-    dfs = pd.concat(dfs)
-    print('dfs.shape', dfs.shape)
-    print('Time range of diagnosis table of all patients:',
-          pd.to_datetime(dfs["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
+    try:
+        dfs = pd.concat(dfs)
+        print('dfs.shape', dfs.shape)
+        print('Time range of diagnosis table of all patients:',
+              pd.to_datetime(dfs["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e)
 
     dfs_covid_all = pd.concat(dfs_covid)
     print('dfs_covid_all.shape', dfs_covid_all.shape)

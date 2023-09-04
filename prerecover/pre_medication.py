@@ -179,7 +179,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
           pd.to_datetime(dfs["RX_START_DATE"]).describe(datetime_is_numeric=True))
 
     # sort
-    print('Sort dx list in id_dx by time')
+    print('Sort med_list in id_med by time')
     for patid, med_list in id_med.items():
         med_list_sorted = sorted(med_list, key=lambda x: x[0])
         id_med[patid] = med_list_sorted
@@ -269,6 +269,12 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
             rxnorm = row['MEDADMIN_CODE']
             if 'RAW_MEDADMIN_MED_NAME' in row.index:
                 names = row['RAW_MEDADMIN_MED_NAME']
+
+            if 'RAW_MEDADMIN_CODE' in row.index:
+                raw_rxnorm = row['RAW_MEDADMIN_CODE']
+            else:
+                raw_rxnorm = np.nan
+
             encid = row['ENCOUNTERID']  # 2022-10-23 ADD encounter id to drug structure
 
             # start_date
@@ -279,9 +285,17 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
                 n_no_date += 1
 
             # rxrnom
-            if (med_type != 'RX') or pd.isna(rxnorm):
-                n_no_rxnorm += 1
-                rxnorm = np.nan
+            # this code might wrong due to NDC codes 2023-9-4
+            # if (med_type != 'RX') or pd.isna(rxnorm):
+            #     n_no_rxnorm += 1
+            #     rxnorm = np.nan
+            # change to the following
+            if pd.isna(rxnorm):
+                if pd.notna(raw_rxnorm):
+                    rxnorm = raw_rxnorm
+                else:
+                    n_no_rxnorm += 1
+                    rxnorm = np.nan
 
             # days supply
             if pd.notna(start_date) and pd.notna(rx_end_date):
@@ -330,7 +344,7 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
         print(e)
 
     # sort
-    print('sort dx list in id_dx by time')
+    print('sort med_list in id_med by time')
     for patid, med_list in id_med.items():
         med_list_sorted = sorted(med_list, key=lambda x: x[0])
         id_med[patid] = med_list_sorted
