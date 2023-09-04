@@ -25,7 +25,7 @@ from datetime import datetime, date
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess medication table')
-    parser.add_argument('--dataset', default='nebraska', help='site dataset')
+    parser.add_argument('--dataset', default='columbia', help='site dataset')
     args = parser.parse_args()
 
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
@@ -345,15 +345,24 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
         # empty file, empty list, nothing to concatenate
         #  raise ValueError("No objects to concatenate")
         # ValueError: No objects to concatenate
-        print(e)
+        print(e, 'in dfs = pd.concat(dfs)')
 
-    dfs_covid_all = pd.concat(dfs_covid)
-    print('dfs_covid_all.shape', dfs_covid_all.shape)
-    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    try:
+        dfs_covid_all = pd.concat(dfs_covid)
+        print('Time range of diagnosis table of selected covid patients:',
+              pd.to_datetime(dfs_covid_all["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
+
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e, 'in dfs_covid_all = pd.concat(dfs_covid)')
+        dfs_covid_all = pd.DataFrame(columns=chunk.columns)
+        print('dfs_covid_all.shape', dfs_covid_all.shape)
+        print('dfs_covid_all.columns', dfs_covid_all.columns)
+
     dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
     print('dfs_covid_all.columns', dfs_covid_all.columns)
-    print('Time range of diagnosis table of selected covid patients:',
-          pd.to_datetime(dfs_covid_all["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
 
     print('Output file:', output_file)
     utils.check_and_mkdir(output_file)
