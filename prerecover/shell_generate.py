@@ -194,6 +194,9 @@ python pre_covid_records.py --dataset nyu 2>&1 | tee  log\pre_covid_records_nyu.
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list)/divide))
     ndelta = npersite * siteperdivide
+    print('len(site_list):', len(site_list), 'divide:', divide,
+          'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
+          'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
     utils.split_shell_file_bydelta(r"shell_all_202309.ps1", delta=ndelta, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
