@@ -100,7 +100,7 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
     n_recorded_row = 0
     n_not_in_list_row = 0
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=10):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -259,7 +259,7 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
     n_recorded_row = 0
     n_not_in_list_row = 0
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=10):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -424,7 +424,7 @@ def read_dispensing(input_file, output_file='', selected_patients={}):
     n_recorded_row = 0
     n_not_in_list_row = 0
 
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -539,12 +539,18 @@ def combine_2_id_med(id_med1, id_med2, output_file=''):
     for patid, med_list in id_med1.items():
         id_med[patid] = list(med_list)
 
+    n_new_add = 0
+    n_exist_update = 0
     for patid, records in id_med2.items():
         if patid not in id_med:
             id_med[patid] = list(records)
+            n_new_add += 1
         else:
             id_med[patid].extend(records)
-    print('Combined len(id_med):', len(id_med))
+            n_exist_update += 1
+
+    # print('Combined len(id_med):', len(id_med))
+    print('Combined len(id_med):', len(id_med), 'n_new_add:', n_new_add, 'n_exist_update:', n_exist_update)
 
     # sort
     print('sort combined id_med by time')
@@ -576,13 +582,13 @@ if __name__ == '__main__':
 
     print('args.dataset:', args.dataset)
 
-    # print("step 1. prescribe")
-    # id_med1 = read_prescribing(args.prescribe_file, args.prescribe_output, selected_patients)
-    # print('read_prescribing done, len(id_med1):', len(id_med1))
-    #
-    # print("step 2. med_admin")
-    # id_med2 = read_med_admin(args.med_admin_file, args.med_admin_output, selected_patients)
-    # print('read_med_admin done, len(id_med2):', len(id_med2))
+    print("step 1. prescribe")
+    id_med1 = read_prescribing(args.prescribe_file, args.prescribe_output, selected_patients)
+    print('read_prescribing done, len(id_med1):', len(id_med1))
+
+    print("step 2. med_admin")
+    id_med2 = read_med_admin(args.med_admin_file, args.med_admin_output, selected_patients)
+    print('read_med_admin done, len(id_med2):', len(id_med2))
 
     print("step 3. dispensing")
     id_med3 = read_dispensing(args.dispensing_file, args.dispensing_output, selected_patients)
