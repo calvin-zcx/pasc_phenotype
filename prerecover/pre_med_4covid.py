@@ -123,18 +123,32 @@ def read_prescribing_4_covid(input_file, output_file, code_set, chunksize=100000
     print('len(patid_covid_set):', len(patid_covid_set))
     print('covid DX Counter:', cnt_code)
 
-    dfs = pd.concat(dfs)
-    print('dfs.shape', dfs.shape)
-    print('Time range of diagnosis table of all patients:',
-          pd.to_datetime(dfs["RX_START_DATE"]).describe(datetime_is_numeric=True))
+    try:
+        dfs = pd.concat(dfs)
+        print('dfs.shape', dfs.shape)
+        print('Time range of diagnosis table of all patients:',
+              pd.to_datetime(dfs["RX_START_DATE"]).describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e, 'in dfs = pd.concat(dfs)')
 
-    dfs_covid_all = pd.concat(dfs_covid)
-    print('dfs_covid_all.shape', dfs_covid_all.shape)
-    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    try:
+        dfs_covid_all = pd.concat(dfs_covid)
+        print('Time range of diagnosis table of selected covid patients:',
+              pd.to_datetime(dfs_covid_all["RX_START_DATE"]).describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e, 'in dfs_covid_all = pd.concat(dfs_covid)')
+        dfs_covid_all = pd.DataFrame(columns=chunk.columns)
+        print('dfs_covid_all.shape', dfs_covid_all.shape)
+        print('dfs_covid_all.columns', dfs_covid_all.columns)
+
     dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
     print('dfs_covid_all.columns', dfs_covid_all.columns)
-    print('Time range of diagnosis table of selected covid patients:',
-          pd.to_datetime(dfs_covid_all["RX_START_DATE"]).describe(datetime_is_numeric=True))
 
     print('Output file:', output_file)
     utils.check_and_mkdir(output_file)
@@ -229,18 +243,32 @@ def read_med_admin_4_covid(input_file, output_file, code_set, chunksize=100000):
     print('len(patid_covid_set):', len(patid_covid_set))
     print('covid DX Counter:', cnt_code)
 
-    dfs = pd.concat(dfs)
-    print('dfs.shape', dfs.shape)
-    print('Time range of diagnosis table of all patients:',
-          pd.to_datetime(dfs["MEDADMIN_START_DATE"]).describe(datetime_is_numeric=True))
+    try:
+        dfs = pd.concat(dfs)
+        print('dfs.shape', dfs.shape)
+        print('Time range of diagnosis table of all patients:',
+              pd.to_datetime(dfs["MEDADMIN_START_DATE"]).describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e, 'in dfs = pd.concat(dfs)')
 
-    dfs_covid_all = pd.concat(dfs_covid)
-    print('dfs_covid_all.shape', dfs_covid_all.shape)
-    print('dfs_covid_all.columns', dfs_covid_all.columns)
+    try:
+        dfs_covid_all = pd.concat(dfs_covid)
+        print('Time range of diagnosis table of selected covid patients:',
+              pd.to_datetime(dfs_covid_all["MEDADMIN_START_DATE"]).describe(datetime_is_numeric=True))
+    except Exception as e:
+        # empty file, empty list, nothing to concatenate
+        #  raise ValueError("No objects to concatenate")
+        # ValueError: No objects to concatenate
+        print(e, 'in dfs_covid_all = pd.concat(dfs_covid)')
+        dfs_covid_all = pd.DataFrame(columns=chunk.columns)
+        print('dfs_covid_all.shape', dfs_covid_all.shape)
+        print('dfs_covid_all.columns', dfs_covid_all.columns)
+
     dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
     print('dfs_covid_all.columns', dfs_covid_all.columns)
-    print('Time range of diagnosis table of selected covid patients:',
-          pd.to_datetime(dfs_covid_all["MEDADMIN_START_DATE"]).describe(datetime_is_numeric=True))
 
     print('Output file:', output_file)
     utils.check_and_mkdir(output_file)
@@ -351,7 +379,6 @@ def read_dispensing_4_covid(input_file, output_file, code_set, chunksize=100000)
         dfs_covid_all = pd.concat(dfs_covid)
         print('Time range of diagnosis table of selected covid patients:',
               pd.to_datetime(dfs_covid_all["DISPENSE_DATE"]).describe(datetime_is_numeric=True))
-
     except Exception as e:
         # empty file, empty list, nothing to concatenate
         #  raise ValueError("No objects to concatenate")
