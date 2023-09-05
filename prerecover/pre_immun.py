@@ -21,7 +21,10 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.immunization'.format(args.dataset)
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    # use all selected patients by lab-dx-med, selected covid-CP specific cohorts later in pre_cohort_**.py
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
+                                                                                                 args.dataset)
+    # args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
     args.output_file = r'../data/recover/output/{}/immunization_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
