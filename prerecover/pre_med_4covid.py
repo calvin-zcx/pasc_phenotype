@@ -420,6 +420,8 @@ if __name__ == '__main__':
     print('read_prescribing done, len(df_med1):', df_med1.shape)
 
     print("step 2. extract covid drug from med_admin")
+    # Cautions: need to add error handle inside. If med_admi is empty, but dispensing is not, error break will ignore
+    # dispense data
     df_med2 = read_med_admin_4_covid(args.med_admin_file, args.med_admin_output, code_set)
     print('read_med_admin done, len(df_med2):', df_med2.shape)
 
