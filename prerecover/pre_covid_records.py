@@ -19,7 +19,7 @@ from misc.utils import clean_date_str
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='nebraska', help='site dataset')
+    parser.add_argument('--dataset', default='mcw', help='site dataset')
     args = parser.parse_args()
 
     args.input_lab = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -118,7 +118,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
     n_recorded_row = 0
     i = 0
     n_no_dob_row = 0
-    for index, row in tqdm(df_covid.iterrows(), total=len(df_covid), mininterval=3):
+    for index, row in tqdm(df_covid.iterrows(), total=len(df_covid), mininterval=5):
         i += 1
         patid = row['PATID']
         lab_date = row["RESULT_DATE"]
@@ -207,7 +207,7 @@ def read_covid_lab_and_generate_label(input_file, output_file='', id_demo={}):
         df_covid['age'] = np.nan
         age_list = []
         n_no_age = 0
-        for index, row in tqdm(df_covid.iterrows(), total=len(df_covid)):
+        for index, row in tqdm(df_covid.iterrows(), total=len(df_covid), mininterval=10):
             patid = row['PATID']
             lab_date = row["RESULT_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
             if patid in id_demo:
@@ -269,7 +269,7 @@ def read_covid_diagnosis(input_file, id_demo):
     n_recorded_row = 0
     n_no_dob_row = 0
 
-    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=3):
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=5):
         i += 1
         patid = row['PATID']
         enc_id = row['ENCOUNTERID']
@@ -360,7 +360,7 @@ def read_covid_prescribing(input_file, id_demo):
     # n_not_in_list_row = 0
     n_no_dob_row = 0
 
-    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=3):
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=5):
         i += 1
         patid = row['PATID']
         rx_order_date = row['RX_ORDER_DATE']
@@ -741,6 +741,7 @@ if __name__ == '__main__':
 
     # covid CP from dx
     id_dx, df_dx = read_covid_diagnosis(args.input_diagnosis, id_demo)
+    print('Combine lab and dx')
     id_labdx = combine_2_id_records(id_lab, id_dx, output_file=args.output_file_labdx)
 
     # covid CP from med
@@ -748,9 +749,12 @@ if __name__ == '__main__':
     id_medmedadmin, df_medmedadmin = read_covid_med_admin(args.input_med_admin, id_demo)
     id_meddispensing, df_meddispensing = read_covid_dispensing(args.input_dispensing, id_demo)
 
+    print('Combine prescripting and med_admi')
     id_med1 = combine_2_id_records(id_medpre, id_medmedadmin)
+    print('Combine prescripting and med_admi and dispensing')
     id_med = combine_2_id_records(id_med1, id_meddispensing)
 
+    print('Combine labdx and med')
     id_labdxmed = combine_2_id_records(id_labdx, id_med, output_file=args.output_file_labdxmed)
 
     print('len(id_lab)', len(id_lab), 'len(id_labdx)', len(id_labdx), 'len(id_labdxmed)', len(id_labdxmed))
