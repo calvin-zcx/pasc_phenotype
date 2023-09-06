@@ -44,10 +44,15 @@ def read_death(input_file, output_file=''):
 
     if 'DEATH_DATE_IMPUTE' in df.columns:
         print('DEATH_DATE_IMPUTE:', df['DEATH_DATE_IMPUTE'].value_counts(dropna=False))
+    else:
+        df['DEATH_DATE_IMPUTE'] = np.nan
+
     print('DEATH_SOURCE:', df['DEATH_SOURCE'].value_counts(dropna=False))
     print('DEATH_MATCH_CONFIDENCE:', df['DEATH_MATCH_CONFIDENCE'].value_counts(dropna=False))
     if 'CDRN_FACILITYID' in df.columns:
         print('CDRN_FACILITYID:', df['CDRN_FACILITYID'].value_counts(dropna=False))
+    else:
+        df['CDRN_FACILITYID'] = np.nan
 
     print('df.shape', df.shape, 'df.columns:', df.columns)
     print('Time range of death table [DEATH_DATE]:',
