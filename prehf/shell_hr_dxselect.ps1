@@ -2,7 +2,7 @@
 #python pre_demo.py --dataset wcm 2>&1 | tee  log\pre_demo_wcm.txt
 #python pre_hf_pat_list.py --dataset wcm 2>&1 | tee  log\pre_hf_pat_list_wcm.txt
 #python pre_diagnosis.py --dataset wcm 2>&1 | tee  log/pre_diagnosis_wcm.txt
-python pre_encounter.py --dataset wcm 2>&1 | tee  log/pre_encounter_wcm.txt
+#python pre_encounter.py --dataset wcm 2>&1 | tee  log/pre_encounter_wcm.txt
 python pre_medication.py --dataset wcm 2>&1 | tee  log/pre_medication_wcm.txt
 python pre_procedure.py --dataset wcm 2>&1 | tee  log/pre_procedure_wcm.txt
 python pre_immun.py --dataset wcm 2>&1 | tee  log/pre_immun_wcm.txt
@@ -12,7 +12,7 @@ python pre_vital.py --dataset wcm 2>&1 | tee  log/pre_vital_wcm.txt
 #python pre_demo.py --dataset montefiore 2>&1 | tee  log\pre_demo_montefiore.txt
 #python pre_hf_pat_list.py --dataset montefiore 2>&1 | tee  log\pre_hf_pat_list_montefiore.txt
 #python pre_diagnosis.py --dataset montefiore 2>&1 | tee  log/pre_diagnosis_montefiore.txt
-python pre_encounter.py --dataset montefiore 2>&1 | tee  log/pre_encounter_montefiore.txt
+#python pre_encounter.py --dataset montefiore 2>&1 | tee  log/pre_encounter_montefiore.txt
 python pre_medication.py --dataset montefiore 2>&1 | tee  log/pre_medication_montefiore.txt
 python pre_procedure.py --dataset montefiore 2>&1 | tee  log/pre_procedure_montefiore.txt
 python pre_immun.py --dataset montefiore 2>&1 | tee  log/pre_immun_montefiore.txt
@@ -22,7 +22,7 @@ python pre_vital.py --dataset montefiore 2>&1 | tee  log/pre_vital_montefiore.tx
 #python pre_demo.py --dataset mshs 2>&1 | tee  log\pre_demo_mshs.txt
 #python pre_hf_pat_list.py --dataset mshs 2>&1 | tee  log\pre_hf_pat_list_mshs.txt
 #python pre_diagnosis.py --dataset mshs 2>&1 | tee  log/pre_diagnosis_mshs.txt
-python pre_encounter.py --dataset mshs 2>&1 | tee  log/pre_encounter_mshs.txt
+#python pre_encounter.py --dataset mshs 2>&1 | tee  log/pre_encounter_mshs.txt
 python pre_medication.py --dataset mshs 2>&1 | tee  log/pre_medication_mshs.txt
 python pre_procedure.py --dataset mshs 2>&1 | tee  log/pre_procedure_mshs.txt
 python pre_immun.py --dataset mshs 2>&1 | tee  log/pre_immun_mshs.txt
@@ -32,7 +32,7 @@ python pre_vital.py --dataset mshs 2>&1 | tee  log/pre_vital_mshs.txt
 #python pre_demo.py --dataset columbia 2>&1 | tee  log\pre_demo_columbia.txt
 #python pre_hf_pat_list.py --dataset columbia 2>&1 | tee  log\pre_hf_pat_list_columbia.txt
 #python pre_diagnosis.py --dataset columbia 2>&1 | tee  log/pre_diagnosis_columbia.txt
-python pre_encounter.py --dataset columbia 2>&1 | tee  log/pre_encounter_columbia.txt
+#python pre_encounter.py --dataset columbia 2>&1 | tee  log/pre_encounter_columbia.txt
 python pre_medication.py --dataset columbia 2>&1 | tee  log/pre_medication_columbia.txt
 python pre_procedure.py --dataset columbia 2>&1 | tee  log/pre_procedure_columbia.txt
 python pre_immun.py --dataset columbia 2>&1 | tee  log/pre_immun_columbia.txt
@@ -42,7 +42,7 @@ python pre_vital.py --dataset columbia 2>&1 | tee  log/pre_vital_columbia.txt
 #python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
 #python pre_hf_pat_list.py --dataset nyu 2>&1 | tee  log\pre_hf_pat_list_nyu.txt
 #python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
-python pre_encounter.py --dataset nyu 2>&1 | tee  log/pre_encounter_nyu.txt
+#python pre_encounter.py --dataset nyu 2>&1 | tee  log/pre_encounter_nyu.txt
 python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
 python pre_procedure.py --dataset nyu 2>&1 | tee  log/pre_procedure_nyu.txt
 python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt

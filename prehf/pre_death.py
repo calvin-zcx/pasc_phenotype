@@ -53,7 +53,9 @@ def read_death(input_file, output_file=''):
     print('Time range of death table [DEATH_DATE]:',
           pd.to_datetime(df["DEATH_DATE"]).describe(datetime_is_numeric=True))
 
-    df_sub = df
+    # df_sub = df
+    df_sub = df[['PATID', 'DEATH_DATE', 'DEATH_DATE_IMPUTE', 'DEATH_SOURCE', 'DEATH_MATCH_CONFIDENCE', 'CDRN_FACILITYID']]
+
     records_list = df_sub.values.tolist()
     # 'PATID' -->['DEATH_DATE', 'DEATH_DATE_IMPUTE', 'DEATH_SOURCE', 'DEATH_MATCH_CONFIDENCE', 'CDRN_FACILITYID']
     id_death = {x[0]: x[1:] for x in records_list}
