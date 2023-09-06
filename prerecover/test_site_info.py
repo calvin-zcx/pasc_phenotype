@@ -38,6 +38,14 @@ def get_table_rows(connect_string, table_name):
     return rows
 
 
+def get_table_columns(connect_string, table_name):
+    engine = create_engine(connect_string)
+    query = "SELECT * FROM {} LIMIT 1;".format(table_name)
+    df = pd.read_sql_query(query, engine)
+    cols = df.columns
+    return cols
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -46,7 +54,7 @@ if __name__ == '__main__':
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
     # ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest',  'musc']
-    site_list = site_list.to_list() + ['northwestern', 'wakeforest',]  # these two sites with label 0
+    site_list = site_list.to_list() + ['northwestern', 'wakeforest', ]  # these two sites with label 0
     print('len(site_list):', len(site_list), site_list)
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
@@ -103,6 +111,8 @@ if __name__ == '__main__':
                 df['table_size'] = table_size
                 df['table_rows'] = table_rows
                 df['query'] = query
+                col_names = get_table_columns(connect_string, table_name)
+                df['col_names'] = str(len(col_names)) + ':' + ','.join(col_names)
                 # df.rename(index={0: site + '-' + table + '-' + col}, inplace=True)
                 results.append(df)
                 # print(df.iloc[0, :])
@@ -116,7 +126,7 @@ if __name__ == '__main__':
 
     pd_results = pd.concat(results, ignore_index=True)
     df_combined = pd.merge(pd_results, df_site, left_on='site', right_on='Schema name',
-                           how='left') # df_site.loc[df_site['selected'] == 1]
+                           how='left')  # df_site.loc[df_site['selected'] == 1]
     df_combined.to_csv('output/db_info/site_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)

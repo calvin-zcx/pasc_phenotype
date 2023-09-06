@@ -1,5 +1,6 @@
 # dumping data from Recover database
 import sys
+
 # for linux env.
 sys.path.insert(0, '..')
 import psycopg2
@@ -12,6 +13,7 @@ from tqdm import tqdm
 import matplotlib.pyplot as plt
 import json
 from sqlalchemy import create_engine
+
 print = functools.partial(print, flush=True)
 
 
@@ -56,6 +58,14 @@ def get_table_rows(connect_string, table_name):
     df = pd.read_sql_query(query, engine)
     rows = df.iloc[0, 0]
     return rows
+
+
+def get_table_columns(connect_string, table_name):
+    engine = create_engine(connect_string)
+    query = "SELECT * FROM {} LIMIT 1;".format(table_name)
+    df = pd.read_sql_query(query, engine)
+    cols = df.columns
+    return cols
 
 
 def load_whole_table_from_sql(table_name, upper_column_name=True):
