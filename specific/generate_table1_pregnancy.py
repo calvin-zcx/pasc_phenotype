@@ -39,7 +39,25 @@ def add_col(df):
                           df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
     df['Type 1 or 2 Diabetes Diagnosis'] = ((df["DX: Diabetes Type 1"] + df["DX: Diabetes Type 2"]) >= 1).astype('int')
 
+    df['gestational age at delivery'] = np.nan
+    df['gestational age of infection'] = np.nan
+    df['preterm birth'] = np.nan
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
+        index_date = row['index date']
+        del_date = row['flag_delivery_date']
+        preg_date = row['flag_pregnancy_start_date']
+        if pd.notna(del_date) and pd.notna(preg_date):
+            gesage = (del_date - preg_date).days / 7
+            df.loc[index, 'gestational age at delivery'] = gesage
+            df.loc[index, 'preterm birth'] = int(gesage < 37)
+
+        if pd.notna(index_date) and pd.notna(preg_date):
+            infectage = (index_date - preg_date).days / 7
+            df.loc[index, 'gestational age of infection'] = infectage
     return df
+
 
 def table1_cohorts_characterization_analyse(pivot='covid'):
     # severity in 'hospitalized', 'ventilation', None
@@ -48,28 +66,33 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
 
     if pivot == 'covid':
         data_file = r'preg_output/preg_pos_neg.csv'
-        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                         parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
+                                      'flag_pregnancy_end_date'])
+        print('read file:', data_file, df.shape)
         df = add_col(df)
         pcol = 'covid'
         df_pos = df.loc[df["covid"] == 1, :]
         df_neg = df.loc[df["covid"] == 0, :]
-        out_file = r'preg_pos_neg_covaraite_summary_v2.xlsx'
+        out_file = r'preg_pos_neg_covaraite_summary_v3.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Pregnant COVID Negative', 'SMD']
     elif pivot == 'pregnancy':
         data_file = r'preg_output/pos_preg_femalenot.csv'
-        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
+        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                         parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
+                                      'flag_pregnancy_end_date'])
+        print('read file:', data_file, df.shape)
         df = add_col(df)
         pcol = 'flag_pregnancy'
         df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary_v2.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_v3.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Non-Pregnant COVID Positive', 'SMD']
 
     else:
         raise ValueError
 
     print('Load data covariates file:', data_file, df.shape, pcol)
-
 
     def _n_str(n):
         return '{:,}'.format(n)
@@ -140,6 +163,23 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in age_col])
+
+    # gestational age
+    row_names.append('Gestational age (IQR) — yr')
+    records.append([])
+    ges_age_col = ['gestational age at delivery', 'gestational age of infection']
+    row_names.extend(ges_age_col)
+    records.extend(
+        [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+         for c in ges_age_col])
+
+    row_names.append('preterm birth percentage')
+    records.append([
+        _percentage_str(df['preterm birth']),
+        _percentage_str(df_pos['preterm birth']),
+        _percentage_str(df_neg['preterm birth']),
+        _smd(df_pos['preterm birth'], df_neg['preterm birth'])
+    ])
 
     # Sex
     row_names.append('Sex — no. (%)')
@@ -269,7 +309,6 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in col_names])
-
 
     # time of index period
     row_names.append('Index time period of patients — no. (%)')
