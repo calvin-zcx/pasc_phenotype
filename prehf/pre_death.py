@@ -19,7 +19,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.death'.format(args.dataset)
-    args.output_file = r'../data/recover/output_hr/{}/death_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output_hf/{}/death_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -69,8 +69,8 @@ def read_death(input_file, output_file=''):
     if output_file:
         utils.check_and_mkdir(output_file)
         utils.dump(id_death, output_file)
-
         print('dump done to {}'.format(output_file))
+
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_death
 

@@ -252,8 +252,10 @@ def select_subpopulation(df, severity):
     return df
 
 
-def add_any_pasc(df):
+def add_any_pasc(df, exclude_list = []):
     # pre-process PASC info
+    print('in add_any_pasc, exlcude_list:', len(exclude_list), exclude_list)
+
     df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
                                  sheet_name='diagnosis')
     pasc_simname = {}
@@ -263,8 +265,15 @@ def add_any_pasc(df):
         pasc_organ[rows['pasc']] = rows['Organ Domain']
 
     # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    pasc_list = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    print('len(pasc_list)', len(pasc_list))
+    pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
+    pasc_list = []
+    for x in pasc_list_raw:
+        if x in exclude_list:
+            print('Exclude condition:', x)
+        else:
+            pasc_list.append(x)
+
+    print('len(pasc_list_raw)', len(pasc_list_raw), 'len(pasc_list)', len(pasc_list))
     for p in pasc_list:
         df[p + '_pasc_flag'] = 0
     df['any_pasc_flag'] = 0
@@ -334,7 +343,7 @@ if __name__ == "__main__":
     df_list = []
     for ith, site in tqdm(enumerate(sites)):
         print('Loading: ', ith, site)
-        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        data_file = r'../data/recover/output/pregnancy_data-20230825/pregnancy_{}.csv'.format(site)
         # Load Covariates Data
         print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -370,7 +379,13 @@ if __name__ == "__main__":
     df = pd.concat([df1, df2], ignore_index=True)
     df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
                           df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
-    df = add_any_pasc(df)
+    # df = add_any_pasc(df, exclude_list=['Anemia',
+    #                                     'Acute phlebitis; thrombophlebitis and thromboembolism',
+    #                                     'Acute pulmonary embolism'])
+
+    # reuse pasc select command
+    df = add_any_pasc(df, exclude_list=['Anemia',
+                                        ])
 
     # df.to_csv('pos_preg_femalenot_pitt.csv')
     # df.to_csv('pos_preg_femalenot.csv')
@@ -679,7 +694,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/DX-{}{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-results.csv'.format(
             args.severity,
             '-select' if args.selectpasc else '',
             i,
@@ -689,7 +704,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results-20230825/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
@@ -697,12 +712,12 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results-20230825/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/results/DX-{}{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-PS.png'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-'))
@@ -725,7 +740,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/DX-{}{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-km.png'.format(
                 args.severity,
                 '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')),
@@ -765,14 +780,14 @@ if __name__ == "__main__":
 
             if i % 50 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/recover/output/results/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    to_csv(r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
                     args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.severity,
                     '-select' if args.selectpasc else '', ))
 
@@ -781,7 +796,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/DX-{}{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific.csv'.format(
             args.severity,
             '-select' if args.selectpasc else ''))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
