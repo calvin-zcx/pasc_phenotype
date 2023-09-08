@@ -230,6 +230,7 @@ def read_demo(input_file, id_zip, output_file=''):
 
     print('df.shape', df.shape, 'df.columns:', df.columns)
     df_sub = df[['PATID', 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC']]
+    # or add imputation logics, say raw_gender, raw_sex etc.
 
     records_list = df_sub.values.tolist()
     # 'PATID' -->[ 'BIRTH_DATE', 'SEX', 'RACE', 'HISPANIC', zipcode, state, city, adi_nation, adi_state]
