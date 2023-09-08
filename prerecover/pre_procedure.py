@@ -83,7 +83,7 @@ def read_procedure(input_file, output_file='', selected_patients={}):
     n_discard_row = 0
     n_recorded_row = 0
     n_not_in_list_row = 0
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
@@ -214,7 +214,7 @@ def read_obs_gen(input_file, output_file='', selected_patients={}):
     n_discard_row = 0
     n_recorded_row = 0
     n_not_in_list_row = 0
-    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk):
+    for chunk in tqdm(pd.read_sql(sql_query, connection, chunksize=chunksize), total=n_chunk, mininterval=5):
         i += 1
         if chunk.empty:
             print("ERROR: Empty chunk! break!")
