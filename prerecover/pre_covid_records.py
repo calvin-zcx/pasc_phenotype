@@ -19,7 +19,7 @@ from misc.utils import clean_date_str
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='mcw', help='site dataset')
+    parser.add_argument('--dataset', default='temple', help='site dataset')
     args = parser.parse_args()
 
     args.input_lab = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -294,9 +294,10 @@ def read_covid_diagnosis(input_file, id_demo):
                 else:
                     age = np.nan
             else:
-                print('No age information for:', index, i, patid, dx_date, )
                 age = np.nan
                 n_no_dob_row += 1
+                print(n_no_dob_row, 'No age information for:', index, i, patid, dx_date, )
+
             # (date, code, result_label,  age,  enc_id, encounter_type, CP-method )
             id_dx[patid].append((dx_date, dx, 'Positive', age, enc_id, enc_type, 'dx'))
             n_recorded_row += 1

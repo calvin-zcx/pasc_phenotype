@@ -16,7 +16,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='ufh', help='site dataset')
+    parser.add_argument('--dataset', default='mcw', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.demographic'.format(args.dataset)
@@ -253,7 +253,6 @@ if __name__ == '__main__':
     # python pre_demo.py --dataset NYU 2>&1 | tee  log/pre_demo_NYU.txt
     # python pre_demo.py --dataset MONTE 2>&1 | tee  log/pre_demo_MONTE.txt
     # python pre_demo.py --dataset MSHS 2>&1 | tee  log/pre_demo_MSHS.txt
-
     start_time = time.time()
     args = parse_args()
     id_zip, df_addr = read_address(args.address_file)
