@@ -289,7 +289,9 @@ if __name__ == "__main__":
     df_list = []
     for ith, site in tqdm(enumerate(sites)):
         print('Loading: ', ith, site)
-        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        # data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        data_file = r'../data/recover/output/pregnancy_0825_CX/pregnancy_{}.csv'.format(site)
+
         # Load Covariates Data
         print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -324,6 +326,8 @@ if __name__ == "__main__":
     # combine df1 and df2 into df
     df = pd.concat([df1, df2], ignore_index=True)
 
+    df.to_csv('pos_preg_femalenot_withMode.csv')
+    zz
     # df.to_csv('pos_preg_femalenot_pitt.csv')
     # df.to_csv('pos_preg_femalenot.csv')
     # zz

@@ -283,7 +283,9 @@ if __name__ == "__main__":
     df_list = []
     for ith, site in tqdm(enumerate(sites)):
         print('Loading: ', ith, site)
-        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        # data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        data_file = r'../data/recover/output/pregnancy_0825_CX/pregnancy_{}.csv'.format(site)
+
         # Load Covariates Data
         print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -297,6 +299,8 @@ if __name__ == "__main__":
     df = pd.concat(df_list, ignore_index=True)
     df = select_subpopulation(df, args.severity)
 
+    df.to_csv('preg_pos_neg_withMode.csv')
+    zz
     # df.to_csv('preg_pos_neg.csv')
     # df.to_csv('preg_pos_neg_pitt.csv')
     # sys.exit(-1)
