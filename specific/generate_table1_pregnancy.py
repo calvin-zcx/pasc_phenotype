@@ -81,7 +81,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'covid'
         df_pos = df.loc[df["covid"] == 1, :]
         df_neg = df.loc[df["covid"] == 0, :]
-        out_file = r'preg_pos_neg_covaraite_summary_v5_withMode.xlsx'
+        out_file = r'preg_pos_neg_covaraite_summary_v6_withMode.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Pregnant COVID Negative', 'SMD']
     elif pivot == 'pregnancy':
         # data_file = r'preg_output/pos_preg_femalenot.csv'
@@ -95,7 +95,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'flag_pregnancy'
         df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary_v5_withMode.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_v6_withMode.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Non-Pregnant COVID Positive', 'SMD']
 
     else:
