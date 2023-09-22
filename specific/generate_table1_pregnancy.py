@@ -43,7 +43,11 @@ def add_col(df):
     df['gestational age of infection'] = np.nan
     df['preterm birth'] = np.nan
 
+    # ['flag_delivery_type_Spontaneous', 'flag_delivery_type_Cesarean',
+    # 'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal', 'flag_delivery_type_other-unsepc',]
     df['flag_delivery_type_other-unsepc'] = ((df['flag_delivery_type_Other'] + df['flag_delivery_type_Unspecified']) >= 1).astype('int')
+    df['flag_delivery_type_Vaginal-Spontaneous'] = ((df['flag_delivery_type_Spontaneous'] + df['flag_delivery_type_Vaginal']) >= 1).astype('int')
+    df['flag_delivery_type_Cesarean-Operative'] = ((df['flag_delivery_type_Cesarean'] + df['flag_delivery_type_Operative']) >= 1).astype('int')
 
     for index, row in tqdm(df.iterrows(), total=len(df)):
         # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
@@ -77,7 +81,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'covid'
         df_pos = df.loc[df["covid"] == 1, :]
         df_neg = df.loc[df["covid"] == 0, :]
-        out_file = r'preg_pos_neg_covaraite_summary_v4_withMode.xlsx'
+        out_file = r'preg_pos_neg_covaraite_summary_v5_withMode.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Pregnant COVID Negative', 'SMD']
     elif pivot == 'pregnancy':
         # data_file = r'preg_output/pos_preg_femalenot.csv'
@@ -91,7 +95,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'flag_pregnancy'
         df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary_v4_withMode.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_v5_withMode.xlsx'
         output_columns = ['All', 'Pregnant COVID Positive', 'Non-Pregnant COVID Positive', 'SMD']
 
     else:
@@ -190,8 +194,13 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     row_names.append('Delivery Mode — no. (%)')
     records.append([])
     mode_col = ['flag_delivery_type_Spontaneous', 'flag_delivery_type_Cesarean',
-                'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal', 'flag_delivery_type_other-unsepc',]
-    mode_col_out = ['Spontaneous', 'Cesarean',  'Operative', 'Vaginal', 'Others/Unknown',]
+                'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal',
+                'flag_delivery_type_Vaginal-Spontaneous',
+                'flag_delivery_type_Cesarean-Operative',
+                'flag_delivery_type_other-unsepc',]
+
+    mode_col_out = ['Spontaneous', 'Cesarean',  'Operative', 'Vaginal',
+                    'Vaginal/Spontaneous', 'Cesarean/Operative', 'Others/Unknown',]
 
     row_names.extend(mode_col_out)
     records.extend(

@@ -320,7 +320,8 @@ if __name__ == "__main__":
 
     # group2: non-pregnant group
     print('Before selecting non-pregnant, df.shape', df.shape)
-    df2 = df.loc[df['flag_pregnancy'] == 0, :].copy()
+    # future exclude preg but excluded patients
+    df2 = df.loc[(df['flag_pregnancy'] == 0) & (df['flag_exclusion'] == 0), :].copy()
     print('After selecting non-pregnant, df2.shape', df2.shape)
 
     # combine df1 and df2 into df
