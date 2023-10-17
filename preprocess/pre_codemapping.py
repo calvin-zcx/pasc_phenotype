@@ -1214,6 +1214,21 @@ def ICD_to_Obstetric_Comorbidity():
     return icd_pasc, pasc_index, df_pasc_list
 
 
+def _pre_ckd_codelist():
+    df_ckd = pd.read_excel(r'../data/mapping/ckd_codes.xlsx', sheet_name=r'serum creatinine')
+    df_ckd2 = pd.read_excel(r'../data/mapping/ckd_codes.xlsx', sheet_name=r'eGFR')
+
+    df_loinc = pd.read_csv(r'../data/mapping/Loinc_2.76/LoincTableCore/LoincTableCore.csv', dtype=str)
+    dfcom = pd.merge(df_ckd, df_loinc, left_on='code', right_on='LOINC_NUM', how='left')
+    dfcom.to_csv(r'../data/mapping/ckd_codes-serum-creatinine.csv')
+
+    dfcom2 = pd.merge(df_ckd2, df_loinc, left_on='code', right_on='LOINC_NUM', how='left')
+    dfcom2.to_csv(r'../data/mapping/ckd_codes-eGFR.csv')
+
+    # then build code list ckd_codes_revised.xlsx, move intermediate file into history
+    return df_ckd, dfcom, df_ckd2, dfcom2
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1232,7 +1247,7 @@ if __name__ == '__main__':
 
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_adi_mapping_2020()
-    zip_adi, zip5_df = zip_adi_mapping_2021()
+    # zip_adi, zip5_df = zip_adi_mapping_2021()
 
     # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
@@ -1260,5 +1275,9 @@ if __name__ == '__main__':
     # 2023-2-9
     # icd_SMMpasc, SMMpasc_index, df_SMMpasc = ICD_to_PASC_Severe_Maternal_Morbidity()
     # icd_OBC, OBC_index, df_OBC = ICD_to_Obstetric_Comorbidity()
+
+
+    # 12 build ckd code list for paxlovid (2023-10-17)
+    _pre_ckd_codelist()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
