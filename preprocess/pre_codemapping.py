@@ -1229,6 +1229,91 @@ def _pre_ckd_codelist():
     return df_ckd, dfcom, df_ckd2, dfcom2
 
 
+def zip_ruca_mapping():
+    # 2010 Rural-Urban Commuting Area Codes, ZIP code file	8/17/2020
+    df_ruca = pd.read_excel(r'../data/mapping/RUCA2010zipcode.xlsx', sheet_name=r'Data',
+                            dtype={'ZIP_CODE': str})
+    print('df_ruca.shape:', df_ruca.shape)
+    print(df_ruca.dtypes)
+    print(df_ruca.describe())
+    print(df_ruca['ZIP_TYPE'].value_counts())
+
+    zip_ruca = {}
+    for index, row in tqdm(df_ruca.iterrows(), total=len(df_ruca)):
+        zip = row['ZIP_CODE']
+        state = row['STATE']
+        type = row['ZIP_TYPE']
+        r1 = row['RUCA1']
+        r2 = row['RUCA2']
+        zip_ruca[zip] = (r1, r2, state, type)
+
+    print('len(zip_ruca)', len(zip_ruca))
+    output_file = r'../data/mapping/zip_ruca_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(zip_ruca, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+    return zip_ruca, df_ruca
+
+
+def ICD_to_CCI_Comorbidity():
+    # 2023-2-9
+    start_time = time.time()
+    dict_df_cci = pd.read_excel(r'../data/mapping/Quan-Charlson-Cormorbidity-Index.xlsx', dtype=str, sheet_name=None)
+    print('len(icd_cci, cci_index, dict_df_cci)', len(dict_df_cci))
+
+    icd_cci = {}
+    cci_index = {}
+
+    for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
+        cci = df_cci['Category'].unique()
+        print(len(cci), cci)
+        assert len(cci) == 1
+        cci = cci[0]
+        cci_index[cci] = [ith, len(df_cci)]
+        print('cci:', cci, 'index:', ith, '#code:', len(df_cci), df_cci[['code type']].value_counts())
+        for index, row in df_cci.iterrows():
+            icd = row['dx code'].strip().upper().replace('.', '')
+            name = row['LONG DESCRIPTION']
+            type = row['code type']
+            # cci = row['Category']
+            order = row['CCI order']
+            icd_cci[icd] = [cci, type, name, order]
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/icd_cci_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cci_index):', len(cci_index))
+    output_file = r'../data/mapping/cci_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cci_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci, cci_index, dict_df_cci
+
+
+def build_updated_covid_drugs():
+    dict_df_all = pd.read_excel(r'../data/mapping/covid_drug.xlsx', sheet_name=None, dtype=str)  # read all sheets
+    med_code = {}
+    for ith, (key, df_all) in enumerate(dict_df_all.items()):
+        print('drug:', key, 'index:', ith, '#code:', len(df_all), df_all[['codetype1']].value_counts())
+        code_dict = {}
+        for index, row in df_all.iterrows():
+            code = row['code1'].strip()
+            type = row['codetype1']
+            name = row['descrip']
+            code_dict[code] = [code, type, name]
+
+        med_code[key] = code_dict
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/covid_drugs_updated.pkl')
+    return med_code, dict_df_all
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1276,8 +1361,17 @@ if __name__ == '__main__':
     # icd_SMMpasc, SMMpasc_index, df_SMMpasc = ICD_to_PASC_Severe_Maternal_Morbidity()
     # icd_OBC, OBC_index, df_OBC = ICD_to_Obstetric_Comorbidity()
 
-
     # 12 build ckd code list for paxlovid (2023-10-17)
-    _pre_ckd_codelist()
+    # add more loinc info, then edited in excel
+    # _pre_ckd_codelist()
+
+    # 13 zip_ruca (2023-10-18)
+    # zip_ruca, df_ruca = zip_ruca_mapping()
+
+    # 14 CCI index, each dim, and then aggregated  (2023-10-18)
+    # icd_cci, cci_index, dict_df_cci = ICD_to_CCI_Comorbidity()
+
+    # 15 updated drug list for paxlovid and remdesivir (2023-10-18)
+    med_code, dict_df_all = build_updated_covid_drugs()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
