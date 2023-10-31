@@ -191,7 +191,8 @@ def shell_lab_dx_med_4covid():
 #python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
 #python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
 #python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
-python pre_ckd_lab.py --dataset nyu 2>&1 | tee  log/pre_ckd_lab_nyu.txt
+##python pre_ckd_lab.py --dataset nyu 2>&1 | tee  log/pre_ckd_lab_nyu.txt
+python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')

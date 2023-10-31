@@ -1,11 +1,13 @@
 import sys
+
 # for linux env.
-sys.path.insert(0,'..')
+sys.path.insert(0, '..')
 import pandas as pd
 import time
 import argparse
 import functools
 from misc import utils
+
 print = functools.partial(print, flush=True)
 from collections import Counter
 import psycopg2
@@ -16,6 +18,7 @@ from collections import defaultdict
 from misc.utilsql import *
 import pickle
 
+
 # trying to replace pre_ckd_lab.py, dump csv and id_lab pickle
 # the dumped csv files are the same as pre_ckd_lab.py results if use the same loinc codelist
 
@@ -25,7 +28,8 @@ def parse_args():
     # parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset, args.dataset)
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
+                                                                                                 args.dataset)
     args.input_file = r'{}.lab_result_cm'.format(args.dataset)
     args.output_csv_file = r'../data/recover/output/{}/lab_result_select_{}.csv'.format(args.dataset, args.dataset)
     args.output_pkl_file = r'../data/recover/output/{}/lab_result_select_{}.pkl'.format(args.dataset, args.dataset)
@@ -40,7 +44,7 @@ def read_lab_result(args, code_set, selected_patients={}):
     chunksize = 100000
 
     print('in read_lab_result')
-    print('Choose dataset:', args.dataset, 'chunksize:', chunksize,)
+    print('Choose dataset:', args.dataset, 'chunksize:', chunksize, )
     if selected_patients:
         print('using selected_patients, len(selected_patients):', len(selected_patients))
 
@@ -92,7 +96,8 @@ def read_lab_result(args, code_set, selected_patients={}):
 
         # part 1: selected all records as chunk, and dumped as csv for furture analyses
         if selected_patients:
-            chunk_covid_ckd_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set) & chunk['PATID'].isin(selected_patients), :]
+            chunk_covid_ckd_records = chunk.loc[
+                                      chunk['LAB_LOINC'].isin(code_set) & chunk['PATID'].isin(selected_patients), :]
         else:
             chunk_covid_ckd_records = chunk.loc[chunk['LAB_LOINC'].isin(code_set), :]
 
@@ -106,12 +111,13 @@ def read_lab_result(args, code_set, selected_patients={}):
         cnt_code.update(chunk_covid_ckd_records['LAB_LOINC'])
 
         # part 2: selected per row as a data structure
-        for index, row in chunk.iterrows():
+        # to use already selectec chunck chunk_covid_ckd_records to speed up time
+        for index, row in chunk_covid_ckd_records.iterrows():
             patid = row['PATID']
             enc_id = row['ENCOUNTERID']
             loinc = row['LAB_LOINC']
 
-            order_date = row["LAB_ORDER_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
+            order_date = row["LAB_ORDER_DATE"]  #
             spe_date = row["SPECIMEN_DATE"]
             lab_date = row["RESULT_DATE"]
 
@@ -173,7 +179,6 @@ def read_lab_result(args, code_set, selected_patients={}):
         lab_list_sorted = sorted(set(lab_list), key=lambda x: x[0])
         id_lab[patid] = lab_list_sorted
     print('sort lab list done, total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
 
     print('Dump selected lab results to csv:', args.output_csv_file)
     # dump all selected lab result as csv, all columns as it is
