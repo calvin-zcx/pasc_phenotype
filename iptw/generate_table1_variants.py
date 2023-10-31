@@ -25,7 +25,7 @@ print = functools.partial(print, flush=True)
 # from iptw.evaluation import *
 
 
-def table1_cohorts_characterization_analyse_pooled(severity='all'):
+def table1_cohorts_characterization_analyse_pooled(severity='all', site='all'):
     # severity in 'hospitalized', 'ventilation', None
     data_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_ALL.csv'
     data_file2 = r'../data/oneflorida/output/character/matrix_cohorts_covid_4manuNegNoCovidV2_bool_all.csv'
@@ -38,9 +38,24 @@ def table1_cohorts_characterization_analyse_pooled(severity='all'):
 
     df1['database'] = 0
     df2['database'] = 1
-    df = pd.concat([df1, df2], ignore_index=True, sort=False)
+    if site == 'all':
+        print('site: all')
+        df = pd.concat([df1, df2], ignore_index=True, sort=False)
+    elif site == 'insight':
+        print('site: insight')
+        df = df1
+    elif site == 'oneflorida':
+        print('site: oneflorida')
+        df = df2
+    else:
+        raise ValueError
+
     print('df.shape:', df.shape)
     del df1, df2
+
+    df['death in acute'] = (df['death t2e'] <= 30).astype('int')
+    df['death in post-acute'] = ((df['death t2e'] > 30) & (df['death t2e'] <= 180)).astype('int')
+
 
     if severity == '1stwave':
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
@@ -54,7 +69,9 @@ def table1_cohorts_characterization_analyse_pooled(severity='all'):
         print('Considering ALL cohorts')
 
     print('df.shape:', df.shape)
-    out_file = r'../data/V15_COVID19/output/character/outcome/table1_of_matrix_cohorts_CompareVariants-{}.xlsx'.format(severity)
+    out_file = r'../data/V15_COVID19/output/character/outcome/table1_of_matrix_cohorts_CompareVariants-site{}-{}.xlsx'.format(
+        site, severity)
+
     df_pos = df.loc[df["covid"] == 1, :]
     df_neg = df.loc[df["covid"] == 0, :]
 
@@ -114,6 +131,17 @@ def table1_cohorts_characterization_analyse_pooled(severity='all'):
     row_names.extend(age_col)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in age_col])
+
+    # Death
+    row_names.append('Death — no. (%)')
+    records.append([])
+    death_col = ['death in acute', 'death in post-acute']
+
+    row_names.extend(death_col)
+    records.extend(
+        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+         for c in death_col])
+
 
     # Sex
     row_names.append('Sex — no. (%)')
@@ -302,6 +330,16 @@ if __name__ == '__main__':
     df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='all')
     df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='1stwave')
     df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='delta')
+
+    # # 2023-10-30 revision
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='all', site='insight')
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='1stwave', site='insight')
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='delta', site='insight')
+    #
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='all', site='oneflorida')
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='1stwave', site='oneflorida')
+    # df_table1, df = table1_cohorts_characterization_analyse_pooled(severity='delta', site='oneflorida')
+
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
