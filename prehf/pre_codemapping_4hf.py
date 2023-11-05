@@ -1067,6 +1067,69 @@ def rxndc_to_ADdrug():
     return rxndc_addrug, addrug_index, df_addrug
 
 
+def rxndc_to_selectHFdrug():
+    # To get code mapping from icd10 to PASC our compiled list.
+
+    start_time = time.time()
+    # select_drug_list = ['Acebutolol', 'Atenolol', 'Betaxolol', 'Bisoprolol', 'Carteolol', 'Carvedilol', 'Labetalol',
+    #                     'Metoprolol', 'Nadolol', 'Nebivolol', 'Penbutolol', 'Pindolol', 'Propranolol', 'Sotalol', 'Timolol',
+    #                     'sacubitril-valsartan',
+    #                     'Bexagliflozin', 'Canagliflozin', 'Dapagliflozin', 'Empagliflozin', 'Ertugliflozin',]
+
+    select_drug_list = ['acebutolol', 'atenolol', 'betaxolol', 'bisoprolol', 'carteolol', 'carvedilol', 'labetalol',
+                        'metoprolol', 'nadolol', 'nebivolol', 'penbutolol', 'pindolol', 'propranolol', 'sotalol', 'timolol',
+                        'sacubitril-valsartan',
+                        'bexagliflozin', 'canagliflozin', 'dapagliflozin', 'empagliflozin', 'ertugliflozin']
+
+    select_drug_list = [x.strip().lower() for x in select_drug_list]
+    print('len(select_drug_list)', len(select_drug_list), select_drug_list)
+
+    rxndc_hfdrug = {}
+    hfdrug_index = {}
+    df_hfdrug_list = []
+
+    for ith, drugname in enumerate(select_drug_list):
+        fname = 'output/HF_drug/{}-ndc-rxnom-merged-edit.xlsx'.format(drugname)
+        df_hfdrug = pd.read_excel(fname, dtype=str)
+
+        print('df_hfdrug.shape', df_hfdrug.shape)
+        df_hfdrug['code'] = df_hfdrug['code'].apply(lambda x: x.strip())
+        df_hfdrug_list.append(df_hfdrug)
+
+        ad_codes = df_hfdrug['code']
+        ad_codes_set = set(ad_codes)
+        print(ith, 'Load HF drug list from {}\nlen(ad_codes)'.format(fname),
+              len(ad_codes), 'len(ad_codes_set):', len(ad_codes_set))
+
+        for index, row in df_hfdrug.iterrows():
+            rxndc = row['code']
+            name = row['name']
+
+            drug_category = row['drug'].strip()
+            assert drug_category == drugname
+
+            codetype = row['code type']
+            rxndc_hfdrug[rxndc] = [drug_category, codetype, name]
+
+
+        hfdrug_index[drugname] = [ith, len(df_hfdrug)]
+
+    print('len(rxndc_hfdrug):', len(rxndc_hfdrug))
+    output_file = r'../data/mapping/rxndc_hfdrug_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(rxndc_hfdrug, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(hfdrug_index):', len(hfdrug_index))
+    output_file = r'../data/mapping/hfdrug_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(hfdrug_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return rxndc_hfdrug, hfdrug_index, df_hfdrug_list
+
+
 def load_cdc_mapping():
     # input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
     # change at 2022-5-24, Add DX: Obstructive sleep apnea <----> OSA
@@ -1371,5 +1434,7 @@ if __name__ == '__main__':
 
     icd_ad, ad_index, df_ad = ICD_to_AD()
     rxndc_addrug, addrug_index, df_addrug = rxndc_to_ADdrug()
+
+    rxndc_hfdrug, hfdrug_index, df_hfdrug_list = rxndc_to_selectHFdrug()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

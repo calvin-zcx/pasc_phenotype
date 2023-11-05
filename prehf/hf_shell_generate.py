@@ -40,17 +40,19 @@ def shell_for_each(site_list = []):
 #python pre_hf_pat_list.py --dataset nyu 2>&1 | tee  log\pre_hf_pat_list_nyu.txt
 #python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
 #python pre_encounter.py --dataset nyu 2>&1 | tee  log/pre_encounter_nyu.txt
-python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
-python pre_procedure.py --dataset nyu 2>&1 | tee  log/pre_procedure_nyu.txt
-python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
-python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
-python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
+#python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
+#python pre_procedure.py --dataset nyu 2>&1 | tee  log/pre_procedure_nyu.txt
+#python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
+#python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
+#python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
+python pre_cohort_hf.py --dataset nyu 2>&1 | tee  log/pre_cohort_hf_nyu.txt
+python pre_data_manuscript_withAllDays_few.py --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_few_nyu.txt
 """.replace('nyu', site)
 
             f.write(cmdstr)
             print(i, site, 'done')
 
-    divide = 2
+    divide = 5
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list) / divide))
     ndelta = npersite * siteperdivide
@@ -84,5 +86,6 @@ if __name__ == '__main__':
 
     shell_for_each(site_list = ["wcm", "montefiore", "mshs", "columbia", "nyu"])
     # utils.split_shell_file(r"output\shells\shell_all_2023-6.ps1", divide=4, skip_first=0)
+
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
