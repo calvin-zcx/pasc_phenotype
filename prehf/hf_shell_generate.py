@@ -45,7 +45,7 @@ def shell_for_each(site_list = []):
 #python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
 #python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
 #python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
-python pre_cohort_hf.py --dataset nyu 2>&1 | tee  log/pre_cohort_hf_nyu.txt
+#python pre_cohort_hf.py --dataset nyu 2>&1 | tee  log/pre_cohort_hf_nyu.txt
 python pre_data_manuscript_withAllDays_few.py --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_few_nyu.txt
 """.replace('nyu', site)
 
