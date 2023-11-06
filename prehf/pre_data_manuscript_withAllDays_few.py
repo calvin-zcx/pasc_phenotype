@@ -860,19 +860,20 @@ def _count_general_dx_withalldays(dx_list, icd_pasc, pasc_encoding, index_date):
     outcome_t2eall = [''] * len(pasc_encoding)
 
     for records in dx_list:
-        dx_date, icd = records[:2]
+        dx_date, icd, dx_type, enc_type = records
         icd = icd.replace('.', '').upper()
 
         days = (dx_date - index_date).days
         flag, icdprefix = _prefix_in_set(icd, icd_pasc)
         if flag:  # if icd in icd_pasc:
-            pasc_info = icd_pasc[icdprefix]
-            pasc = pasc_info[0]
-            rec = pasc_encoding[pasc]
-            pos = rec[0]
+            pasc_info_list = icd_pasc[icdprefix]
+            for pasc_info in pasc_info_list:
+                pasc = pasc_info[0]
+                rec = pasc_encoding[pasc]
+                pos = rec[0]
 
-            outcome_t2eall[pos] += '{};'.format(days)
-            outcome_flag[0, pos] += 1
+                outcome_t2eall[pos] += '{};'.format(days)
+                outcome_flag[0, pos] += 1
 
     return outcome_flag, outcome_t2eall
 

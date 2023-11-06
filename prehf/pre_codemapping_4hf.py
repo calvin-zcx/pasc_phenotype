@@ -984,7 +984,8 @@ def ICD_to_AD():
     print('Load compiled AD dx list done from {}\nlen(ad_codes)'.format(ad_list_file),
           len(ad_codes), 'len(ad_codes_set):', len(ad_codes_set))
 
-    icd_ad = {}
+    # warning: one ICD code might belong to different ad categories, warning of overlap, need update!
+    icd_ad = defaultdict(list)
     ad_index = {}
 
     for index, row in df_ad_list.iterrows():
@@ -994,7 +995,8 @@ def ICD_to_AD():
         ad_category = row['category']
         notes = row['Notes']
         codetype = row['code type']
-        icd_ad[icd] = [ad_category, notes, codetype, icd_name]
+        #icd_ad[icd] = [ad_category, notes, codetype, icd_name]
+        icd_ad[icd].append([ad_category, notes, codetype, icd_name])
 
     df_dim = df_ad_list['category'].value_counts(sort=False).reset_index()
     for index, row in df_dim.iterrows():
