@@ -19,7 +19,7 @@ print = functools.partial(print, flush=True)
 # 2. applying EC [eligibility criteria] to include and exclude patients for each cohorts
 # 3. summarize basic statistics when applying each EC criterion
 
-# updated 2023-10-19
+# updated 2023-11-8
 # 1. using lab + dx + med
 # 2. more information
 # 3. try to mimimize selection bias, not using any EC after t0
@@ -27,12 +27,13 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
-    parser.add_argument('--dataset', default='mshs', help='site dataset')
+    parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
 
     args = parser.parse_args()
 
-    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
+    # load covid identified by lab + dx + med
+    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset, args.dataset)
     args.demo_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
     args.dx_file = r'../data/recover/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     args.med_file = r'../data/recover/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
@@ -45,15 +46,17 @@ def parse_args():
     args.death_file = r'../data/recover/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
     # added 2022-04-08
     args.vital_file = r'../data/recover/output/{}/vital_{}.pkl'.format(args.dataset, args.dataset)
+    # added 2023-11-8
+    args.select_lab_file = r'../data/recover/output/{}/lab_result_select_{}.pkl'.format(args.dataset, args.dataset)
 
     args.pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx'
     args.covid_list_file = r'../data/V15_COVID19/covid_phenotype/COVID_ICD.xlsx'
 
     # changed 2022-04-08 V2, add vital information in V2
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2age18_{}.pkl'.format(args.dataset,
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}.pkl'.format(args.dataset,
                                                                                                         args.dataset)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2age18_{}_info.csv'.format(
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_test_{}_info.csv'.format(
         args.dataset, args.dataset)
 
     print('args:', args)
@@ -101,10 +104,10 @@ def read_preprocessed_data(args):
     id_immun = utils.load(args.immun_file)
     id_death = utils.load(args.death_file)
     id_vital = utils.load(args.vital_file)
-
+    id_lab_select = utils.load(args.select_lab_file)
     print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, \
-           id_immun, id_death, id_vital
+           id_immun, id_death, id_vital, id_lab_select
 
 
 def _eligibility_age(id_indexrecord, age_minimum_criterion):
@@ -612,7 +615,7 @@ def integrate_data_and_apply_eligibility(args):
     start_time = time.time()
     print('In integrate_data_and_apply_eligibility, site:', args.dataset)
     covid_codes_set, df_pasc_list, pasc_codes_set, id_lab, id_demo, id_dx, id_med, id_enc, id_pro, id_obsgen, \
-    id_immun, id_death, id_vital = read_preprocessed_data(args)
+    id_immun, id_death, id_vital, id_lab_select = read_preprocessed_data(args)
 
     # Step 1. Load included patients build id --> index records
     #    lab-confirmed positive:  first positive record
@@ -668,31 +671,39 @@ def integrate_data_and_apply_eligibility(args):
             immun = id_immun[pid]
             death = id_death.get(pid, [])
             vital = id_vital.get(pid, [])
-            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death, vital]
+            lab_select = id_lab_select.get(pid, [])
+            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death, vital, lab_select]
         print('building data done, len(id_indexrecord):', len(id_indexrecord), 'len(data) ', len(data))
         return data
+
+    # 2023-11-8
+    # Step 1.5 (original 5): Applying EC. No COVID-associated diagnosis in the Negative Cohorts, any records in any time,
+    # Part of step1, excluding potentially unconfirmed Covid from negative, preventing  Leaking
+    # when using lab+dx+med, similar to lab NI, excluding not confirmed cases from negative group.
+    # if only focusing confirmed positive cases, no influences
+    id_indexrecord, info = _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set)
+    cohort_info.append(info)
 
     # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
     # goal: adult population is our targeted population
     # 2023-2-2 change age to 18
     id_indexrecord, info = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM_18)
     cohort_info.append(info)
+
     # Step 3: Applying EC. Any diagnosis in the baseline period
     # goal: baseline information, and access to healthcare
     id_indexrecord, info = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
     cohort_info.append(info)
     # data = _local_build_data(id_indexrecord)
 
-    # Step 4: Applying EC. Any diagnosis in the follow-up period
-    # goal: alive beyond acute phase, and have information for screening PASC,
-    # and capture baseline PASC-like diagnosis for  Non-Covid patients
-    # Our cohort 1 for screening PASC
-    id_indexrecord, info = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
-    cohort_info.append(info)
-
-    # Step 5: Applying EC. No COVID diagnosis in the Negative Cohorts, any records in any time, excluding Covid Leaking
-    id_indexrecord, info = _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set)
-    cohort_info.append(info)
+    ## Not using this 2023-11-8. Intent is to estimate incidence rather than screening signals!
+    ## Move this variable into matrix building process, potential sensitivity analysis
+    # # Step 4: Applying EC. Any diagnosis in the follow-up period
+    # # goal: alive beyond acute phase, and have information for screening PASC,
+    # # and capture baseline PASC-like diagnosis for  Non-Covid patients
+    # # Our cohort 1 for screening PASC
+    # id_indexrecord, info = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
+    # cohort_info.append(info)
 
     # dump cohort selection process
     cohort_info = pd.DataFrame(cohort_info)
