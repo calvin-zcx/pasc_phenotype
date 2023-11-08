@@ -56,7 +56,7 @@ def parse_args():
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
     args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}.pkl'.format(args.dataset,
                                                                                                         args.dataset)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_test_{}_info.csv'.format(
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}_info.csv'.format(
         args.dataset, args.dataset)
 
     print('args:', args)
