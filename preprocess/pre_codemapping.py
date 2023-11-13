@@ -959,6 +959,96 @@ def ICD_to_PASC():
     return icd_pasc, pasc_index, df_pasc_list
 
 
+def ICD_to_PASC_added_extension():
+    # 2023-11-9
+    # allow self-defined categories added
+    # To get code mapping from icd10 to PASC our compiled list.
+    # Data source: ../data/mapping/PASC_Adult_Combined_List_20220127_v3.xlsx May be updated later
+
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/PASC_Adult_Combined_List_added_extension.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file, sheet_name=r'Sheet1')  # , usecols="A:N")
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    df_pasc_list['ICD-10-CM Code'] = df_pasc_list['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    pasc_codes = df_pasc_list['ICD-10-CM Code']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        hd_domain = row['HD Domain (Defined by Nature paper)']
+        ccsr_code = row['CCSR CATEGORY 1']
+        ccsr_category = row['self selected category']  # row['CCSR CATEGORY 1 DESCRIPTION']
+        icd = row['ICD-10-CM Code']
+        icd_name = row['ICD-10-CM Code Description']
+        icd_pasc[icd] = [ccsr_category, ccsr_code, hd_domain, icd_name]
+
+    # df_dim = df_pasc_list['CCSR CATEGORY 1 DESCRIPTION'].value_counts().reset_index()
+    df_dim = df_pasc_list['self selected category'].value_counts(sort=False).reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_addedPASC_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/addedPASC_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
+def ICD_to_PASC_brainfog():
+    start_time = time.time()
+    dict_df_cci = pd.read_excel(r'../data/mapping/RECOVER Brain Fog Code Lists 11.04.2022-category_namerevised.xlsx',
+                                dtype=str,
+                                sheet_name=None)
+    print('len(dict_df_cci)', len(dict_df_cci))
+
+    icd_cci = {}
+    cci_index = {}
+
+    for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
+        category = df_cci['Category'].apply(lambda x: x.strip()).unique()
+        print(len(category), category)
+        assert len(category) == 1
+        category = category[0]
+        cci_index[category] = [ith, len(df_cci)]
+        print('category:', category, 'index:', ith, '#code:', len(df_cci), )
+        for index, row in df_cci.iterrows():
+            icd = row['DX CODE'].strip().upper().replace('.', '')
+            name = row['DX Description']
+            type = 'icd10'  # all icd10 in this spreadsheet #row['code type']
+            # category = row['Category'].strip()
+            icd_cci[icd] = [category, type, name]
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/icd_brainfog_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cci_index):', len(cci_index))
+    output_file = r'../data/mapping/brainfog_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cci_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci, cci_index, dict_df_cci
+
+
 def load_cdc_mapping():
     # input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
     # change at 2022-5-24, Add DX: Obstructive sleep apnea <----> OSA
@@ -1342,6 +1432,12 @@ if __name__ == '__main__':
 
     # 6. Build ICD10 to pasc
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
+    # updated: 2023-11-9 to add more fine grained/selected categories
+    # use other function/dimensions, instead of changing existing codes--> list of list, supporting overlapped categories,
+    # icd_addedPASC, addedPASC_index, df_pasc = ICD_to_PASC_added_extension()
+    icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
+
+    # zz
 
     # 7. Load CDC code mapping:
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
@@ -1372,6 +1468,6 @@ if __name__ == '__main__':
     # icd_cci, cci_index, dict_df_cci = ICD_to_CCI_Comorbidity()
 
     # 15 updated drug list for paxlovid and remdesivir (2023-10-18)
-    med_code, dict_df_all = build_updated_covid_drugs()
+    # med_code, dict_df_all = build_updated_covid_drugs()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
