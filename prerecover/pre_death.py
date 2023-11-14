@@ -15,7 +15,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='musc', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.death'.format(args.dataset)
@@ -55,8 +55,9 @@ def read_death(input_file, output_file=''):
         df['CDRN_FACILITYID'] = np.nan
 
     print('df.shape', df.shape, 'df.columns:', df.columns)
+    # musc ocurred error when not using , errors='coerce'
     print('Time range of death table [DEATH_DATE]:',
-          pd.to_datetime(df["DEATH_DATE"]).describe(datetime_is_numeric=True))
+          pd.to_datetime(df["DEATH_DATE"], errors='coerce').describe(datetime_is_numeric=True))
 
     # df_sub = df
     df_sub = df[['PATID', 'DEATH_DATE', 'DEATH_DATE_IMPUTE', 'DEATH_SOURCE', 'DEATH_MATCH_CONFIDENCE', 'CDRN_FACILITYID']]
