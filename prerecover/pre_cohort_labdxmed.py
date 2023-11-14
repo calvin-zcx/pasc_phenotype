@@ -33,7 +33,8 @@ def parse_args():
     args = parser.parse_args()
 
     # load covid identified by lab + dx + med
-    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset, args.dataset)
+    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
+                                                                                              args.dataset)
     args.demo_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
     args.dx_file = r'../data/recover/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     args.med_file = r'../data/recover/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
@@ -53,10 +54,13 @@ def parse_args():
     args.covid_list_file = r'../data/V15_COVID19/covid_phenotype/COVID_ICD.xlsx'
 
     # changed 2022-04-08 V2, add vital information in V2
-    # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}.pkl'.format(args.dataset,
-                                                                                                        args.dataset)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}_info.csv'.format(
+    # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(
+    # args.dataset, args.dataset)
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}.pkl'.format(
+        args.dataset, args.dataset)
+    args.output_file_covid2 = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}.pkl'.format(
+        args.dataset, args.dataset)
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}_info.csv'.format(
         args.dataset, args.dataset)
 
     print('args:', args)
@@ -597,6 +601,41 @@ def _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set):
     return id_indexrecord, info
 
 
+def _eligibility_covid_positive_only(id_indexrecord):
+    print("Step: applying _eligibility_covid_positive_only",
+          'input cohorts size:', len(id_indexrecord))
+    N = len(id_indexrecord)
+    n_pos_before = n_neg_before = 0
+    n_pos_after = n_neg_after = 0
+    n_pos_exclude = n_neg_exclude = 0
+    exclude_list = []
+    for pid, row in id_indexrecord.items():
+        # (True/False, lab_date, lab_code, result_label, age)
+        covid_flag = row[0]
+        index_date = row[1]
+        if covid_flag:
+            n_pos_before += 1
+        else:
+            n_neg_before += 1
+            exclude_list.append(pid)
+            n_neg_exclude += 1
+
+    # Applying excluding:
+    # print('exclude_list', exclude_list)
+    [id_indexrecord.pop(pid, None) for pid in exclude_list]
+    # Summary:
+    print('...Before EC, total: {}\tpos: {}\tneg: {}'.format(N, n_pos_before, n_neg_before))
+    print('...Excluding, total: {}\tpos: {}\tneg: {}'.format(len(exclude_list), n_pos_exclude, n_neg_exclude))
+    print('...After  EC, total: {}\tpos: {}\tneg: {}'.format(len(id_indexrecord), n_pos_after, n_neg_after))
+
+    info = {'before N': N, 'before N Pos': n_pos_before, 'before N Neg': n_neg_before,
+            'exclude N': len(exclude_list), 'exclude N Pos': n_pos_exclude, 'exclude N Neg': n_neg_exclude,
+            'after N': len(id_indexrecord), 'after N Pos': n_pos_after, 'after N Neg': n_neg_after,
+            'ec': "_eligibility_covid_positive_only"}
+
+    return id_indexrecord, info
+
+
 def _clean_covid_pcr_label(x):
     if isinstance(x, str):
         x = x.strip().upper()
@@ -694,7 +733,12 @@ def integrate_data_and_apply_eligibility(args):
     # goal: baseline information, and access to healthcare
     id_indexrecord, info = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
     cohort_info.append(info)
-    # data = _local_build_data(id_indexrecord)
+    data = _local_build_data(id_indexrecord)
+
+    # additional step 4, choose only covid positive, and store both cohorts
+    id_indexrecord, info = _eligibility_covid_positive_only(id_indexrecord)
+    cohort_info.append(info)
+    data2 = _local_build_data(id_indexrecord)
 
     ## Not using this 2023-11-8. Intent is to estimate incidence rather than screening signals!
     ## Move this variable into matrix building process, potential sensitivity analysis
@@ -710,9 +754,13 @@ def integrate_data_and_apply_eligibility(args):
     cohort_info.to_csv(args.output_file_cohortinfo)
     print(cohort_info)
 
-    # dump final selected
-    data = _local_build_data(id_indexrecord)
     utils.dump(data, args.output_file_covid, chunk=4)
+    utils.dump(data2, args.output_file_covid2, chunk=4)
+
+
+    # dump final selected
+    # data = _local_build_data(id_indexrecord)
+    # utils.dump(data, args.output_file_covid, chunk=4)
 
     # # Notes for other potential cohorts:
     # #  Sensitivity 1: Applying EC. No (initial, or screened) PASC diagnoses in the baseline  --> healthy population

@@ -215,6 +215,9 @@ def dump(data, filename, chunk=2, chunk_must=False):
             with open(filename + '-part{}'.format(i + 1), 'wb') as fo:
                 pickle.dump(data_part, fo)
                 print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i + 1))
+        print('dump {} done!'.format(filename + '-part[1-{}]'.format(chunk)))
+        os.remove(filename)
+        print('remove {} done!'.format(filename))
         # data1 = dict(list(data.items())[:len(data) // 2])
         # data2 = dict(list(data.items())[len(data) // 2:])
         # with open(filename+'-part1', 'wb') as fo:
@@ -223,7 +226,6 @@ def dump(data, filename, chunk=2, chunk_must=False):
         # with open(filename+'-part2', 'wb') as fo:
         #     pickle.dump(data2, fo)
         #     print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
-    print('dump done!')
 
 
 def load(filename, chunk=2):
