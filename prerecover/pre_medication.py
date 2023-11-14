@@ -442,7 +442,7 @@ def read_dispensing(input_file, output_file='', selected_patients={}):
 
             if 'RAW_NDC' in row.index:
                 raw_rxnorm = row['RAW_NDC']
-                if isinstance(rxnorm, str):
+                if isinstance(raw_rxnorm, str):
                     if raw_rxnorm.upper().startswith('NDC:'):
                         raw_rxnorm = raw_rxnorm[4:]
             else:
