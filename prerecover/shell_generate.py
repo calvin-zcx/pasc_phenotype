@@ -176,7 +176,7 @@ def shell_lab_dx_med_4covid():
 
     print('site_list:', len(site_list), site_list)
 
-    with open(r'shell_all_202309.ps1', 'wt') as f:
+    with open(r'shell_all_202311.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
             cmdstr = """#python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
