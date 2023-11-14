@@ -874,15 +874,18 @@ def _encoding_followup_any_dx(index_date, dx):
 def _encoding_death(death, index_date):
     # death flag, death time
     encoding = np.zeros((1, 2), dtype='int')
+    encoding[0, 1] = 9999 # no death date
     if death:
-        encoding[0, 0] = 1
         ddate = death[0]
         if pd.notna(ddate):
-            encoding[0, 1] = (ddate - index_date).days
-        else:
-            encoding[0, 1] = 9999
-    else:
-        encoding[0, 1] = 9999
+            try:
+                # if have interpretable death date and records
+                encoding[0, 1] = (ddate - index_date).days
+                encoding[0, 0] = 1
+            except Exception as e:
+                # death but no date, regarding no death records.
+                encoding[0, 1] = 9999
+                encoding[0, 0] = 0
 
     return encoding
 
@@ -1751,7 +1754,7 @@ def build_feature_matrix(args):
             df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
                 ((df_bool.loc[:, r'DX: Hypertension'] >= 1) & (
                         (df_bool.loc[:, r'DX: Diabetes Type 1'] >= 1) | (
-                            df_bool.loc[:, r'DX: Diabetes Type 2'] >= 1))).astype('int')
+                        df_bool.loc[:, r'DX: Diabetes Type 2'] >= 1))).astype('int')
 
             # Warning: the covid medication part is not boolean
             # keep the value of baseline count and outcome count in the file, filter later depends on the application
