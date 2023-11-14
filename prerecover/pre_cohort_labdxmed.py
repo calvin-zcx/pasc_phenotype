@@ -615,6 +615,7 @@ def _eligibility_covid_positive_only(id_indexrecord):
         index_date = row[1]
         if covid_flag:
             n_pos_before += 1
+            n_pos_after += 1
         else:
             n_neg_before += 1
             exclude_list.append(pid)
