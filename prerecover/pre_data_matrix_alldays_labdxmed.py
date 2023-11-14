@@ -254,11 +254,12 @@ def _encoding_yearmonth(index_date):
     encoding = np.zeros((1, 46), dtype='int')
     year = index_date.year
     month = index_date.month
-    pos = (month - 3) + (year - 2020) * 12
-    if pos >= encoding.shape[1]:
-        print('In _encoding_yearmonth out of bounds, pos:', pos)
-        pos = encoding.shape[1] - 1
-    encoding[0, pos] = 1
+    pos = int((month - 3) + (year - 2020) * 12)
+    # if pos >= encoding.shape[1]:
+    #     print('In _encoding_yearmonth out of bounds, pos:', pos)
+    #     pos = encoding.shape[1] - 1
+    if 0 <= pos < encoding.shape[1]:
+        encoding[0, pos] = 1
 
     return encoding
 
