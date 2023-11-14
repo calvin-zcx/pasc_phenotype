@@ -36,25 +36,6 @@ def parse_args():
     # parser.add_argument("--ndays", type=int, default=30)
 
     args = parser.parse_args()
-
-    # args.output_file_query12 = r'../data/V15_COVID19/output/character/matrix_cohorts_{}_cnt_AnyPASC-withAllDays_{}.csv'.format(
-    #     args.cohorts,
-    #     args.dataset)
-    # args.output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-withAllDays_{}.csv'.format(
-    #     args.dataset,
-    #     args.cohorts,
-    #     args.dataset)
-
-    # args.output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
-    #     args.dataset,
-    #     args.cohorts,
-    #     args.dataset)
-    #
-    # args.output_dx_info = r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(
-    #     args.dataset,
-    #     args.cohorts,
-    #     args.dataset)
-
     print('args:', args)
     return args
 
@@ -159,12 +140,15 @@ def _load_mapping():
     icd_brainfog = utils.load(r'../data/mapping/icd_brainfog_mapping.pkl')
     brainfog_encoding = utils.load(r'../data/mapping/brainfog_index_mapping.pkl')
 
+    pax_contra = utils.load(r'../data/mapping/n3c_pax_contraindication.pkl')
+    pax_risk = utils.load(r'../data/mapping/n3c_pax_indication.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
             icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
-            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding)
+            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk)
 
 
 def _encoding_age(age):
@@ -621,6 +605,37 @@ def _encoding_dx_pregnancy(dx_list, icd_obcpasc, obcpasc_encoding, index_date):
                 rec = obcpasc_encoding[pasc]
                 pos = rec[0]
                 encoding[0, pos] += 1
+
+    return encoding
+
+
+def _encoding_pax_n3ccov(pax_contra, pax_risk, dx_list, med_list, pro_list, index_date):
+    # 'pax_contra' (-14-+14), 'pax_risk' (-3yrs - 0)
+    pax_risk_med, pax_risk_pro, pax_risk_dx, pax_risk_other = pax_risk
+    encoding = np.zeros((1, 2), dtype='int')
+    # deal with dx
+    for records in dx_list:
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+        # build baseline
+        if ecs._is_in_comorbidity_period(dx_date, index_date):
+            if icd in pax_risk_dx:
+                encoding[0, 1] += 1
+
+    for records in med_list:
+        med_date, rxnorm, supply_days, encid, medtable = records
+        if ecs._is_in_comorbidity_period(med_date, index_date):
+            if rxnorm in pax_risk_med:
+                encoding[0, 1] += 1
+        if ecs._is_in_covid_medication(med_date, index_date):
+            if rxnorm in pax_contra:
+                encoding[0, 0] += 1
+
+    for records in pro_list:
+        px_date, px, px_type, enc_type, enc_id = records
+        if ecs._is_in_comorbidity_period(px_date, index_date):
+            if px in pax_risk_pro:
+                encoding[0, 1] += 1
 
     return encoding
 
@@ -1198,14 +1213,14 @@ def _update_counter_v2(dict3, key, flag, is_incident=False):
 
 def build_feature_matrix(args):
     start_time = time.time()
-    print('In build_query_1and2_matrix...')
+    print('In build_feature_matrix...')
     # step 1: load encoding dictionary
     (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding,
      icd_ccsr, ccsr_encoding, rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
      ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, vaccine_codes,
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
-     icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding) = _load_mapping()
+     icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk) = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1223,7 +1238,8 @@ def build_feature_matrix(args):
     for site in tqdm(sites):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}_boolbase-nout-alldays-preg_{}.csv'.format(
+        #
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1417,6 +1433,11 @@ def build_feature_matrix(args):
             obcdx_array = np.zeros((n, len(OBC_encoding)), dtype='int16')  # 26-dim
             obcdx_column_names = list(OBC_encoding.keys())  # obc:
 
+            # 2023-11014
+            # baseline covs for potential pax EC
+            pax_n3ccov_names = ['pax_contra', 'pax_risk']
+            pax_n3ccov_array = np.zeros((n, 2), dtype='int16')
+
             # 2023-11-13 paxlovid and remdesivir updated codes
             covidtreat_names = ['paxlovid', 'remdesivir']
             covidtreat_flag = np.zeros((n, 2), dtype='int16')
@@ -1509,7 +1530,7 @@ def build_feature_matrix(args):
                            social_column_names + ruca_column_names + utilization_column_names + index_period_names + \
                            bmi_names + smoking_names + \
                            dx_column_names + med_column_names + vaccine_column_names + cci_column_names + \
-                           obcdx_column_names + \
+                           obcdx_column_names + pax_n3ccov_names + \
                            covidtreat_column_names + covidmed_column_names + outcome_covidmed_column_names + \
                            outcome_column_names + outcome_addedPASC_column_names + outcome_brainfog_column_names + \
                            outcome_smm_column_names  # + outcome_med_column_names
@@ -1604,6 +1625,9 @@ def build_feature_matrix(args):
 
             obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding, index_date)
 
+            # 2023-11-14 n3c messy 2 covs: 'pax_contra', 'pax_risk'
+            pax_n3ccov_array[i, :] = _encoding_pax_n3ccov(pax_contra, pax_risk, dx_raw, med, procedure, index_date)
+
             # 2023-11-13 updated capture of paxlovid and remdesivir
             covidtreat_flag[i, :], covidtreat_t2e[i, :], covidtreat_t2eall_1row = \
                 _encoding_covidtreat(med, covidtreat_names, covid_med_update, index_date, default_t2e)
@@ -1678,6 +1702,7 @@ def build_feature_matrix(args):
                                     vaccine_array,
                                     cci_array,
                                     obcdx_array,
+                                    pax_n3ccov_array,
                                     covidtreat_flag,
                                     covidtreat_t2e,
                                     np.asarray(covidtreat_t2eall),
@@ -1708,32 +1733,47 @@ def build_feature_matrix(args):
 
             # Baseline comorbidities required at lest 2 appearance
             # transform count to bool with threshold 2, and deal with "DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"
-            # df_bool = df_data_all_sites.copy()  # not using deep copy for the sage of time
+            # df_bool = df_data_all_sites.copy()  # not using deep copy for the sake of time
             # df_bool = df_data_all_sites
             df_bool = df_data
-            selected_cols = [x for x in df_bool.columns if (
-                    x.startswith('DX:') or
-                    x.startswith('MEDICATION:') or
-                    x.startswith('obc:')
-            )]
-            df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+            # selected_cols = [x for x in df_bool.columns if (
+            #         x.startswith('DX:') or
+            #         x.startswith('MEDICATION:') or
+            #         x.startswith('obc:')
+            # )]
+            # Baseline covariates to adjust for
+            # 2023-11-14 baseline covariates also count, turn to bool later >= 1 or >= 2
+            # df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 2).astype('int')
+            # df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \ (df_bool.loc[:,
+            # r'DX: Hypertension'] & ( df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type
+            # 2'])).astype('int')
+
             df_bool.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
-                (df_bool.loc[:, r'DX: Hypertension'] & (
-                        df_bool.loc[:, r'DX: Diabetes Type 1'] | df_bool.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+                ((df_bool.loc[:, r'DX: Hypertension'] >= 1) & (
+                        (df_bool.loc[:, r'DX: Diabetes Type 1'] >= 1) | (
+                            df_bool.loc[:, r'DX: Diabetes Type 2'] >= 1))).astype('int')
 
             # Warning: the covid medication part is not boolean
             # keep the value of baseline count and outcome count in the file, filter later depends on the application
             # df_data.loc[:, covidmed_column_names] = (df_data.loc[:, covidmed_column_names].astype('int') >= 1).astype('int')
             # can be done later
 
+            # Baseline flag for incident outcomes
             # 2022-11-3
             # Only binarize baseline flag --> stringent manner. The outcome keeps count
+            # selected_cols = [x for x in df_bool.columns if
+            #                  (x.startswith('dx-base@') or
+            #                   x.startswith('med-base@') or
+            #                   x.startswith('covidmed-base@') or
+            #                   x.startswith('smm-base@')
+            #                   )]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
             selected_cols = [x for x in df_bool.columns if
                              (x.startswith('dx-base@') or
-                              x.startswith('med-base@') or
+                              x.startswith('dxadd-base@') or
+                              x.startswith('dxbrainfog-base@') or
                               x.startswith('covidmed-base@') or
                               x.startswith('smm-base@')
-                              )]  # x.startswith('med-out@') or x.startswith('covidmed-out@') or
+                              )]
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
             # selected_cols = [x for x in df_bool.columns if (x.startswith('dx-out@'))]

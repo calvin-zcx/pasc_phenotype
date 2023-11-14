@@ -1404,6 +1404,118 @@ def build_updated_covid_drugs():
     return med_code, dict_df_all
 
 
+def build_n3c_pax_contraindication():
+    print('in build_n3c_pax_contraindication')
+    df = pd.read_csv(r'../data/mapping/n3c_Pax_contraindications.csv', dtype=str)
+    rx_info = {}
+    for index, row in df.iterrows():
+        rx = row['concept_code'].strip()
+        name = row['concept_name']
+        type = row['vocabulary_id']
+        drug_type = row['concept_class_id']
+        con_id = row['concept_id']
+        rx_info[rx] = [rx, name, type, drug_type, con_id]
+
+    print('rx_info done,  len(rx_info):', len(rx_info))
+    utils.dump(rx_info, r'../data/mapping/n3c_pax_contraindication.pkl')
+    return rx_info, df
+
+
+def build_n3c_pax_indication():
+    print('in build_n3c_pax_indication')
+    df = pd.read_csv(r'../data/mapping/n3c_Pax_indication_codes.csv', dtype=str)
+    """
+    ICDO3               48987
+    RxNorm Extension    20318
+    SNOMED              13068
+    RxNorm               1715
+    ICD10CM               703
+    Nebraska Lexicon      419
+    HemOnc                 82
+    HCPCS                  82
+    CPT4                   76
+    CIEL                   57
+    OMOP Extension         55
+    ICD10PCS               55
+    LOINC                  32
+    ATC                    31
+    ICD9CM                 19
+    ICD10                   6
+    OPCS4                   5
+    ICD9Proc                3
+    PPI                     1
+    """
+    # ['ICDO3', 'RxNorm Extension', 'SNOMED', 'RxNorm', 'ICD10CM',
+    # 'Nebraska Lexicon', 'HemOnc', 'HCPCS', 'CPT4', 'CIEL', 'OMOP Extension',
+    #  'ICD10PCS', 'LOINC', 'ATC', 'ICD9CM', 'ICD10', 'OPCS4', 'ICD9Proc',
+    #  'PPI']
+
+    # remaining others:
+    # ['RxNorm Extension',
+    # 'Nebraska Lexicon', 'HemOnc',   'CIEL', 'OMOP Extension',
+    # 'LOINC', 'ATC',
+    # 'PPI']
+    # steroid, and smoking are captured in other place
+    # loinc codes are for smoking, explored later
+
+    # # build snomed concept to icd codes set
+    # df_snomed_map = pd.read_csv(r'../data/mapping/der2_iisssccRefset_ExtendedMapFull_US1000124_20230901.txt',
+    #                             dtype=str, sep='\t', lineterminator='\r')
+    # snomed_icd = defaultdict(set)
+    # for index, row in tqdm(df_snomed_map.iterrows(), total=len(df_snomed_map)):
+    #     snomed = row['referencedComponentId']
+    #     icd = row['mapTarget']
+    #     if pd.isna(icd) or not isinstance(icd, str):
+    #         continue
+    #     else:
+    #         icd = icd.strip().upper().replace('.', '').strip('?')
+    #
+    #     snomed_icd[snomed].add(icd)
+    #
+    # print('len(snomed_icd)', len(snomed_icd))
+    # utils.dump(snomed_icd, r'../data/mapping/snomed_icd.pkl')
+    snomed_icd = utils.load(r'../data/mapping/snomed_icd.pkl')
+
+    med_info = {}
+    pro_info = {}
+    dx_info = {}
+    other_info = {}
+    for index, row in df.iterrows():
+        code = row['concept_code'].strip()
+        type = row['vocabulary_id']
+        name = row['concept_name']
+        con_type = row['concept_class_id']
+        con_id = row['concept_id']
+
+        if type == 'ICDO3':
+            code = code.split('-')
+            code = code[1]
+            code = code.strip().upper().replace('.', '')
+            dx_info[code] = [code, name, type, con_type, con_id]
+        elif type in ['ICD10CM', 'ICD10', 'ICD9CM', ]:
+            code = code.strip().upper().replace('.', '')
+            dx_info[code] = [code, name, type, con_type, con_id]
+        elif type == 'RxNorm':
+            med_info[code] = [code, name, type, con_type, con_id]
+        elif type in ['ICD10PCS', 'ICD9Proc', 'CPT4', 'OPCS4', 'HCPCS']:
+            pro_info[code] = [code, name, type, con_type, con_id]
+        elif type == 'SNOMED':
+            if code in snomed_icd:
+                mapped_icd = snomed_icd[code]
+                for x in mapped_icd:
+                    dx_info[x] = [code, name, type, con_type, con_id]
+        else:
+            other_info[code] = [code, name, type, con_type, con_id]
+
+    print('len(med_info):', len(med_info),
+          'len(pro_info)', len(pro_info),
+          'len(dx_info)', len(dx_info),
+          'len(other_info)', len(other_info),
+          )
+    utils.dump((med_info, pro_info, dx_info, other_info), r'../data/mapping/n3c_pax_indication.pkl')
+    return (med_info, pro_info, dx_info, other_info), df
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1435,7 +1547,7 @@ if __name__ == '__main__':
     # updated: 2023-11-9 to add more fine grained/selected categories
     # use other function/dimensions, instead of changing existing codes--> list of list, supporting overlapped categories,
     # icd_addedPASC, addedPASC_index, df_pasc = ICD_to_PASC_added_extension()
-    icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
+    # icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
 
     # zz
 
@@ -1469,5 +1581,9 @@ if __name__ == '__main__':
 
     # 15 updated drug list for paxlovid and remdesivir (2023-10-18)
     # med_code, dict_df_all = build_updated_covid_drugs()
+
+    # 16 build n3c pax drug list (2023-11-13)
+    rx_info, df_contraindication = build_n3c_pax_contraindication()
+    (med_info, pro_info, dx_info, other_info), df_indication = build_n3c_pax_indication()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
