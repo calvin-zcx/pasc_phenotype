@@ -216,7 +216,11 @@ def dump(data, filename, chunk=2, chunk_must=False):
                 pickle.dump(data_part, fo)
                 print('Dump Done by pickle.dump! Saved as:', filename + '-part{}'.format(i + 1))
         print('dump {} done!'.format(filename + '-part[1-{}]'.format(chunk)))
-        os.remove(filename)
+        if os.path.isfile(filename):
+            os.remove(filename)
+        else:
+            # If it fails, inform the user.
+            print("Error: %s file not found" % filename)
         print('remove {} done!'.format(filename))
         # data1 = dict(list(data.items())[:len(data) // 2])
         # data2 = dict(list(data.items())[len(data) // 2:])
