@@ -28,8 +28,8 @@ from iptw.evaluation import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--cohorts', choices=['covid_posneg18base'],
-                        default='covid_posneg18base', help='cohorts')
+    parser.add_argument('--cohorts', choices=['covid_posneg18base', 'covid_posOnly18base'],
+                        default='covid_posOnly18base', help='cohorts')
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
