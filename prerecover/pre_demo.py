@@ -21,6 +21,7 @@ def parse_args():
 
     args.input_file = r'{}.demographic'.format(args.dataset)
     args.address_file = r'{}.lds_address_history'.format(args.dataset)
+    args.geocoded_file = r'{}.geocoded_2020'.format(args.dataset)
     args.output_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
     print('args:', args)
@@ -172,6 +173,195 @@ def read_address(input_file):
     return id_zip, df
 
 
+def read_address_and_geocoded(input_file_address, input_file_geo):
+    """
+        :param data_file: input demographics file with std format
+        :return: id_demo[patid] = zip5/9
+        :Notice:
+            1.COL data: e.g:
+            df.shape: (549115, 12)
+            n_no_zip: 0 n_has_zip9: 300686 n_has_zip5: 248429
+
+            2. WCM data: e.g.
+            df.shape: (685598, 12)
+            n_no_zip: 111323 n_has_zip9: 1967 n_has_zip5: 572308
+
+            3.NYU:
+            df.shape: (653395, 12) len(id_zip): 653395
+            n_no_zip: 0 n_has_zip9: 0 n_has_zip5: 653395 n_has_adi: 653340
+
+            4.MONTE:
+            df.shape: (272874, 12) len(id_zip):
+            272874 n_no_zip: 313 n_has_zip9: 52894 n_has_zip5: 219667 n_has_adi: 270779
+
+            5. MSHS
+            df.shape: (1723311, 12) len(id_zip):
+            1723311 n_no_zip: 96687 n_has_zip9: 0 n_has_zip5: 1626624 n_has_adi: 1626414
+        """
+    start_time = time.time()
+
+    # 1. load address zip file
+    table_name = input_file_address  # '{}.lds_address_history'.format(args.dataset, )
+    print('Read sql table:', table_name)
+    df = load_whole_table_from_sql(table_name)
+    df = df.sort_values(by=['PATID', 'ADDRESS_PERIOD_START'])  # tring to use the latest address
+    print('df.shape', df.shape, 'df.columns:', df.columns)
+
+    table_name2 = input_file_geo  # '{}.lds_address_history'.format(args.dataset, )
+    print('Read sql table:', table_name2)
+    df_geo = load_whole_table_from_sql(table_name2)
+    print('df_geo.shape', df_geo.shape, 'df_geo.columns:', df_geo.columns)
+
+    # 2. load zip adi dictionary, using updated aid from 2020 version
+    # still use 2020 version rather than 2021 due to large missingness in 2021 version
+    with open(r'../data/mapping/zip9or5_adi_mapping_2020.pkl', 'rb') as f:
+        # with open(r'../data/mapping/zip9or5_adi_mapping_2021.pkl', 'rb') as f:
+        # with open(r'../data/mapping/zip9or5_adi_mapping.pkl', 'rb') as f:
+        zip_adi = pickle.load(f)
+        print('load zip9or5_adi_mapping.pkl file done! len(zip_adi):', len(zip_adi))
+
+    with open(r'../data/mapping/fips_adi_mapping_2020.pkl', 'rb') as f:
+        fips_adi = pickle.load(f)
+        print('load fips_adi_mapping_2020.pkl file done! len(fips_adi):', len(fips_adi))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # 3. build patid --> address dictionary
+    print('step 1, build adi from address table')
+    id_zip = {}
+    n_no_zip = 0
+    n_has_zip5 = n_has_zip9 = 0
+    n_has_adi = 0
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=10):
+        patid = row['PATID']
+        city = row['ADDRESS_CITY']
+        state = row['ADDRESS_STATE']
+        zip5 = row['ADDRESS_ZIP5']
+        zip9 = row['ADDRESS_ZIP9']
+        if pd.notna(zip9):
+            zipcode = zip9
+            n_has_zip9 += 1
+        elif pd.notna(zip5):
+            zipcode = zip5
+            n_has_zip5 += 1
+        else:
+            zipcode = np.nan
+            n_no_zip += 1
+
+        if isinstance(zipcode, str) and len(zipcode) >= 5:
+            zipcode5 = zipcode[:5]
+        else:
+            zipcode5 = np.nan
+
+        # if zip9 no adi, try to use zip5 to impute
+        # if zip5, and no adi, just rewrite nan to nan
+        if pd.notna(zipcode) and (zipcode in zip_adi):
+            adi = zip_adi[zipcode]
+            n_has_adi += 1
+            if pd.isna(adi[0]):
+                if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                    adi[0] = zip_adi[zipcode5][0]
+
+            if pd.isna(adi[1]):
+                if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                    adi[1] = zip_adi[zipcode5][1]
+        else:
+            adi = [np.nan, np.nan]
+
+        # 2022-10-26 only update notna zipcode
+        if pd.notna(zipcode):
+            id_zip[patid] = [zipcode, state, city] + adi
+
+    print('df.shape:', df.shape, 'len(id_zip):', len(id_zip), 'n_no_zip:', n_no_zip,
+          'n_has_zip9:', n_has_zip9, 'n_has_zip5:', n_has_zip5, 'n_has_adi:', n_has_adi)
+
+    # 2022-10-26 enrich id zip by demographic table in some sites
+    print('step 2, enrich adi from demographic table')
+    table_name = r'{}.demographic'.format(args.dataset)
+    print('Read sql table:', table_name)
+    df_dem = load_whole_table_from_sql(table_name)
+    print('df_dem.shape', df_dem.shape, 'df_dem.columns:', df_dem.columns)
+    if 'ZIPCODE' in df_dem.columns:
+        zcol = 'ZIPCODE'
+    elif 'ZIP_CODE' in df_dem.columns:
+        zcol = 'ZIP_CODE'
+    else:
+        zcol = ''
+
+    n_add_zip_from_demo = 0
+    if zcol:
+        print(zcol, ' in df_dem.columns, begin enrich')
+        for index, row in tqdm(df_dem.iterrows(), total=len(df_dem)):
+            patid = row['PATID']
+            zipcode = row[zcol]
+            if isinstance(zipcode, str):
+                zipcode = zipcode.strip().replace('-', '')
+                if isinstance(zipcode, str) and len(zipcode) >= 5:
+                    zipcode5 = zipcode[:5]
+                else:
+                    zipcode5 = np.nan
+
+                if pd.notna(zipcode) and (zipcode in zip_adi):
+                    adi = zip_adi[zipcode]
+
+                    if pd.isna(adi[0]):
+                        if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                            adi[0] = zip_adi[zipcode5][0]
+
+                    if pd.isna(adi[1]):
+                        if pd.notna(zipcode5) and (zipcode5 in zip_adi):
+                            adi[1] = zip_adi[zipcode5][1]
+                else:
+                    adi = [np.nan, np.nan]
+
+                if patid not in id_zip:
+                    id_zip[patid] = [zipcode, np.nan, np.nan] + adi
+                    n_add_zip_from_demo += 1
+                else:
+                    rec = id_zip[patid]
+                    if pd.isna(rec[0]):
+                        id_zip[patid] = [zipcode, rec[1], rec[2]] + adi
+                        n_add_zip_from_demo += 1
+
+    print('n_add_zip_from_demo:', n_add_zip_from_demo)
+    print('len(id_zip):', len(id_zip))
+
+    # step 3
+    print('step 3, update adi from geocoded table')
+    print('df_geo.shape', df_geo.shape, 'df_geo.columns:', df_geo.columns)
+
+    if 'GEOCODING_BLOCKGROUP_ID2020' in df_geo.columns:
+        zcol = 'GEOCODING_BLOCKGROUP_ID2020'
+    elif 'fips_block_group_id_2020'.upper() in df_geo.columns:
+        zcol = 'fips_block_group_id_2020'.upper()
+    else:
+        zcol = ''
+
+    n_add_zip_from_geocoded = 0
+    if zcol:
+        print(zcol, ' in df_geo.columns, begin enrich')
+        for index, row in tqdm(df_geo.iterrows(), total=len(df_geo), mininterval=10):
+            patid = row['PATID']
+            fipscode = row[zcol]
+            if pd.notna(fipscode) and (fipscode in fips_adi):
+                adi = fips_adi[fipscode]
+            else:
+                adi = [np.nan, np.nan]
+
+            if patid not in id_zip:
+                id_zip[patid] = [fipscode, np.nan, np.nan] + adi
+                n_add_zip_from_geocoded += 1
+            else:
+                rec = id_zip[patid]
+                if pd.isna(rec[0]):
+                    id_zip[patid] = [fipscode, rec[1], rec[2]] + adi
+                    n_add_zip_from_geocoded += 1
+
+    print('n_add_zip_from_geocoded:', n_add_zip_from_geocoded)
+    print('len(id_zip):', len(id_zip))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return id_zip, df, df_dem, df_geo
+
+
 def read_demo(input_file, id_zip, output_file=''):
     """
     :param data_file: input demographics file with std format, id and zipcode mapping
@@ -255,6 +445,7 @@ if __name__ == '__main__':
     # python pre_demo.py --dataset MSHS 2>&1 | tee  log/pre_demo_MSHS.txt
     start_time = time.time()
     args = parse_args()
-    id_zip, df_addr = read_address(args.address_file)
+    # id_zip, df_addr = read_address(args.address_file)
+    id_zip, df_addr, df_dem, df_geo = read_address_and_geocoded(args.address_file, args.geocoded_file)
     id_demo, df_sub = read_demo(args.input_file, id_zip, args.output_file)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

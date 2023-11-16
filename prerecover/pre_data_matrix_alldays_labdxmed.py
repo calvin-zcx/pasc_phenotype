@@ -30,7 +30,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['covid_posneg18base', 'covid_posOnly18base'],
                         default='covid_posOnly18base', help='cohorts')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='ucsf', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
@@ -143,12 +143,13 @@ def _load_mapping():
     pax_contra = utils.load(r'../data/mapping/n3c_pax_contraindication.pkl')
     pax_risk = utils.load(r'../data/mapping/n3c_pax_indication.pkl')
 
+    fips_ziplist = utils.load(r'../data/mapping/fips_to_ziplist_2020.pkl')
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
             icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
-            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk)
+            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist)
 
 
 def _encoding_age(age):
@@ -373,29 +374,35 @@ def _encoding_critical_care(pro_list, index_date, cc_codes={"99291", "99292"}):
     return flag
 
 
-def _encoding_ruca(zipcode, zip_ruca):
+def _encoding_ruca(zipcode, zip_ruca, fips_ziplist):
     # 'RUCA1@1', 'RUCA1@2', 'RUCA1@3', 'RUCA1@4', 'RUCA1@5',
     # 'RUCA1@6', 'RUCA1@7', 'RUCA1@8', 'RUCA1@9', 'RUCA1@10',
     # 'RUCA1@99', 'ZIPMiss'
     encoding = np.zeros((1, 12), dtype='int')
-    if isinstance(zipcode, str) and len(zipcode) >= 5:
-        zipcode5 = zipcode[:5]
-        if zipcode5 in zip_ruca:
-            rec = zip_ruca[zipcode5]
-            ruca = int(rec[0])
-            if ruca in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
-                encoding[0, ruca - 1] = 1
-            elif ruca == 99:
-                encoding[0, 10] = 1
-            else:
-                encoding[0, 11] = 1
+    zipcode5 = np.nan
+
+    if isinstance(zipcode, str):
+        if (len(zipcode) >= 5) and (len(zipcode) <= 9):
+            zipcode5 = zipcode[:5]
+        elif len(zipcode) >= 10:
+            # no zip code, just fips code, then map to its first mapped zip
+            if zipcode in fips_ziplist:
+                ziplist = fips_ziplist[zipcode]
+                if len(ziplist) > 0 and (len(ziplist[0]) >= 5):
+                    zipcode5 = ziplist[0][:5]  # just use first
+
+    if pd.notna(zipcode5) and (zipcode5 in zip_ruca):
+        rec = zip_ruca[zipcode5]
+        ruca = int(rec[0])
+        if ruca in [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]:
+            encoding[0, ruca - 1] = 1
+        elif ruca == 99:
+            encoding[0, 10] = 1
         else:
             encoding[0, 11] = 1
-            ruca = np.nan
     else:
-        zipcode5 = np.nan
-        ruca = np.nan
         encoding[0, 11] = 1
+        ruca = np.nan
 
     return ruca, encoding
 
@@ -875,7 +882,7 @@ def _encoding_followup_any_dx(index_date, dx):
 def _encoding_death(death, index_date):
     # death flag, death time
     encoding = np.zeros((1, 2), dtype='int')
-    encoding[0, 1] = 9999 # no death date
+    encoding[0, 1] = 9999  # no death date
     if death:
         ddate = death[0]
         if pd.notna(ddate):
@@ -1224,7 +1231,8 @@ def build_feature_matrix(args):
      ventilation_codes, comorbidity_codes, icd9_icd10, rxing_encoding, covidmed_codes, vaccine_codes,
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
-     icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk) = _load_mapping()
+     icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
+     fips_ziplist) = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1586,7 +1594,7 @@ def build_feature_matrix(args):
             adi_list.append(nation_adi)
 
             # 2023-11-13, ruca_array computed here but added after adi array later
-            ruca1, ruca_array[i, :] = _encoding_ruca(zipcode, zip_ruca)
+            ruca1, ruca_array[i, :] = _encoding_ruca(zipcode, zip_ruca, fips_ziplist)
             ruca_list.append(ruca1)
             # utilization count, postponed to below
             # bmi_list, postponed to below
@@ -1639,7 +1647,7 @@ def build_feature_matrix(args):
             #
 
             covidmed_array[i, :], \
-                outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
+            outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
                 = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date, default_t2e)
 
             # outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \

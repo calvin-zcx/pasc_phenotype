@@ -77,10 +77,10 @@ if __name__ == '__main__':
         print("Error while connecting to PostgreSQL", error)
 
     # select target table?
-    table_list = ['condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
+    table_list = [ 'condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
                   'encounter', 'enrollment', 'harvest', 'hash_token', 'immunization', 'lab_history', 'lab_result_cm',
                   'lds_address_history', 'med_admin', 'obs_clin', 'obs_gen', 'pcornet_trial', 'prescribing', 'pro_cm',
-                  'procedures', 'provider', 'vital']
+                  'procedures', 'provider', 'vital', 'geocoded_2010', 'geocoded_2020', 'geocoded_2020',]
     # no date colum: death_cause, 'harvest', 'hash_token', 'lab_history','provider',
     table_dict = {'condition': 'report_date', 'covid_elements': 'admit_date', 'death': 'death_date',
                   'demographic': 'birth_date',
@@ -90,7 +90,8 @@ if __name__ == '__main__':
                   'lds_address_history': 'address_period_start',
                   'med_admin': 'medadmin_start_date', 'obs_clin': 'obsclin_start_date', 'obs_gen': 'obsgen_start_date',
                   'pcornet_trial': 'trial_enroll_date', 'prescribing': 'rx_order_date', 'pro_cm': 'pro_time',
-                  'procedures': 'admit_date', 'vital': 'measure_date'}
+                  'procedures': 'admit_date', 'vital': 'measure_date',
+                  'geocoded_2010':'patid', 'geocoded_2020':'patid', 'provider': 'providerid' }
     results = []
     error_msg = []
     # site_list = ['temple', 'usf']
