@@ -179,14 +179,14 @@ def shell_lab_dx_med_4covid():
     with open(r'shell_all_202311.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_nyu.txt
+            cmdstr = """python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
 
     # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
     # of shells
-    divide = 3
+    divide = 9
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list)/divide))
     ndelta = npersite * siteperdivide
