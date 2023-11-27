@@ -197,11 +197,14 @@ def _encoding_age_preg(age):
 def _encoding_gender(gender):
     encoding = np.zeros((1, 3), dtype='int')
     # female, Male, other/missing
-    gender = gender.upper()
-    if gender == 'F':
-        encoding[0, 0] = 1
-    elif gender == 'M':
-        encoding[0, 1] = 1
+    if isinstance(gender, str):
+        gender = gender.upper()
+        if gender == 'F':
+            encoding[0, 0] = 1
+        elif gender == 'M':
+            encoding[0, 1] = 1
+        else:
+            encoding[0, 2] = 1
     else:
         encoding[0, 2] = 1
 
@@ -407,21 +410,41 @@ def _encoding_ruca(zipcode, zip_ruca, fips_ziplist):
     return ruca, encoding
 
 
-def _encoding_social(nation_adi, impute_value):
-    # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
-    #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
-    # impute_value can also be nan, because of no zip code there? how?
-    encoding = np.zeros((1, 10), dtype='float')
-    if pd.isna(nation_adi):
-        nation_adi = impute_value
-    if nation_adi >= 100:
-        nation_adi = 99
-    if nation_adi < 1:
-        nation_adi = 1
+# def _encoding_social(nation_adi, impute_value):
+#     # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+#     #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+#     # impute_value can also be nan, because of no zip code there? how?
+#     encoding = np.zeros((1, 10), dtype='float')
+#     if pd.isna(nation_adi):
+#         nation_adi = impute_value
+#     if nation_adi >= 100:
+#         nation_adi = 99
+#     if nation_adi < 1:
+#         nation_adi = 1
+#
+#     if pd.notna(nation_adi):
+#         pos = int(nation_adi) // 10
+#         encoding[0, pos] = 1
+#     return encoding
 
-    if pd.notna(nation_adi):
+def _encoding_social(nation_adi, impute_value):
+    # 2023-11-16 add missing, not using imputation
+    # ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+    #  'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing']
+    # impute_value can also be nan, because of no zip code there? how?
+    encoding = np.zeros((1, 11), dtype='float')
+    if pd.isna(nation_adi):
+        pos = 10
+    else:
+        if nation_adi >= 100:
+            nation_adi = 99
+        if nation_adi < 1:
+            nation_adi = 1
+
         pos = int(nation_adi) // 10
-        encoding[0, pos] = 1
+
+    encoding[0, pos] = 1
+
     return encoding
 
 
@@ -1356,14 +1379,15 @@ def build_feature_matrix(args):
             hispanic_column_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
             # newly added 2022-02-18
-            social_array = np.zeros((n, 10), dtype='int16')
+            social_array = np.zeros((n, 11), dtype='int16')
             social_column_names = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
-                                   'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100']
+                                   'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100',
+                                   'ADIMissing']
             # 2023-11-13 RUCA codes
             ruca_array = np.zeros((n, 12), dtype='int16')
             ruca_column_names = ['RUCA1@1', 'RUCA1@2', 'RUCA1@3', 'RUCA1@4', 'RUCA1@5',
                                  'RUCA1@6', 'RUCA1@7', 'RUCA1@8', 'RUCA1@9', 'RUCA1@10',
-                                 'RUCA1@99', 'ZIPMiss']
+                                 'RUCA1@99', 'ZIPMissing']
 
             utilization_array = np.zeros((n, 12), dtype='int16')
             utilization_column_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',

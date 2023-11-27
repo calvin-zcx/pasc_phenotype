@@ -16,7 +16,7 @@ print = functools.partial(print, flush=True)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='mcw', help='site dataset')
+    parser.add_argument('--dataset', default='intermountain', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.demographic'.format(args.dataset)
@@ -237,10 +237,10 @@ def read_address_and_geocoded(input_file_address, input_file_geo):
         state = row['ADDRESS_STATE']
         zip5 = row['ADDRESS_ZIP5']
         zip9 = row['ADDRESS_ZIP9']
-        if pd.notna(zip9):
+        if pd.notna(zip9) and zip9:  # zip9 not '' or None
             zipcode = zip9
             n_has_zip9 += 1
-        elif pd.notna(zip5):
+        elif pd.notna(zip5) and zip5:
             zipcode = zip5
             n_has_zip5 += 1
         else:

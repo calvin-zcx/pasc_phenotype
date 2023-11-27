@@ -70,9 +70,13 @@ def get_table_columns(connect_string, table_name):
 
 def load_whole_table_from_sql(table_name, upper_column_name=True):
     connect_string, cred_dict = load_sql_credential()
-    table_size = get_table_size(connect_string, table_name)
-    table_rows = get_table_rows(connect_string, table_name)
-    print('Read sql table:', table_name, '| Table size:', table_size, '| No. of rows:', table_rows)
+    try:
+        table_size = get_table_size(connect_string, table_name)
+        table_rows = get_table_rows(connect_string, table_name)
+        print('Read sql table:', table_name, '| Table size:', table_size, '| No. of rows:', table_rows)
+    except (Exception, psycopg2.Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+
     sql_query = """select * from {};
                 """.format(table_name)
     try:

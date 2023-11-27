@@ -19,7 +19,9 @@ from sqlalchemy import create_engine
 import json
 from datetime import datetime
 from misc import utils
+
 print = functools.partial(print, flush=True)
+
 
 def shell_for_each():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
@@ -54,6 +56,7 @@ def shell_for_each():
 cmdstr = """python pre_cohort_manuscript_age18.py --dataset nyu 2>&1 | tee  log/pre_cohort_manuscript_age18_nyu.txt
 python pre_data_manuscript_withAllDays.py --cohorts covid_4manuNegNoCovidV2age18 --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_nyu.txt
 """
+
 
 def last_two_steps():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
@@ -110,6 +113,7 @@ def shell_2023_4_6():
     utils.split_shell_file(r"output\shells\shell_all_rerun.ps1", divide=5, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
+
 def shell_2023_6_2():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -131,6 +135,7 @@ def shell_2023_6_2():
 
     utils.split_shell_file(r"output\shells\shell_all_pregcoexist.ps1", divide=6, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
 
 def backup_9_1():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
@@ -188,7 +193,7 @@ def shell_lab_dx_med_4covid():
     # of shells
     divide = 9
     npersite = cmdstr.count('\n')
-    siteperdivide = int(np.ceil(len(site_list)/divide))
+    siteperdivide = int(np.ceil(len(site_list) / divide))
     ndelta = npersite * siteperdivide
     print('len(site_list):', len(site_list), 'divide:', divide,
           'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
@@ -197,7 +202,6 @@ def shell_lab_dx_med_4covid():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     # not using this, change to pre_covid_records.py
-
 
     """
     #python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
@@ -217,6 +221,8 @@ def shell_lab_dx_med_4covid():
 python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_nyu.txt
 #python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
     """
+
+
 """
     python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
     python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
@@ -229,9 +235,48 @@ python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_
     python pre_data_manuscript_withAllDays.py --cohorts covid_4manuNegNoCovidV2age18 --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_nyu.txt
     """
 
+
+def shell_lab_dx_med_4covid_aux():
+    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+
+    # site_list = ['wcm', 'nch', 'pitt', 'osu', 'utah', 'utsw'] # sites need update due to geo updaing adi significantly
+    print('site_list:', len(site_list), site_list)
+
+    with open(r'shell_all_aux.ps1', 'wt') as f:
+        for i, site in enumerate(site_list):
+            site = site.strip()
+            cmdstr = """python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_nyu.txt
+""".replace('nyu', site)
+            f.write(cmdstr)
+            print(i, site, 'done')
+
+    # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
+    # of shells
+    divide = 2
+    npersite = cmdstr.count('\n')
+    siteperdivide = int(np.ceil(len(site_list) / divide))
+    ndelta = npersite * siteperdivide
+    print('len(site_list):', len(site_list), 'divide:', divide,
+          'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
+          'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
+    utils.split_shell_file_bydelta(r"shell_all_aux.ps1", delta=ndelta, skip_first=0)
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
+    # not using this, change to pre_covid_records.py
+"""
+ren ../data/recover/output/nyu/patient_demo_nyu.pkl patient_demo_nyu_old.pkl 
+python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+"""
+
 if __name__ == '__main__':
     start_time = time.time()
 
-    shell_lab_dx_med_4covid()
+    # shell_lab_dx_med_4covid()
+    shell_lab_dx_med_4covid_aux()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
