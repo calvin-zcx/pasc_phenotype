@@ -250,7 +250,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort2.py --site all --severity pospreg-posnonpreg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort2_all_pospreg-posnonpreg.txt
+    # python screen_paxlovid_iptw_n3c.py  2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c.txt
     start_time = time.time()
     args = parse_args()
 
