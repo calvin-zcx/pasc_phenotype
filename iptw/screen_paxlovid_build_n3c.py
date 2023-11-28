@@ -258,26 +258,37 @@ def more_ec_for_cohort_selection(df):
     print('Applying more specific/flexible eligibility criteria for cohort selection')
 
     # select index date
-    print('Before selecting index date < 2022-6-1, df.shape', df.shape)
-    df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :]  # .copy()
-    print('After selecting index date < 2022-6-1, df.shape', df.shape)
+    # print('Before selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
+    df = df.loc[(df['index date'] <= datetime.datetime(2023, 2, 28, 0, 0)) &
+                (df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :]  # .copy()
+    print('After selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
 
-    # select age
-    print('Before selecting age <= 50, df.shape', df.shape)
-    df = df.loc[df['age'] <= 50, :]  # .copy()
-    print('After selecting age <= 50, df.shape', df.shape)
+    # select age and risk
+    # print('Before selecting age >= 50 or at least on risk, len(df)', len(df))
+    df = df.loc[(df['age'] >= 50) | (df['pax_risk'] > 0), :]  # .copy()
+    print('After selecting age >= 50 or at least on risk, len(df)', len(df))
 
-    # select female
-    print('Before selecting female, df.shape', df.shape)
-    df = df.loc[df['Female'] == 1, :]  # .copy()
-    print('After selecting female, df.shape', df.shape)
+    # Exclusion, no hospitalized
+    # print('Before selecting no hospitalized, len(df)', len(df))
+    df = df.loc[(df['inpatienticu'] == 0), :]
+    print('After selecting no hospitalized, len(df)', len(df))
 
-    # covid positive patients only
-    print('Before selecting covid+, df.shape', df.shape)
-    df = df.loc[df['covid'] == 1, :]  # .copy()
-    print('After selecting covid+, df.shape', df.shape)
+    # Exclusion, no contra
+    # print('Before selecting pax drug contraindication, len(df)', len(df))
+    df = df.loc[(df['pax_contra'] == 0), :]
+    print('After selecting pax drug contraindication, len(df)', len(df))
 
-    return df
+    # drug initiation within 5 days
+    df_pos = df.loc[(df['treat-flag@paxlovid'] > 0), :]
+    print('After selecting pax prescription, len(df_pos)', len(df_pos))
+    df_pos = df_pos.loc[(df_pos['treat-t2e@paxlovid'] <= 5), :]
+    print('After selecting pax prescription within 5 days, len(df_pos)', len(df_pos))
+
+    # non initiation group, no paxlovid
+    df_control = df.loc[(df['treat-flag@paxlovid'] == 0), :]
+    print('After selecting NO pax prescription, len(df_control)', len(df_control))
+
+    return df_pos, df_control
 
 
 def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
@@ -395,12 +406,14 @@ if __name__ == "__main__":
         print('dump done!')
     else:
         data_file = 'recover29Nov27_covid_pos.csv'
+        data_file = 'recoverINSIGHT5Nov27_covid_pos.csv'
         print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
         # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
         print('df.shape:', df.shape)
 
-    zz
+        des = df.describe()
+        des.transpose().to_csv(data_file + 'describe.csv')
 
     # pre-process data a little bit
     print('Considering inpatient/hospitalized cohorts but not ICU')
@@ -412,12 +425,19 @@ if __name__ == "__main__":
     print('Considering outpatient cohorts')
     df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
 
-    # "YM: November 2022", "YM: December 2022", "YM: January 2023", "YM: February 2023",
-    df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
-                          df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
-    # binarize
+    df_treat, df_control = more_ec_for_cohort_selection(df)
+    df_treat['treated'] = 1
+    df_control['treated'] = 0
+    print('len(df_treat)', len(df_treat), 'len(df_control)', len(df_control))
+    df_treat.to_csv(data_file.replace('.csv', '-ECselectedTreated.csv'))
+    df_control.to_csv(data_file.replace('.csv', '-ECselectedControl.csv'))
 
-    #
+    # should build two cohorts:
+    # 1 trial emulation -- ec
+    # 2 RW patients -- matched
+    # the following ones help the matched
+
+    """
     selected_cols = [x for x in df.columns if x.startswith('DX:')]
     df['n_baseline_condition'] = df[selected_cols].sum(axis=1)
     df['any_baseline_condition'] = (df['n_baseline_condition'] >= 1).astype('int')
@@ -469,5 +489,5 @@ if __name__ == "__main__":
 
     df_pos.to_csv('recover_covid_pos-with-pax-V6.csv')
     df_ctrl.to_csv('recover_covid_pos-without-pax-matched-V6.csv')
-
+    """
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

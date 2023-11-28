@@ -218,38 +218,6 @@ def select_subpopulation(df, severity):
     else:
         print('Considering ALL cohorts')
 
-    if severity == 'pospreg-posnonpreg':
-        # select index date
-        print('Before selecting index date < 2022-6-1, df.shape', df.shape)
-        df = df.loc[(df['index date'] < datetime.datetime(2022, 6, 1, 0, 0)), :]  # .copy()
-        print('After selecting index date < 2022-6-1, df.shape', df.shape)
-
-        # select age
-        print('Before selecting age <= 50, df.shape', df.shape)
-        df = df.loc[df['age'] <= 50, :]  # .copy()
-        print('After selecting age <= 50, df.shape', df.shape)
-
-        # select female
-        print('Before selecting female, df.shape', df.shape)
-        df = df.loc[df['Female'] == 1, :]  # .copy()
-        print('After selecting female, df.shape', df.shape)
-
-        # covid positive patients only
-        print('Before selecting covid+, df.shape', df.shape)
-        df = df.loc[df['covid'] == 1, :]  # .copy()
-        print('After selecting covid+, df.shape', df.shape)
-
-        # # pregnant patients only
-        # print('Before selecting pregnant, df.shape', df.shape)
-        # df = df.loc[df['flag_pregnancy'] == 1, :]#.copy()
-        # print('After selecting pregnant, df.shape', df.shape)
-        #
-        # # infection during pregnancy period
-        # print('Before selecting infection in gestational period, df.shape', df.shape)
-        # df = df.loc[(df['index date'] >= df['flag_pregnancy_start_date']) & (
-        #         df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
-        # print('After selecting infection in gestational period, df.shape', df.shape)
-
     return df
 
 
@@ -293,49 +261,87 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # %% Step 1. Load  Data
-    # data_file = 'recover_covid_pos.csv'
-    # print('Load data covariates file:', data_file)
-    # df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date'])
-    # # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
-    # print('df.shape:', df.shape)
-
-    df1 = pd.read_csv('recover_covid_pos-with-pax-V5.csv', dtype={'patid': str, 'site': str, 'zip': str},
-                      parse_dates=['index date'])
-    df2 = pd.read_csv('recover_covid_pos-without-pax-matched-V5.csv', dtype={'patid': str, 'site': str, 'zip': str},
-                      parse_dates=['index date'])
+    df1 = pd.read_csv('recover29Nov27_covid_pos-ECselectedTreated.csv', dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date', 'dob'])
+    df2 = pd.read_csv('recover29Nov27_covid_pos-ECselectedControl.csv', dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date', 'dob'])
     df = pd.concat([df1, df2], ignore_index=True)
-    print('df1.shape', df1.shape,
-          'df2.shape', df2.shape,
-          'df.shape', df.shape, )
+    print('treated df1.shape', df1.shape,
+          'control df2.shape', df2.shape,
+          'combined df.shape', df.shape, )
 
     # pre-process data a little bit
-    print('Considering inpatient/hospitalized cohorts but not ICU')
-    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
-    print('Considering ICU (hospitalized ventilation or critical care) cohorts')
-    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
-    print('Considering inpatient/hospitalized including icu cohorts')
-    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
-    print('Considering outpatient cohorts')
-    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    # print('Considering inpatient/hospitalized cohorts but not ICU')
+    # df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    # print('Considering ICU (hospitalized ventilation or critical care) cohorts')
+    # df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
+    # print('Considering inpatient/hospitalized including icu cohorts')
+    # df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
+    # print('Considering outpatient cohorts')
+    # df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    #
+    # # "YM: November 2022", "YM: December 2022", "YM: January 2023", "YM: February 2023",
+    # df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
+    #                       df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
 
-    # "YM: November 2022", "YM: December 2022", "YM: January 2023", "YM: February 2023",
-    df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
-                          df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
+    selected_cols = [x for x in df.columns if (
+            x.startswith('DX:') or
+            x.startswith('MEDICATION:') or
+            x.startswith('CCI:') or
+            x.startswith('obc:')
+    )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+    df.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+        (df.loc[:, r'DX: Hypertension'] & (
+                df.loc[:, r'DX: Diabetes Type 1'] | df.loc[:, r'DX: Diabetes Type 2'])).astype('int')
 
+    # baseline part have been binarized already
+    selected_cols = [x for x in df.columns if
+                     (x.startswith('dx-out@') or
+                      x.startswith('dxadd-out@') or
+                      x.startswith('dxbrainfog-out@') or
+                      x.startswith('covidmed-out@') or
+                      x.startswith('smm-out@')
+                      )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
+    df.loc[df['death t2e'] < 0, 'death'] = 0
     # pre-process PASC info
     df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
                                  sheet_name='diagnosis')
+    addedPASC_encoding = utils.load(r'../data/mapping/addedPASC_index_mapping.pkl')
+    addedPASC_list = list(addedPASC_encoding.keys())
+    brainfog_encoding = utils.load(r'../data/mapping/brainfog_index_mapping.pkl')
+    brainfog_list = list(brainfog_encoding.keys())
+
     pasc_simname = {}
     pasc_organ = {}
     for index, rows in df_pasc_info.iterrows():
         pasc_simname[rows['pasc']] = (rows['PASC Name Simple'], rows['Organ Domain'])
         pasc_organ[rows['pasc']] = rows['Organ Domain']
 
+    for p in addedPASC_list:
+        pasc_simname[p] = (p, 'General-add')
+        pasc_organ[p] = 'General-add'
+
+    for p in brainfog_list:
+        pasc_simname[p] = (p, 'brainfog')
+        pasc_organ[p] = 'brainfog'
+
     # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    pasc_list = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    print('len(pasc_list)', len(pasc_list))
+    pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
+    _exclude_list = ['Pressure ulcer of skin', ]
+    pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
+
+    pasc_add = ['smell and taste', ]
+    print('len(pasc_list)', len(pasc_list), 'len(pasc_add)', len(pasc_add))
+
     for p in pasc_list:
         df[p + '_pasc_flag'] = 0
+    for p in pasc_add:
+        df[p + '_pasc_flag'] = 0
+
     df['any_pasc_flag'] = 0
     df['any_pasc_type'] = np.nan
     df['any_pasc_t2e'] = 180  # np.nan
@@ -356,6 +362,15 @@ if __name__ == "__main__":
 
                 df.loc[index, p + '_pasc_flag'] = 1
 
+        for p in pasc_add:
+            if (rows['dxadd-out@' + p] > 0) and (rows['dxadd-base@' + p] == 0):
+                t2e_list.append(rows['dxadd-t2e@' + p])
+                pasc_1_list.append(p)
+                pasc_1_name.append(pasc_simname[p])
+                pasc_1_text += (pasc_simname[p][0] + ';')
+
+                df.loc[index, p + '_pasc_flag'] = 1
+
         if len(t2e_list) > 0:
             df.loc[index, 'any_pasc_flag'] = 1
             df.loc[index, 'any_pasc_t2e'] = np.min(t2e_list)
@@ -364,8 +379,8 @@ if __name__ == "__main__":
             df.loc[index, 'any_pasc_flag'] = 0
             df.loc[index, 'any_pasc_t2e'] = rows[['dx-t2e@' + p for p in pasc_list]].max()  # censoring time
 
-    df = select_subpopulation(df, args.severity)
-    pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
+    # df = select_subpopulation(df, args.severity)
+    # pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
 
     print('Severity cohorts:', args.severity,
           'df1.shape:', df1.shape,
@@ -374,36 +389,57 @@ if __name__ == "__main__":
           )
 
     col_names = pd.Series(df.columns)
-    df_info = df[['patid', 'site', 'index date', 'hospitalized',
+    df_info = df[['patid', 'site', 'index date', 'treated',
+                  'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
-                  '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23'
+                  '03/20-06/20', '07/20-10/20', '11/20-02/21',
+                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
+                  '03/22-06/22', '07/22-10/22', '11/22-02/23',
+                  '03/23-06/23', '07/23-10/23', '11/23-02/24',
                   ]]  # 'Unnamed: 0',
-    # df_info_list.append(df_info)
-    # df_label = df['covid']
-    df_label = (df['Paxlovid'] >= 1).astype('int')
 
+    # df_label = df['covid']
+    df_label = (df['treated'] >= 1).astype('int')
+
+    # how to deal with death?
+    #
     df_outcome_cols = ['death', 'death t2e'] + [x for x in
                                                 list(df.columns)
-                                                if x.startswith('dx') or x.startswith('smm')
+                                                if x.startswith('dx') or
+                                                x.startswith('smm') or
+                                                x.startswith('dxadd') or
+                                                x.startswith('dxbrainfog')
                                                 ]
+
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
     # df_outcome_list.append(df_outcome)
     # 'hospitalized',
-    covs_columns = ['outpatient', 'inpatient', 'icu', ] + \
-                   [x for x in
-                    list(df.columns)[
-                    df.columns.get_loc('20-<40 years'):(
-                            df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
-                    if (not x.startswith('YM:') or not x.startswith('pregage:')) and (
-                            x not in [
-                        '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                        '07/21-10/21', 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
-                        'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years'
-                    ]
-                    )
-                    ] + ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index',
-                         'No evidence - Pre-index', '11/22-02/23']
+    # covs_columns = ['outpatient', 'inpatient', 'icu', ] + \
+    #                [x for x in
+    #                 list(df.columns)[
+    #                 df.columns.get_loc('20-<40 years'):(
+    #                         df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
+    #                 if (not x.startswith('YM:') or not x.startswith('pregage:')) and (
+    #                         x not in [
+    #                     '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
+    #                     '07/21-10/21', 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+    #                     'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years'
+    #                 ]
+    #                 )
+    #                 ] + ['Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index',
+    #                      'No evidence - Pre-index', '11/22-02/23']
+    covs_columns = [x for x in list(df.columns)[df.columns.get_loc('20-<40 years'):
+                                                (df.columns.get_loc('CCI:AIDS/HIV') + 1)]
+                    if (not x.startswith('YM:') and not x.startswith('pregage:') and not x.startswith('RUCA1')
+                        and not x.startswith('DX:')) and
+                    (x not in ['ZIPMissing',
+                               '03/20-06/20', '07/20-10/20', '11/20-02/21',
+                               '03/21-06/21', '07/21-10/21', '11/21-02/22',
+                               '03/23-06/23', '07/23-10/23', '11/23-02/24',
+                               'Fully vaccinated - Post-index', 'Partially vaccinated - Post-index',
+                               'No evidence - Post-index'
+                               ])
+                    ] + []
 
     df_covs = df.loc[:, covs_columns].astype('float')
     print('df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
@@ -428,7 +464,7 @@ if __name__ == "__main__":
         record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    selected_screen_list = ['any_pasc', ] + pasc_list
+    selected_screen_list = ['any_pasc', ] + pasc_list + addedPASC_list + brainfog_list
 
     causal_results = []
     results_columns_name = []
@@ -443,10 +479,18 @@ if __name__ == "__main__":
             pasc_flag = df['any_pasc_flag'].astype('int')
             pasc_t2e = df['any_pasc_t2e'].astype('float')
             pasc_baseline = df['any_pasc_baseline']
-        else:
+        elif pasc in pasc_list:
             pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dx-t2e@' + pasc].astype('float')
             pasc_baseline = df['dx-base@' + pasc]
+        elif pasc in addedPASC_list:
+            pasc_flag = (df['dxadd-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dxadd-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dxadd-base@' + pasc]
+        elif pasc in brainfog_list:
+            pasc_flag = (df['dxbrainfog-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dxbrainfog-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dxbrainfog-base@' + pasc]
 
         # considering competing risks
         death_flag = df['death']
@@ -548,7 +592,7 @@ if __name__ == "__main__":
 
             ax = plt.subplot(111)
             sns.histplot(
-                dfps, x="ps", hue="Paxlovid", element="step",
+                dfps, x="ps", hue="treated", element="step",
                 stat="percent", common_norm=False, bins=25,
             )
             plt.tight_layout()

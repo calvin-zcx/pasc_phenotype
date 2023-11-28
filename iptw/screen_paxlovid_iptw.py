@@ -395,7 +395,7 @@ if __name__ == "__main__":
                     list(df.columns)[
                     df.columns.get_loc('20-<40 years'):(
                             df.columns.get_loc('MEDICATION: Immunosuppressant drug') + 1)]
-                    if (not x.startswith('YM:') or not x.startswith('pregage:')) and (
+                    if (not x.startswith('YM:') and not x.startswith('pregage:')) and (
                             x not in [
                         '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
                         '07/21-10/21', 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
