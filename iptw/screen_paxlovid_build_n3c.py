@@ -341,7 +341,7 @@ if __name__ == "__main__":
                      'vumc', 'duke', 'musc']
 
             # for debug
-            sites = ['wcm', 'mshs', 'columbia']  # , 'montefiore', 'nyu', ]
+            # sites = ['wcm', 'mshs', 'columbia']  # , 'montefiore', 'nyu', ]
 
             print('len(sites), sites:', len(sites), sites)
         else:
