@@ -341,7 +341,8 @@ if __name__ == "__main__":
                      'vumc', 'duke', 'musc']
 
             # for debug
-            # sites = ['wcm', 'mshs', 'columbia']  # , 'montefiore', 'nyu', ]
+            ## sites = ['wcm', 'mshs', 'columbia']  # , 'montefiore', 'nyu', ]
+            # sites = ['wcm', 'mshs', 'columbia', 'montefiore', 'nyu', ]
 
             print('len(sites), sites:', len(sites), sites)
         else:
@@ -389,7 +390,9 @@ if __name__ == "__main__":
         df = df.loc[df['covid'] == 1, :].copy()
 
         print('covid+: df.shape:', df.shape)
+        # df.to_csv('recoverINSIGHT5Nov27_covid_pos.csv')
         df.to_csv('recover29Nov27_covid_pos.csv')
+        print('dump done!')
     else:
         data_file = 'recover29Nov27_covid_pos.csv'
         print('Load data covariates file:', data_file)
