@@ -1635,7 +1635,7 @@ if __name__ == '__main__':
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
 
     # 5. Build ICD10 to elixhauser_comorbidity
-    # icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
+    icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
 
     # 6. Build ICD10 to pasc
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
