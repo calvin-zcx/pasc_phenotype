@@ -621,7 +621,7 @@ if __name__ == "__main__":
                 'narrow',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc,
-            legends={'case': 'Pax treated', 'control': 'Control'})
+            legends={'case': 'Paxlovid', 'control': 'Control'})
 
         try:
             # change 2022-03-20 considering competing risk 2
