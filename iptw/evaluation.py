@@ -515,7 +515,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
                                                              label=legends['case'], weights=treated_w)
     ajf0w = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
                                                              event_of_interest=1,
-                                                             label=legends['case'], weights=controlled_w)
+                                                             label=legends['control'], weights=controlled_w)
     cif_1_w = ajf1w.predict(point_in_time).to_numpy()
     cif_0_w = ajf0w.predict(point_in_time).to_numpy()
     cifdiff_w = cif_1_w - cif_0_w
