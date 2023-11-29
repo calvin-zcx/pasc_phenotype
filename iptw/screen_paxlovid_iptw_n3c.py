@@ -42,7 +42,7 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg',
-                                               'pospreg-posnonpreg'],
+                                               'pospreg-posnonpreg', 'anyfollowupdx'],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)  # 5
@@ -215,6 +215,11 @@ def select_subpopulation(df, severity):
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    elif severity == 'anyfollowupdx':
+        print('Considering patients with anyfollowupdx')
+        print('before followupanydx', len(df))
+        df = df.loc[(df['followupanydx'] == 1), :].copy()
+        print('after followupanydx', len(df))
     else:
         print('Considering ALL cohorts')
 
@@ -250,7 +255,8 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 if __name__ == "__main__":
-    # python screen_paxlovid_iptw_n3c.py  2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c.txt
+    # python screen_paxlovid_iptw_n3c.py  --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c-all.txt
+    # python screen_paxlovid_iptw_n3c.py  --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c-anyfollowupdx.txt
     start_time = time.time()
     args = parse_args()
 
@@ -269,6 +275,10 @@ if __name__ == "__main__":
     print('treated df1.shape', df1.shape,
           'control df2.shape', df2.shape,
           'combined df.shape', df.shape, )
+
+    print('Before select_subpopulation, len(df)', len(df))
+    df = select_subpopulation(df, args.severity)
+    print('After select_subpopulation, len(df)', len(df))
 
     # pre-process data a little bit
     # print('Considering inpatient/hospitalized cohorts but not ICU')
@@ -379,7 +389,6 @@ if __name__ == "__main__":
             df.loc[index, 'any_pasc_flag'] = 0
             df.loc[index, 'any_pasc_t2e'] = rows[['dx-t2e@' + p for p in pasc_list]].max()  # censoring time
 
-    # df = select_subpopulation(df, args.severity)
     # pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
 
     print('Severity cohorts:', args.severity,
