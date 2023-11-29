@@ -545,7 +545,7 @@ if __name__ == "__main__":
 
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
-            'C': 10 ** np.arange(-2, 1.5, 0.5),
+            'C': 10 ** np.arange(-1.5, 1., 0.5),  # 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
             covs_array, covid_label, verbose=0)
@@ -592,7 +592,7 @@ if __name__ == "__main__":
 
             ax = plt.subplot(111)
             sns.histplot(
-                dfps, x="ps", hue="treated", element="step",
+                dfps, x="ps", hue="Paxlovid", element="step",
                 stat="percent", common_norm=False, bins=25,
             )
             plt.tight_layout()
@@ -611,7 +611,8 @@ if __name__ == "__main__":
                 args.severity,
                 'narrow',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')),
-            title=pasc)
+            title=pasc,
+            legends={'case': 'Pax treated', 'control': 'Control'})
 
         try:
             # change 2022-03-20 considering competing risk 2
@@ -645,7 +646,7 @@ if __name__ == "__main__":
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
 
-            if i % 50 == 0:
+            if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
                     r'../data/recover/output/results/Paxlovid-{}{}/causal_effects_specific-snapshot-{}.csv'.format(

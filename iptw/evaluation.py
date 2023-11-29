@@ -446,19 +446,22 @@ def flag_2binary(label):
         raise ValueError
 
 
-def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile='', title=''):
+def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfile='', title='',
+                   legends=None):
     # considering competing risk in this version, 2022-03-20
     #
+    if legends is None:
+        legends = {'case': 'COVID+', 'control': 'Control'}
     ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
     treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
     treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
     treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
 
     # Part-1. https://lifelines.readthedocs.io/en/latest/fitters/univariate/KaplanMeierFitter.html
-    kmf1 = KaplanMeierFitter(label='COVID+').fit(treated_t2e,
-                                                 event_observed=flag_2binary(treated_flag), label="COVID+")
-    kmf0 = KaplanMeierFitter(label='Control').fit(controlled_t2e,
-                                                  event_observed=flag_2binary(controlled_flag), label="Control")
+    kmf1 = KaplanMeierFitter(label=legends['case']).fit(treated_t2e,
+                                                 event_observed=flag_2binary(treated_flag), label=legends['case'])
+    kmf0 = KaplanMeierFitter(label=legends['control']).fit(controlled_t2e,
+                                                  event_observed=flag_2binary(controlled_flag), label=legends['control'])
 
     point_in_time = [60, 90, 120, 150, 180]
     results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
@@ -467,10 +470,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     survival_0 = kmf0.predict(point_in_time).to_numpy()
     ate = survival_1 - survival_0
 
-    kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=flag_2binary(treated_flag),
-                                                            label="COVID+ Adjusted", weights=treated_w)
-    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
-                                                             label="Control Adjusted", weights=controlled_w)
+    kmf1_w = KaplanMeierFitter(label=legends['case'] + " Adjusted").fit(treated_t2e, event_observed=flag_2binary(treated_flag),
+                                                            label=legends['case'] + " Adjusted", weights=treated_w)
+    kmf0_w = KaplanMeierFitter(label=legends['control'] + " Adjusted").fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
+                                                             label=legends['control'] + " Adjusted", weights=controlled_w)
     results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
     # results_w.print_summary()
     survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
@@ -493,10 +496,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # https://lifelines.readthedocs.io/en/latest/fitters/univariate/AalenJohansenFitter.html
     ajf1 = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                             event_of_interest=1,
-                                                            label="COVID+")
+                                                            label=legends['case'])
     ajf0 = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
                                                             event_of_interest=1,
-                                                            label="Control")
+                                                            label=legends['control'])
     cif_1 = ajf1.predict(point_in_time).to_numpy()
     cif_0 = ajf0.predict(point_in_time).to_numpy()
     cifdiff = cif_1 - cif_0
@@ -509,10 +512,10 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
 
     ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                              event_of_interest=1,
-                                                             label="Covid-19 Positive", weights=treated_w)
+                                                             label=legends['case'], weights=treated_w)
     ajf0w = AalenJohansenFitter(calculate_variance=True).fit(controlled_t2e, controlled_flag,
                                                              event_of_interest=1,
-                                                             label="Controls", weights=controlled_w)
+                                                             label=legends['case'], weights=controlled_w)
     cif_1_w = ajf1w.predict(point_in_time).to_numpy()
     cif_0_w = ajf0w.predict(point_in_time).to_numpy()
     cifdiff_w = cif_1_w - cif_0_w
