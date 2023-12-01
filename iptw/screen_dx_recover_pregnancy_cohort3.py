@@ -436,7 +436,10 @@ def add_any_pasc(df, exclude_list=[]):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort2.py --site all --severity pospreg-posnonpreg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort2_all_pospreg-posnonpreg.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10.txt
+
     start_time = time.time()
     args = parse_args()
 
