@@ -542,7 +542,7 @@ if __name__ == "__main__":
 
     print('Build matched cohort, kmatch:', args.kmatch)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch)
-    utils.dump(df2_matched, './_selected_preg_cohort_2matched-k{}.pkl'.format(args.kmatch))
+    utils.dump(df2_matched, './_selected_preg_cohort2-matched-k{}.pkl'.format(args.kmatch))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     zz
