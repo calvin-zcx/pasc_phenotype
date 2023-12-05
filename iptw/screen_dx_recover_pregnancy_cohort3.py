@@ -542,9 +542,12 @@ def feature_process_additional(df):
 
 if __name__ == "__main__":
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-usedx1.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx1.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx1.txt
+
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-usedx0.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx0.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx0.txt
 
@@ -650,7 +653,7 @@ if __name__ == "__main__":
     print(r"df1['site'].value_counts()", df1['site'].value_counts())
     print('len(df1)', len(df1), 'len(df2)', len(df2))
 
-    print('Build matched cohort, kmatch:', args.kmatch)
+    print('Build matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch, usedx=args.usedx)
     utils.dump(df2_matched,
                r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx{}.pkl'.format(
