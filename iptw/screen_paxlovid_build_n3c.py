@@ -418,11 +418,8 @@ if __name__ == "__main__":
     # pre-process data a little bit
     print('Considering inpatient/hospitalized cohorts but not ICU')
     df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
-    print('Considering ICU (hospitalized ventilation or critical care) cohorts')
     df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
-    print('Considering inpatient/hospitalized including icu cohorts')
     df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
-    print('Considering outpatient cohorts')
     df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
 
     df_treat, df_control = more_ec_for_cohort_selection(df)

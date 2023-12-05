@@ -41,6 +41,30 @@ def add_col(df):
             ((df["DX: Diabetes Type 1"] >= 1).astype('int') + (df["DX: Diabetes Type 2"] >= 1).astype(
                 'int')) >= 1).astype('int')
 
+    selected_cols = [x for x in df.columns if (
+            x.startswith('DX:') or
+            x.startswith('MEDICATION:') or
+            x.startswith('CCI:') or
+            x.startswith('obc:')
+    )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+    df.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+        (df.loc[:, r'DX: Hypertension'] & (
+                df.loc[:, r'DX: Diabetes Type 1'] | df.loc[:, r'DX: Diabetes Type 2'])).astype('int')
+
+    # baseline part have been binarized already
+    selected_cols = [x for x in df.columns if
+                     (x.startswith('dx-out@') or
+                      x.startswith('dxadd-out@') or
+                      x.startswith('dxbrainfog-out@') or
+                      x.startswith('covidmed-out@') or
+                      x.startswith('smm-out@')
+                      )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
+    df.loc[df['death t2e'] < 0, 'death'] = 0
+
     df['gestational age at delivery'] = np.nan
     df['gestational age of infection'] = np.nan
     df['preterm birth'] = np.nan
@@ -53,6 +77,12 @@ def add_col(df):
             (df['flag_delivery_type_Spontaneous'] + df['flag_delivery_type_Vaginal']) >= 1).astype('int')
     df['flag_delivery_type_Cesarean-Operative'] = (
             (df['flag_delivery_type_Cesarean'] + df['flag_delivery_type_Operative']) >= 1).astype('int')
+
+    df['cci_quan:0'] = 0
+    df['cci_quan:1-2'] = 0
+    df['cci_quan:3-4'] = 0
+    df['cci_quan:5-10'] = 0
+    df['cci_quan:11+'] = 0
 
     for index, row in tqdm(df.iterrows(), total=len(df)):
         # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
@@ -67,6 +97,18 @@ def add_col(df):
         if pd.notna(index_date) and pd.notna(preg_date):
             infectage = (index_date - preg_date).days / 7
             df.loc[index, 'gestational age of infection'] = infectage
+
+        if row['score_cci_quan'] <= 0:
+            df.loc[index, 'cci_quan:0'] = 1
+        elif row['score_cci_quan'] <= 2:
+            df.loc[index, 'cci_quan:1-2'] = 1
+        elif row['score_cci_quan'] <= 4:
+            df.loc[index, 'cci_quan:3-4'] = 1
+        elif row['score_cci_quan'] <= 10:
+            df.loc[index, 'cci_quan:5-10'] = 1
+        elif row['score_cci_quan'] >= 11:
+            df.loc[index, 'cci_quan:11+'] = 1
+
     return df
 
 
@@ -96,7 +138,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         #                  parse_dates=['index date', 'flag_delivery_date', 'flag_pregnancy_start_date',
         #                               'flag_pregnancy_end_date'])
         # print('read file:', data_file, df.shape)
-        df1, df2 = utils.load(r'../iptw/_selected_preg_cohort_1-2.pkl')
+        df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
         df_pos = add_col(df1)
         df_neg = add_col(df2)
         df = pd.concat([df_pos, df_neg], ignore_index=True)
@@ -104,7 +146,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'flag_pregnancy'
         # df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         # df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec1.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5.xlsx'
         output_columns = ['All', 'COVID Positive Pregnant', 'COVID Positive Non-Pregnant', 'SMD']
 
     else:
@@ -183,7 +225,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
          for c in age_col])
 
     # gestational age
-    row_names.append('Gestational age (IQR) — yr')
+    row_names.append('Gestational age (IQR) — weeks')
     records.append([])
     ges_age_col = ['gestational age at delivery', 'gestational age of infection']
     row_names.extend(ges_age_col)
@@ -472,6 +514,15 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     row_names.extend(col_names_out)
     records.extend(
         [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+         for c in col_names])
+    row_names.append('CCI Scode — no. (%)')
+    records.append([])
+
+    col_names = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+    col_names_out = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+    row_names.extend(col_names_out)
+    records.extend(
+        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in col_names])
 
     df_out = pd.DataFrame(records, columns=output_columns, index=row_names)

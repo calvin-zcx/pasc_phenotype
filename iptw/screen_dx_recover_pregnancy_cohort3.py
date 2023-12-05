@@ -47,7 +47,7 @@ def parse_args():
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
-    parser.add_argument("--kmatch", type=int, default=5)
+    parser.add_argument("--kmatch", type=int, default=1)
     args = parser.parse_args()
 
     # More args
@@ -253,6 +253,8 @@ def select_subpopulation(df, severity):
 
 
 def more_ec_for_cohort_selection(df):
+    print('more_ec_for_cohort_selection, df.shape', df.shape)
+    start_time = time.time()
     print('*' * 100)
     print('in more_ec_for_cohort_selection, len(df)', len(df))
     print('Applying more specific/flexible eligibility criteria for cohort selection')
@@ -304,7 +306,8 @@ def more_ec_for_cohort_selection(df):
     df2 = df.loc[(df['flag_pregnancy'] == 0) & (df['flag_exclusion'] == 0), :].copy()
     print('After selecting non-pregnant female, len(df2)', len(df2))
     print('*' * 100)
-
+    print('more_ec_for_cohort_selection Done! Time used:',
+          time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df_general, df1, df2
 
 
@@ -365,9 +368,19 @@ def build_matched_control(df_case, df_contrl, kmatche=1):
     #           "DX: Congestive Heart Failure", "DX: End Stage Renal Disease on Dialysis",
     #           "DX: Hypertension", "DX: Pregnant",
     #           ]
+    dx_col = ["DX: Anemia",
+              "DX: Cancer",
+              "DX: Chronic Kidney Disease",
+              "DX: Diabetes Type 2",
+              "DX: Hypertension",
+              'DX: Obstructive sleep apnea',
+              "MEDICATION: Corticosteroids",
+              "MEDICATION: Immunosuppressant drug",
+              ]
 
+    cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
-    cols_to_match = ['pcornet', ] + age_col + period_col + acute_col
+    cols_to_match = ['pcornet', ] + age_col + period_col + acute_col + dx_col
 
     ctrl_list = exact_match_on(df_case, df_contrl, kmatche, cols_to_match, )
 
@@ -435,6 +448,92 @@ def add_any_pasc(df, exclude_list=[]):
     return df
 
 
+def feature_process_additional(df):
+    print('feature_process_additional, df.shape', df.shape)
+    start_time = time.time()
+    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
+    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
+    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    df['Type 1 or 2 Diabetes Diagnosis'] = (
+            ((df["DX: Diabetes Type 1"] >= 1).astype('int') + (df["DX: Diabetes Type 2"] >= 1).astype('int')) >= 1
+    ).astype('int')
+
+    df.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
+        ((df.loc[:, r'DX: Hypertension'] >= 1) & (
+                (df.loc[:, r'DX: Diabetes Type 1'] >= 1) | (df.loc[:, r'DX: Diabetes Type 2'] >= 1))).astype('int')
+
+    # Baseline covs
+    selected_cols = [x for x in df.columns if (
+            x.startswith('DX:') or
+            x.startswith('MEDICATION:') or
+            x.startswith('CCI:') or
+            x.startswith('obc:')
+    )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    # Incident outcome part - baseline part have been binarized already
+    selected_cols = [x for x in df.columns if
+                     (x.startswith('dx-out@') or
+                      x.startswith('dxadd-out@') or
+                      x.startswith('dxbrainfog-out@') or
+                      x.startswith('covidmed-out@') or
+                      x.startswith('smm-out@')
+                      )]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
+    df.loc[df['death t2e'] < 0, 'death'] = 0
+
+    df['gestational age at delivery'] = np.nan
+    df['gestational age of infection'] = np.nan
+    df['preterm birth'] = np.nan
+
+    # ['flag_delivery_type_Spontaneous', 'flag_delivery_type_Cesarean',
+    # 'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal', 'flag_delivery_type_other-unsepc',]
+    df['flag_delivery_type_other-unsepc'] = (
+            (df['flag_delivery_type_Other'] + df['flag_delivery_type_Unspecified']) >= 1).astype('int')
+    df['flag_delivery_type_Vaginal-Spontaneous'] = (
+            (df['flag_delivery_type_Spontaneous'] + df['flag_delivery_type_Vaginal']) >= 1).astype('int')
+    df['flag_delivery_type_Cesarean-Operative'] = (
+            (df['flag_delivery_type_Cesarean'] + df['flag_delivery_type_Operative']) >= 1).astype('int')
+
+    df['cci_quan:0'] = 0
+    df['cci_quan:1-2'] = 0
+    df['cci_quan:3-4'] = 0
+    df['cci_quan:5-10'] = 0
+    df['cci_quan:11+'] = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
+        index_date = row['index date']
+        del_date = row['flag_delivery_date']
+        preg_date = row['flag_pregnancy_start_date']
+        if pd.notna(del_date) and pd.notna(preg_date):
+            gesage = (del_date - preg_date).days / 7
+            df.loc[index, 'gestational age at delivery'] = gesage
+            df.loc[index, 'preterm birth'] = int(gesage < 37)
+
+        if pd.notna(index_date) and pd.notna(preg_date):
+            infectage = (index_date - preg_date).days / 7
+            df.loc[index, 'gestational age of infection'] = infectage
+
+        if row['score_cci_quan'] <= 0:
+            df.loc[index, 'cci_quan:0'] = 1
+        elif row['score_cci_quan'] <= 2:
+            df.loc[index, 'cci_quan:1-2'] = 1
+        elif row['score_cci_quan'] <= 4:
+            df.loc[index, 'cci_quan:3-4'] = 1
+        elif row['score_cci_quan'] <= 10:
+            df.loc[index, 'cci_quan:5-10'] = 1
+        elif row['score_cci_quan'] >= 11:
+            df.loc[index, 'cci_quan:11+'] = 1
+
+    print('feature_process_additional Done! Time used:',
+          time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df
+
+
 if __name__ == "__main__":
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5.txt
@@ -453,30 +552,30 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     print('In cohorts_characterization_build_data...')
 
-    if args.site == 'all':
-        sites = ['ochin',
-                 'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
-                 'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh', 'emory', 'usf', 'nch', 'miami',
-                 'pitt', 'osu', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf', 'lsu',
-                 'vumc', 'duke', 'musc']
-
-        df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
-        _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
-        site_network = {x[0].strip(): x[1].strip() for x in _site_network}
-        # sites = ['wcm', 'montefiore', 'mshs', ]
-        # sites = ['wcm', ]
-        # sites = ['pitt', ]
-        print('len(sites), sites:', len(sites), sites)
-    else:
-        sites = [args.site, ]
-
-    df_info_list = []
-    df_label_list = []
-    df_covs_list = []
-    df_outcome_list = []
-
+    # if args.site == 'all':
+    #     sites = ['ochin',
+    #              'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
+    #              'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
+    #              'ufh', 'emory', 'usf', 'nch', 'miami',
+    #              'pitt', 'osu', 'psu', 'temple', 'michigan',
+    #              'ochsner', 'ucsf', 'lsu',
+    #              'vumc', 'duke', 'musc']
+    #
+    #     df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
+    #     _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
+    #     site_network = {x[0].strip(): x[1].strip() for x in _site_network}
+    #     # sites = ['wcm', 'montefiore', 'mshs', ]
+    #     # sites = ['wcm', ]
+    #     # sites = ['pitt', ]
+    #     print('len(sites), sites:', len(sites), sites)
+    # else:
+    #     sites = [args.site, ]
+    #
+    # df_info_list = []
+    # df_label_list = []
+    # df_covs_list = []
+    # df_outcome_list = []
+    #
     # df_list = []
     # for ith, site in tqdm(enumerate(sites), total=len(sites)):
     #     print('Loading: ', ith, site)
@@ -496,14 +595,6 @@ if __name__ == "__main__":
     #
     # # combine all sites and select subcohorts
     # df = pd.concat(df_list, ignore_index=True)
-    #
-    # df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
-    # print('Considering ICU (hospitalized ventilation or critical care) cohorts')
-    # df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
-    # print('Considering inpatient/hospitalized including icu cohorts')
-    # df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
-    # print('Considering outpatient cohorts')
-    # df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
     #
     # # print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
     # print(r"df['site'].value_counts()", df['site'].value_counts())
@@ -529,7 +620,13 @@ if __name__ == "__main__":
     # df = select_subpopulation(df, args.severity)
     # df_general, df1, df2 = more_ec_for_cohort_selection(df)
     #
-    # utils.dump((df1, df2), './_selected_preg_cohort_1-2.pkl')
+    # df1 = feature_process_additional(df1)
+    # df2 = feature_process_additional(df2)
+    #
+    # utils.check_and_mkdir(r'../data/recover/output/pregnancy_output/')
+    # df1.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_pregnant.csv')
+    # df2.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_Non-pregnant.csv')
+    # utils.dump((df1, df2), r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     #
     # print('Severity cohorts:', args.severity,
     #       'df.shape:', df.shape,
@@ -540,12 +637,14 @@ if __name__ == "__main__":
     #
     # zz
 
-    df1, df2 = utils.load('./_selected_preg_cohort_1-2.pkl')
+    df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     print(r"df1['site'].value_counts()", df1['site'].value_counts())
+    print('len(df1)', len(df1), 'len(df2)', len(df2))
 
     print('Build matched cohort, kmatch:', args.kmatch)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch)
-    utils.dump(df2_matched, './_selected_preg_cohort2-matched-k{}.pkl'.format(args.kmatch))
+    utils.dump(df2_matched,
+               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}.pkl'.format(args.kmatch))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     zz
