@@ -47,7 +47,10 @@ def parse_args():
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
+
     parser.add_argument("--kmatch", type=int, default=1)
+    parser.add_argument("--usedx", type=int, default=1)
+
     args = parser.parse_args()
 
     # More args
@@ -312,6 +315,7 @@ def more_ec_for_cohort_selection(df):
 
 
 def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
+    print('Matched on columns:', cols_to_match)
     print('len(case)', len(df_case), 'len(ctrl)', len(df_ctrl))
     ctrl_list = []
     n_no_match = 0
@@ -348,7 +352,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
     return ctrl_list
 
 
-def build_matched_control(df_case, df_contrl, kmatche=1):
+def build_matched_control(df_case, df_contrl, kmatche=1, usedx=True):
     age_col = ['pregage:18-<25 years',
                'pregage:25-<30 years',
                'pregage:30-<35 years',
@@ -380,9 +384,11 @@ def build_matched_control(df_case, df_contrl, kmatche=1):
 
     cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
-    cols_to_match = ['pcornet', ] + age_col + period_col + acute_col + dx_col
+    cols_to_match = ['pcornet', ] + age_col + period_col + acute_col
+    if usedx:
+        cols_to_match += dx_col
 
-    ctrl_list = exact_match_on(df_case, df_contrl, kmatche, cols_to_match, )
+    ctrl_list = exact_match_on(df_case.copy(), df_contrl.copy(), kmatche, cols_to_match, )
 
     print('len(ctrl_list)', len(ctrl_list))
     neg_selected = pd.Series(False, index=df_contrl.index)
@@ -391,7 +397,7 @@ def build_matched_control(df_case, df_contrl, kmatche=1):
     print('len(df_case):', len(df_case),
           'len(df_contrl):', len(df_contrl),
           'len(df_ctrl_matched):', len(df_ctrl_matched), )
-    return df_ctrl_matched
+    return df_ctrl_matched.copy()
 
 
 def add_any_pasc(df, exclude_list=[]):
@@ -535,9 +541,12 @@ def feature_process_additional(df):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx0.txt
 
     start_time = time.time()
     args = parse_args()
@@ -642,9 +651,10 @@ if __name__ == "__main__":
     print('len(df1)', len(df1), 'len(df2)', len(df2))
 
     print('Build matched cohort, kmatch:', args.kmatch)
-    df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch)
+    df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch, usedx=args.usedx)
     utils.dump(df2_matched,
-               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}.pkl'.format(args.kmatch))
+               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx{}.pkl'.format(
+                   args.kmatch, args.usedx))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     zz
