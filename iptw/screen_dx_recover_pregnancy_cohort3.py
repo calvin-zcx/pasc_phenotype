@@ -558,10 +558,10 @@ def feature_process_additional(df):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-usedx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-useSelectdx1.txt
 
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx0.txt
     # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-usedx0.txt
@@ -581,90 +581,91 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     print('In cohorts_characterization_build_data...')
 
-    if args.site == 'all':
-        sites = ['ochin',
-                 'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
-                 'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-                 'ufh', 'emory', 'usf', 'nch', 'miami',
-                 'pitt', 'osu', 'psu', 'temple', 'michigan',
-                 'ochsner', 'ucsf', 'lsu',
-                 'vumc', 'duke', 'musc']
-
-        df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
-        _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
-        site_network = {x[0].strip(): x[1].strip() for x in _site_network}
-        # sites = ['wcm', 'montefiore', 'mshs', ]
-        # sites = ['wcm', ]
-        # sites = ['pitt', ]
-        print('len(sites), sites:', len(sites), sites)
-    else:
-        sites = [args.site, ]
-
-    df_info_list = []
-    df_label_list = []
-    df_covs_list = []
-    df_outcome_list = []
-
-    df_list = []
-    for ith, site in tqdm(enumerate(sites), total=len(sites)):
-        print('Loading: ', ith, site)
-        # matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_mshs + pregnancy tag afterwards
-        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
-        # Load Covariates Data
-        print('Load data covariates file:', data_file)
-        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                         parse_dates=['index date', 'dob',
-                                      'flag_delivery_date',
-                                      'flag_pregnancy_start_date',
-                                      'flag_pregnancy_end_date'])
-        # because a patid id may occur in multiple sites. patid were site specific
-        df['pcornet'] = site_network[site]
-        print('df.shape:', df.shape)
-        df_list.append(df)
-
-    # combine all sites and select subcohorts
-    df = pd.concat(df_list, ignore_index=True)
-
-    # print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
-    print(r"df['site'].value_counts()", df['site'].value_counts())
-    print('over all: df.shape:', df.shape)
-    print('Pregnant in all:',
-          len(df),
-          df['flag_pregnancy'].sum(),
-          df['flag_pregnancy'].mean())
-    print('Pregnant in pos:',
-          len(df.loc[df['covid'] == 1, :]),
-          df.loc[df['covid'] == 1, 'flag_pregnancy'].sum(),
-          df.loc[df['covid'] == 1, 'flag_pregnancy'].mean())
-    print('Pregnant in neg:',
-          len(df.loc[df['covid'] == 0, :]),
-          df.loc[df['covid'] == 0, 'flag_pregnancy'].sum(),
-          df.loc[df['covid'] == 0, 'flag_pregnancy'].mean())
-    print('Pregnant excluded special cases in all:',
-          len(df),
-          df['flag_exclusion'].sum(),
-          df['flag_exclusion'].mean())
-
-    # %% 2. Cohort building
-    df = select_subpopulation(df, args.severity)
-    df_general, df1, df2 = more_ec_for_cohort_selection(df)
-
-    df1 = feature_process_additional(df1)
-    df2 = feature_process_additional(df2)
-
-    utils.check_and_mkdir(r'../data/recover/output/pregnancy_output/')
-    df1.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_pregnant.csv')
-    df2.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_Non-pregnant.csv')
-    utils.dump((df1, df2), r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
-
-    print('Severity cohorts:', args.severity,
-          'df.shape:', df.shape,
-          'df_general.shape:', df_general.shape,
-          'df1.shape:', df1.shape,
-          'df2.shape:', df2.shape,
-          )
-
-    zz
+    # if args.site == 'all':
+    #     sites = ['ochin',
+    #              'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
+    #              'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
+    #              'ufh', 'emory', 'usf', 'nch', 'miami',
+    #              'pitt', 'osu', 'psu', 'temple', 'michigan',
+    #              'ochsner', 'ucsf', 'lsu',
+    #              'vumc', 'duke', 'musc']
+    #
+    #     df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
+    #     _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
+    #     site_network = {x[0].strip(): x[1].strip() for x in _site_network}
+    #     # sites = ['wcm', 'montefiore', 'mshs', ]
+    #     # sites = ['wcm', ]
+    #     # sites = ['pitt', ]
+    #     print('len(sites), sites:', len(sites), sites)
+    # else:
+    #     sites = [args.site, ]
+    #
+    # df_info_list = []
+    # df_label_list = []
+    # df_covs_list = []
+    # df_outcome_list = []
+    #
+    # df_list = []
+    # for ith, site in tqdm(enumerate(sites), total=len(sites)):
+    #     print('Loading: ', ith, site)
+    #     # matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_mshs + pregnancy tag afterwards
+    #     data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+    #     # Load Covariates Data
+    #     print('Load data covariates file:', data_file)
+    #     df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
+    #                      parse_dates=['index date', 'dob',
+    #                                   'flag_delivery_date',
+    #                                   'flag_pregnancy_start_date',
+    #                                   'flag_pregnancy_end_date'])
+    #     # because a patid id may occur in multiple sites. patid were site specific
+    #     df['pcornet'] = site_network[site]
+    #     print('df.shape:', df.shape)
+    #     df_list.append(df)
+    #
+    # # combine all sites and select subcohorts
+    # df = pd.concat(df_list, ignore_index=True)
+    #
+    # # print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
+    # print(r"df['site'].value_counts()", df['site'].value_counts())
+    # print('over all: df.shape:', df.shape)
+    # print('Pregnant in all:',
+    #       len(df),
+    #       df['flag_pregnancy'].sum(),
+    #       df['flag_pregnancy'].mean())
+    # print('Pregnant in pos:',
+    #       len(df.loc[df['covid'] == 1, :]),
+    #       df.loc[df['covid'] == 1, 'flag_pregnancy'].sum(),
+    #       df.loc[df['covid'] == 1, 'flag_pregnancy'].mean())
+    # print('Pregnant in neg:',
+    #       len(df.loc[df['covid'] == 0, :]),
+    #       df.loc[df['covid'] == 0, 'flag_pregnancy'].sum(),
+    #       df.loc[df['covid'] == 0, 'flag_pregnancy'].mean())
+    # print('Pregnant excluded special cases in all:',
+    #       len(df),
+    #       df['flag_exclusion'].sum(),
+    #       df['flag_exclusion'].mean())
+    #
+    # # %% 2. Cohort building
+    # df = select_subpopulation(df, args.severity)
+    # df_general, df1, df2 = more_ec_for_cohort_selection(df)
+    #
+    # df1 = feature_process_additional(df1)
+    # df2 = feature_process_additional(df2)
+    #
+    # utils.check_and_mkdir(r'../data/recover/output/pregnancy_output/')
+    # df1.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_pregnant.csv')
+    # df2.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_Non-pregnant.csv')
+    # utils.dump((df1, df2), r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
+    #
+    # print('Severity cohorts:', args.severity,
+    #       'df.shape:', df.shape,
+    #       'df_general.shape:', df_general.shape,
+    #       'df1.shape:', df1.shape,
+    #       'df2.shape:', df2.shape,
+    #       )
+    # print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    #
+    # zz
 
     df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     print(r"df1['site'].value_counts()", df1['site'].value_counts())
@@ -673,7 +674,7 @@ if __name__ == "__main__":
     print('Build matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch, usedx=args.usedx)
     utils.dump(df2_matched,
-               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx{}.pkl'.format(
+               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}.pkl'.format(
                    args.kmatch, args.usedx))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 

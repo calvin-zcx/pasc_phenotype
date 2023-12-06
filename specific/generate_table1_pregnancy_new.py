@@ -146,7 +146,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         pcol = 'flag_pregnancy'
         # df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         # df_neg = df.loc[df["flag_pregnancy"] == 0, :]
-        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5-4added.xlsx'
         output_columns = ['All', 'COVID Positive Pregnant', 'COVID Positive Non-Pregnant', 'SMD']
 
     else:
@@ -463,7 +463,10 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         'CCI:Paraplegia and Hemiplegia',
         'CCI:Renal Disease', 'CCI:Cancer', 'CCI:Moderate or Severe Liver Disease', 'CCI:Metastatic Carcinoma',
         'CCI:AIDS/HIV',
-        ]
+        ] + [
+              "autoimmune/immune suppression",
+              "Severe Obesity",
+              ]
 
     col_names_out = ["Alcohol Abuse", "Anemia", "Arrythmia", "Asthma", "Cancer",
                      "Chronic Kidney Disease", "Chronic Pulmonary Disorders", "Cirrhosis",
@@ -503,7 +506,11 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         'CCI:Paraplegia and Hemiplegia',
         'CCI:Renal Disease', 'CCI:Cancer', 'CCI:Moderate or Severe Liver Disease', 'CCI:Metastatic Carcinoma',
         'CCI:AIDS/HIV',
-        ]
+        ] + [
+              "autoimmune/immune suppression",
+              "Severe Obesity",
+              ]
+
     row_names.extend(col_names_out)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
