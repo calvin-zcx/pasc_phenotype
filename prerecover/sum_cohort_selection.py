@@ -68,6 +68,33 @@ def before_2023_2_23():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
+def before_20231207():
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('len(site_list)', len(site_list), site_list)
+
+    vdfec = []
+    for i, site in tqdm(enumerate(site_list)):
+        print(i, site)
+        try:
+            df_ec = pd.read_csv(
+                r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2age18_{}_info.csv'.format(site, site))
+            df_ec['n_site'] = 1
+            vdfec.append(df_ec)
+
+        except Exception as e:
+            print('[ERROR:]', e, file=sys.stderr)
+            continue
+    dfec_sum = reduce(lambda x, y: x.add(y, fill_value=0), vdfec)
+    print(dfec_sum)
+    dfec_sum.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2age18_all_info.csv')
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
 if __name__ == '__main__':
     start_time = time.time()
 
@@ -80,7 +107,7 @@ if __name__ == '__main__':
     for i, site in tqdm(enumerate(site_list)):
         print(i, site)
         try:
-            df_ec = pd.read_csv(r'../data/recover/output/{}/cohorts_covid_4manuNegNoCovidV2age18_{}_info.csv'.format(site, site))
+            df_ec = pd.read_csv(r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}_info.csv'.format(site, site))
             df_ec['n_site'] = 1
             vdfec.append(df_ec)
 
@@ -89,7 +116,7 @@ if __name__ == '__main__':
             continue
     dfec_sum = reduce(lambda x, y: x.add(y, fill_value=0), vdfec)
     print(dfec_sum)
-    dfec_sum.to_csv(r'output/cohorts_covid_4manuNegNoCovidV2age18_all_info.csv')
+    dfec_sum.to_csv(r'output/cohorts_covid_posOnly18base_all_info-20231207.csv')
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 

@@ -522,7 +522,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     records.extend(
         [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in col_names])
-    row_names.append('CCI Scode — no. (%)')
+    row_names.append('CCI Score — no. (%)')
     records.append([])
 
     col_names = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
