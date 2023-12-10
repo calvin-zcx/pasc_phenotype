@@ -147,7 +147,7 @@ def add_col(df):
 
         # adi use mine later, not transform here, add missing
 
-        # monthly changes, add later
+        # monthly changes, add later. Already there
 
     return df
 
