@@ -274,10 +274,10 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # %% Step 1. Load  Data
-    df1 = pd.read_csv('recover29Nov27_covid_pos-ECselectedTreated_addCFR.csv',
+    df1 = pd.read_csv('recover29Nov27_covid_pos_addCFR-ECselectedTreated_addCFR.csv',
                       dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date', 'dob'])
-    df2 = pd.read_csv('recover29Nov27_covid_pos-ECselectedControl_addCFR.csv',
+    df2 = pd.read_csv('recover29Nov27_covid_pos_addCFR-ECselectedControl_addCFR.csv',
                       dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date', 'dob'])
     df = pd.concat([df1, df2], ignore_index=True)
