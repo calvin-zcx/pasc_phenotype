@@ -1143,6 +1143,50 @@ def ICD_to_PASC_brainfog():
     return icd_cci, cci_index, dict_df_cci
 
 
+def ICD_to_PASC_cognitive_fatigue_respiratory():
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/global_burden_Cognitive_Fatigue_Respiratory.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file,
+                                 dtype=str,
+                                 sheet_name='Sheet1')
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    df_pasc_list['ICD-10-CM CODE'] = df_pasc_list['ICD-10-CM CODE'].apply(lambda x: x.strip().strip(r'\'').upper().replace('.', ''))
+    pasc_codes = df_pasc_list['ICD-10-CM CODE']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        category = row['Symptom cluster']
+        icd = row['ICD-10-CM CODE']
+        icd_name = row['ICD-10-CM CODE DESCRIPTION']
+        icd_pasc[icd] = [category, icd, icd_name]
+
+    df_dim = df_pasc_list['Symptom cluster'].value_counts(sort=False).reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_cognitive-fatigue-respiratory_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/cognitive-fatigue-respiratory_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
 def load_cdc_mapping():
     # input_file = r'../data/mapping/CDC_COVIDv22_CodeList_v1.xlsx'
     # change at 2022-5-24, Add DX: Obstructive sleep apnea <----> OSA
@@ -1629,20 +1673,22 @@ if __name__ == '__main__':
     # 3. Build zip5/9 to adi mapping
     # zip_adi, zip5_df = zip_adi_mapping_2020()
     # zip_adi, zip5_df = zip_adi_mapping_2021()
-    zip_adi, fips_adi, fips_zip, zip5_df = zip_fips_adi_mapping_2020()
+    # zip_adi, fips_adi, fips_zip, zip5_df = zip_fips_adi_mapping_2020() # updated use geocode for ADI
 
     # 4. Build ICD10 to CCSR mapping
     # icd_ccsr, ccsr_index, ccsr_df = ICD10_to_CCSR()
 
     # 5. Build ICD10 to elixhauser_comorbidity
-    icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
+    # icd_cmr, cmr_index, df_cmr = ICD_to_elixhauser_comorbidity()
 
     # 6. Build ICD10 to pasc
     # icd_pasc, pasc_index, df_pasc = ICD_to_PASC()
     # updated: 2023-11-9 to add more fine grained/selected categories
     # use other function/dimensions, instead of changing existing codes--> list of list, supporting overlapped categories,
+
     # icd_addedPASC, addedPASC_index, df_pasc = ICD_to_PASC_added_extension()
     # icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
+    icd_cfr, cfr_index, dict_df_cfr = ICD_to_PASC_cognitive_fatigue_respiratory()
 
     # zz
 
