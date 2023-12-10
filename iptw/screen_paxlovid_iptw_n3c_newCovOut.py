@@ -268,9 +268,9 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # %% Step 1. Load  Data
-    df1 = pd.read_csv('recover29Nov27_covid_pos-ECselectedTreated.csv', dtype={'patid': str, 'site': str, 'zip': str},
+    df1 = pd.read_csv('recover29Nov27_covid_pos-ECselectedTreated_addCFR.csv', dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date', 'dob'])
-    df2 = pd.read_csv('recover29Nov27_covid_pos-ECselectedControl.csv', dtype={'patid': str, 'site': str, 'zip': str},
+    df2 = pd.read_csv('recover29Nov27_covid_pos-ECselectedControl_addCFR.csv', dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date', 'dob'])
     df = pd.concat([df1, df2], ignore_index=True)
     print('treated df1.shape', df1.shape,
