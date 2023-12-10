@@ -1491,7 +1491,7 @@ def build_feature_matrix(args):
 
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_bool, dx_count_df, med_count_df
+    return df_bool #, dx_count_df, med_count_df
 
 
 def cohorts_characterization_analyse(cohorts, dataset='ALL', severity=''):
@@ -2344,7 +2344,7 @@ if __name__ == '__main__':
     #
     start_time = time.time()
     args = parse_args()
-    df_data_bool, dx_count_df, med_count_df = build_feature_matrix(args)
+    df_data_bool = build_feature_matrix(args)  # , dx_count_df, med_count_df
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
     # df_data = pd.read_csv(in_file, dtype={'patid': str}, parse_dates=['index date'])
