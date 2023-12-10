@@ -360,19 +360,20 @@ if __name__ == "__main__":
         df = df.loc[df['covid'] == 1, :].copy()
 
         print('covid+: df.shape:', df.shape)
+        out_data_file = 'recover29Nov27_covid_pos_addCFR.csv'
         # df.to_csv('recoverINSIGHT5Nov27_covid_pos.csv')
-        df.to_csv('recover29Nov27_covid_pos_addCFR.csv')
+        df.to_csv(out_data_file)
         print('dump done!')
     else:
-        data_file = 'recover29Nov27_covid_pos_addCFR.csv'
-        # data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
-        print('Load data covariates file:', data_file)
-        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
+        out_data_file = 'recover29Nov27_covid_pos_addCFR.csv'
+        # out_data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
+        print('Load data covariates file:', out_data_file)
+        df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
         # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
         print('df.shape:', df.shape)
 
         des = df.describe()
-        des.transpose().to_csv(data_file + 'describe.csv')
+        des.transpose().to_csv(out_data_file + 'describe.csv')
 
 
     # pre-process data a little bit
@@ -388,8 +389,8 @@ if __name__ == "__main__":
     df_treat['treated'] = 1
     df_control['treated'] = 0
     print('len(df_treat)', len(df_treat), 'len(df_control)', len(df_control))
-    df_treat.to_csv(data_file.replace('.csv', '-ECselectedTreated_addCFR.csv'))
-    df_control.to_csv(data_file.replace('.csv', '-ECselectedControl_addCFR.csv'))
+    df_treat.to_csv(out_data_file.replace('.csv', '-ECselectedTreated_addCFR.csv'))
+    df_control.to_csv(out_data_file.replace('.csv', '-ECselectedControl_addCFR.csv'))
 
     # should build two cohorts:
     # 1 trial emulation -- ec
