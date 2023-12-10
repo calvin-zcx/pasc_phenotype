@@ -13,6 +13,8 @@ from misc.utils import check_and_mkdir
 import pickle
 import os
 from lifelines.plotting import add_at_risk_counts
+import seaborn as sns
+from matplotlib import ticker as mplticker
 
 # Define unbalanced threshold, where SMD > SMD_THRESHOLD are defined as unbalanced features
 SMD_THRESHOLD = 0.1
@@ -532,6 +534,9 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
 
     if fig_outfile:
+        with open(fig_outfile.replace('-km.png', '-cumIncidence-ajf1w-ajf0w.pkl'), 'wb') as f:
+            pickle.dump((ajf1w, ajf0w), f)  #
+
         ax = plt.subplot(111)
         # ajf1.plot(ax=ax)
         ajf1w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))  # 0, 180
