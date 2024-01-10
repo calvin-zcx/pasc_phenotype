@@ -325,7 +325,7 @@ def table1_cohorts_characterization_analyse():
     row_names.append('Age group — no. (%)')
     records.append([])
 
-    age_col = ['age18-24', 'age15-34', 'age35-49', 'age50-64' 'age65+']
+    age_col = ['age18-24', 'age25-34', 'age35-49', 'age50-64' 'age65+']
     row_names.extend(age_col)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
