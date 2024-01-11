@@ -611,6 +611,36 @@ if __name__ == "__main__":
           'len(df2)', len(df2),
           'len(df2_matched)', len(df2_matched))
 
+    print('df1.shape', df1.shape,
+          'df2.shape', df2.shape,
+          'df2_matched.shape', df2_matched.shape)
+
+    if args.usedx == 0:
+        col1_add = "autoimmune/immune suppression"
+        df_col1_add = (
+                (df2_matched['DX: Inflammatory Bowel Disorder'] >= 1) | (
+                df2_matched['DX: Lupus or Systemic Lupus Erythematosus'] >= 1) |
+                (df2_matched['DX: Rheumatoid Arthritis'] >= 1) |
+                (df2_matched["MEDICATION: Corticosteroids"] >= 1) | (
+                        df2_matched["MEDICATION: Immunosuppressant drug"] >= 1)
+        ).astype('int')
+
+        col2_add = "Severe Obesity"
+        df_col2_add = ((df2_matched["DX: Severe Obesity  (BMI>=40 kg/m2)"] >= 1) | (df2_matched['bmi'] >= 40)).astype(
+            'int')
+
+        if col1_add not in df2_matched.columns:
+            df2_matched.insert(df2_matched.columns.get_loc('gestational age at delivery'),
+                               col1_add, df_col1_add)
+        if col2_add not in df2_matched.columns:
+            df2_matched.insert(df2_matched.columns.get_loc('gestational age at delivery'),
+                               col2_add, df_col2_add)
+
+        print('After adding columns',
+              'df1.shape', df1.shape,
+              'df2.shape', df2.shape,
+              'df2_matched.shape', df2_matched.shape)
+
     # ## step 1.5 add CFR columns, also need boolean operations!
     df_add = pd.read_csv('recover29Nov27_covid_pos_addCFR_only_4_pregnancy.csv',
                          dtype={'patid': str, 'site': str})
@@ -907,7 +937,6 @@ if __name__ == "__main__":
         print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
               'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
-
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
         # Select negative: pos : neg = 1:2 for IPTW
@@ -951,7 +980,6 @@ if __name__ == "__main__":
         #     'C': 0.03162277660168379,
         #     'max_iter': 200,
         #     'random_state': 0}
-
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
             'C': 10 ** np.arange(-2, 1.5, 0.5),
