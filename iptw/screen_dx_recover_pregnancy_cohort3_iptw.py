@@ -310,10 +310,11 @@ def more_ec_for_cohort_selection(df):
     print('After selecting non-pregnant female, len(df2)', len(df2))
 
     # group3: pregnant but with ectopic/abortions/etc not expected delivery outcome, should be combined with pregnant group?
-    print('Branch-3, building pregnant but with ectopic/abortions/etc not expected delivery outcome, might be combined with group1')
+    print(
+        'Branch-3, building pregnant but with ectopic/abortions/etc not expected delivery outcome, might be combined with group1')
     print('Before selecting, len(df)', len(df))
     df3 = df.loc[(df['flag_exclusion'] == 1), :].copy()
-    print('After selecting error-pregnant female, len(df3)', len(df3)) # 391
+    print('After selecting error-pregnant female, len(df3)', len(df3))  # 391
     ## currently not implement flag_pregnancy_start_date for Pregnancy with abortive outcome
     # df3 = df3.loc[(df3['index date'] >= df3['flag_pregnancy_start_date'] - datetime.timedelta(days=7)) & (
     #         df3['index date'] <= df3['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
@@ -569,15 +570,15 @@ def feature_process_additional(df):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-useSelectdx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-useSelectdx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-useSelectdx1.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 1 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch1-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 3 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch3-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 5 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch5-useSelectdx1.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 10 --usedx 1 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch10-useSelectdx1.txt
 
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 1 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch1-usedx0.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 3 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch3-usedx0.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 5 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch5-usedx0.txt
-    # python screen_dx_recover_pregnancy_cohort3.py --site all --severity all --kmatch 10 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_kmatch10-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 1 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch1-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 3 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch3-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 5 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch5-usedx0.txt
+    # python screen_dx_recover_pregnancy_cohort3_iptw.py --site all --severity all --kmatch 10 --usedx 0 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_kmatch10-usedx0.txt
 
     start_time = time.time()
     args = parse_args()
@@ -591,103 +592,226 @@ if __name__ == "__main__":
     # step 0: preprocess and dump data, in another file
 
     # step 1: load data
+    print('Step 1: load data')
     df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     print('Select matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx)
-    match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}.pkl'.format(
+
+    if args.usedx == 0:
+        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx0.pkl'.format(
+            args.kmatch)
+    elif args.usedx > 0:
+        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}.pkl'.format(
             args.kmatch, args.usedx)
+    else:
+        raise ValueError
+
     print('load matched file:', match_file_name)
     df2_matched = utils.load(match_file_name)
     print('len(df1)', len(df1),
           'len(df2)', len(df2),
           'len(df2_matched)', len(df2_matched))
 
-    zz
+    # ## step 1.5 add CFR columns, also need boolean operations!
+    df_add = pd.read_csv('recover29Nov27_covid_pos_addCFR_only_4_pregnancy.csv',
+                         dtype={'patid': str, 'site': str})
+    print('df1.shape:', df1.shape)
+    df1 = pd.merge(df1, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
+                   suffixes=('', '_y'), )
+    print('after merge CFR columns, df1.shape:', df1.shape)
+
+    print('df2.shape:', df2.shape)
+    df2 = pd.merge(df2, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
+                   suffixes=('', '_y'), )
+    print('after merge CFR columns, df2.shape:', df2.shape)
+
+    print('df2_matched.shape:', df2_matched.shape)
+    df2_matched = pd.merge(df2_matched, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
+                           suffixes=('', '_y'), )
+    print('after merge CFR columns, df2_matched.shape:', df2_matched.shape)
+
+    # _col_check = pd.DataFrame(df1.columns).to_csv('preg_col_check.csv')
+
     # combine df1 and df2 into df
-    df = pd.concat([df1, df2], ignore_index=True)
-    # df['11/22-02/23'] = ((df["YM: November 2022"] + df["YM: December 2022"] +
-    #                       df["YM: January 2023"] + df["YM: February 2023"]) >= 1).astype('int')
+    df = pd.concat([df1, df2_matched], ignore_index=True)
+
+    print('Before select_subpopulation, len(df)', len(df))
+    df = select_subpopulation(df, args.severity)
+    print('After select_subpopulation, len(df)', len(df))
+
+    # some additional feature processing
+    selected_cols = [x for x in df.columns if x.startswith('dxCFR-out@')]
+    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    # step 2: load and preprocess PASC info
+    print('Step 2: load and preprocess PASC info')
+    df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
+                                 sheet_name='diagnosis')
+    addedPASC_encoding = utils.load(r'../data/mapping/addedPASC_index_mapping.pkl')
+    addedPASC_list = list(addedPASC_encoding.keys())
+    brainfog_encoding = utils.load(r'../data/mapping/brainfog_index_mapping.pkl')
+    brainfog_list = list(brainfog_encoding.keys())
+
+    CFR_encoding = utils.load(r'../data/mapping/cognitive-fatigue-respiratory_index_mapping.pkl')
+    CFR_list = list(CFR_encoding.keys())
+
+    pasc_simname = {}
+    pasc_organ = {}
+    for index, rows in df_pasc_info.iterrows():
+        pasc_simname[rows['pasc']] = (rows['PASC Name Simple'], rows['Organ Domain'])
+        pasc_organ[rows['pasc']] = rows['Organ Domain']
+
+    for p in addedPASC_list:
+        pasc_simname[p] = (p, 'General-add')
+        pasc_organ[p] = 'General-add'
+
+    for p in brainfog_list:
+        pasc_simname[p] = (p, 'brainfog')
+        pasc_organ[p] = 'brainfog'
+
+    for p in CFR_list:
+        pasc_simname[p] = (p, 'cognitive-fatigue-respiratory')
+        pasc_organ[p] = 'cognitive-fatigue-respiratory'
+
+    # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
+    pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
+    _exclude_list = ['Pressure ulcer of skin', 'Anemia', ]
+    pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
+
+    pasc_add = ['smell and taste', ]
+    print('len(pasc_list)', len(pasc_list), 'len(pasc_add)', len(pasc_add))
+    print('pasc_list:', pasc_list)
+    print('pasc_add', pasc_add)
+
+    for p in pasc_list:
+        df[p + '_pasc_flag'] = 0
+    for p in pasc_add:
+        df[p + '_pasc_flag'] = 0
+
     # df = add_any_pasc(df, exclude_list=['Anemia',
     #                                     'Acute phlebitis; thrombophlebitis and thromboembolism',
     #                                     'Acute pulmonary embolism'])
 
     # reuse pasc select command
     # also add or revised some covs, e.g. pre-di cov is wrong if follow dx
-    df = add_any_pasc(df, exclude_list=['Anemia', ])
+    # df = add_any_pasc(df, exclude_list=['Anemia', ])
 
-    # df.to_csv('pos_preg_femalenot_pitt.csv')
-    # df.to_csv('pos_preg_femalenot.csv')
-    # zz
-    # 'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids'
-    print('Severity cohorts:', args.severity,
-          'df1.shape:', df1.shape,
-          'df2.shape:', df2.shape,
-          'df.shape:', df.shape,
-          )
+    df['any_pasc_flag'] = 0
+    df['any_pasc_type'] = np.nan
+    df['any_pasc_t2e'] = 180  # np.nan
+    df['any_pasc_txt'] = ''
+    df['any_pasc_baseline'] = 0  # placeholder for screening, no special meaning, null column
+    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
+        # for any 1 pasc
+        t2e_list = []
+        pasc_1_list = []
+        pasc_1_name = []
+        pasc_1_text = ''
+        for p in pasc_list:
+            if (rows['dx-out@' + p] > 0) and (rows['dx-base@' + p] == 0):
+                t2e_list.append(rows['dx-t2e@' + p])
+                pasc_1_list.append(p)
+                pasc_1_name.append(pasc_simname[p])
+                pasc_1_text += (pasc_simname[p][0] + ';')
+
+                df.loc[index, p + '_pasc_flag'] = 1
+
+        for p in pasc_add:
+            if (rows['dxadd-out@' + p] > 0) and (rows['dxadd-base@' + p] == 0):
+                t2e_list.append(rows['dxadd-t2e@' + p])
+                pasc_1_list.append(p)
+                pasc_1_name.append(pasc_simname[p])
+                pasc_1_text += (pasc_simname[p][0] + ';')
+
+                df.loc[index, p + '_pasc_flag'] = 1
+
+        if len(t2e_list) > 0:
+            df.loc[index, 'any_pasc_flag'] = 1
+            df.loc[index, 'any_pasc_t2e'] = np.min(t2e_list)
+            df.loc[index, 'any_pasc_txt'] = pasc_1_text
+        else:
+            df.loc[index, 'any_pasc_flag'] = 0
+            df.loc[index, 'any_pasc_t2e'] = rows[['dx-t2e@' + p for p in pasc_list]].max()  # censoring time
+
+    print('Severity cohorts:', args.severity, 'df.shape:', df.shape, )
+
+    print(r"df.loc[df['flag_pregnancy']==1, 'any_pasc_flag'].sum():",
+          df.loc[df['flag_pregnancy'] == 1, 'any_pasc_flag'].sum(),
+          r"df.loc[df['flag_pregnancy']==1, 'any_pasc_flag'].mean():",
+          df.loc[df['flag_pregnancy'] == 1, 'any_pasc_flag'].mean())
+
+    print(r"df.loc[df['flag_pregnancy']==0, 'any_pasc_flag'].sum():",
+          df.loc[df['flag_pregnancy'] == 0, 'any_pasc_flag'].sum(),
+          r"df.loc[df['flag_pregnancy']==0, 'any_pasc_flag'].mean():",
+          df.loc[df['flag_pregnancy'] == 0, 'any_pasc_flag'].mean())
+
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
+    # step 3: select covs, labels, outcomes for analysis
+    print('Step 3: select covs, labels, outcomes for analysis')
     col_names = pd.Series(df.columns)
     df_info = df[['patid', 'site', 'index date', 'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
                   'flag_pregnancy', 'flag_delivery_date', 'flag_pregnancy_start_date',
                   'flag_pregnancy_gestational_age', 'flag_pregnancy_end_date', 'flag_maternal_age',
                   '03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23'
+                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23',
+                  '03/23-06/23', '07/23-10/23', '11/23-02/24',
                   ]]  # 'Unnamed: 0',
-    # df_info_list.append(df_info)
-    # df_label = df['covid']
+
     df_label = df['flag_pregnancy']
-    # df_label_list.append(df_label)
 
     df_outcome_cols = ['death', 'death t2e'] + [x for x in
                                                 list(df.columns)
-                                                if x.startswith('dx') or x.startswith('smm') or x.startswith('any_pasc')
+                                                if x.startswith('dx') or
+                                                x.startswith('smm') or
+                                                x.startswith('any_pasc') or
+                                                x.startswith('dxadd') or
+                                                x.startswith('dxbrainfog') or
+                                                x.startswith('dxCFR')
                                                 ]
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
-    # df_outcome_list.append(df_outcome)
-    # 'hospitalized',
-    covs_columns = ['ventilation', 'criticalcare', ] + \
+
+    covs_columns = ['inpatient', 'icu', 'outpatient',
+                    "Type 1 or 2 Diabetes Diagnosis", "autoimmune/immune suppression", "Severe Obesity", ] + \
                    [x for x in
                     list(df.columns)[
-                    df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Pulmonary hypertension'))]
-                    if (not x.startswith('YM:')) and (
-                            x not in ['Female', 'Male', 'hospitalized', 'Other/Missing', 'DX: Pregnant',
-                                      'No evidence - Post-index', 'Fully vaccinated - Post-index',
-                                      'Partially vaccinated - Post-index',
-                                      'outpatient visits 0', 'outpatient visits 1-2',
-                                      'outpatient visits 3-4', 'outpatient visits >=5',
-                                      'obc:Preterm birth (< 37 weeks)', 'obc:Gestational diabetes mellitus',
-                                      'obc:Delivery BMI\xa0>\xa040', 'obc:Previous cesarean birth',
-                                      'obc:Preeclampsia without severe features or gestational hypertension',
-                                      'obc:Preeclampsia with severe features',
-                                      'obc:Placenta accreta spectrum', 'obc:Placental abruption',
-                                      'obc:Twin/multiple pregnancy',
-                                      'obc:Placenta previa, complete or partial'])
+                    df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('No evidence - Post-index'))]
+                    if (not x.startswith('YM:')) and not x.startswith('RUCA1') and (
+                            x not in
+                            ['ZIPMissing', '11/22-02/23', '03/23-06/23', '07/23-10/23', '11/23-02/24',
+                             'Female', 'Male', 'Other/Missing', 'DX: Pregnant',
+                             'DX: Hypertension and Type 1 or 2 Diabetes Diagnosis',
+                             'No evidence - Post-index', 'Fully vaccinated - Post-index',
+                             'Partially vaccinated - Post-index',
+                             'outpatient visits 0', 'outpatient visits 1-2',
+                             'outpatient visits 3-4', 'outpatient visits >=5',
+                             ])
                     ]
 
-    days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
-    days = np.array(days).reshape((-1, 1))
-    # days_norm = (days - days.min())/(days.max() - days.min())
-    # spline = SplineTransformer(degree=3, n_knots=7)
-    spline = SplineTransformer(degree=3, n_knots=5)
+    # days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
+    # days = np.array(days).reshape((-1, 1))
+    # # days_norm = (days - days.min())/(days.max() - days.min())
+    # # spline = SplineTransformer(degree=3, n_knots=7)
+    # spline = SplineTransformer(degree=3, n_knots=5)
+    #
+    # days_sp = spline.fit_transform(np.array(days))  # identical
+    # # days_norm_sp = spline.fit_transform(days_norm) # identical
+    #
+    # print('len(covs_columns):', len(covs_columns))
+    #
+    # # delet old date feature and use spline
+    # covs_columns = [x for x in covs_columns if x not in
+    #                 ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
+    #                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23']]
+    # print('after delete 8 days len(covs_columns):', len(covs_columns))
 
-    days_sp = spline.fit_transform(np.array(days))  # identical
-    # days_norm_sp = spline.fit_transform(days_norm) # identical
-
-    print('len(covs_columns):', len(covs_columns))
-
-    # delet old date feature and use spline
-    covs_columns = [x for x in covs_columns if x not in
-                    ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                     '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23']]
-    print('after delete 8 days len(covs_columns):', len(covs_columns))
-    df_covs = df.loc[:, covs_columns].astype('float')
-
-    new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
-    covs_columns += new_day_cols
-    print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
-    for i in range(days_sp.shape[1]):
-        print('add', i, new_day_cols[i])
-        df_covs[new_day_cols[i]] = days_sp[:, i]
+    #
+    # new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
+    # covs_columns += new_day_cols
+    # print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
+    # for i in range(days_sp.shape[1]):
+    #     print('add', i, new_day_cols[i])
+    #     df_covs[new_day_cols[i]] = days_sp[:, i]
 
     # # days between pregnancy and infection
     # days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
@@ -703,13 +827,23 @@ if __name__ == "__main__":
     #     df_covs[new_days_since_preg_cols[i]] = days_since_preg_sp[:, i]
 
     # df_covs_list.append(df_covs)
-    print(ith, 'df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
+
+    print('len(covs_columns):', len(covs_columns), covs_columns)
+    df_covs = df.loc[:, covs_columns].astype('float')
+    print('df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
+
+    print('all',
+          'df.shape', df.shape,
+          'df_info.shape:', df_info.shape,
+          'df_label.shape:', df_label.shape,
+          'df_covs.shape:', df_covs.shape)
+    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     # df = pd.concat(df_outcome_list, ignore_index=True)
     # df_info = pd.concat(df_info_list, ignore_index=True)
     # df_label = pd.concat(df_label_list, ignore_index=True)
     # df_covs = pd.concat(df_covs_list, ignore_index=True)
-    df = df_outcome
+    # df = df_outcome
 
     print('all',
           'df.shape', df.shape,
@@ -725,51 +859,46 @@ if __name__ == "__main__":
         record_example = next(iter(icd_pasc.items()))
         print('e.g.:', record_example)
 
-    pasc_encoding = {}
-    pasc_encoding['any_pasc'] = [np.nan, np.nan]
     with open(r'../data/mapping/pasc_index_mapping.pkl', 'rb') as f:
-        _pasc_encoding = pickle.load(f)
-        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(_pasc_encoding))
-        record_example = next(iter(_pasc_encoding.items()))
+        pasc_encoding = pickle.load(f)
+        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(pasc_encoding))
+        record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    pasc_encoding.update(_pasc_encoding)
     SMMpasc_encoding = utils.load(r'../data/mapping/SMMpasc_index_mapping.pkl')
-    pasc_encoding.update(SMMpasc_encoding)
+    SMMpasc_list = list(SMMpasc_encoding.keys())
 
-    # %% 2. PASC specific cohorts for causal inference
-    # if args.selectpasc:
-    #     df_select = pd.read_excel(
-    #         r'../data/V15_COVID19/output/character/outcome/DX-all/Diagnosis_Medication_refine_Organ_Domain-V2-4plot.xlsx',
-    #         sheet_name='diagnosis').set_index('i')
-    #     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted, P-Value'] <= 0.05, :]  #
-    #     df_select = df_select.loc[df_select['Hazard Ratio, Adjusted'] > 1, :]
-    #     selected_list = df_select.index.tolist()
-    #     print('Selected: len(selected_list):', len(selected_list))
-    #     print(df_select['PASC Name Simple'])
-
+    selected_screen_list = ['any_pasc',
+                            'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list + SMMpasc_list
     causal_results = []
     results_columns_name = []
-    for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
-        # bulid specific cohorts:
-        # if args.selectpasc:
-        #     if i not in selected_list:
-        #         print('Skip:', i, pasc, 'because args.selectpasc, p<=0.05, hr > 1 in Insight')
-        #         continue
+    # for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
+    for i, pasc in tqdm(enumerate(selected_screen_list, start=1), total=len(selected_screen_list)):
         print('\n In c:', i, pasc)
-
-        if pasc.startswith('smm'):
-            pasc_flag = (df['smm-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['smm-t2e@' + pasc].astype('float')
-            pasc_baseline = df['smm-base@' + pasc]
-        elif pasc == 'any_pasc':
+        if pasc == 'any_pasc':
             pasc_flag = df['any_pasc_flag'].astype('int')
             pasc_t2e = df['any_pasc_t2e'].astype('float')
             pasc_baseline = df['any_pasc_baseline']
-        else:
+        elif pasc in pasc_list:
             pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dx-t2e@' + pasc].astype('float')
             pasc_baseline = df['dx-base@' + pasc]
+        elif pasc in addedPASC_list:
+            pasc_flag = (df['dxadd-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dxadd-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dxadd-base@' + pasc]
+        elif pasc in brainfog_list:
+            pasc_flag = (df['dxbrainfog-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dxbrainfog-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dxbrainfog-base@' + pasc]
+        elif pasc in CFR_list:
+            pasc_flag = (df['dxCFR-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')
+            pasc_baseline = df['dxCFR-base@' + pasc]
+        elif pasc.startswith('smm'):
+            pasc_flag = (df['smm-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['smm-t2e@' + pasc].astype('float')
+            pasc_baseline = df['smm-base@' + pasc]
 
         # considering competing risks
         death_flag = df['death']
@@ -777,6 +906,7 @@ if __name__ == "__main__":
         pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
         print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
               'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
+
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
@@ -786,98 +916,18 @@ if __name__ == "__main__":
 
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
-
         # print('n_covid_pos:', n_covid_pos, 'n_covid_neg:', n_covid_neg, )
         print('n pregnant:', n_covid_pos, 'n not pregnant:', n_covid_neg, )
 
-        print('# stratum match/stratified sampling by age group')
-        # stratum match/stratified sampling
-        match_cols = ['pregage:18-<25 years',
-                      'pregage:25-<30 years',
-                      'pregage:30-<35 years',
-                      'pregage:35-<40 years',
-                      'pregage:40-<45 years',
-                      'pregage:45-50 years', ]
-
-        match_cols_prop = np.array(df_covs.loc[(df_label == 1) & idx, match_cols].mean().to_list())
-        match_cols_n = match_cols_prop * n_covid_pos * args.negative_ratio
-        match_cols_in_0 = np.array(df_covs.loc[(df_label == 0) & idx, match_cols].sum().to_list())
-
-        match_index_list = []
-        for mc, mn1, mn0 in zip(match_cols, match_cols_n, match_cols_in_0):
-            mn_ = min(mn1, mn0)
-            mn_ = int(mn_)
-            match_sampled_neg_index = df_label[(df_label == 0) & idx & (df_covs[mc] == 1)].sample(
-                n=mn_,
-                replace=False,
-                random_state=args.random_seed).index
-            match_index_list.append(match_sampled_neg_index)
-
-        sampled_neg_index = match_index_list[0]
-        for _iii in range(1, len(match_index_list)):
-            sampled_neg_index = sampled_neg_index.append(match_index_list[_iii])
-
-        print('len(sampled_neg_index):', len(sampled_neg_index))
-
-        print('# stratum match/stratified sampling by index date')
-        match2_cols = ['03/20-06/20', '07/20-10/20',
-                       '11/20-02/21', '03/21-06/21',
-                       '07/21-10/21', '11/21-02/22', '03/22-06/22', ]
-
-        match2_cols_prop = np.array(df_info.loc[(df_label == 1) & idx, match2_cols].mean().to_list())
-        match2_cols_n = match2_cols_prop * n_covid_pos * args.negative_ratio
-        match2_cols_in_0 = np.array(df_info.loc[(df_label == 0) & idx, match2_cols].sum().to_list())
-
-        match2_index_list = []
-        for mc, mn1, mn0 in zip(match2_cols, match2_cols_n, match2_cols_in_0):
-            mn_ = min(mn1, mn0)
-            mn_ = int(mn_)
-            match2_sampled_neg_index = df_label[(df_label == 0) & idx & (df_info[mc] == 1)].sample(
-                n=mn_,
-                replace=False,
-                random_state=args.random_seed).index
-            match2_index_list.append(match2_sampled_neg_index)
-
-        sampled2_neg_index = match2_index_list[0]
-        for _iii in range(1, len(match2_index_list)):
-            sampled2_neg_index = sampled2_neg_index.append(match2_index_list[_iii])
-
-        print('len(sampled2_neg_index):', len(sampled2_neg_index))
-
-        print('# intersection of stratum match/stratified sampling by age and index date:')
-        sampled_neg_index = sampled_neg_index.intersection(sampled2_neg_index)
-        print('after intersection, len(sampled_neg_index):', len(sampled_neg_index))
-
-        print('Sampled with stratified, * folds, min.--args.negative_ratio * n_covid_pos:--',
-              args.negative_ratio * n_covid_pos, '\n',
-              'n_covid_pos:', n_covid_pos,
-              'len(sampled_neg_index):', len(sampled_neg_index))
-
-        # if args.negative_ratio * n_covid_pos < n_covid_neg:
-        #     print('replace=False, args.negative_ratio * n_covid_pos:', args.negative_ratio * n_covid_pos,
-        #           'n_covid_neg:', n_covid_neg)
-        #     sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
-        #                                                                replace=False,
-        #                                                                random_state=args.random_seed).index
-        # else:
-        #     print('replace=True')
-        #     # print('Use negative patients with replacement, args.negative_ratio * n_covid_pos:',
-        #     #       args.negative_ratio * n_covid_pos,
-        #     #       'n_covid_neg:', n_covid_neg)
-        #     # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
-        #     #                                                            replace=True,
-        #     #                                                            random_state=args.random_seed).index
-        #     print('Not using sample with replacement. Use all negative patients, args.negative_ratio * n_covid_pos:',
-        #           args.negative_ratio * n_covid_pos,
-        #           'n_covid_pos:', n_covid_pos,
-        #           'n_covid_neg:', n_covid_neg)
-        #     sampled_neg_index = covid_label[(covid_label == 0)].index
+        sampled_neg_index = covid_label[(covid_label == 0)].sample(frac=1,
+                                                                   replace=False,
+                                                                   random_state=args.random_seed).index
 
         pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
         pos_neg_selected[sampled_neg_index] = True
         pos_neg_selected[covid_label[covid_label == 1].index] = True
         #
-        pat_info = df_info.loc[pos_neg_selected, :]
+        # pat_info = df_info.loc[pos_neg_selected, :]
         covid_label = df_label[pos_neg_selected]
         covs_array = df_covs.loc[pos_neg_selected, :]
         pasc_flag = pasc_flag[pos_neg_selected]
@@ -920,9 +970,9 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-results.csv'.format(
-            args.severity,
-            '-select' if args.selectpasc else '',
+        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-results.csv'.format(
+            args.usedx,
+            args.kmatch,
             i,
             pasc.replace(':', '-').replace('/', '-'))
         utils.check_and_mkdir(out_file_balance)
@@ -930,22 +980,22 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results-20230825/DX-{}{}/{}-{}-evaluation_balance.csv'.format(
-                args.severity,
-                '-select' if args.selectpasc else '',
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_balance.csv'.format(
+                args.usedx,
+                args.kmatch,
                 i, pasc.replace(':', '-').replace('/', '-')))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results-20230825/DX-{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
-                args.severity,
-                '-select' if args.selectpasc else '',
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_ps-iptw.csv'.format(
+                args.usedx,
+                args.kmatch,
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-PS.png'.format(
-                args.severity,
-                '-select' if args.selectpasc else '',
+            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-PS.png'.format(
+                args.usedx,
+                args.kmatch,
                 i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
 
@@ -966,11 +1016,12 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results-20230825/DX-{}{}/{}-{}-km.png'.format(
-                args.severity,
-                '-select' if args.selectpasc else '',
+            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-km.png'.format(
+                args.usedx,
+                args.kmatch,
                 i, pasc.replace(':', '-').replace('/', '-')),
-            title=pasc)
+            title=pasc,
+            legends={'case': 'Covid Pos Pregnant', 'control': 'Covid Pos Non-pregnant'})
 
         try:
             # change 2022-03-20 considering competing risk 2
@@ -1004,26 +1055,26 @@ if __name__ == "__main__":
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
 
-            if i % 50 == 0:
+            if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
-                    args.severity,
-                    '-select' if args.selectpasc else '', ))
+                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                    args.usedx,
+                    args.kmatch, ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific.csv'.format(
-            args.severity,
-            '-select' if args.selectpasc else ''))
+        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific.csv'.format(
+            args.usedx,
+            args.kmatch, ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
