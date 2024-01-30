@@ -1088,8 +1088,7 @@ if __name__ == "__main__":
                     to_csv(
                     r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.usedx,
-                        args.kmatch,
-                        i))
+                        args.kmatch, i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
