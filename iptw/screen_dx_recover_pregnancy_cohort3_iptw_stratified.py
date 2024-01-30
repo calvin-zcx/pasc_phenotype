@@ -42,8 +42,13 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg',
-                                               'pospreg-posnonpreg'],
-                        default='all')
+                                               'pospreg-posnonpreg',
+                                               'followupanydx',
+                                               'trimester1', 'trimester2', 'trimester3', 'delivery1week',
+                                               'trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow',
+                                               'delivery1week-anyfollow',
+                                               'inpatienticu-anyfollow', 'outpatient-anyfollow'],
+                        default='inpatienticu-anyfollow')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
@@ -108,7 +113,7 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     return df_summary
 
 
-def select_subpopulation(df, severity):
+def select_subpopulation(df, severity, args):
     if severity == 'inpatient':
         print('Considering inpatient/hospitalized cohorts but not ICU')
         df = df.loc[(df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0), :].copy()
@@ -217,6 +222,60 @@ def select_subpopulation(df, severity):
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    elif severity == 'followupanydx':
+        print('Considering patients with any follow up dx')
+        df = df.loc[(df['followupanydx'] == 1), :].copy()
+    elif severity in ['trimester1', 'trimester2', 'trimester3', 'delivery1week',
+                      'trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow', 'delivery1week-anyfollow']:
+        print('len(df)', len(df))
+        df_case = df.loc[df['flag_pregnancy'] == 1, :]
+        df_ctrl = df.loc[df['flag_pregnancy'] == 0, :]
+        print('len(df_case)', len(df_case), 'len(df_ctrl)', len(df_ctrl), 'case+ctrl', len(df_case) + len(df_ctrl))
+
+        if severity in ['trimester1', 'trimester1-anyfollow']:
+            df_case_sub = df_case.loc[df_case['gestational age of infection'] <= 13, :]
+        elif severity in ['trimester2', 'trimester2-anyfollow']:
+            df_case_sub = df_case.loc[(df_case['gestational age of infection'] <= 27) & (
+                        df_case['gestational age of infection'] > 13), :]
+        elif severity in ['trimester3', 'trimester3-anyfollow']:
+            df_case_sub = df_case.loc[df_case['gestational age of infection'] > 27, :]
+        elif severity in ['delivery1week', 'delivery1week-anyfollow']:
+            # _ind_ = np.timedelta64(-7, 'D') <= (df_case['flag_delivery_date'] - df_case['index date']) <= np.timedelta64(7, 'D')
+            ind_1 = np.timedelta64(-7, 'D') <= (df_case['flag_delivery_date'] - df_case['index date'])
+            ind_2 = (df_case['flag_delivery_date'] - df_case['index date']) <= np.timedelta64(7, 'D')
+            ind_and = ind_1 & ind_2
+            df_case_sub = df_case.loc[ind_and, :]
+
+        print('len(df_case_sub)', len(df_case_sub), 'len(df_ctrl)', len(df_ctrl), 'df_case_sub+ctrl',
+              len(df_case_sub) + len(df_ctrl))
+
+        if len(df_case_sub) * args.kmatch <= len(df_ctrl):
+            df_ctrl_sub = df_ctrl.sample(n=len(df_case_sub) * args.kmatch, replace=False, random_state=args.random_seed)
+        else:
+            df_ctrl_sub = df_ctrl
+
+        df = pd.concat([df_case_sub, df_ctrl_sub], ignore_index=True)
+        df = df.copy()
+        print('len(df_case_sub)', len(df_case_sub), 'len(df_ctrl_sub)', len(df_ctrl_sub),
+              'df', len(df))
+
+        if severity in ['trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow',
+                        'delivery1week-anyfollow']:
+            print('Further considering patients with any follow up dx')
+            df = df.loc[(df['followupanydx'] == 1), :].copy()
+            print('further anyfollow up, df', len(df))
+    elif severity == 'inpatienticu-anyfollow':
+        print('Considering inpatient/hospitalized including icu cohorts')
+        df = df.loc[(df['hospitalized'] == 1) | (df['criticalcare'] == 1), :]
+        print('Further considering patients with any follow up dx')
+        df = df.loc[(df['followupanydx'] == 1), :].copy()
+        print('further anyfollow up, df', len(df))
+    elif severity == 'outpatient-anyfollow':
+        print('Considering outpatient cohorts')
+        df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :]
+        print('Further considering patients with any follow up dx')
+        df = df.loc[(df['followupanydx'] == 1), :].copy()
+        print('further anyfollow up, df', len(df))
     else:
         print('Considering ALL cohorts, no selection')
 
@@ -664,9 +723,15 @@ if __name__ == "__main__":
     # combine df1 and df2 into df
     df = pd.concat([df1, df2_matched], ignore_index=True)
 
-    print('Before select_subpopulation, len(df)', len(df))
-    df = select_subpopulation(df, args.severity)
-    print('After select_subpopulation, len(df)', len(df))
+    print('Before select_subpopulation, len(df), len(case), len(ctrl)',
+          len(df),
+          len(df[df['flag_pregnancy'] == 1]),
+          len(df[df['flag_pregnancy'] == 0]))
+    df = select_subpopulation(df, args.severity, args)
+    print('After select_subpopulation, len(df), len(case), len(ctrl)',
+          len(df),
+          len(df[df['flag_pregnancy'] == 1]),
+          len(df[df['flag_pregnancy'] == 0]))
 
     # some additional feature processing
     selected_cols = [x for x in df.columns if x.startswith('dxCFR-out@')]
@@ -843,7 +908,6 @@ if __name__ == "__main__":
     #     print('add', i, new_day_cols[i])
     #     df_covs[new_day_cols[i]] = days_sp[:, i]
 
-
     # # days between pregnancy and infection,  only make sense when comparison groups are also pregnant
     # days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
     # days_since_preg = np.array(days_since_preg).reshape((-1, 1))
@@ -901,7 +965,7 @@ if __name__ == "__main__":
 
     # smm outcomes only make sense when comparison groups are also pregnant
     selected_screen_list = ['any_pasc',
-                            'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list # + SMMpasc_list
+                            'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list  # + SMMpasc_list
     causal_results = []
     results_columns_name = []
     # for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
@@ -1000,9 +1064,10 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/{}-{}-results.csv'.format(
             args.usedx,
             args.kmatch,
+            args.severity,
             i,
             pasc.replace(':', '-').replace('/', '-'))
         utils.check_and_mkdir(out_file_balance)
@@ -1010,22 +1075,25 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/{}-{}-evaluation_balance.csv'.format(
                 args.usedx,
                 args.kmatch,
+                args.severity,
                 i, pasc.replace(':', '-').replace('/', '-')))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.usedx,
                 args.kmatch,
+                args.severity,
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/{}-{}-PS.png'.format(
                 args.usedx,
                 args.kmatch,
+                args.severity,
                 i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
 
@@ -1046,9 +1114,10 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/{}-{}-km.png'.format(
                 args.usedx,
                 args.kmatch,
+                args.severity,
                 i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc,
             legends={'case': 'Covid Pos Pregnant', 'control': 'Covid Pos Non-pregnant'})
@@ -1088,24 +1157,26 @@ if __name__ == "__main__":
             if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.usedx,
-                        args.kmatch, i))
+                        args.kmatch,
+                        args.severity,
+                        i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.usedx,
-                    args.kmatch, ))
+                    args.kmatch, args.severity, ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}-{}/causal_effects_specific.csv'.format(
             args.usedx,
-            args.kmatch, ))
+            args.kmatch, args.severity, ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
