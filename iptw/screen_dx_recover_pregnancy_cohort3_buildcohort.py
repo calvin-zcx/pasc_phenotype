@@ -697,6 +697,6 @@ if __name__ == "__main__":
     print('Build matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx, 'useacute:', args.useacute)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch, usedx=args.usedx, useacute=args.useacute)
     utils.dump(df2_matched,
-               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}-useacuteV2{}.pkl'.format(
+               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}-useacute{}V2.pkl'.format(
                    args.kmatch, args.usedx, args.useacute))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
