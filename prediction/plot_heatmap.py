@@ -1993,7 +1993,7 @@ def build_heat_map_from_inpatient_vs_outpatient_revision2(
 if __name__ == '__main__':
     start_time = time.time()
     # manhattan_plt(database='INSIGHT', )
-    database = 'OneFlorida' #'INSIGHT'  # 'OneFlorida' #
+    database = 'INSIGHT'  # 'OneFlorida' #'INSIGHT'  # 'OneFlorida' #
     # df_row = combine_risk_p_value_with_interaction(database=database, severity='all')
     # df_row = combine_risk_p_value_with_interaction(database=database, severity='inpatienticu')
     # df_row = combine_risk_p_value_with_interaction(database=database, severity='outpatient')
@@ -2045,18 +2045,18 @@ if __name__ == '__main__':
     #                '03/21-06/21'])
 
     # revision 2: 2023-9-27
-    df_row, df, df_data = build_heat_map_from_selected_rows_plot_revision2(
-        database=database, p_val_threshold=0.05 / 89,
-        selected_cols=False, interactionge1=True,
-        severity=severity,
-        drop_cols=['Missing',
-                   'inpatient visits 1-2',
-                   'inpatient visits >=3',
-                   'Smoker: missing',
-                   '03/21-06/21'],
-        drop_pascs=['Pressure ulcers', ], # 'Anemia', 'Malnutrition', 'Pressure ulcers', 'Fluid disorders'
-        drop_highlight=[('U099/B948', '07/21-11/21'), ('Anemia', 'DX: Pregnant')]
-    )
+    # df_row, df, df_data = build_heat_map_from_selected_rows_plot_revision2(
+    #     database=database, p_val_threshold=0.05 / 89,
+    #     selected_cols=False, interactionge1=True,
+    #     severity=severity,
+    #     drop_cols=['Missing',
+    #                'inpatient visits 1-2',
+    #                'inpatient visits >=3',
+    #                'Smoker: missing',
+    #                '03/21-06/21'],
+    #     drop_pascs=['Pressure ulcers', ], # 'Anemia', 'Malnutrition', 'Pressure ulcers', 'Fluid disorders'
+    #     drop_highlight=[('U099/B948', '07/21-11/21'), ('Anemia', 'DX: Pregnant')]
+    # )
 
     #
     df_data1, df_data2 = build_heat_map_from_inpatient_vs_outpatient_revision2(
@@ -2075,7 +2075,7 @@ if __name__ == '__main__':
         drop_pascs=['Pressure ulcers'],
     )
 
-
+    zz
     df_row, df, df_data = build_heat_map_from_selected_rows_plot_filteringByinteraction_revision2(
         database=database, p_val_threshold=0.05 / 89,
         selected_cols=False, #interactionge1=False,

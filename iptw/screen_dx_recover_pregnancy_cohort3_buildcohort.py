@@ -64,6 +64,7 @@ def parse_args():
     # utils.check_and_mkdir(args.save_model_filename)
     return args
 
+
 def _evaluation_helper(X, T, PS_logits, loss):
     y_pred_prob = logits_to_probability(PS_logits, normalized=False)
     auc = roc_auc_score(T, y_pred_prob)
@@ -374,7 +375,8 @@ def build_matched_control(df_case, df_contrl, kmatche=1, usedx=True, useacute=Tr
     period_col = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
                   '03/21-06/21', '07/21-10/21', '11/21-02/22',
                   '03/22-06/22', '07/22-10/22', ]
-    acute_col = ['outpatient', 'hospitalized', 'icu']
+    # acute_col = ['outpatient', 'hospitalized', 'icu']
+    acute_col = ['ventilation', 'criticalcare', ]
     # race_col = ['Asian', 'Black or African American', 'White', 'Other']  # , 'Missing'
     # eth_col = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
 
@@ -393,14 +395,14 @@ def build_matched_control(df_case, df_contrl, kmatche=1, usedx=True, useacute=Tr
     #           "MEDICATION: Corticosteroids",
     #           "MEDICATION: Immunosuppressant drug",
     #           ]
-    dx_col = [ # "DX: Anemia",
-              "Type 1 or 2 Diabetes Diagnosis",
-              "DX: Hypertension",
-              "autoimmune/immune suppression",
-              "DX: Mental Health Disorders",
-              "Severe Obesity",
-              "DX: Asthma"
-              ]
+    dx_col = [  # "DX: Anemia",
+        "Type 1 or 2 Diabetes Diagnosis",
+        "DX: Hypertension",
+        "autoimmune/immune suppression",
+        "DX: Mental Health Disorders",
+        "Severe Obesity",
+        "DX: Asthma"
+    ]
 
     cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
@@ -695,6 +697,6 @@ if __name__ == "__main__":
     print('Build matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx, 'useacute:', args.useacute)
     df2_matched = build_matched_control(df1, df2, kmatche=args.kmatch, usedx=args.usedx, useacute=args.useacute)
     utils.dump(df2_matched,
-               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}-useacute{}.pkl'.format(
+               r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}-useacuteV2{}.pkl'.format(
                    args.kmatch, args.usedx, args.useacute))
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

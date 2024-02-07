@@ -593,9 +593,9 @@ if __name__ == '__main__':
 
 
     # 2023-10-2 revision 2
-    # df_row = combine_predictive_performance_revision2(database='INSIGHT', severity='all')
-    # plot_auc_bar_revision2(database='INSIGHT', severity='all', drop_pasc=['Pressure ulcers'])
-
+    df_row = combine_predictive_performance_revision2(database='INSIGHT', severity='all')
+    plot_auc_bar_revision2(database='INSIGHT', severity='all', drop_pasc=['Pressure ulcers'])
+    zz
     # df_row = combine_predictive_performance_revision2(database='OneFlorida', severity='all')
     # plot_auc_bar_revision2(database='OneFlorida', severity='all', drop_pasc=['Pressure ulcers'])
 
