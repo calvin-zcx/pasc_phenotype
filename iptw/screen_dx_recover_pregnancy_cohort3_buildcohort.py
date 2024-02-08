@@ -48,7 +48,7 @@ def parse_args():
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
 
-    parser.add_argument("--kmatch", type=int, default=1)
+    parser.add_argument("--kmatch", type=int, default=3)
     parser.add_argument("--usedx", type=int, default=1)  # useacute
     parser.add_argument("--useacute", type=int, default=1)
 
