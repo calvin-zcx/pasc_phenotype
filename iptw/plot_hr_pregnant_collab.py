@@ -80,6 +80,12 @@ def plot_forest_for_dx_organ_preg(star=True, text_right=False):
     indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3-outpatient/'
     indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3-inpatienticu-anyfollow/'
     indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3-outpatient-anyfollow/'
+    indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3useacute1/'
+    indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3useacute1-delivery1week/'
+    indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3useacute1-trimester1/'
+    indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3useacute1-trimester2/'
+    indir = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx1k3useacute1-trimester3/'
+
 
     output_dir = indir + r'figure/'
 
@@ -202,7 +208,7 @@ def plot_forest_for_dx_organ_preg(star=True, text_right=False):
 
     c = '#F65453'
     p.colors(pointshape="o", errorbarcolor=c, pointcolor=c)  # , linecolor='black'),   # , linecolor='#fcb2ab')
-    ax = p.plot_with_incidence(figsize=(9, .42 * len(labs)), t_adjuster=0.0108, max_value=3, min_value=0.1,
+    ax = p.plot_with_incidence(figsize=(9, .47 * len(labs)), t_adjuster=0.0108, max_value=3.5, min_value=0.1,
                                size=5, decimal=2,
                                text_right=text_right)
 

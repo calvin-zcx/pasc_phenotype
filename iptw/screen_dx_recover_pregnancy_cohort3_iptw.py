@@ -50,7 +50,7 @@ def parse_args():
 
     parser.add_argument("--kmatch", type=int, default=3)
     parser.add_argument("--usedx", type=int, default=1)
-
+    parser.add_argument("--useacute", type=int, default=1)
     args = parser.parse_args()
 
     # More args
@@ -364,60 +364,60 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
     return ctrl_list
 
 
-def build_matched_control(df_case, df_contrl, kmatche=1, usedx=True):
-    age_col = ['pregage:18-<25 years',
-               'pregage:25-<30 years',
-               'pregage:30-<35 years',
-               'pregage:35-<40 years',
-               'pregage:40-<45 years',
-               'pregage:45-50 years', ]
-    period_col = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
-                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
-                  '03/22-06/22', '07/22-10/22', ]
-    acute_col = ['outpatient', 'hospitalized', 'icu']
-    # race_col = ['Asian', 'Black or African American', 'White', 'Other']  # , 'Missing'
-    # eth_col = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
-
-    # adi_col = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
-    #            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing']
-    # dx_col = ["DX: Asthma", "DX: Cancer", "DX: Chronic Kidney Disease",
-    #           "DX: Congestive Heart Failure", "DX: End Stage Renal Disease on Dialysis",
-    #           "DX: Hypertension", "DX: Pregnant",
-    #           ]
-    # dx_col = ["DX: Anemia",
-    #           "DX: Cancer",
-    #           "DX: Chronic Kidney Disease",
-    #           "DX: Diabetes Type 2",
-    #           "DX: Hypertension",
-    #           'DX: Obstructive sleep apnea',
-    #           "MEDICATION: Corticosteroids",
-    #           "MEDICATION: Immunosuppressant drug",
-    #           ]
-    dx_col = ["DX: Anemia",
-              "Type 1 or 2 Diabetes Diagnosis",
-              "DX: Hypertension",
-              "autoimmune/immune suppression",
-              "DX: Mental Health Disorders",
-              "Severe Obesity",
-              "DX: Asthma"
-              ]
-
-    cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
-    # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
-    cols_to_match = ['pcornet', ] + age_col + period_col + acute_col
-    if usedx:
-        cols_to_match += dx_col
-
-    ctrl_list = exact_match_on(df_case.copy(), df_contrl.copy(), kmatche, cols_to_match, )
-
-    print('len(ctrl_list)', len(ctrl_list))
-    neg_selected = pd.Series(False, index=df_contrl.index)
-    neg_selected[ctrl_list] = True
-    df_ctrl_matched = df_contrl.loc[neg_selected, :]
-    print('len(df_case):', len(df_case),
-          'len(df_contrl):', len(df_contrl),
-          'len(df_ctrl_matched):', len(df_ctrl_matched), )
-    return df_ctrl_matched.copy()
+# def build_matched_control(df_case, df_contrl, kmatche=1, usedx=True):
+#     age_col = ['pregage:18-<25 years',
+#                'pregage:25-<30 years',
+#                'pregage:30-<35 years',
+#                'pregage:35-<40 years',
+#                'pregage:40-<45 years',
+#                'pregage:45-50 years', ]
+#     period_col = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
+#                   '03/21-06/21', '07/21-10/21', '11/21-02/22',
+#                   '03/22-06/22', '07/22-10/22', ]
+#     acute_col = ['outpatient', 'hospitalized', 'icu']
+#     # race_col = ['Asian', 'Black or African American', 'White', 'Other']  # , 'Missing'
+#     # eth_col = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
+#
+#     # adi_col = ['ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+#     #            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing']
+#     # dx_col = ["DX: Asthma", "DX: Cancer", "DX: Chronic Kidney Disease",
+#     #           "DX: Congestive Heart Failure", "DX: End Stage Renal Disease on Dialysis",
+#     #           "DX: Hypertension", "DX: Pregnant",
+#     #           ]
+#     # dx_col = ["DX: Anemia",
+#     #           "DX: Cancer",
+#     #           "DX: Chronic Kidney Disease",
+#     #           "DX: Diabetes Type 2",
+#     #           "DX: Hypertension",
+#     #           'DX: Obstructive sleep apnea',
+#     #           "MEDICATION: Corticosteroids",
+#     #           "MEDICATION: Immunosuppressant drug",
+#     #           ]
+#     dx_col = ["DX: Anemia",
+#               "Type 1 or 2 Diabetes Diagnosis",
+#               "DX: Hypertension",
+#               "autoimmune/immune suppression",
+#               "DX: Mental Health Disorders",
+#               "Severe Obesity",
+#               "DX: Asthma"
+#               ]
+#
+#     cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+#     # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
+#     cols_to_match = ['pcornet', ] + age_col + period_col + acute_col
+#     if usedx:
+#         cols_to_match += dx_col
+#
+#     ctrl_list = exact_match_on(df_case.copy(), df_contrl.copy(), kmatche, cols_to_match, )
+#
+#     print('len(ctrl_list)', len(ctrl_list))
+#     neg_selected = pd.Series(False, index=df_contrl.index)
+#     neg_selected[ctrl_list] = True
+#     df_ctrl_matched = df_contrl.loc[neg_selected, :]
+#     print('len(df_case):', len(df_case),
+#           'len(df_contrl):', len(df_contrl),
+#           'len(df_ctrl_matched):', len(df_ctrl_matched), )
+#     return df_ctrl_matched.copy()
 
 
 def add_any_pasc(df, exclude_list=[]):
@@ -596,12 +596,20 @@ if __name__ == "__main__":
     df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     print('Select matched cohort, kmatch:', args.kmatch, 'usedx:', args.usedx)
 
-    if args.usedx == 0:
-        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx0.pkl'.format(
+    # if args.usedx == 0:
+    #     match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-usedx0.pkl'.format(
+    #         args.kmatch)
+    # elif args.usedx > 0:
+    #     match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}.pkl'.format(
+    #         args.kmatch, args.usedx)
+    # else:
+    #     raise ValueError
+    if args.useacute == 0:
+        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx1-useacute0.pkl'.format(
             args.kmatch)
-    elif args.usedx > 0:
-        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}.pkl'.format(
-            args.kmatch, args.usedx)
+    elif args.useacute > 0:
+        match_file_name = r'../data/recover/output/pregnancy_output/_selected_preg_cohort2-matched-k{}-useSelectdx1-useacute1V2.pkl'.format(
+            args.kmatch)
     else:
         raise ValueError
 
@@ -704,7 +712,11 @@ if __name__ == "__main__":
 
     # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
     pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    _exclude_list = ['Pressure ulcer of skin', 'Anemia', ]
+    _exclude_list = ['Pressure ulcer of skin', 'Anemia',
+                     'Other specified and unspecified skin disorders', 'Circulatory signs and symptoms',
+                     'Other specified and unspecified gastrointestinal disorders',
+                     'Abdominal pain and other digestive/abdomen signs and symptoms',
+                     'Fluid and electrolyte disorders']
     pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
 
     pasc_add = ['smell and taste', ]
@@ -801,7 +813,8 @@ if __name__ == "__main__":
                                                 ]
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    covs_columns = ['inpatient', 'icu', 'outpatient',
+    covs_columns = [#'inpatient', 'icu', 'outpatient',
+                    'ventilation', 'criticalcare',
                     "Type 1 or 2 Diabetes Diagnosis", "autoimmune/immune suppression", "Severe Obesity", ] + \
                    [x for x in
                     list(df.columns)[
@@ -1000,9 +1013,10 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/{}-{}-results.csv'.format(
             args.usedx,
             args.kmatch,
+            args.useacute,
             i,
             pasc.replace(':', '-').replace('/', '-'))
         utils.check_and_mkdir(out_file_balance)
@@ -1010,22 +1024,25 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/{}-{}-evaluation_balance.csv'.format(
                 args.usedx,
                 args.kmatch,
+                args.useacute,
                 i, pasc.replace(':', '-').replace('/', '-')))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'covid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.usedx,
                 args.kmatch,
+                args.useacute,
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/{}-{}-PS.png'.format(
                 args.usedx,
                 args.kmatch,
+                args.useacute,
                 i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
 
@@ -1046,9 +1063,10 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/{}-{}-km.png'.format(
                 args.usedx,
                 args.kmatch,
+                args.useacute,
                 i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc,
             legends={'case': 'Covid Pos Pregnant', 'control': 'Covid Pos Non-pregnant'})
@@ -1088,24 +1106,26 @@ if __name__ == "__main__":
             if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.usedx,
-                        args.kmatch, i))
+                        args.kmatch,
+                        args.useacute,
+                        i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.usedx,
-                    args.kmatch, ))
+                    args.kmatch, args.useacute,))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}/causal_effects_specific.csv'.format(
             args.usedx,
-            args.kmatch, ))
+            args.kmatch, args.useacute,))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
