@@ -49,6 +49,7 @@ def get_table_columns(connect_string, table_name):
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
+    pd.set_option('display.max_colwidth', None)
 
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
 
