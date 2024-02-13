@@ -405,7 +405,7 @@ if __name__ == "__main__":
             # for debug
             ## sites = ['wcm', 'mshs', 'columbia']  # , 'montefiore', 'nyu', ]
             # sites = ['wcm', 'mshs', 'columbia', 'montefiore', 'nyu', ]
-            sites = ['wcm']
+            # sites = ['wcm']
 
             print('len(sites), sites:', len(sites), sites)
         else:
