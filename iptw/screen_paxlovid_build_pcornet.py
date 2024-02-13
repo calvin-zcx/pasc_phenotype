@@ -434,6 +434,7 @@ if __name__ == "__main__":
             df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
             print('df_add.shape:', df_add.shape)
             df = pd.merge(df, df_add, how='left', left_on='patid', right_on='patid', suffixes=('', '_y'), )
+            print('After left merge, merged df.shape:', df.shape)
 
             # add new columns 2
             data_file_add = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
@@ -459,9 +460,13 @@ if __name__ == "__main__":
             df = pd.merge(df, df_add[select_cols], how='left', left_on='patid', right_on='patid', suffixes=('', '_z'), )
 
             print('After left merge, merged df.shape:', df.shape)
+
+
             df_list.append(df)
+            print('Done', ith, site)
 
         # combine all sites and select subcohorts
+        print('To concat len(df_list)', len(df_list))
         df = pd.concat(df_list, ignore_index=True)
         print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
         print(r"df['site'].value_counts()", df['site'].value_counts())
