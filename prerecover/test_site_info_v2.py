@@ -100,6 +100,7 @@ if __name__ == '__main__':
     for site in tqdm(site_list):
         # for table in table_list:
         for table, col in tqdm(table_dict.items()):
+            print('In', site, table)
             # should use according column, build a mapping later
             query = "select MIN({}) AS MinDate,MAX({}) AS MaxDate from {}_pcornet_all.{};".format(col, col, site, table)
             try:
@@ -118,12 +119,13 @@ if __name__ == '__main__':
                 df['col_names'] = str(len(col_names)) + ':' + ','.join(col_names)
                 # df.rename(index={0: site + '-' + table + '-' + col}, inplace=True)
                 results.append(df)
-                print(df)
+                # print(df)
                 # print(df.iloc[0, :])
             except Exception as e:
                 print(site, e)
                 error_msg.append(site + '-' + table + '-' + col + str(e))
         print('Done', site)
+        # break
 
     now = datetime.now()
     date_time = now.strftime("%Y-%m-%d")  # now.strftime("%m/%d/%Y, %H:%M:%S")
