@@ -56,7 +56,10 @@ if __name__ == '__main__':
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
     # ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest',  'musc']
     site_list = site_list.to_list() + ['northwestern', 'wakeforest',
-                                       'cchmc', 'chop', 'colorado', 'lurie', 'nemours', 'seattle', 'stanford', ]  # these two sites with label 0
+                                       'chop', 'nemours', 'nationwide', 'seattle', 'colorado', 'lurie',
+                                       'cchmc', 'national', 'indiana', 'stanford', ]  # these two sites with label 0
+    # Intermountain does not have covid data? From dmi
+    #  Indiana is the site that is not present.
     print('len(site_list):', len(site_list), site_list)
     with open('../misc/pg_credential.json') as _ff_:
         cred_dict = json.load(_ff_)
@@ -79,10 +82,10 @@ if __name__ == '__main__':
         print("Error while connecting to PostgreSQL", error)
 
     # select target table?
-    table_list = [ 'condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
+    table_list = ['condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
                   'encounter', 'enrollment', 'harvest', 'hash_token', 'immunization', 'lab_history', 'lab_result_cm',
                   'lds_address_history', 'med_admin', 'obs_clin', 'obs_gen', 'pcornet_trial', 'prescribing', 'pro_cm',
-                  'procedures', 'provider', 'vital', 'geocoded_2010', 'geocoded_2020', 'geocoded_2020',]
+                  'procedures', 'provider', 'vital', 'geocoded_2010', 'geocoded_2020', 'geocoded_2020', ]
     # no date colum: death_cause, 'harvest', 'hash_token', 'lab_history','provider',
     table_dict = {'condition': 'report_date', 'covid_elements': 'admit_date', 'death': 'death_date',
                   'demographic': 'birth_date',
@@ -93,7 +96,7 @@ if __name__ == '__main__':
                   'med_admin': 'medadmin_start_date', 'obs_clin': 'obsclin_start_date', 'obs_gen': 'obsgen_start_date',
                   'pcornet_trial': 'trial_enroll_date', 'prescribing': 'rx_order_date', 'pro_cm': 'pro_time',
                   'procedures': 'admit_date', 'vital': 'measure_date',
-                  'geocoded_2010':'patid', 'geocoded_2020':'patid', 'provider': 'providerid' }
+                  'geocoded_2010': 'patid', 'geocoded_2020': 'patid', 'provider': 'providerid'}
     results = []
     error_msg = []
     # site_list = ['temple', 'usf']
