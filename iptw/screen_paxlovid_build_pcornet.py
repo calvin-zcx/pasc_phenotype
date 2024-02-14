@@ -523,7 +523,7 @@ if __name__ == "__main__":
         # des = df.describe()
         # des.transpose().to_csv(out_data_file + 'describe.csv')
 
-    zz
+    # zz
     # pre-process data a little bit
     print('Considering inpatient/hospitalized cohorts but not ICU')
     df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
