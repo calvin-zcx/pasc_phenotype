@@ -96,6 +96,7 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
 def add_col(df):
     # re-organize Paxlovid risk factors
     # see https://www.cdc.gov/coronavirus/2019-ncov/need-extra-precautions/people-with-medical-conditions.html
+    # and https://www.paxlovid.com/who-can-take
 
     df['PaxRisk:Cancer'] = (
             ((df["DX: Cancer"] >= 1).astype('int') +
@@ -141,7 +142,8 @@ def add_col(df):
     df['PaxRisk:Disabilities'] = (
             ((df['CCI:Paraplegia and Hemiplegia'] >= 1).astype('int') +
              (df["DX: Down's Syndrome"] >= 1).astype('int') +
-             (df["DX: Hemiplegia"] >= 1).astype('int')
+             (df["DX: Hemiplegia"] >= 1).astype('int') +
+             (df["DX: Autism"] >= 1).astype('int')
              ) >= 1
     ).astype('int')
 
@@ -204,6 +206,8 @@ def add_col(df):
              ) >= 1
     ).astype('int')
 
+    # PAXLOVID is not recommended for people with severe kidney disease
+    # PAXLOVID is not recommended for people with severe liver disease
     df['PaxExclude:liver'] = (df['CCI:Moderate or Severe Liver Disease'] >= 1).astype('int')
     df['PaxExclude:end-stage kidney disease'] = (df["DX: End Stage Renal Disease on Dialysis"] >= 1).astype('int')
 
