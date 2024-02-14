@@ -1535,6 +1535,7 @@ if __name__ == '__main__':
     #
     start_time = time.time()
     args = parse_args()
+    zz
     df_data_bool = build_feature_matrix(args)  # , dx_count_df, med_count_df
 
     # in_file = r'../data/V15_COVID19/output/character/matrix_cohorts_covid_4manuscript_bool_ALL.csv'
