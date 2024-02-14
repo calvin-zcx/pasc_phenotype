@@ -106,6 +106,12 @@ def add_col(df):
 
     df['PaxRisk:Chronic kidney disease'] = (df["DX: Chronic Kidney Disease"] >= 1).astype('int')
 
+    df['PaxRisk:Chronic liver disease'] = (
+            ((df["DX: Cirrhosis"] >= 1).astype('int') +
+             (df['CCI:Mild Liver Disease'] >= 1).astype('int')
+             ) >= 1
+    ).astype('int')
+
     df['PaxRisk:Chronic lung disease'] = (
             ((df['CCI:Chronic Pulmonary Disease'] >= 1).astype('int') +
              (df["DX: Asthma"] >= 1).astype('int') +
@@ -197,6 +203,9 @@ def add_col(df):
              (df['DX: Other Substance Abuse'] >= 1).astype('int')
              ) >= 1
     ).astype('int')
+
+    df['PaxExclude:liver'] = (df['CCI:Moderate or Severe Liver Disease'] >= 1).astype('int')
+    df['PaxExclude:end-stage kidney disease'] = (df["DX: End Stage Renal Disease on Dialysis"] >= 1).astype('int')
 
     # Tuberculosis, not captured, need to add columns?
 
@@ -510,7 +519,7 @@ if __name__ == "__main__":
         # des = df.describe()
         # des.transpose().to_csv(out_data_file + 'describe.csv')
 
-    zz
+    # zz
     # pre-process data a little bit
     print('Considering inpatient/hospitalized cohorts but not ICU')
     df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')

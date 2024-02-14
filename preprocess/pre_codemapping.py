@@ -1654,6 +1654,47 @@ def build_n3c_pax_indication():
     return (med_info, pro_info, dx_info, other_info), df
 
 
+def ICD_to_addedPaxRisk():
+    # 2023-2-9
+    start_time = time.time()
+    dict_df_cci = pd.read_excel(r'../data/mapping/paxlovid_risk_added.xlsx', dtype=str, sheet_name=None)
+    print('len(icd_cci, cci_index, dict_df_cci)', len(dict_df_cci))
+
+    icd_cci = {}
+    cci_index = {}
+
+    for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
+        cci = df_cci['Category'].unique()
+        print(len(cci), cci)
+        assert len(cci) == 1
+        cci = cci[0]
+        cci_index[cci] = [ith, len(df_cci)]
+        print('cci:', cci, 'index:', ith, '#code:', len(df_cci), df_cci[['code type']].value_counts())
+        for index, row in df_cci.iterrows():
+            icd = row['dx code'].strip().upper().replace('.', '')
+            name = row['LONG DESCRIPTION']
+            type = row['code type']
+            # cci = row['Category']
+            # order = row['CCI order']
+            order = ith
+            icd_cci[icd] = [cci, type, name, order]
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/icd_addedPaxRisk_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cci_index):', len(cci_index))
+    output_file = r'../data/mapping/addedPaxRisk_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cci_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci, cci_index, dict_df_cci
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1688,7 +1729,7 @@ if __name__ == '__main__':
 
     # icd_addedPASC, addedPASC_index, df_pasc = ICD_to_PASC_added_extension()
     # icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
-    icd_cfr, cfr_index, dict_df_cfr = ICD_to_PASC_cognitive_fatigue_respiratory()
+    # icd_cfr, cfr_index, dict_df_cfr = ICD_to_PASC_cognitive_fatigue_respiratory()
 
     # zz
 
@@ -1727,4 +1768,6 @@ if __name__ == '__main__':
     # rx_info, df_contraindication = build_n3c_pax_contraindication()
     # (med_info, pro_info, dx_info, other_info), df_indication = build_n3c_pax_indication()
 
+    # 17 added covs for paxlovid risk  (2024-2-13)
+    icd_addedPaxRisk, addedPaxRisk_index, dict_df_addedPaxRisk = ICD_to_addedPaxRisk()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
