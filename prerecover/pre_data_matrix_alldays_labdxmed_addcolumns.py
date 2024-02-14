@@ -14,7 +14,7 @@ from tqdm import tqdm
 from collections import Counter
 import datetime
 from misc import utils
-import eligibility_setting as ecs
+import eligibility_setting_test as ecs
 import functools
 import fnmatch
 
