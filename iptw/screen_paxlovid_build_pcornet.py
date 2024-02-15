@@ -97,6 +97,13 @@ def add_col(df):
     # re-organize Paxlovid risk factors
     # see https://www.cdc.gov/coronavirus/2019-ncov/need-extra-precautions/people-with-medical-conditions.html
     # and https://www.paxlovid.com/who-can-take
+    print('in add_col, df.shape', df.shape)
+
+    print('Build covs for outpatient cohorts w/o ICU or ventilation')
+    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
+    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
+    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1) | (df['ventilation'] == 1)).astype('int')
+    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0) & (df['ventilation'] == 0)).astype('int')
 
     df['PaxRisk:Cancer'] = (
             ((df["DX: Cancer"] >= 1).astype('int') +
@@ -127,7 +134,8 @@ def add_col(df):
     df['PaxRisk:Dementia or other neurological conditions'] = (
             ((df['DX: Dementia'] >= 1).astype('int') +
              (df['CCI:Dementia'] >= 1).astype('int') +
-             (df["DX: Parkinson's Disease"] >= 1).astype('int')
+             (df["DX: Parkinson's Disease"] >= 1).astype('int') +
+             (df["DX: Multiple Sclerosis"] >= 1).astype('int')
              ) >= 1
     ).astype('int')
 
@@ -177,7 +185,7 @@ def add_col(df):
     df['PaxRisk:Mental health conditions'] = (df["DX: Mental Health Disorders"] >= 1).astype('int')
 
     df["PaxRisk:Overweight and obesity"] = (
-            (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] >= 1) | (df['bmi'] >= 25)
+            (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] >= 1) | (df['bmi'] >= 25) | (df['addPaxRisk:Obesity'] >= 1)
     ).astype('int')
 
     # physical activity
@@ -186,7 +194,8 @@ def add_col(df):
     # pregnancy, use infection during pregnant, label from pregnant cohorts
     df["PaxRisk:Pregnancy"] = ((df['flag_pregnancy'] == 1) &
                                (df['index date'] >= df['flag_pregnancy_start_date'] - datetime.timedelta(days=7)) &
-                               (df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7))).astype('int')
+                               (df['index date'] <= df['flag_delivery_date'] + datetime.timedelta(days=7))).astype(
+        'int')
 
     df['PaxRisk:Sickle cell disease or thalassemia'] = (
             ((df['DX: Sickle Cell'] >= 1).astype('int') +
@@ -202,15 +211,25 @@ def add_col(df):
 
     df['PaxRisk:Substance use disorders'] = (
             ((df["DX: Alcohol Abuse"] >= 1).astype('int') +
-             (df['DX: Other Substance Abuse'] >= 1).astype('int')
+             (df['DX: Other Substance Abuse'] >= 1).astype('int') +
+             (df['addPaxRisk:Drug Abuse'] >= 1).astype('int')
              ) >= 1
     ).astype('int')
+
+    df['PaxRisk:Tuberculosis'] = (df['addPaxRisk:tuberculosis'] >= 1).astype('int')
 
     # PAXLOVID is not recommended for people with severe kidney disease
     # PAXLOVID is not recommended for people with severe liver disease
     df['PaxExclude:liver'] = (df['CCI:Moderate or Severe Liver Disease'] >= 1).astype('int')
     df['PaxExclude:end-stage kidney disease'] = (df["DX: End Stage Renal Disease on Dialysis"] >= 1).astype('int')
 
+    pax_risk_cols = [x for x in df.columns if x.startswith('PaxRisk:')]
+    print('pax_risk_cols:', len(pax_risk_cols), pax_risk_cols)
+    df['PaxRisk-Count'] = df[pax_risk_cols].sum(axis=1)
+
+    pax_exclude_cols = [x for x in df.columns if x.startswith('PaxExclude:')]
+    print('pax_exclude_cols:', len(pax_exclude_cols), pax_exclude_cols)
+    df['PaxExclude-Count'] = df[pax_exclude_cols].sum(axis=1)
     # Tuberculosis, not captured, need to add columns?
 
     # ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
@@ -220,12 +239,23 @@ def add_col(df):
     df['cci_quan:5-10'] = 0
     df['cci_quan:11+'] = 0
 
-    # ['age18-24', 'age15-34', 'age35-49', 'age50-64', 'age65+']
-    df['age18-24'] = 0
-    df['age25-34'] = 0
-    df['age35-49'] = 0
-    df['age50-64'] = 0
-    df['age65+'] = 0
+    # ['age18-24', 'age25-34', 'age35-49', 'age50-64', 'age65+']
+    # df['age@18-<25'] = 0
+    # df['age@25-<30'] = 0
+    # df['age@30-<35'] = 0
+    # df['age@35-<40'] = 0
+    # df['age@40-<45'] = 0
+    # df['age@45-<50'] = 0
+    # df['age@50-<55'] = 0
+    # df['age@55-<60'] = 0
+    # df['age@60-<65'] = 0
+    # df['age@65-<60'] = 0
+
+    df['age@18-24'] = 0
+    df['age@25-34'] = 0
+    df['age@35-49'] = 0
+    df['age@50-64'] = 0
+    df['age@65+'] = 0
 
     # ['RE:Asian Non-Hispanic', 'RE:Black or African American Non-Hispanic', 'RE:Hispanic or Latino Any Race',
     # 'RE:White Non-Hispanic', 'RE:Other Non-Hispanic', 'RE:Unknown']
@@ -254,15 +284,15 @@ def add_col(df):
         age = row['age']
         if pd.notna(age):
             if age < 25:
-                df.loc[index, 'age18-24'] = 1
+                df.loc[index, 'age@18-24'] = 1
             elif age < 35:
-                df.loc[index, 'age25-34'] = 1
+                df.loc[index, 'age@25-34'] = 1
             elif age < 50:
-                df.loc[index, 'age35-49'] = 1
+                df.loc[index, 'age@35-49'] = 1
             elif age < 65:
-                df.loc[index, 'age50-64'] = 1
+                df.loc[index, 'age@50-64'] = 1
             elif age >= 65:
-                df.loc[index, 'age65+'] = 1
+                df.loc[index, 'age@65+'] = 1
 
         if row['score_cci_quan'] <= 0:
             df.loc[index, 'cci_quan:0'] = 1
@@ -312,7 +342,7 @@ def add_col(df):
         # adi use mine later, not transform here, add missing
 
         # monthly changes, add later. Already there
-
+    print('Finish add_col, df.shape', df.shape)
     return df
 
 
@@ -322,37 +352,83 @@ def more_ec_for_cohort_selection(df):
 
     # select index date
     # print('Before selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
-    df = df.loc[(df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)) &
-                (df['index date'] >= datetime.datetime(2022, 1, 1, 0, 0)), :]
-
+    df = df.loc[
+         (df['index date'] >= datetime.datetime(2022, 1, 1, 0, 0)) &
+         (df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :]
     print('After selecting index date from 2022-1-1 to 2023-2-1, len(df)', len(df))
 
     # Exclusion, no hospitalized
     # print('Before selecting no hospitalized, len(df)', len(df))
-    df = df.loc[(df['inpatienticu'] == 0), :]
+    df = df.loc[(df['outpatient'] == 1), :]
     print('After selecting no hospitalized, len(df)', len(df))
 
-    # select age and risk
-    # print('Before selecting age >= 50 or at least on risk, len(df)', len(df))
-    df = df.loc[(df['age'] >= 50) | (df['pax_risk'] > 0), :]  # .copy()
-    print('After selecting age >= 50 or at least on risk, len(df)', len(df))
+    def ec_no_other_covid_treatment(_df):
+        print('before ec_no_other_covid_treatment, _df.shape', _df.shape)
+        _df = _df.loc[(~(_df['treat-t2e@remdesivir'] <= 14)) &
+                      (_df['Remdesivir'] == 0) &
+                      (_df['Molnupiravir'] == 0) &
+                      (_df[
+                           'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] == 0) &
+                      (_df['PX: Convalescent Plasma'] == 0) &
+                      (_df['pax_contra'] == 0)]
+        print('after ec_no_other_covid_treatment, _df.shape', _df.shape)
+        return _df
 
-    # Exclusion, no contra
-    # print('Before selecting pax drug contraindication, len(df)', len(df))
-    df = df.loc[(df['pax_contra'] == 0), :]
-    print('After selecting pax drug contraindication, len(df)', len(df))
+    def ec_at_least_one_risk_4_pax(_df):
+        print('before ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+        _df = _df.loc[(_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0)]
+        print('after ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+        return _df
 
+    def ec_not_at_risk_4_pax(_df):
+        print('before ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        _df = _df.loc[~((_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0))]
+        print('after ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        return _df
+
+    def ec_no_severe_conditions_4_pax(_df):
+        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
+        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        return _df
+
+    print('**************build treated patients')
     # drug initiation within 5 days
     df_pos = df.loc[(df['treat-flag@paxlovid'] > 0), :]
     print('After selecting pax prescription, len(df_pos)', len(df_pos))
     df_pos = df_pos.loc[(df_pos['treat-t2e@paxlovid'] <= 5), :]
     print('After selecting pax prescription within 5 days, len(df_pos)', len(df_pos))
+    df_pos = ec_no_other_covid_treatment(df_pos)
 
+    df_pos_risk = ec_at_least_one_risk_4_pax(df_pos)
+    df_pos_risk = ec_no_severe_conditions_4_pax(df_pos_risk)
+
+    df_pos_norisk = ec_not_at_risk_4_pax(df_pos)
+    df_pos_norisk = ec_no_severe_conditions_4_pax(df_pos_norisk)
+
+    print('**************build control patients')
     # non initiation group, no paxlovid
-    df_control = df.loc[(df['treat-flag@paxlovid'] == 0), :]
-    print('After selecting NO pax prescription, len(df_control)', len(df_control))
+    df_ctrl = df.loc[(df['treat-flag@paxlovid'] == 0), :]
+    print('After selecting NO pax prescription, len(df_ctrl)', len(df_ctrl))
+    df_ctrl = ec_no_other_covid_treatment(df_ctrl)
 
-    return df_pos, df_control
+    df_ctrl_risk = ec_at_least_one_risk_4_pax(df_ctrl)
+    df_ctrl_risk = ec_no_severe_conditions_4_pax(df_ctrl_risk)
+
+    df_ctrl_norisk = ec_not_at_risk_4_pax(df_ctrl)
+    df_ctrl_norisk = ec_no_severe_conditions_4_pax(df_ctrl_norisk)
+
+    # # select age and risk
+    # # print('Before selecting age >= 50 or at least on risk, len(df)', len(df))
+    # df = df.loc[(df['age'] >= 50) | (df['pax_risk'] > 0), :]  # .copy()
+    # print('After selecting age >= 50 or at least on risk, len(df)', len(df))
+    #
+    # # Exclusion, no contra
+    # # print('Before selecting pax drug contraindication, len(df)', len(df))
+    # df = df.loc[(df['pax_contra'] == 0), :]
+    # print('After selecting pax drug contraindication, len(df)', len(df))
+
+    return df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk
 
 
 def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
@@ -474,7 +550,6 @@ if __name__ == "__main__":
 
             print('After left merge, merged df.shape:', df.shape)
 
-
             df_list.append(df)
             print('Done', ith, site)
 
@@ -508,8 +583,10 @@ if __name__ == "__main__":
         df.to_csv(out_data_file)
         print('dump done!')
     else:
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
         # out_data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats.csv'
+
         print('Load data covariates file:', out_data_file)
         df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
                          parse_dates=['index date', 'dob',
@@ -520,26 +597,35 @@ if __name__ == "__main__":
         # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
         print('df.shape:', df.shape)
 
+        df = add_col(df)
+        print('add cols, then df.shape:', df.shape)
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats.csv'
+        df.to_csv(out_data_file)
+        print('add feature finished, dump done!')
+
         # des = df.describe()
         # des.transpose().to_csv(out_data_file + 'describe.csv')
 
-    # zz
-    # pre-process data a little bit
-    print('Considering inpatient/hospitalized cohorts but not ICU')
-    df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
-    df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
-    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1)).astype('int')
-    df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0)).astype('int')
-    print('add more columns aligned with N3C')
-    df = add_col(df)
+    # df_treat, df_control = more_ec_for_cohort_selection(df)
+    df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
 
-    df_treat, df_control = more_ec_for_cohort_selection(df)
-    df_treat['treated'] = 1
-    df_control['treated'] = 0
-    print('len(df_treat)', len(df_treat), 'len(df_control)', len(df_control))
+    df_pos_risk['treated'] = 1
+    df_pos_norisk['treated'] = 1
+    df_ctrl_risk['treated'] = 0
+    df_ctrl_norisk['treated'] = 0
 
-    # df_treat.to_csv(out_data_file.replace('.csv', '-newECselectedTreated_addCFR-4pcornet.csv'))
-    # df_control.to_csv(out_data_file.replace('.csv', '-newECselectedControl_addCFR-4pcornet.csv'))
+    print('len(df_pos_risk)', len(df_pos_risk), 'len(df_pos_norisk)', len(df_pos_norisk))
+    print('len(df_ctrl_risk)', len(df_ctrl_risk), 'len(df_ctrl_norisk)', len(df_ctrl_norisk))
+    df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk.csv'))
+    df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk.csv'))
+
+    df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk.csv'))
+    df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk.csv'))
+
+    pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS.csv'))
+
+    # utils.dump((df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk),
+    #            r'./recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-selectedCohorts.pkl')
 
     # should build two cohorts:
     # 1 trial emulation -- ec
