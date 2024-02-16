@@ -79,10 +79,10 @@ def add_any_pasc(df):
 
     # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
     pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    _exclude_list = ['Pressure ulcer of skin', ]
+    _exclude_list = ['Pressure ulcer of skin', 'Fluid and electrolyte disorders' ]
     pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
 
-    pasc_add = ['smell and taste', ]
+    pasc_add = ['smell and taste',]
     print('len(pasc_list)', len(pasc_list), 'len(pasc_add)', len(pasc_add))
 
     for p in pasc_list:
@@ -432,6 +432,13 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in col_names])
 
+    # part 3
+    col_names = ['quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23', ]
+    row_names.extend(col_names)
+    records.extend(
+        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+         for c in col_names])
+
     # Coexisting coditions
     row_names.append('Coexisting conditions — no. (%)')
 
@@ -521,7 +528,9 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
                      'CCI:Renal Disease', 'CCI:Cancer', 'CCI:Moderate or Severe Liver Disease',
                      'CCI:Metastatic Carcinoma',
                      'CCI:AIDS/HIV',
-                 ])
+                 ] + [
+                'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+                ])
 
     col_names_out = (['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
                       'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
@@ -563,28 +572,32 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
                       "Prescription of Corticosteroids",
                       "Prescription of Immunosuppressant drug"
                       ] +
-                     ['Placenta accreta spectrum',
-                      'Pulmonary hypertension', 'Chronic renal disease',
-                      'Cardiac disease, preexisting', 'HIV/AIDS',
-                      'Preeclampsia with severe features',
-                      'Placental abruption',
-                      'Bleeding disorder, preexisting',
-                      'Anemia, preexisting',
-                      'Twin/multiple pregnancy',
-                      'Preterm birth (< 37 weeks)',
-                      'Placenta previa, complete or partial',
-                      'Neuromuscular disease',
-                      'Asthma, acute or moderate/severe',
-                      'Preeclampsia without severe features or gestational hypertension',
-                      'Connective tissue or autoimmune disease',
-                      'Uterine fibroids',
-                      'Substance use disorder',
-                      'Gastrointestinal disease', 'Chronic hypertension',
-                      'Major mental health disorder',
-                      'Preexisting diabetes mellitus', 'Thyrotoxicosis',
-                      'Previous cesarean birth',
-                      'Gestational diabetes mellitus',
-                      r'Delivery BMI>40'] +
+                     ['obc:Placenta accreta spectrum',
+                      'obc:Pulmonary hypertension',
+                      'obc:Chronic renal disease',
+                      'obc:Cardiac disease, preexisting',
+                      'obc:HIV/AIDS',
+                      'obc:Preeclampsia with severe features',
+                      'obc:Placental abruption',
+                      'obc:Bleeding disorder, preexisting',
+                      'obc:Anemia, preexisting',
+                      'obc:Twin/multiple pregnancy',
+                      'obc:Preterm birth (< 37 weeks)',
+                      'obc:Placenta previa, complete or partial',
+                      'obc:Neuromuscular disease',
+                      'obc:Asthma, acute or moderate/severe',
+                      'obc:Preeclampsia without severe features or gestational hypertension',
+                      'obc:Connective tissue or autoimmune disease',
+                      'obc:Uterine fibroids',
+                      'obc:Substance use disorder',
+                      'obc:Gastrointestinal disease',
+                      'obc:Chronic hypertension',
+                      'obc:Major mental health disorder',
+                      'obc:Preexisting diabetes mellitus',
+                      'obc:Thyrotoxicosis',
+                      'obc:Previous cesarean birth',
+                      'obc:Gestational diabetes mellitus',
+                      'obc:Delivery BMI>40'] +
                      [
                          'CCI:Myocardial Infarction', 'CCI:Congestive Heart Failure', 'CCI:Periphral Vascular Disease',
                          'CCI:Cerebrovascular Disease', 'CCI:Dementia', 'CCI:Chronic Pulmonary Disease',
@@ -595,7 +608,10 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
                          'CCI:Renal Disease', 'CCI:Cancer', 'CCI:Moderate or Severe Liver Disease',
                          'CCI:Metastatic Carcinoma',
                          'CCI:AIDS/HIV',
-                     ])
+                     ] + [
+                'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+                ])
+
 
     row_names.extend(col_names_out)
     records.extend(

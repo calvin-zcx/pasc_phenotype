@@ -102,7 +102,8 @@ def add_col(df):
     print('Build covs for outpatient cohorts w/o ICU or ventilation')
     df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
     df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
-    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1) | (df['ventilation'] == 1)).astype('int')
+    df['inpatienticu'] = ((df['hospitalized'] == 1) | (df['criticalcare'] == 1) | (df['ventilation'] == 1)).astype(
+        'int')
     df['outpatient'] = ((df['hospitalized'] == 0) & (df['criticalcare'] == 0) & (df['ventilation'] == 0)).astype('int')
 
     df['PaxRisk:Cancer'] = (
@@ -278,9 +279,22 @@ def add_col(df):
     df['No. of hospitalizations:1'] = 0
     df['No. of hospitalizations:>=1'] = 0
 
+    df['quart:01/22-03/22'] = 0
+    df['quart:04/22-06/22'] = 0
+    df['quart:07/22-09/22'] = 0
+    df['quart:10/22-1/23'] = 0
     for index, row in tqdm(df.iterrows(), total=len(df)):
         # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
-        index_date = row['index date']
+        index_date = pd.to_datetime(row['index date'])
+        if index_date < datetime.datetime(2022, 4, 1, 0, 0):
+            df.loc[index, 'quart:01/22-03/22'] = 1
+        elif index_date < datetime.datetime(2022, 7, 1, 0, 0):
+            df.loc[index, 'quart:04/22-06/22'] = 1
+        elif index_date < datetime.datetime(2022, 10, 1, 0, 0):
+            df.loc[index, 'quart:07/22-09/22'] = 1
+        elif index_date <= datetime.datetime(2023, 2, 1, 0, 0):
+            df.loc[index, 'quart:10/22-1/23'] = 1
+
         age = row['age']
         if pd.notna(age):
             if age < 25:
@@ -355,7 +369,7 @@ def more_ec_for_cohort_selection(df):
     df = df.loc[
          (df['index date'] >= datetime.datetime(2022, 1, 1, 0, 0)) &
          (df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :]
-    print('After selecting index date from 2022-1-1 to 2023-2-1, len(df)', len(df))
+    print('After selecting index date from 2022-1-1 to 2023-2-28, len(df)', len(df))
 
     # Exclusion, no hospitalized
     # print('Before selecting no hospitalized, len(df)', len(df))
@@ -585,7 +599,6 @@ if __name__ == "__main__":
     else:
         # out_data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
         out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
-        # out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats.csv'
 
         print('Load data covariates file:', out_data_file)
         df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -594,7 +607,6 @@ if __name__ == "__main__":
                                       'flag_pregnancy_start_date',
                                       'flag_pregnancy_end_date'
                                       ])
-        # pd.DataFrame(df.columns).to_csv('recover_covid_pos-columns-names.csv')
         print('df.shape:', df.shape)
 
         df = add_col(df)

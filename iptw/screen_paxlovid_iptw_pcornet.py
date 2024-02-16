@@ -451,9 +451,7 @@ if __name__ == "__main__":
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
-            "YM: January 2022", "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
-            "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
-            "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
+            # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
@@ -466,6 +464,8 @@ if __name__ == "__main__":
             'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
             'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
             'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
+            'DX: Obstructive sleep apnea',  'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
 
     elif args.cohorttype == 'norisk':
@@ -478,13 +478,13 @@ if __name__ == "__main__":
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
-            "YM: January 2022", "YM: February 2022", "YM: March 2022", "YM: April 2022", "YM: May 2022",
-            "YM: June 2022", "YM: July 2022", "YM: August 2022", "YM: September 2022",
-            "YM: October 2022", "YM: November 2022", "YM: December 2022", "YM: January 2023",
+             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
             'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
+            'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
 
     else:
