@@ -465,7 +465,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     kmf0 = KaplanMeierFitter(label=legends['control']).fit(controlled_t2e,
                                                   event_observed=flag_2binary(controlled_flag), label=legends['control'])
 
-    point_in_time = [60, 90, 120, 150, 180]
+    point_in_time = [30, 60, 90, 120, 150, 180]
     results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
     # results.print_summary()
     survival_1 = kmf1.predict(point_in_time).to_numpy()

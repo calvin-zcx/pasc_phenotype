@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--build_data', action='store_true')
 
     # parser.add_argument('--covtype', choices=['n3c', 'pcornet'], default='pcornet')
-    parser.add_argument('--cohorttype', choices=['atrisk', 'norisk'], default='atrisk')
+    parser.add_argument('--cohorttype', choices=['atrisk', 'norisk'], default='norisk')
     args = parser.parse_args()
 
     # More args
@@ -257,11 +257,11 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 if __name__ == "__main__":
-    # python screen_paxlovid_iptw_n3c_newCovOut.py  --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c-all.txt
-    # python screen_paxlovid_iptw_n3c_newCovOut.py  --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c-anyfollowupdx.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all.txt
 
-    # python screen_paxlovid_iptw_n3c_newCovOut.py  --severity all --covtype n3c 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c_newCovOut-all-covn3c.txt
-    # python screen_paxlovid_iptw_n3c_newCovOut.py  --severity all --covtype pcornet 2>&1 | tee  log_recover/screen_paxlovid_iptw_n3c_newCovOut-all-pcornet.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-anyfollowupdx.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx.txt
 
     start_time = time.time()
     args = parse_args()
@@ -324,8 +324,19 @@ if __name__ == "__main__":
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
+    # data clean for <0 error death records, and add censoring to the death time to event columns
     df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
     df.loc[df['death t2e'] < 0, 'death'] = 0
+
+    df['death all'] = ((df['death'] == 1) & (df['death t2e'] >= 0) & (df['death t2e'] <= 180)).astype('int')
+    df['death t2e all'] = df['death t2e'].clip(lower=0, upper=180)
+    df.loc[df['death all'] == 0, 'death t2e all'] = df['maxfollowup'].clip(lower=0, upper=180)
+
+    df['death acute'] = ((df['death'] == 1) & (df['death t2e'] < 30)).astype('int')
+    df['death t2e acute'] = df['death t2e all'].clip(upper=30)
+
+    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 31)).astype('int')
+    df['death t2e postacute'] = df['death t2e all']
 
     # pre-process PASC info
     df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
@@ -465,20 +476,20 @@ if __name__ == "__main__":
             'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
             'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
-            'DX: Obstructive sleep apnea',  'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
+            'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
 
     elif args.cohorttype == 'norisk':
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
-            'age@18-24', 'age@25-34', 'age@35-49', #'age@50-64', 'age@65+',
+            'age@18-24', 'age@25-34', 'age@35-49',  # 'age@50-64', 'age@65+',
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
             'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
-             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
+            # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
@@ -490,7 +501,7 @@ if __name__ == "__main__":
     else:
         raise ValueError
 
-    print('covtype:', args.covtype)
+    print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
 
     df_covs = df.loc[:, covs_columns].astype('float')
@@ -516,7 +527,8 @@ if __name__ == "__main__":
         record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    selected_screen_list = ['any_pasc', 'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list
+    selected_screen_list = ['death', 'death_acute', 'death_postacute', 'any_pasc',
+                            'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list
 
     causal_results = []
     results_columns_name = []
@@ -527,6 +539,18 @@ if __name__ == "__main__":
             pasc_flag = df['any_pasc_flag'].astype('int')
             pasc_t2e = df['any_pasc_t2e'].astype('float')
             pasc_baseline = df['any_pasc_baseline']
+        elif pasc == 'death':
+            pasc_flag = df['death'].astype('int')
+            pasc_t2e = df['death t2e all'].astype('float')
+            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
+        elif pasc == 'death_acute':
+            pasc_flag = df['death acute'].astype('int')
+            pasc_t2e = df['death t2e acute'].astype('float')
+            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
+        elif pasc == 'death_postacute':
+            pasc_flag = df['death postacute'].astype('int')
+            pasc_t2e = df['death t2e postacute'].astype('float')
+            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
         elif pasc in pasc_list:
             pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dx-t2e@' + pasc].astype('float')
@@ -545,18 +569,29 @@ if __name__ == "__main__":
             pasc_baseline = df['dxCFR-base@' + pasc]
 
         # considering competing risks
-        death_flag = df['death']
-        death_t2e = df['death t2e']
-        pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
-        print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
-              'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
+        if pasc == 'death':
+            print('considering pasc death over all time, not set competing risk')
+        elif pasc == 'death_acute':
+            print('considering pasc death in acute phase, not set competing risk')
+        elif pasc == 'death_postacute':
+            print('considering pasc death in POST acute phase, set acute death as competing risk')
+            pasc_flag.loc[df['death acute']] = 2
+        else:
+            # general conditions
+            print('considering general pasc in POST acute phase, set any death as competing risk')
+            death_flag = df['death']
+            death_t2e = df['death t2e']
+            pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
+
+            print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
+                  'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
         covid_label = df_label[idx]  # actually current is the pregnant label
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
-        print('n prescriped/pos:', n_covid_pos, 'n not prescrine/neg:', n_covid_neg, )
+        print('n case:', n_covid_pos, 'n control:', n_covid_neg, )
 
         # Sample all negative
         # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=args.negative_ratio * n_covid_pos,
@@ -576,7 +611,9 @@ if __name__ == "__main__":
         pasc_flag = pasc_flag[pos_neg_selected]
         pasc_t2e = pasc_t2e[pos_neg_selected]
         print('pasc_t2e.describe():', pasc_t2e.describe())
-        pasc_t2e[pasc_t2e <= 30] = 30
+
+        # all the post-acute events and t2e are from 30/31 - 180, this is just for data clean
+        # pasc_t2e[pasc_t2e <= 30] = 30
 
         print('pasc_flag.value_counts():\n', pasc_flag.value_counts())
         print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), Paxlovid pos:neg = {}:{} sample ratio -/+={}, '
@@ -597,7 +634,7 @@ if __name__ == "__main__":
 
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
-            'C': 10 ** np.arange(-1.5, 1., 0.5),  # 10 ** np.arange(-2, 1.5, 0.5),
+            'C': 10 ** np.arange(-1.5, 1., 0.25),  # 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
             covs_array, covid_label, verbose=0)
@@ -614,9 +651,9 @@ if __name__ == "__main__":
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
         out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-results.csv'.format(
-            args.covtype,
+            args.cohorttype,
             args.severity,
-            'narrow',  # '-select' if args.selectpasc else '',
+            'pcornet',  # '-select' if args.selectpasc else '',
             i,
             pasc.replace(':', '-').replace('/', '-'))
         utils.check_and_mkdir(out_file_balance)
@@ -625,24 +662,24 @@ if __name__ == "__main__":
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
-                args.covtype,
+                args.cohorttype,
                 args.severity,
-                'narrow',  # '-select' if args.selectpasc else '',
+                'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
         dfps.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
-                args.covtype,
+                args.cohorttype,
                 args.severity,
-                'narrow',  # '-select' if args.selectpasc else '',
+                'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
             figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-PS.png'.format(
-                args.covtype,
+                args.cohorttype,
                 args.severity,
-                'narrow',  # '-select' if args.selectpasc else '',
+                'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
 
@@ -664,9 +701,9 @@ if __name__ == "__main__":
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
             fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-km.png'.format(
-                args.covtype,
+                args.cohorttype,
                 args.severity,
-                'narrow',  # '-select' if args.selectpasc else '',
+                'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc,
             legends={'case': 'Paxlovid', 'control': 'Control'})
@@ -707,9 +744,9 @@ if __name__ == "__main__":
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
                     r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
-                        args.covtype,
+                        args.cohorttype,
                         args.severity,
-                        'narrow',  # '-select' if args.selectpasc else '',
+                        'pcornet',  # '-select' if args.selectpasc else '',
                         i))
         except:
             print('Error in ', i, pasc)
@@ -717,9 +754,9 @@ if __name__ == "__main__":
 
             df_causal.to_csv(
                 r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
-                    args.covtype,
+                    args.cohorttype,
                     args.severity,
-                    'narrow',  # '-select' if args.selectpasc else '',
+                    'pcornet',  # '-select' if args.selectpasc else '',
                 ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -728,8 +765,8 @@ if __name__ == "__main__":
 
     df_causal.to_csv(
         r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific.csv'.format(
-            args.covtype,
+            args.cohorttype,
             args.severity,
-            'narrow',  # '-select' if args.selectpasc else '',
+            'pcornet',  # '-select' if args.selectpasc else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

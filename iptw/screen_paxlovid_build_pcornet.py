@@ -376,6 +376,14 @@ def more_ec_for_cohort_selection(df):
     df = df.loc[(df['outpatient'] == 1), :]
     print('After selecting no hospitalized, len(df)', len(df))
 
+    def ec_no_U099_baseline(_df):
+        print('before ec_no_U099_baseline, _df.shape', _df.shape)
+        _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
+        print('after ec_no_U099_baseline, _df.shape', _df.shape)
+        return _df
+
+    df = ec_no_U099_baseline(df)
+
     def ec_no_other_covid_treatment(_df):
         print('before ec_no_other_covid_treatment, _df.shape', _df.shape)
         _df = _df.loc[(~(_df['treat-t2e@remdesivir'] <= 14)) &
@@ -414,9 +422,11 @@ def more_ec_for_cohort_selection(df):
     print('After selecting pax prescription within 5 days, len(df_pos)', len(df_pos))
     df_pos = ec_no_other_covid_treatment(df_pos)
 
+    print('**************build treated patients**AT risk patients')
     df_pos_risk = ec_at_least_one_risk_4_pax(df_pos)
     df_pos_risk = ec_no_severe_conditions_4_pax(df_pos_risk)
 
+    print('**************build treated patients**NO risk patients')
     df_pos_norisk = ec_not_at_risk_4_pax(df_pos)
     df_pos_norisk = ec_no_severe_conditions_4_pax(df_pos_norisk)
 
@@ -426,9 +436,11 @@ def more_ec_for_cohort_selection(df):
     print('After selecting NO pax prescription, len(df_ctrl)', len(df_ctrl))
     df_ctrl = ec_no_other_covid_treatment(df_ctrl)
 
+    print('**************build control patients**AT risk patients')
     df_ctrl_risk = ec_at_least_one_risk_4_pax(df_ctrl)
     df_ctrl_risk = ec_no_severe_conditions_4_pax(df_ctrl_risk)
 
+    print('**************build control patients**NO risk patients')
     df_ctrl_norisk = ec_not_at_risk_4_pax(df_ctrl)
     df_ctrl_norisk = ec_no_severe_conditions_4_pax(df_ctrl_norisk)
 
