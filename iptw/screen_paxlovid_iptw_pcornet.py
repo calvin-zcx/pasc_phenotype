@@ -50,7 +50,7 @@ def parse_args():
     parser.add_argument('--build_data', action='store_true')
 
     # parser.add_argument('--covtype', choices=['n3c', 'pcornet'], default='pcornet')
-    parser.add_argument('--cohorttype', choices=['atrisk', 'norisk'], default='norisk')
+    parser.add_argument('--cohorttype', choices=['atrisk', 'norisk'], default='atrisk')
     args = parser.parse_args()
 
     # More args
