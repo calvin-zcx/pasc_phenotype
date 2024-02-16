@@ -527,8 +527,11 @@ if __name__ == "__main__":
         record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    selected_screen_list = ['death', 'death_acute', 'death_postacute', 'any_pasc',
-                            'PASC-General'] + CFR_list + pasc_list + addedPASC_list + brainfog_list
+    selected_screen_list = (['any_pasc', 'PASC-General', 'death', 'death_acute', 'death_postacute', ] +
+                            CFR_list +
+                            pasc_list +
+                            addedPASC_list +
+                            brainfog_list)
 
     causal_results = []
     results_columns_name = []
