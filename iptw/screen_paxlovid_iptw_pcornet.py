@@ -353,8 +353,9 @@ if __name__ == "__main__":
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
     # data clean for <0 error death records, and add censoring to the death time to event columns
-    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
+
     df.loc[df['death t2e'] < 0, 'death'] = 0
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
 
     # death in [0, 180). 1: evnt, 0: censored, censored at 180. death at 180, not counted, thus use <
     df['death all'] = ((df['death'] == 1) & (df['death t2e'] >= 0) & (df['death t2e'] < 180)).astype('int')
@@ -611,7 +612,7 @@ if __name__ == "__main__":
             print('considering pasc death in acute phase, not set competing risk')
         elif pasc == 'death_postacute':
             print('considering pasc death in POST acute phase, set acute death as censored')
-            pasc_flag.loc[df['death acute']] = 0
+            pasc_flag.loc[df['death acute'] == 1] = 0
         else:
             # general conditions
             print('considering general pasc in POST acute phase, set any death as competing risk')

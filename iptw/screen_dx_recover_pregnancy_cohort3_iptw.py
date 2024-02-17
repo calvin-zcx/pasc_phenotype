@@ -517,8 +517,9 @@ def feature_process_additional(df):
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
-    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
     df.loc[df['death t2e'] < 0, 'death'] = 0
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
+
 
     df['gestational age at delivery'] = np.nan
     df['gestational age of infection'] = np.nan
