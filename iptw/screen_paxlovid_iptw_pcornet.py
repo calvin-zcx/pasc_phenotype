@@ -42,7 +42,21 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg',
-                                               'pospreg-posnonpreg', 'anyfollowupdx'],
+                                               'pospreg-posnonpreg', 'anyfollowupdx',
+                                               'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
+                                               'PaxRisk:Chronic liver disease',
+                                               'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+                                               'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
+                                               'PaxRisk:Disabilities',
+                                               'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+                                               'PaxRisk:HIV infection',
+                                               'PaxRisk:Immunocompromised condition or weakened immune system',
+                                               'PaxRisk:Mental health conditions',
+                                               'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
+                                               'PaxRisk:Sickle cell disease or thalassemia',
+                                               'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+                                               'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+                                               ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=5)  # 5
@@ -221,6 +235,20 @@ def select_subpopulation(df, severity):
         print('Considering patients with anyfollowupdx')
         print('before followupanydx', len(df))
         df = df.loc[(df['followupanydx'] == 1), :].copy()
+        print('after followupanydx', len(df))
+    elif severity in ['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
+                      'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+                      'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
+                      'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+                      'PaxRisk:Immunocompromised condition or weakened immune system',
+                      'PaxRisk:Mental health conditions',
+                      'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
+                      'PaxRisk:Sickle cell disease or thalassemia',
+                      'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+                      'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis', ]:
+        print('Considering {} cohorts'.format(severity))
+        print('before selection', len(df))
+        df = df.loc[(df[severity] == 1), :].copy()
         print('after followupanydx', len(df))
     else:
         print('Considering ALL cohorts')
@@ -593,7 +621,8 @@ if __name__ == "__main__":
             # acute death < 30, censored at 30 days
             pasc_flag.loc[(death_t2e <= pasc_t2e)] = 2
 
-            print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
+            print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:',
+                  df_label[(death_t2e == pasc_t2e)].sum(),
                   'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
         # Select population free of outcome at baseline
