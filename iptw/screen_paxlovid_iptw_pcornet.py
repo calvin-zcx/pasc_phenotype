@@ -485,7 +485,9 @@ if __name__ == "__main__":
     elif args.cohorttype == 'norisk':
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
-            'age@18-24', 'age@25-34', 'age@35-49',  # 'age@50-64', 'age@65+',
+            # 'age@18-24', 'age@25-34', 'age@35-49',  # 'age@50-64', 'age@65+',
+            'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+            'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years'
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
             'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
