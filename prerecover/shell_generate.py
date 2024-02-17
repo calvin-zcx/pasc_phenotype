@@ -235,6 +235,7 @@ python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_
     python pre_data_manuscript_withAllDays.py --cohorts covid_4manuNegNoCovidV2age18 --dataset nyu 2>&1 | tee  log\pre_data_manuscript_withAllDays_nyu.txt
     """
 
+
 def shell_lab_dx_med_4covid_addcolumnes():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -319,16 +320,47 @@ def shell_lab_dx_med_4covid_aux():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     # not using this, change to pre_covid_records.py
+
+
 """
 ren ../data/recover/output/nyu/patient_demo_nyu.pkl patient_demo_nyu_old.pkl 
 python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
 """
+
+
+def shell_iptw_subgroup():
+    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
+    start_time = time.time()
+
+    subgroup_list = ['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
+                     'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+                     'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
+                     'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+                     'PaxRisk:Immunocompromised condition or weakened immune system',
+                     'PaxRisk:Mental health conditions',
+                     'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
+                     'PaxRisk:Sickle cell disease or thalassemia',
+                     'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+                     'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis', ]
+
+    print('subgroup_list:', len(subgroup_list), subgroup_list)
+
+    with open(r'../iptw/shell_iptw_subgroup.ps1', 'wt') as f:
+        for i, subgroup in enumerate(subgroup_list):
+            cmdstr = """python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity '{}' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-{}.txt
+""".format(subgroup, subgroup.replace(':', '_').replace('/', '-').replace(' ', '_'))
+            f.write(cmdstr)
+            print(i, subgroup, 'done')
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
 
 if __name__ == '__main__':
     start_time = time.time()
 
     # shell_lab_dx_med_4covid()
     # shell_lab_dx_med_4covid_aux()
-    shell_lab_dx_med_4covid_addcolumnes()
+    # shell_lab_dx_med_4covid_addcolumnes()
+    shell_iptw_subgroup()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
