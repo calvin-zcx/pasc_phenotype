@@ -443,6 +443,8 @@ def flag_2binary(label):
     if isinstance(label, pd.core.series.Series):
         return label.where(label == 1, 0)
     elif isinstance(label, (list, np.ndarray)):
+        # e.g., np.where(np.array([0, 0, 1, 1, 2, 2]) == 1, 1, 0)
+        # output:           array([0, 0, 1, 1, 0, 0])
         return np.where(label == 1, 1, 0)
     else:
         raise ValueError

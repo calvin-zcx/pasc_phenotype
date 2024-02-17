@@ -328,14 +328,17 @@ if __name__ == "__main__":
     df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
     df.loc[df['death t2e'] < 0, 'death'] = 0
 
-    df['death all'] = ((df['death'] == 1) & (df['death t2e'] >= 0) & (df['death t2e'] <= 180)).astype('int')
+    # death in [0, 180). 1: evnt, 0: censored, censored at 180. death at 180, not counted, thus use <
+    df['death all'] = ((df['death'] == 1) & (df['death t2e'] >= 0) & (df['death t2e'] < 180)).astype('int')
     df['death t2e all'] = df['death t2e'].clip(lower=0, upper=180)
     df.loc[df['death all'] == 0, 'death t2e all'] = df['maxfollowup'].clip(lower=0, upper=180)
 
+    # death in [0, 30). 1: evnt, 0: censored, censored at 30. death at 30, not counted, thus use <
     df['death acute'] = ((df['death'] == 1) & (df['death t2e'] < 30)).astype('int')
     df['death t2e acute'] = df['death t2e all'].clip(upper=30)
 
-    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 31)).astype('int')
+    # death in [30, 180).  1:event, 0: censored. censored at 180 or < 30, say death at 20, flag is 0, time is 20
+    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 30) & (df['death t2e'] < 180)).astype('int')
     df['death t2e postacute'] = df['death t2e all']
 
     # pre-process PASC info
@@ -584,7 +587,9 @@ if __name__ == "__main__":
             print('considering general pasc in POST acute phase, set any death as competing risk')
             death_flag = df['death']
             death_t2e = df['death t2e']
-            pasc_flag.loc[(death_t2e == pasc_t2e)] = 2
+            # if there is a death event, pasc from 30-180, post acute death censored event time
+            # acute death < 30, censored at 30 days
+            pasc_flag.loc[(death_t2e <= pasc_t2e)] = 2
 
             print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:', df_label[(death_t2e == pasc_t2e)].sum(),
                   'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
