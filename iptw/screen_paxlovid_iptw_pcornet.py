@@ -691,7 +691,7 @@ if __name__ == "__main__":
         )
         out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-results.csv'.format(
             args.cohorttype,
-            args.severity,
+            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
             i,
             pasc.replace(':', '-').replace('/', '-'))
@@ -702,7 +702,7 @@ if __name__ == "__main__":
         df_summary.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
-                args.severity,
+                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
 
@@ -711,13 +711,13 @@ if __name__ == "__main__":
         dfps.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
-                args.severity,
+                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
             figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-PS.png'.format(
                 args.cohorttype,
-                args.severity,
+                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-'))
             print('Dump ', figout)
@@ -741,7 +741,7 @@ if __name__ == "__main__":
             covid_label, iptw, pasc_flag, pasc_t2e,
             fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-km.png'.format(
                 args.cohorttype,
-                args.severity,
+                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')),
             title=pasc,
@@ -784,7 +784,7 @@ if __name__ == "__main__":
                     to_csv(
                     r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
-                        args.severity,
+                        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         'pcornet',  # '-select' if args.selectpasc else '',
                         i))
         except:
@@ -794,7 +794,7 @@ if __name__ == "__main__":
             df_causal.to_csv(
                 r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
-                    args.severity,
+                    args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     'pcornet',  # '-select' if args.selectpasc else '',
                 ))
 
@@ -805,7 +805,7 @@ if __name__ == "__main__":
     df_causal.to_csv(
         r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific.csv'.format(
             args.cohorttype,
-            args.severity,
+            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
