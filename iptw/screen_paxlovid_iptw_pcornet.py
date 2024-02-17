@@ -604,7 +604,7 @@ if __name__ == "__main__":
             pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')
             pasc_baseline = df['dxCFR-base@' + pasc]
 
-        # considering competing risks
+        # considering competing risks of death, and (all, acute, post-acute) death as outcomes
         if pasc == 'death':
             print('considering pasc death over all time, not set competing risk')
         elif pasc == 'death_acute':
