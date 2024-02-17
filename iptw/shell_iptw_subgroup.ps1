@@ -1,3 +1,5 @@
+python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all.txt
+python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Cancer' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Cancer.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Chronic kidney disease' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Chronic_kidney_disease.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Chronic liver disease' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Chronic_liver_disease.txt
