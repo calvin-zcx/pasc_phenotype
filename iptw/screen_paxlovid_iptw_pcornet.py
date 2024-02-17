@@ -580,8 +580,8 @@ if __name__ == "__main__":
         elif pasc == 'death_acute':
             print('considering pasc death in acute phase, not set competing risk')
         elif pasc == 'death_postacute':
-            print('considering pasc death in POST acute phase, set acute death as competing risk')
-            pasc_flag.loc[df['death acute']] = 2
+            print('considering pasc death in POST acute phase, set acute death as censored')
+            pasc_flag.loc[df['death acute']] = 0
         else:
             # general conditions
             print('considering general pasc in POST acute phase, set any death as competing risk')
