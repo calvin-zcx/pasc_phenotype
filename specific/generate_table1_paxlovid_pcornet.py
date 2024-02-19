@@ -146,15 +146,15 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
         output_columns = ['All', 'no risk COVID Positive Paxlovid', 'no risk COVID Positive w/o Paxlovid', 'SMD']
     elif cohort == 'atrisklabdx':
         print('select AT risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk.csv'
+        fname1 = r'../iptw/recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk.csv'
+        fname2 = r'../iptw/recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk.csv'
         out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-atRiskLabDx-{}-4analyse.xlsx'.format(
             subgroup)
         output_columns = ['All', 'at risk COVID Positive labdx Paxlovid', 'at risk COVID Positive labdx w/o Paxlovid', 'SMD']
     elif cohort == 'norisklabdx':
         print('select NO risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk.csv'
+        fname1 = r'../iptw/recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk.csv'
+        fname2 = r'../iptw/recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk.csv'
         out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-noRiskLabDx-{}-4analyse.xlsx'.format(
             subgroup)
         output_columns = ['All', 'no risk COVID Positive labdx Paxlovid', 'no risk COVID Positive labdx w/o Paxlovid', 'SMD']
