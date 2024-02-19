@@ -355,12 +355,34 @@ def shell_iptw_subgroup():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
+def shell_build_lab_dx_4covid_sensitivity():
+    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+
+    print('site_list:', len(site_list), site_list)
+
+    with open(r'shell_all_labdx-4-sensitivity.ps1', 'wt') as f:
+        for i, site in enumerate(site_list):
+            site = site.strip()
+            cmdstr = """python pre_cohort_labdxmed.py --dataset nyu --cohorttype lab-dx 2>&1 | tee  log/pre_cohort_labdx-4-sensitivity_nyu.txt
+""".replace('nyu', site)
+            f.write(cmdstr)
+            print(i, site, 'done')
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
 if __name__ == '__main__':
     start_time = time.time()
 
     # shell_lab_dx_med_4covid()
     # shell_lab_dx_med_4covid_aux()
     # shell_lab_dx_med_4covid_addcolumnes()
-    shell_iptw_subgroup()
+    # shell_iptw_subgroup()
+    shell_build_lab_dx_4covid_sensitivity()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

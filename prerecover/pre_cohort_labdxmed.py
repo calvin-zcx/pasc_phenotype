@@ -29,12 +29,14 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
+    parser.add_argument('--cohorttype', choices=['lab-dx-med', 'lab-dx', 'lab'], default='lab-dx-med')
 
     args = parser.parse_args()
 
     # load covid identified by lab + dx + med
-    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
-                                                                                              args.dataset)
+    args.covid_lab_file = r'../data/recover/output/{}/patient_covid_{}_{}.pkl'.format(args.dataset,
+                                                                                      args.cohorttype,
+                                                                                      args.dataset)
     args.demo_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
     args.dx_file = r'../data/recover/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
     args.med_file = r'../data/recover/output/{}/medication_{}.pkl'.format(args.dataset, args.dataset)
@@ -56,12 +58,18 @@ def parse_args():
     # changed 2022-04-08 V2, add vital information in V2
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(
     # args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}.pkl'.format(
-        args.dataset, args.dataset)
-    args.output_file_covid2 = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}.pkl'.format(
-        args.dataset, args.dataset)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}_info.csv'.format(
-        args.dataset, args.dataset)
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posneg18base_{}{}.pkl'.format(
+        args.dataset,
+        args.dataset,
+        '' if args.cohorttype == 'lab-dx-med' else '_' + args.cohorttype)
+    args.output_file_covid2 = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}{}.pkl'.format(
+        args.dataset,
+        args.dataset,
+        '' if args.cohorttype == 'lab-dx-med' else '_' + args.cohorttype)
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}{}_info.csv'.format(
+        args.dataset,
+        args.dataset,
+        '' if args.cohorttype == 'lab-dx-med' else '_' + args.cohorttype)
 
     print('args:', args)
     return args
