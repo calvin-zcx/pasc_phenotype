@@ -35,6 +35,7 @@ def parse_args():
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
+    parser.add_argument('--cohorttype', choices=['lab-dx-med', 'lab-dx', 'lab'], default='lab-dx-med')
 
     args = parser.parse_args()
 
@@ -573,8 +574,18 @@ if __name__ == "__main__":
                            'flag_pregnancy_start_date', 'flag_pregnancy_gestational_age',
                            'flag_pregnancy_end_date', 'flag_maternal_age']
             df = pd.merge(df, df_add[select_cols], how='left', left_on='patid', right_on='patid', suffixes=('', '_z'), )
-
             print('After left merge, merged df.shape:', df.shape)
+
+            if args.cohorttype == 'lab-dx':
+                print('select subcohort cohorttype', args.cohorttype)
+                # e.g. cohorts_covid_posOnly18base_columbia_lab-dx.pkl
+                inputf = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}_lab-dx.pkl'.format(site, site)
+                print('Load cohorts pickle data file:', inputf)
+                id_data = utils.load(inputf, chunk=4)
+                print('load lab-dx id_data, len(id_data)', len(id_data))
+                print('before selection, all cohorts df.shape:', df.shape)
+                df = df.loc[df['patid'].isin(id_data)]
+                print('after selection, {} df.shape:'.format(args.cohorttype), df.shape)
 
             df_list.append(df)
             print('Done', ith, site)
@@ -606,11 +617,17 @@ if __name__ == "__main__":
 
         print('covid+: df.shape:', df.shape)
         out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
+        if args.cohorttype == 'lab-dx':
+            out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+        print('dump to', out_data_file)
+
         df.to_csv(out_data_file)
         print('dump done!')
     else:
         # out_data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
         out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
+        if args.cohorttype == 'lab-dx':
+            out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
 
         print('Load data covariates file:', out_data_file)
         df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -624,36 +641,39 @@ if __name__ == "__main__":
         df = add_col(df)
         print('add cols, then df.shape:', df.shape)
         out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats.csv'
+        if args.cohorttype == 'lab-dx':
+            out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+
         df.to_csv(out_data_file)
         print('add feature finished, dump done!')
 
         # des = df.describe()
         # des.transpose().to_csv(out_data_file + 'describe.csv')
 
-    # df_treat, df_control = more_ec_for_cohort_selection(df)
-    df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
+        # df_treat, df_control = more_ec_for_cohort_selection(df)
+        df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
 
-    df_pos_risk['treated'] = 1
-    df_pos_norisk['treated'] = 1
-    df_ctrl_risk['treated'] = 0
-    df_ctrl_norisk['treated'] = 0
+        df_pos_risk['treated'] = 1
+        df_pos_norisk['treated'] = 1
+        df_ctrl_risk['treated'] = 0
+        df_ctrl_norisk['treated'] = 0
 
-    print('len(df_pos_risk)', len(df_pos_risk), 'len(df_pos_norisk)', len(df_pos_norisk))
-    print('len(df_ctrl_risk)', len(df_ctrl_risk), 'len(df_ctrl_norisk)', len(df_ctrl_norisk))
-    df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk.csv'))
-    df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk.csv'))
+        print('len(df_pos_risk)', len(df_pos_risk), 'len(df_pos_norisk)', len(df_pos_norisk))
+        print('len(df_ctrl_risk)', len(df_ctrl_risk), 'len(df_ctrl_norisk)', len(df_ctrl_norisk))
+        df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk.csv'))
+        df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk.csv'))
 
-    df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk.csv'))
-    df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk.csv'))
+        df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk.csv'))
+        df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk.csv'))
 
-    pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS.csv'))
+        pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS.csv'))
 
-    # utils.dump((df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk),
-    #            r'./recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-selectedCohorts.pkl')
+        # utils.dump((df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk),
+        #            r'./recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-selectedCohorts.pkl')
 
-    # should build two cohorts:
-    # 1 trial emulation -- ec
-    # 2 RW patients -- matched
-    # the following ones help the matched
+        # should build two cohorts:
+        # 1 trial emulation -- ec
+        # 2 RW patients -- matched
+        # the following ones help the matched
 
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
