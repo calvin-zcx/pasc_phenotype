@@ -144,6 +144,20 @@ def table1_more_4_analyse(cohort='atrisk', subgroup='all'):
         out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-noRisk-{}-4analyse.xlsx'.format(
             subgroup)
         output_columns = ['All', 'no risk COVID Positive Paxlovid', 'no risk COVID Positive w/o Paxlovid', 'SMD']
+    elif cohort == 'atrisklabdx':
+        print('select AT risk cohort -lab-dx only cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk.csv'
+        out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-atRiskLabDx-{}-4analyse.xlsx'.format(
+            subgroup)
+        output_columns = ['All', 'at risk COVID Positive labdx Paxlovid', 'at risk COVID Positive labdx w/o Paxlovid', 'SMD']
+    elif cohort == 'norisklabdx':
+        print('select NO risk cohort -lab-dx only cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk.csv'
+        out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-noRiskLabDx-{}-4analyse.xlsx'.format(
+            subgroup)
+        output_columns = ['All', 'no risk COVID Positive labdx Paxlovid', 'no risk COVID Positive labdx w/o Paxlovid', 'SMD']
     else:
         raise ValueError
 
@@ -894,9 +908,15 @@ def table1_less_4_print():
 
 if __name__ == '__main__':
     start_time = time.time()
-    table1_more_4_analyse(cohort='atrisk')
-    table1_more_4_analyse(cohort='norisk')
+    # table1_more_4_analyse(cohort='atrisk')
+    # table1_more_4_analyse(cohort='norisk')
+    #
+    # table1_more_4_analyse(cohort='atrisk', subgroup='anyfollow')
+    # table1_more_4_analyse(cohort='norisk', subgroup='anyfollow')
 
-    table1_more_4_analyse(cohort='atrisk', subgroup='anyfollow')
-    table1_more_4_analyse(cohort='norisk', subgroup='anyfollow')
+    table1_more_4_analyse(cohort='atrisklabdx')
+    table1_more_4_analyse(cohort='norisklabdx')
+
+    table1_more_4_analyse(cohort='atrisklabdx', subgroup='anyfollow')
+    table1_more_4_analyse(cohort='norisklabdx', subgroup='anyfollow')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
