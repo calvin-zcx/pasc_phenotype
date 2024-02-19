@@ -45,8 +45,8 @@ def add_col(df):
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
-    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
     df.loc[df['death t2e'] < 0, 'death'] = np.nan
+    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
     df.loc[df['death t2e'] == 9999, 'death t2e'] = np.nan
 
     df['death in acute'] = (df['death t2e'] <= 30).astype('int')
