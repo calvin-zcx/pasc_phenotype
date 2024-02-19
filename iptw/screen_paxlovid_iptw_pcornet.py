@@ -64,7 +64,9 @@ def parse_args():
     parser.add_argument('--build_data', action='store_true')
 
     # parser.add_argument('--covtype', choices=['n3c', 'pcornet'], default='pcornet')
-    parser.add_argument('--cohorttype', choices=['atrisk', 'norisk'], default='atrisk')
+    parser.add_argument('--cohorttype',
+                        choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],
+                        default='atrisk')
     args = parser.parse_args()
 
     # More args
@@ -309,6 +311,14 @@ if __name__ == "__main__":
         print('select NO risk cohort')
         fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-noRisk.csv'
         fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk.csv'
+    elif args.cohorttype == 'atrisklabdx':
+        print('select AT risk cohort -lab-dx only cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk.csv'
+    elif args.cohorttype == 'norisklabdx':
+        print('select NO risk cohort -lab-dx only cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk.csv'
     else:
         #
         raise ValueError
