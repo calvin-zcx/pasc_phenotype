@@ -763,7 +763,7 @@ def integrate_data_and_apply_eligibility(args):
     cohort_info.to_csv(args.output_file_cohortinfo)
     print(cohort_info)
 
-    utils.dump(data, args.output_file_covid, chunk=4)
+    # utils.dump(data, args.output_file_covid, chunk=4)
     utils.dump(data2, args.output_file_covid2, chunk=4)
 
 
