@@ -494,7 +494,7 @@ if __name__ == "__main__":
 
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    if args.cohorttype == 'atrisk':
+    if (args.cohorttype == 'atrisk') or (args.cohorttype == 'atrisklabdx'):
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
             'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', 'age@65+',
@@ -521,7 +521,7 @@ if __name__ == "__main__":
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
 
-    elif args.cohorttype == 'norisk':
+    elif (args.cohorttype == 'norisk') or (args.cohorttype == 'norisklabdx'):
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
             # 'age@18-24', 'age@25-34', 'age@35-49',  # 'age@50-64', 'age@65+',
