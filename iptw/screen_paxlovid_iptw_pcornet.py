@@ -51,11 +51,13 @@ def parse_args():
                                                'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
                                                'PaxRisk:HIV infection',
                                                'PaxRisk:Immunocompromised condition or weakened immune system',
+                                               'PaxRisk:immune',
                                                'PaxRisk:Mental health conditions',
                                                'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
                                                'PaxRisk:Sickle cell disease or thalassemia',
                                                'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
                                                'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+                                               'VA', '2022-04'
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -137,6 +139,7 @@ def select_subpopulation(df, severity):
     elif severity == 'outpatient':
         print('Considering outpatient cohorts')
         df = df.loc[(df['hospitalized'] == 0) & (df['criticalcare'] == 0), :].copy()
+
     elif severity == 'female':
         print('Considering female cohorts')
         df = df.loc[(df['Female'] == 1), :].copy()
@@ -242,7 +245,7 @@ def select_subpopulation(df, severity):
                       'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
                       'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
                       'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
-                      'PaxRisk:Immunocompromised condition or weakened immune system',
+                      #'PaxRisk:Immunocompromised condition or weakened immune system',
                       'PaxRisk:Mental health conditions',
                       'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
                       'PaxRisk:Sickle cell disease or thalassemia',
@@ -252,6 +255,38 @@ def select_subpopulation(df, severity):
         print('before selection', len(df))
         df = df.loc[(df[severity] == 1), :].copy()
         print('after followupanydx', len(df))
+    elif severity == 'PaxRisk:immune':
+        print('PaxRisk:immune for PaxRisk:Immunocompromised condition or weakened immune system')
+        print('before selection', len(df))
+        df = df.loc[(df['PaxRisk:Immunocompromised condition or weakened immune system'] == 1), :].copy()
+        print('after followupanydx', len(df))
+    elif severity == 'VA':
+        print('Considering VA-like cohorts')
+        print('initial cohort before selection:', df.shape)
+        df = df.loc[(df['age'] >= 60)| (df['PaxRisk-Count'] > 0), :]
+        df_male = df.loc[(df['Male'] == 1), :]
+        df_female = df.loc[(df['Female'] == 1), :]
+        n_male = len(df_male)
+        n_female = len(df_female)
+        r = 0.8783
+        delta = (1-1/r)*n_male + n_female
+        print('n_male+n_female', n_male+n_female,
+              'n_male', n_male,
+              'n_female', n_female,
+              'r', r
+              )
+        print('n_male/(n_male + n_female - delta):', n_male/(n_male + n_female - delta))
+        print('sample n_female-delta female', n_female-delta)
+        df_female_sub = df_female.sample(n=int(n_female-delta), replace=False, random_state=args.random_seed)
+        print('df_male.shape', df_male.shape, 'df_female_sub.shape', df_female_sub.shape, )
+        df = pd.concat([df_male, df_female_sub], ignore_index=True)
+        df = df.copy()
+        print('after build, final VA cohort df', len(df), df.shape)
+    elif severity == '2022-04':
+        print('Considering patients after 2022-4-1')
+        print('before build df', len(df), df.shape)
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+        print('after build, final cohort df', len(df), df.shape)
     else:
         print('Considering ALL cohorts')
 
@@ -582,6 +617,8 @@ if __name__ == "__main__":
     for i, pasc in tqdm(enumerate(selected_screen_list, start=1), total=len(selected_screen_list)):
 
         print('\n In screening:', i, pasc)
+        # if i < 17:
+        #     continue
         if pasc == 'any_pasc':
             pasc_flag = df['any_pasc_flag'].astype('int')
             pasc_t2e = df['any_pasc_t2e'].astype('float')
