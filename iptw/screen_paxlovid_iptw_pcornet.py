@@ -57,7 +57,7 @@ def parse_args():
                                                'PaxRisk:Sickle cell disease or thalassemia',
                                                'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
                                                'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
-                                               'VA', '2022-04'
+                                               'VA', '2022-04', '2022-03'
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -286,6 +286,11 @@ def select_subpopulation(df, severity):
         print('Considering patients after 2022-4-1')
         print('before build df', len(df), df.shape)
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+        print('after build, final cohort df', len(df), df.shape)
+    elif severity == '2022-03':
+        print('Considering patients after 2022-3-1')
+        print('before build df', len(df), df.shape)
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)), :].copy()
         print('after build, final cohort df', len(df), df.shape)
     else:
         print('Considering ALL cohorts')
