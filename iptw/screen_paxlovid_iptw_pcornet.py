@@ -570,7 +570,7 @@ if __name__ == "__main__":
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
             'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', # 'age@65+', # # expand 65
-            '65-<75 years', '75-<85 years', '85+ years'
+            '65-<75 years', '75-<85 years', '85+ years',
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
             'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
