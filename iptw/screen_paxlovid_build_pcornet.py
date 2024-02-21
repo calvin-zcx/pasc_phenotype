@@ -259,6 +259,7 @@ def add_col(df):
     df['age@50-64'] = 0
     df['age@65+'] = 0
 
+
     # ['RE:Asian Non-Hispanic', 'RE:Black or African American Non-Hispanic', 'RE:Hispanic or Latino Any Race',
     # 'RE:White Non-Hispanic', 'RE:Other Non-Hispanic', 'RE:Unknown']
     df['RE:Asian Non-Hispanic'] = 0
@@ -368,9 +369,10 @@ def more_ec_for_cohort_selection(df):
     # select index date
     # print('Before selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
     df = df.loc[
-         (df['index date'] >= datetime.datetime(2022, 1, 1, 0, 0)) &
-         (df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :]
-    print('After selecting index date from 2022-1-1 to 2023-2-28, len(df)', len(df))
+         (df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) &
+         (df['index date'] <= datetime.datetime(2023, 2, 28, 0, 0)), :]
+    # print('After selecting index date from 2022-1-1 to 2023-2-28, len(df)', len(df))
+    print('After selecting index date from 2022-3-1 to 2023-2-28, len(df)', len(df))
 
     # Exclusion, no hospitalized
     # print('Before selecting no hospitalized, len(df)', len(df))
@@ -644,8 +646,8 @@ if __name__ == "__main__":
         if args.cohorttype == 'lab-dx':
             out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
 
-        df.to_csv(out_data_file)
-        print('add feature finished, dump done!')
+        # df.to_csv(out_data_file)
+        # print('add feature finished, dump done!')
 
         # des = df.describe()
         # des.transpose().to_csv(out_data_file + 'describe.csv')
@@ -660,13 +662,13 @@ if __name__ == "__main__":
 
         print('len(df_pos_risk)', len(df_pos_risk), 'len(df_pos_norisk)', len(df_pos_norisk))
         print('len(df_ctrl_risk)', len(df_ctrl_risk), 'len(df_ctrl_norisk)', len(df_ctrl_norisk))
-        df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk.csv'))
-        df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk.csv'))
+        df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk-since202203.csv'))
+        df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk-since202203.csv'))
 
-        df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk.csv'))
-        df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk.csv'))
+        df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk-since202203.csv'))
+        df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk-since202203.csv'))
 
-        pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS.csv'))
+        pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS-since202203.csv'))
 
         # utils.dump((df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk),
         #            r'./recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-selectedCohorts.pkl')

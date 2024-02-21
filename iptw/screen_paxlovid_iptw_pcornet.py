@@ -245,7 +245,7 @@ def select_subpopulation(df, severity):
                       'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
                       'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
                       'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
-                      #'PaxRisk:Immunocompromised condition or weakened immune system',
+                      # 'PaxRisk:Immunocompromised condition or weakened immune system',
                       'PaxRisk:Mental health conditions',
                       'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy',
                       'PaxRisk:Sickle cell disease or thalassemia',
@@ -263,21 +263,21 @@ def select_subpopulation(df, severity):
     elif severity == 'VA':
         print('Considering VA-like cohorts')
         print('initial cohort before selection:', df.shape)
-        df = df.loc[(df['age'] >= 60)| (df['PaxRisk-Count'] > 0), :]
+        df = df.loc[(df['age'] >= 60) | (df['PaxRisk-Count'] > 0), :]
         df_male = df.loc[(df['Male'] == 1), :]
         df_female = df.loc[(df['Female'] == 1), :]
         n_male = len(df_male)
         n_female = len(df_female)
         r = 0.8783
-        delta = (1-1/r)*n_male + n_female
-        print('n_male+n_female', n_male+n_female,
+        delta = (1 - 1 / r) * n_male + n_female
+        print('n_male+n_female', n_male + n_female,
               'n_male', n_male,
               'n_female', n_female,
               'r', r
               )
-        print('n_male/(n_male + n_female - delta):', n_male/(n_male + n_female - delta))
-        print('sample n_female-delta female', n_female-delta)
-        df_female_sub = df_female.sample(n=int(n_female-delta), replace=False, random_state=args.random_seed)
+        print('n_male/(n_male + n_female - delta):', n_male / (n_male + n_female - delta))
+        print('sample n_female-delta female', n_female - delta)
+        df_female_sub = df_female.sample(n=int(n_female - delta), replace=False, random_state=args.random_seed)
         print('df_male.shape', df_male.shape, 'df_female_sub.shape', df_female_sub.shape, )
         df = pd.concat([df_male, df_female_sub], ignore_index=True)
         df = df.copy()
@@ -345,20 +345,20 @@ if __name__ == "__main__":
     # add matched cohorts later
     if args.cohorttype == 'atrisk':
         print('select AT risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-atRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-atRisk.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-atRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-atRisk-since202203.csv'
     elif args.cohorttype == 'norisk':
         print('select NO risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-noRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-since202203.csv'
     elif args.cohorttype == 'atrisklabdx':
         print('select AT risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk-since202203.csv'
     elif args.cohorttype == 'norisklabdx':
         print('select NO risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-since202203.csv'
     else:
         #
         raise ValueError
@@ -464,11 +464,21 @@ if __name__ == "__main__":
     for p in pasc_add:
         df[p + '_pasc_flag'] = 0
 
+    for p in CFR_list:
+        df[p + '_CFR_flag'] = 0
+
     df['any_pasc_flag'] = 0
     df['any_pasc_type'] = np.nan
     df['any_pasc_t2e'] = 180  # np.nan
     df['any_pasc_txt'] = ''
     df['any_pasc_baseline'] = 0  # placeholder for screening, no special meaning, null column
+
+    df['any_CFR_flag'] = 0
+    # df['any_CFR_type'] = np.nan
+    df['any_CFR_t2e'] = 180  # np.nan
+    df['any_CFR_txt'] = ''
+    df['any_CFR_baseline'] = 0  # placeholder for screening, no special meaning, null column
+
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         # for any 1 pasc
         t2e_list = []
@@ -500,6 +510,28 @@ if __name__ == "__main__":
         else:
             df.loc[index, 'any_pasc_flag'] = 0
             df.loc[index, 'any_pasc_t2e'] = rows[['dx-t2e@' + p for p in pasc_list]].max()  # censoring time
+
+        # for CFR pasc
+        CFR_t2e_list = []
+        CFR_1_list = []
+        CFR_1_name = []
+        CFR_1_text = ''
+        for p in CFR_list:
+            if (rows['dxCFR-out@' + p] > 0) and (rows['dxCFR-base@' + p] == 0):
+                CFR_t2e_list.append(rows['dxCFR-t2e@' + p])
+                CFR_1_list.append(p)
+                CFR_1_name.append(pasc_simname[p])
+                CFR_1_text += (pasc_simname[p][0] + ';')
+
+                df.loc[index, p + '_CFR_flag'] = 1
+
+        if len(CFR_t2e_list) > 0:
+            df.loc[index, 'any_CFR_flag'] = 1
+            df.loc[index, 'any_CFR_t2e'] = np.min(CFR_t2e_list)
+            df.loc[index, 'any_CFR_txt'] = CFR_1_text
+        else:
+            df.loc[index, 'any_CFR_flag'] = 0
+            df.loc[index, 'any_CFR_t2e'] = rows[['dxCFR-t2e@' + p for p in CFR_list]].max()  # censoring time
 
     # pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
 
@@ -537,13 +569,15 @@ if __name__ == "__main__":
     if (args.cohorttype == 'atrisk') or (args.cohorttype == 'atrisklabdx'):
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
-            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', 'age@65+',
+            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', # 'age@65+', # # expand 65
+            '65-<75 years', '75-<85 years', '85+ years'
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
             'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
+            '03/22-06/22', '07/22-10/22', '11/22-02/23',
             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
@@ -574,6 +608,7 @@ if __name__ == "__main__":
             'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
+            '03/22-06/22', '07/22-10/22', '11/22-02/23',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
@@ -581,7 +616,6 @@ if __name__ == "__main__":
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
-
     else:
         raise ValueError
 
@@ -611,7 +645,7 @@ if __name__ == "__main__":
         record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    selected_screen_list = (['any_pasc', 'PASC-General', 'death', 'death_acute', 'death_postacute', ] +
+    selected_screen_list = (['any_pasc', 'PASC-General', 'death', 'death_acute', 'death_postacute', 'any_CFR'] +
                             CFR_list +
                             pasc_list +
                             addedPASC_list +
@@ -652,6 +686,10 @@ if __name__ == "__main__":
             pasc_flag = (df['dxbrainfog-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dxbrainfog-t2e@' + pasc].astype('float')
             pasc_baseline = df['dxbrainfog-base@' + pasc]
+        elif pasc == 'any_CFR':
+            pasc_flag = df['any_CFR_flag'].astype('int')
+            pasc_t2e = df['any_CFR_t2e'].astype('float')
+            pasc_baseline = df['any_CFR_baseline']
         elif pasc in CFR_list:
             pasc_flag = (df['dxCFR-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')

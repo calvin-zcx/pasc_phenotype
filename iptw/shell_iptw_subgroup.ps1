@@ -22,4 +22,5 @@
 #python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Substance use disorders' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Substance_use_disorders.txt
 #python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Tuberculosis' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Tuberculosis.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'VA' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-VA.txt
-python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity '2022-04' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-2022-04.txt
+##python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity '2022-04' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-2022-04.txt
+##python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity '2022-03' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-2022-03.txt
