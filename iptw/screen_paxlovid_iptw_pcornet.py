@@ -327,11 +327,11 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 if __name__ == "__main__":
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all.txt
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-V2.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-anyfollowupdx-V2.txt
 
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-anyfollowupdx.txt
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all-V2.txt
+    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx-V2.txt
 
     start_time = time.time()
     args = parse_args()
@@ -793,7 +793,7 @@ if __name__ == "__main__":
 
         model = ml.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
-            'C': 10 ** np.arange(-1.5, 1., 0.5),  # 10 ** np.arange(-2, 1.5, 0.5),
+            'C': 10 ** np.arange(-1.5, 1., 0.25),  # 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
             covs_array, covid_label, verbose=0)
