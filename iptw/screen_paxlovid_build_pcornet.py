@@ -460,6 +460,106 @@ def more_ec_for_cohort_selection(df):
     return df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk
 
 
+def more_ec_for_cohort_selection_new_order(df):
+    print('in more_ec_for_cohort_selection, df.shape', df.shape)
+    print('Applying more specific/flexible eligibility criteria for cohort selection')
+
+    # select index date
+    # print('Before selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
+    df = df.loc[
+         (df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) &
+         (df['index date'] <= datetime.datetime(2023, 2, 28, 0, 0)), :]
+    # print('After selecting index date from 2022-1-1 to 2023-2-28, len(df)', len(df))
+    print('After selecting index date from 2022-3-1 to 2023-2-28, len(df)', len(df))
+
+    # Exclusion, no hospitalized
+    # print('Before selecting no hospitalized, len(df)', len(df))
+    df = df.loc[(df['outpatient'] == 1), :]
+    print('After selecting no hospitalized, len(df)', len(df))
+
+    def ec_no_U099_baseline(_df):
+        print('before ec_no_U099_baseline, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_U099_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1-n0))
+        return _df
+
+    def ec_no_other_covid_treatment(_df):
+        print('before ec_no_other_covid_treatment, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(~(_df['treat-t2e@remdesivir'] <= 14)) &
+                      (_df['Remdesivir'] == 0) &
+                      (_df['Molnupiravir'] == 0) &
+                      (_df[
+                           'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] == 0) &
+                      (_df['PX: Convalescent Plasma'] == 0) &
+                      (_df['pax_contra'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_other_covid_treatment, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    def ec_at_least_one_risk_4_pax(_df):
+        print('before ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0)]
+        n1 = len(_df)
+        print('after ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    def ec_not_at_risk_4_pax(_df):
+        print('before ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[~((_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0))]
+        n1 = len(_df)
+        print('after ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    def ec_no_severe_conditions_4_pax(_df):
+        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
+        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n1 = len(_df)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    df = ec_no_U099_baseline(df)
+    df = ec_no_severe_conditions_4_pax(df)
+    df = ec_no_other_covid_treatment(df)
+
+    df_risk = ec_at_least_one_risk_4_pax(df)
+    df_norisk = ec_not_at_risk_4_pax(df)
+
+    print('**************build treated patients for AT risk patients')
+    # drug initiation within 5 days
+    df_risk_pos = df_risk.loc[(df_risk['treat-flag@paxlovid'] > 0), :]
+    print('After selecting pax prescription, len(df_risk_pos)', len(df_risk_pos))
+    df_risk_pos = df_risk_pos.loc[(df_risk_pos['treat-t2e@paxlovid'] <= 5), :]
+    print('After selecting pax prescription within 5 days, len(df_risk_pos)', len(df_risk_pos))
+    print('**************build control patients for AT risk patients')
+    # non initiation group, no paxlovid
+    df_risk_ctrl = df_risk.loc[(df_risk['treat-flag@paxlovid'] == 0), :]
+    print('After selecting NO pax prescription, len(df_risk_ctrl)', len(df_risk_ctrl))
+
+    print('**************build treated patients for No risk patients')
+    # drug initiation within 5 days
+    df_norisk_pos = df_norisk.loc[(df_norisk['treat-flag@paxlovid'] > 0), :]
+    print('After selecting pax prescription, len(df_norisk_pos)', len(df_norisk_pos))
+    df_norisk_pos = df_norisk_pos.loc[(df_norisk_pos['treat-t2e@paxlovid'] <= 5), :]
+    print('After selecting pax prescription within 5 days, len(df_norisk_pos)', len(df_norisk_pos))
+    print('**************build control patients for No risk patients')
+    # non initiation group, no paxlovid
+    df_norisk_ctrl = df_norisk.loc[(df_norisk['treat-flag@paxlovid'] == 0), :]
+    print('After selecting NO pax prescription, len(df_norisk_ctrl)', len(df_norisk_ctrl))
+
+    return df_risk_pos, df_norisk_pos, df_risk_ctrl, df_norisk_ctrl
+
+
 def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
     print('len(case)', len(df_case), 'len(ctrl)', len(df_ctrl))
     ctrl_list = []
@@ -656,7 +756,9 @@ if __name__ == "__main__":
         # des.transpose().to_csv(out_data_file + 'describe.csv')
 
         # df_treat, df_control = more_ec_for_cohort_selection(df)
-        df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
+        # df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
+        df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection_new_order(df)
+
 
         df_pos_risk['treated'] = 1
         df_pos_norisk['treated'] = 1
