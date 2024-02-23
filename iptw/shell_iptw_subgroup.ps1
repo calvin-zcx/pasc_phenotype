@@ -1,5 +1,5 @@
-python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'VA' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-VA-V2.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Pregnancy' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Pregnancy-V2.txt
+python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'VA' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-VA-V2.txt
 ##python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all-V2.txt
 ##python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx-V2.txt
 python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity 'PaxRisk:Cancer' 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-PaxRisk_Cancer-V2.txt
