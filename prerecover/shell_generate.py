@@ -258,7 +258,9 @@ def shell_lab_dx_med_4covid_addcolumnes():
     with open(r'shell_all_addCFRV2.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-addPaxRisk.txt
+#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-addPaxRisk.txt
+# """.replace('nyu', site)
+            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
@@ -388,9 +390,9 @@ def shell_build_lab_dx_4covid_sensitivity():
 if __name__ == '__main__':
     start_time = time.time()
 
-    shell_lab_dx_med_4covid()
+    # shell_lab_dx_med_4covid()
     # shell_lab_dx_med_4covid_aux()
-    # shell_lab_dx_med_4covid_addcolumnes()
+    shell_lab_dx_med_4covid_addcolumnes()
     # shell_iptw_subgroup()
     # shell_build_lab_dx_4covid_sensitivity()
 
