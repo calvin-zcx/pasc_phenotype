@@ -718,7 +718,7 @@ if __name__ == "__main__":
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
-        covid_label = df_label[idx]  # actually current is the pregnant label
+        covid_label = df_label[idx]  # actually current is the treatment label
         n_covid_pos = covid_label.sum()
         n_covid_neg = (covid_label == 0).sum()
         print('n case:', n_covid_pos, 'n control:', n_covid_neg, )

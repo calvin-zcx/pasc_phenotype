@@ -205,7 +205,7 @@ def add_col(df):
              ) >= 1
     ).astype('int')
 
-    df['PaxRisk:Smoking current'] = (df['Smoker: current'] >= 1).astype('int')
+    df['PaxRisk:Smoking current'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
 
     # cell transplant, --> autoimmu category?
 
