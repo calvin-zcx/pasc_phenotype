@@ -14,7 +14,8 @@ from tqdm import tqdm
 from collections import Counter
 import datetime
 from misc import utils
-import eligibility_setting as ecs
+import eligibility_setting_test as ecs
+print('Using eligibility_setting_test! accelerated datetime')
 import functools
 import fnmatch
 
@@ -144,12 +145,24 @@ def _load_mapping():
     pax_risk = utils.load(r'../data/mapping/n3c_pax_indication.pkl')
 
     fips_ziplist = utils.load(r'../data/mapping/fips_to_ziplist_2020.pkl')
+
+    icd_cognitive_fatigue_respiratory = utils.load(r'../data/mapping/icd_cognitive-fatigue-respiratory_mapping.pkl')
+    cognitive_fatigue_respiratory_encoding = utils.load(
+        r'../data/mapping/cognitive-fatigue-respiratory_index_mapping.pkl')
+
+    # 2024-2-13 added pax risk covs
+    icd_addedPaxRisk = utils.load(r'../data/mapping/icd_addedPaxRisk_mapping.pkl')
+    addedPaxRisk_encoding = utils.load(r'../data/mapping/addedPaxRisk_index_mapping.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
             icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
-            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist)
+            icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist,
+            icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
+            icd_addedPaxRisk, addedPaxRisk_encoding,
+            )
 
 
 def _encoding_age(age):
@@ -616,6 +629,24 @@ def _encoding_cci_and_score(dx_list, icd_cci, cci_encoding, index_date):
 
     return encoding
 
+def _encoding_addPaxRisk(dx_list, icd_cci, cci_encoding, index_date):
+    # 'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+    encoding = np.zeros((1, 3), dtype='int')
+
+    for records in dx_list:
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+        # build baseline
+        if ecs._is_in_comorbidity_period(dx_date, index_date):
+            flag, icdprefix = _prefix_in_set(icd, icd_cci)
+            if flag:
+                cci_info = icd_cci[icdprefix]
+                cci_category = cci_info[0]
+                rec = cci_encoding[cci_category]
+                pos = rec[0]
+                encoding[0, pos] += 1
+
+    return encoding
 
 def _encoding_dx_pregnancy(dx_list, icd_obcpasc, obcpasc_encoding, index_date):
     # encoding 26 obstetric comorbidity codes in the baseline
@@ -1255,7 +1286,7 @@ def build_feature_matrix(args):
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
-     fips_ziplist) = _load_mapping()
+     fips_ziplist, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1537,6 +1568,22 @@ def build_feature_matrix(args):
                                             ['dxbrainfog-base@' + x for x in brainfog_encoding.keys()] + \
                                             ['dxbrainfog-t2eall@' + x for x in brainfog_encoding.keys()]
 
+            # cognitive_fatigue_respiratory
+            outcome_CFR_flag = np.zeros((n, 3), dtype='int16')
+            outcome_CFR_t2e = np.zeros((n, 3), dtype='int16')
+            outcome_CFR_baseline = np.zeros((n, 3), dtype='int16')
+            outcome_CFR_t2eall = []
+            outcome_CFR_column_names = (
+                    ['dxCFR-out@' + x for x in CFR_encoding.keys()] + \
+                    ['dxCFR-t2e@' + x for x in CFR_encoding.keys()] + \
+                    ['dxCFR-base@' + x for x in CFR_encoding.keys()] + \
+                    ['dxCFR-t2eall@' + x for x in CFR_encoding.keys()])
+
+            addPaxRisk_array = np.zeros((n, 3), dtype='int16')  #
+            addPaxRisk_column_names = [
+                'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+            ]
+
             # rxing_encoding outcome. Commented out 2023-11-13, used later when necessary
             # outcome_med_flag = np.zeros((n, 434), dtype='int16')
             # outcome_med_t2e = np.zeros((n, 434), dtype='int16')
@@ -1569,7 +1616,7 @@ def build_feature_matrix(args):
                            obcdx_column_names + pax_n3ccov_names + \
                            covidtreat_column_names + covidmed_column_names + outcome_covidmed_column_names + \
                            outcome_column_names + outcome_addedPASC_column_names + outcome_brainfog_column_names + \
-                           outcome_smm_column_names  # + outcome_med_column_names
+                           outcome_CFR_column_names + addPaxRisk_column_names + outcome_smm_column_names  # + outcome_med_column_names
 
             # if args.positive_only:
             #     if not flag:
@@ -1697,6 +1744,13 @@ def build_feature_matrix(args):
             # outcome_med_flag[i, :], outcome_med_t2e[i, :], outcome_med_baseline[i, :] = \
             #     _encoding_outcome_med_rxnorm_ingredient(med, rxnorm_ing, rxing_encoding, index_date, default_t2e)
 
+            # add Cognitive, Fatigue, Respiratory condiiotn, 2023-11-13
+            outcome_CFR_flag[i, :], outcome_CFR_t2e[i, :], outcome_CFR_baseline[i, :], outcome_CFR_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_CFR, CFR_encoding, index_date, default_t2e)
+            outcome_CFR_t2eall.append(outcome_CFR_t2eall_1row)
+
+            addPaxRisk_array[i, :] = _encoding_addPaxRisk(dx_raw, icd_addedPaxRisk, addedPaxRisk_encoding, index_date)
+
             outcome_smm_flag[i, :], outcome_smm_t2e[i, :], outcome_smm_baseline[i, :], outcome_smm_t2eall_1row = \
                 _encoding_outcome_severe_maternal_morbidity_withalldays(
                     dx, icd_SMMpasc, SMMpasc_encoding, index_date, default_t2e, procedure)
@@ -1758,6 +1812,11 @@ def build_feature_matrix(args):
                                     outcome_brainfog_t2e,
                                     outcome_brainfog_baseline,
                                     np.asarray(outcome_brainfog_t2eall),
+                                    outcome_CFR_flag,
+                                    outcome_CFR_t2e,
+                                    outcome_CFR_baseline,
+                                    np.asarray(outcome_CFR_t2eall),
+                                    addPaxRisk_array,
                                     outcome_smm_flag,
                                     outcome_smm_t2e,
                                     outcome_smm_baseline,
@@ -1808,7 +1867,8 @@ def build_feature_matrix(args):
                               x.startswith('dxadd-base@') or
                               x.startswith('dxbrainfog-base@') or
                               x.startswith('covidmed-base@') or
-                              x.startswith('smm-base@')
+                              x.startswith('smm-base@') or
+                              x.startswith('dxdxCFR-base@')
                               )]
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
