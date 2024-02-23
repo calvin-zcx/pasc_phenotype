@@ -345,20 +345,20 @@ if __name__ == "__main__":
     # add matched cohorts later
     if args.cohorttype == 'atrisk':
         print('select AT risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-atRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-atRisk-since202203.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRisk-since202203.csv'
     elif args.cohorttype == 'norisk':
         print('select NO risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-since202203.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-since202203.csv'
     elif args.cohorttype == 'atrisklabdx':
         print('select AT risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk-since202203.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk-since202203.csv'
     elif args.cohorttype == 'norisklabdx':
         print('select NO risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-since202203.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-since202203.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-since202203.csv'
     else:
         #
         raise ValueError
@@ -420,6 +420,12 @@ if __name__ == "__main__":
     df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 30) & (df['death t2e'] < 180)).astype('int')
     df['death t2e postacute'] = df['death t2e all']
 
+    #
+    df['hospitalization-acute-flag'] = (df['hospitalization-acute-flag'] >= 1).astype('int')
+    df['hospitalization-acute-t2e'] = df['hospitalization-acute-t2e'].clip(upper=31)
+    df['hospitalization-postacute-flag'] = (df['hospitalization-postacute-flag'] >= 1).astype('int')
+
+    #
     # pre-process PASC info
     df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
                                  sheet_name='diagnosis')
@@ -657,7 +663,10 @@ if __name__ == "__main__":
         record_example = next(iter(pasc_encoding.items()))
         print('e.g.:', record_example)
 
-    selected_screen_list = (['any_pasc', 'PASC-General', 'death', 'death_acute', 'death_postacute', 'any_CFR'] +
+    selected_screen_list = (['any_pasc', 'PASC-General',
+                             'death', 'death_acute', 'death_postacute',
+                             'any_CFR',
+                             'hospitalization_acute', 'hospitalization_postacute'] +
                             CFR_list +
                             pasc_list +
                             addedPASC_list +
@@ -686,6 +695,14 @@ if __name__ == "__main__":
             pasc_flag = df['death postacute'].astype('int')
             pasc_t2e = df['death t2e postacute'].astype('float')
             pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
+        elif pasc == 'hospitalization_acute':
+            pasc_flag = df['hospitalization-acute-flag'].astype('int')
+            pasc_t2e = df['hospitalization-acute-t2e'].astype('float')
+            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
+        elif pasc == 'hospitalization_postacute':
+            pasc_flag = df['hospitalization-postacute-flag'].astype('int')
+            pasc_t2e = df['hospitalization-postacute-t2e'].astype('float')
+            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
         elif pasc in pasc_list:
             pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dx-t2e@' + pasc].astype('float')
@@ -792,7 +809,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
@@ -803,7 +820,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-V2/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -812,13 +829,13 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-V2/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -842,7 +859,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -885,7 +902,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         'pcornet',  # '-select' if args.selectpasc else '',
@@ -895,7 +912,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     'pcornet',  # '-select' if args.selectpasc else '',
@@ -906,7 +923,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/Paxlovid-{}-{}-{}-V2/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
