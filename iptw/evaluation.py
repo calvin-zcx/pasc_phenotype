@@ -468,7 +468,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
                                                   event_observed=flag_2binary(controlled_flag), label=legends['control'])
 
     point_in_time = [60, 90, 120, 150, 180]
-    if 'death_acute' in title:
+    if ('death_acute' in title) or ('hospitalization_acute' in title):
         point_in_time = [30, 30, 30, 30, 30]
 
     results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
@@ -548,7 +548,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         # ajf0.plot(ax=ax)
         ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
         add_at_risk_counts(ajf1w, ajf0w, ax=ax)
-        if 'death_acute' in title:
+        if ('death_acute' in title) or ('hospitalization_acute' in title):
             plt.xlim([0, 30])
         else:
             plt.xlim([0, 180])

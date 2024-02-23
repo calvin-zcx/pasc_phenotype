@@ -413,11 +413,11 @@ if __name__ == "__main__":
     df.loc[df['death all'] == 0, 'death t2e all'] = df['maxfollowup'].clip(lower=0, upper=180)
 
     # death in [0, 30). 1: evnt, 0: censored, censored at 30. death at 30, not counted, thus use <
-    df['death acute'] = ((df['death'] == 1) & (df['death t2e'] < 30)).astype('int')
-    df['death t2e acute'] = df['death t2e all'].clip(upper=30)
+    df['death acute'] = ((df['death'] == 1) & (df['death t2e'] <= 30)).astype('int')
+    df['death t2e acute'] = df['death t2e all'].clip(upper=31)
 
     # death in [30, 180).  1:event, 0: censored. censored at 180 or < 30, say death at 20, flag is 0, time is 20
-    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 30) & (df['death t2e'] < 180)).astype('int')
+    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 31) & (df['death t2e'] < 180)).astype('int')
     df['death t2e postacute'] = df['death t2e all']
 
     #
