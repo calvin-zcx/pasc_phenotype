@@ -1062,6 +1062,122 @@ def _encoding_outcome_dx_withalldays(dx_list, icd_pasc, pasc_encoding, index_dat
     return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
 
 
+def _encoding_outcome_U099_withalldays(dx_list, index_date, default_t2e):
+    # outcome_U099_flag = np.zeros((n, 2), dtype='int16')
+    # outcome_U099_t2e = np.zeros((n, 2), dtype='int16')
+    # outcome_U099_baseline = np.zeros((n, 1), dtype='int16')
+    # outcome_U099_t2eall = []  # all time, baseline, acute, post acute, can be negative
+    # outcome_U099_column_names = ['U099-acute-flag', 'U099-postacute-flag',
+    #                              'U099-acute-t2e', 'U099-postacute-t2e',
+    #                              'U099-base', 'U099-t2eall']
+
+    icd_pasc = {'U099', 'B948'}
+    # initialize t2e:  last encounter, event, end of followup, whichever happens first
+    # 0: acute, 1: post acute
+    outcome_t2e = np.ones((1, 2), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, 2), dtype='int')
+    outcome_baseline = np.zeros((1, 1), dtype='int')
+    # outcome_tlast = np.zeros((1, 2), dtype='int')
+    outcome_t2eall = [''] * 1
+    outcome_t2ecodeall = [''] * 1
+
+    for records in dx_list:
+        # dx_date, icd = records[:2]
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+
+        flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+        if flag:
+            days = (dx_date - index_date).days
+            # save t2e all time, -, 0, +
+            outcome_t2eall[0] += '{};'.format(days)
+            outcome_t2ecodeall[0] += '{}_{};'.format(icd, days)
+            # build baseline
+            if ecs._is_in_baseline(dx_date, index_date):
+                outcome_baseline[0, 0] += 1
+
+            if ecs._is_in_acute(dx_date, index_date):
+                if outcome_flag[0, 0] == 0:
+                    # only records the first event and time
+                    if days < outcome_t2e[0, 0]:
+                        outcome_t2e[0, 0] = days
+                    outcome_flag[0, 0] = 1
+                    # outcome_tlast[0, pos] = days
+                else:
+                    outcome_flag[0, 0] += 1
+
+            if ecs._is_in_followup(dx_date, index_date):
+                if outcome_flag[0, 1] == 0:
+                    # only records the first event and time
+                    if days < outcome_t2e[0, 1]:
+                        outcome_t2e[0, 1] = days
+                    outcome_flag[0, 1] = 1
+                else:
+                    outcome_flag[0, 1] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall, outcome_t2ecodeall
+
+
+def _encoding_outcome_hospitalization_withalldays(enc_list, index_date, default_t2e):
+    # outcome_hospitalization_flag = np.zeros((n, 2), dtype='int16')
+    # outcome_hospitalization_t2e = np.zeros((n, 2), dtype='int16')
+    # outcome_hospitalization_baseline = np.zeros((n, 1), dtype='int16')
+    # outcome_hospitalization_t2eall = []  # all time, baseline, acute, post acute, can be negative
+    # outcome_hospitalization_column_names = ['hospitalization-acute-flag', 'hospitalization-postacute-flag',
+    #                                         'hospitalization-acute-t2e', 'hospitalization-postacute-t2e',
+    #                                         'hospitalization-base', 'hospitalization-t2eall']
+
+    enc_type_list = {'EI', 'IP', 'OS'}
+    # initialize t2e:  last encounter, event, end of followup, whichever happens first
+    # 0: acute, 1: post acute
+    outcome_t2e = np.ones((1, 2), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, 2), dtype='int')
+    outcome_baseline = np.zeros((1, 1), dtype='int')
+    # outcome_tlast = np.zeros((1, 2), dtype='int')
+    outcome_t2eall = [''] * 1
+
+    for records in enc_list:
+        # dx_date, icd = records[:2]
+        # dx_date, icd, dx_type, enc_type = records
+        enc_date, etype, enc_id = records[:3]
+        if isinstance(etype, str):
+            etype = etype.strip().upper()
+
+        if etype in enc_type_list:
+            days = (enc_date - index_date).days
+            # save t2e all time, -, 0, +
+            outcome_t2eall[0] += '{};'.format(days)
+
+            # build baseline
+            if ecs._is_in_baseline(enc_date, index_date):
+                outcome_baseline[0, 0] += 1
+
+            if ecs._is_in_acute(enc_date, index_date):
+                if outcome_flag[0, 0] == 0:
+                    # only records the first event and time
+                    if days < outcome_t2e[0, 0]:
+                        outcome_t2e[0, 0] = days
+                    outcome_flag[0, 0] = 1
+                    # outcome_tlast[0, pos] = days
+                else:
+                    outcome_flag[0, 0] += 1
+
+            if ecs._is_in_followup(enc_date, index_date):
+                if outcome_flag[0, 1] == 0:
+                    # only records the first event and time
+                    if days < outcome_t2e[0, 1]:
+                        outcome_t2e[0, 1] = days
+                    outcome_flag[0, 1] = 1
+                else:
+                    outcome_flag[0, 1] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
+
+
 def _encoding_outcome_severe_maternal_morbidity_withalldays(dx_list, icd_smm, smm_encoding, index_date, default_t2e,
                                                             pro_list):
     # 2022-02-18 initialize t2e:  last encounter, event, end of followup, whichever happens first
@@ -1286,7 +1402,7 @@ def build_feature_matrix(args):
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
-     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping() # no load fips_ziplist
+     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping()  # no load fips_ziplist
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1305,7 +1421,7 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         #
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-addPaxRisk.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1316,8 +1432,6 @@ def build_feature_matrix(args):
 
         print('Load cohorts pickle data file:', input_file)
         id_data = utils.load(input_file, chunk=4)
-
-
 
         # print('len(column_names):', len(column_names), '\n', column_names)
         # impute adi value by median of site , per site:
@@ -1354,7 +1468,6 @@ def build_feature_matrix(args):
             deathdate_list = []  # 2023-11-10
             death_array = np.zeros((n, 2), dtype='int16')  # newly add 2022-02-20, change 2023-11-10, as a outcome
             death_column_names = ['death date', 'death', 'death t2e']
-
 
             # # Build PASC outcome t2e and flag in follow-up, and outcome flag in baseline for dynamic cohort selection
             # # In total, there are 137 PASC categories in our lists. See T2E later
@@ -1403,10 +1516,30 @@ def build_feature_matrix(args):
             addPaxRisk_array = np.zeros((n, 3), dtype='int16')  #
             addPaxRisk_column_names = [
                 'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
-                ]
+            ]
+
+            # acute and postacute U099
+            # U099 acute, post acute
+            outcome_U099_flag = np.zeros((n, 2), dtype='int16')
+            outcome_U099_t2e = np.zeros((n, 2), dtype='int16')
+            outcome_U099_baseline = np.zeros((n, 1), dtype='int16')
+            outcome_U099_t2eall = []  # all time, baseline, acute, post acute, can be negative
+            outcome_U099_t2ecodeall = []
+            outcome_U099_column_names = ['U099-acute-flag', 'U099-postacute-flag',
+                                         'U099-acute-t2e', 'U099-postacute-t2e',
+                                         'U099-base', 'U099-t2eall', 'U099-t2ecodeall']
+
+            outcome_hospitalization_flag = np.zeros((n, 2), dtype='int16')
+            outcome_hospitalization_t2e = np.zeros((n, 2), dtype='int16')
+            outcome_hospitalization_baseline = np.zeros((n, 1), dtype='int16')
+            outcome_hospitalization_t2eall = []  # all time, baseline, acute, post acute, can be negative
+            outcome_hospitalization_column_names = ['hospitalization-acute-flag', 'hospitalization-postacute-flag',
+                                                    'hospitalization-acute-t2e', 'hospitalization-postacute-t2e',
+                                                    'hospitalization-base', 'hospitalization-t2eall']
 
             #
-            column_names = ['patid', 'site', 'covid',] + outcome_CFR_column_names + addPaxRisk_column_names
+            column_names = (['patid', 'site', 'covid', ] + outcome_CFR_column_names + addPaxRisk_column_names +
+                            outcome_U099_column_names + outcome_hospitalization_column_names)
 
             # if args.positive_only:
             #     if not flag:
@@ -1457,13 +1590,25 @@ def build_feature_matrix(args):
                 np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
             ])
 
-
             # add Cognitive, Fatigue, Respiratory condiiotn, 2023-11-13
             outcome_CFR_flag[i, :], outcome_CFR_t2e[i, :], outcome_CFR_baseline[i, :], outcome_CFR_t2eall_1row = \
                 _encoding_outcome_dx_withalldays(dx, icd_CFR, CFR_encoding, index_date, default_t2e)
-            outcome_CFR_t2eall .append(outcome_CFR_t2eall_1row)
+            outcome_CFR_t2eall.append(outcome_CFR_t2eall_1row)
 
             addPaxRisk_array[i, :] = _encoding_addPaxRisk(dx_raw, icd_addedPaxRisk, addedPaxRisk_encoding, index_date)
+
+            # acute U099, 2024-2-23
+            (outcome_U099_flag[i, :], outcome_U099_t2e[i, :], outcome_U099_baseline[i, :], outcome_U099_t2eall_1row,
+             outcome_U099_t2ecodeall_1row) = \
+                _encoding_outcome_U099_withalldays(dx, index_date, default_t2e)
+            outcome_U099_t2eall.append(outcome_U099_t2eall_1row)
+            outcome_U099_t2ecodeall.append(outcome_U099_t2ecodeall_1row)
+
+            # acute hospitalization, 2024-2-23
+            outcome_hospitalization_flag[i, :], outcome_hospitalization_t2e[i, :], outcome_hospitalization_baseline[i, :], outcome_hospitalization_t2eall_1row = \
+                _encoding_outcome_hospitalization_withalldays(encounter, index_date, default_t2e)
+            outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
+
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
@@ -1473,7 +1618,16 @@ def build_feature_matrix(args):
                                     outcome_CFR_t2e,
                                     outcome_CFR_baseline,
                                     np.asarray(outcome_CFR_t2eall),
-                                    addPaxRisk_array
+                                    addPaxRisk_array,
+                                    outcome_U099_flag,
+                                    outcome_U099_t2e,
+                                    outcome_U099_baseline,
+                                    np.asarray(outcome_U099_t2eall),
+                                    np.asarray(outcome_U099_t2ecodeall),
+                                    outcome_hospitalization_flag,
+                                    outcome_hospitalization_t2e,
+                                    outcome_hospitalization_baseline,
+                                    np.asarray(outcome_hospitalization_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)
@@ -1521,9 +1675,8 @@ def build_feature_matrix(args):
         print('Done site:', site)
         # end iterate sites
 
-
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return df_bool #, dx_count_df, med_count_df
+    return df_bool  # , dx_count_df, med_count_df
 
 
 if __name__ == '__main__':

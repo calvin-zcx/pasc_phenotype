@@ -579,6 +579,12 @@ if __name__ == "__main__":
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
             '03/22-06/22', '07/22-10/22', '11/22-02/23',
             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
+            'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+            'inpatient visits >=5',
+            'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+            'outpatient visits >=5',
+            'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+            'emergency visits >=5',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
@@ -609,6 +615,12 @@ if __name__ == "__main__":
             'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             '03/22-06/22', '07/22-10/22', '11/22-02/23',
+            'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+            'inpatient visits >=5',
+            'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+            'outpatient visits >=5',
+            'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+            'emergency visits >=5',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
@@ -780,7 +792,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
@@ -791,7 +803,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -800,13 +812,13 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -830,7 +842,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -873,7 +885,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         'pcornet',  # '-select' if args.selectpasc else '',
@@ -883,7 +895,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     'pcornet',  # '-select' if args.selectpasc else '',
@@ -894,7 +906,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/Paxlovid-{}-{}-{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/Paxlovid-{}-{}-{}-addHealthUtil/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
