@@ -584,10 +584,10 @@ if __name__ == "__main__":
 
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    if (args.cohorttype == 'atrisk') or (args.cohorttype == 'atrisklabdx'):
+    if args.cohorttype in ['atrisknopreg', 'atrisknopreglabdx']:
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
-            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', # 'age@65+', # # expand 65
+            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',  # 'age@65+', # # expand 65
             '65-<75 years', '75-<85 years', '85+ years',
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
@@ -642,6 +642,42 @@ if __name__ == "__main__":
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
+            'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
+            'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
+        ]
+    elif args.cohorttype in ['pregnant', 'pregnantlabdx']:
+        covs_columns = [
+            # 'Female', 'Male', 'Other/Missing',
+            'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+            'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years',
+            'age@50-64',  # 'age@65+', # # expand 65
+            'RE:Asian Non-Hispanic',
+            'RE:Black or African American Non-Hispanic',
+            'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
+            'RE:Other Non-Hispanic', 'RE:Unknown',
+            'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+            'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
+            '03/22-06/22', '07/22-10/22', '11/22-02/23',
+            # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
+            'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+            'inpatient visits >=5',
+            'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+            'outpatient visits >=5',
+            'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+            'emergency visits >=5',
+            'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+            'BMI: >=30 obese ', 'BMI: missing',
+            'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
+            'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
+            'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+            'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
+            'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+            'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
+            'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
+            'PaxRisk:Sickle cell disease or thalassemia',
+            'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+            'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
             'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
