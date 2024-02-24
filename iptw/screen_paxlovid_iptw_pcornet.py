@@ -66,9 +66,13 @@ def parse_args():
     parser.add_argument('--build_data', action='store_true')
 
     # parser.add_argument('--covtype', choices=['n3c', 'pcornet'], default='pcornet')
+    # parser.add_argument('--cohorttype',
+    #                     choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],
+    #                     default='atrisk')
     parser.add_argument('--cohorttype',
-                        choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],
-                        default='atrisk')
+                        choices=['atrisknopreg', 'norisk', 'pregnant',
+                                 'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx'],
+                        default='atrisknopreg')
     args = parser.parse_args()
 
     # More args
@@ -343,22 +347,30 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # add matched cohorts later
-    if args.cohorttype == 'atrisk':
-        print('select AT risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRisk-since202203.csv'
+    if args.cohorttype == 'atrisknopreg':
+        print('select AT risk cohort w/o pregnant')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
     elif args.cohorttype == 'norisk':
         print('select NO risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-since202203.csv'
-    elif args.cohorttype == 'atrisklabdx':
-        print('select AT risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRisk-since202203.csv'
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-220301-230201.csv'
+    elif args.cohorttype == 'pregnant':
+        print('select pregnant cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
+    elif args.cohorttype == 'atrisknopreglabdx':
+        print('select AT risk cohort w/o pregnant')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRiskNoPreg-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRiskNoPreg-220301-230201.csv'
     elif args.cohorttype == 'norisklabdx':
-        print('select NO risk cohort -lab-dx only cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-since202203.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-since202203.csv'
+        print('select NO risk cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-220301-230201.csv'
+    elif args.cohorttype == 'pregnantlabdx':
+        print('select pregnant cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-pregnant-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-pregnant-220301-230201.csv'
     else:
         #
         raise ValueError

@@ -259,7 +259,6 @@ def add_col(df):
     df['age@50-64'] = 0
     df['age@65+'] = 0
 
-
     # ['RE:Asian Non-Hispanic', 'RE:Black or African American Non-Hispanic', 'RE:Hispanic or Latino Any Race',
     # 'RE:White Non-Hispanic', 'RE:Other Non-Hispanic', 'RE:Unknown']
     df['RE:Asian Non-Hispanic'] = 0
@@ -465,17 +464,22 @@ def more_ec_for_cohort_selection_new_order(df):
     print('Applying more specific/flexible eligibility criteria for cohort selection')
 
     # select index date
-    # print('Before selecting index date from 2022-4-1 to 2023-2-28, len(df)', len(df))
+    # print('Before selecting index date from 2022-4-1 to 2023-2-1, len(df)', len(df))
+    print('Before selecting index date from 2022-3-1 to 2023-2-1, len(df)', len(df))
     df = df.loc[
          (df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) &
-         (df['index date'] <= datetime.datetime(2023, 2, 28, 0, 0)), :]
-    # print('After selecting index date from 2022-1-1 to 2023-2-28, len(df)', len(df))
-    print('After selecting index date from 2022-3-1 to 2023-2-28, len(df)', len(df))
+         (df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :]
+    # print('After selecting index date from 2022-1-1 to 2023-2-1, len(df)', len(df))
+    print('After selecting index date from 2022-3-1 to 2023-2-1, len(df)', len(df))
+
+    df_ec_start = df.copy()
+    print('Build df_ec_start for calculating EC proportion, len(df_ec_start)', len(df_ec_start))
 
     # Exclusion, no hospitalized
     # print('Before selecting no hospitalized, len(df)', len(df))
     df = df.loc[(df['outpatient'] == 1), :]
-    print('After selecting no hospitalized, len(df)', len(df))
+    print('After selecting no hospitalized, len(df)', len(df),
+          'exclude not outpatient in df_ec_start', (df_ec_start['outpatient'] != 1).sum())
 
     def ec_no_U099_baseline(_df):
         print('before ec_no_U099_baseline, _df.shape', _df.shape)
@@ -483,7 +487,9 @@ def more_ec_for_cohort_selection_new_order(df):
         _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
         n1 = len(_df)
         print('after ec_no_U099_baseline, _df.shape', _df.shape)
-        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1-n0))
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
         return _df
 
     def ec_no_other_covid_treatment(_df):
@@ -499,6 +505,26 @@ def more_ec_for_cohort_selection_new_order(df):
         n1 = len(_df)
         print('after ec_no_other_covid_treatment, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        print('exclude acute covid-19 treatment in df_ec_start -14 - +14', (
+                (df_ec_start['treat-t2e@remdesivir'] <= 14) |
+                (df_ec_start['Remdesivir'] > 0) |
+                (df_ec_start['Molnupiravir'] > 0) |
+                (df_ec_start[
+                     'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] > 0) |
+                (df_ec_start['PX: Convalescent Plasma'] > 0)).sum())
+
+        print('exclude contraindication drugs in df_ec_start -14 - +14', (df_ec_start['pax_contra'] > 0).sum())
+        return _df
+
+    def ec_no_severe_conditions_4_pax(_df):
+        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
+        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n1 = len(_df)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
         return _df
 
     def ec_at_least_one_risk_4_pax(_df):
@@ -516,15 +542,6 @@ def more_ec_for_cohort_selection_new_order(df):
         _df = _df.loc[~((_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0))]
         n1 = len(_df)
         print('after ec_not_at_risk_4_pax, _df.shape', _df.shape)
-        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
-        return _df
-
-    def ec_no_severe_conditions_4_pax(_df):
-        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
-        n0 = len(_df)
-        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
-        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
-        n1 = len(_df)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
         return _df
 
@@ -558,6 +575,137 @@ def more_ec_for_cohort_selection_new_order(df):
     print('After selecting NO pax prescription, len(df_norisk_ctrl)', len(df_norisk_ctrl))
 
     return df_risk_pos, df_norisk_pos, df_risk_ctrl, df_norisk_ctrl
+
+
+def more_ec_for_cohort_selection_risk_norisk_pregnant(df):
+    print('in more_ec_for_cohort_selection, df.shape', df.shape)
+    print('Applying more specific/flexible eligibility criteria for cohort selection')
+
+    # select index date
+    # print('Before selecting index date from 2022-4-1 to 2023-2-1, len(df)', len(df))
+    print('Before selecting index date from 2022-3-1 to 2023-2-1, len(df)', len(df))
+    df = df.loc[
+         (df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) &
+         (df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :]
+    # print('After selecting index date from 2022-1-1 to 2023-2-1, len(df)', len(df))
+    print('After selecting index date from 2022-3-1 to 2023-2-1, len(df)', len(df))
+
+    df_ec_start = df.copy()
+    print('Build df_ec_start for calculating EC proportion, len(df_ec_start)', len(df_ec_start))
+
+    # Exclusion, no hospitalized
+    # print('Before selecting no hospitalized, len(df)', len(df))
+    df = df.loc[(df['outpatient'] == 1), :]
+    print('After selecting no hospitalized, len(df)', len(df),
+          'exclude not outpatient in df_ec_start', (df_ec_start['outpatient'] != 1).sum())
+
+    def ec_no_U099_baseline(_df):
+        print('before ec_no_U099_baseline, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_U099_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
+        return _df
+
+    def ec_no_other_covid_treatment(_df):
+        print('before ec_no_other_covid_treatment, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(~(_df['treat-t2e@remdesivir'] <= 14)) &
+                      (_df['Remdesivir'] == 0) &
+                      (_df['Molnupiravir'] == 0) &
+                      (_df[
+                           'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] == 0) &
+                      (_df['PX: Convalescent Plasma'] == 0) &
+                      (_df['pax_contra'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_other_covid_treatment, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        print('exclude acute covid-19 treatment in df_ec_start -14 - +14', (
+                (df_ec_start['treat-t2e@remdesivir'] <= 14) |
+                (df_ec_start['Remdesivir'] > 0) |
+                (df_ec_start['Molnupiravir'] > 0) |
+                (df_ec_start[
+                     'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] > 0) |
+                (df_ec_start['PX: Convalescent Plasma'] > 0)).sum())
+
+        print('exclude contraindication drugs in df_ec_start -14 - +14', (df_ec_start['pax_contra'] > 0).sum())
+        return _df
+
+    def ec_no_severe_conditions_4_pax(_df):
+        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
+        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n1 = len(_df)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
+        return _df
+
+    # def ec_at_least_one_risk_4_pax(_df):
+    #     print('before ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+    #     n0 = len(_df)
+    #     _df = _df.loc[(_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0)]
+    #     n1 = len(_df)
+    #     print('after ec_at_least_one_risk_4_pax, _df.shape', _df.shape)
+    #     print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+    #     return _df
+
+    def ec_at_least_one_risk_4_pax_nopregnant(_df):
+        print('before ec_at_least_one_risk_4_pax_nopregnant, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[((_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0)) & (_df["PaxRisk:Pregnancy"] == 0)]
+        n1 = len(_df)
+        print('after ec_at_least_one_risk_4_pax_nopregnant, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    def ec_pregnant_risk_4_pax(_df):
+        print('before ec_pregnant_risk_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df["PaxRisk:Pregnancy"] == 1)]
+        n1 = len(_df)
+        print('after ec_pregnant_risk_4_pax, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    def ec_not_at_risk_4_pax(_df):
+        print('before ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[~((_df['age'] >= 50) | (_df['PaxRisk-Count'] > 0))]
+        n1 = len(_df)
+        print('after ec_not_at_risk_4_pax, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        return _df
+
+    df = ec_no_U099_baseline(df)
+    df = ec_no_severe_conditions_4_pax(df)
+    df = ec_no_other_covid_treatment(df)
+
+    print('**************build treated patients')
+    # drug initiation within 5 days
+    df_pos = df.loc[(df['treat-flag@paxlovid'] > 0), :]
+    print('After selecting pax prescription, len(df_pos)', len(df_pos))
+    df_pos = df_pos.loc[(df_pos['treat-t2e@paxlovid'] <= 5), :]
+    print('After selecting pax prescription within 5 days, len(df_pos)', len(df_pos))
+
+    df_pos_risk = ec_at_least_one_risk_4_pax_nopregnant(df_pos.copy())
+    df_pos_norisk = ec_not_at_risk_4_pax(df_pos.copy())
+    df_pos_preg = ec_pregnant_risk_4_pax(df_pos.copy())
+
+    print('**************build control patients')
+    # non initiation group, no paxlovid
+    df_ctrl = df.loc[(df['treat-flag@paxlovid'] == 0), :]
+    print('After selecting NO pax prescription, len(df_ctrl)', len(df_ctrl))
+
+    df_ctrl_risk = ec_at_least_one_risk_4_pax_nopregnant(df_ctrl.copy())
+    df_ctrl_norisk = ec_not_at_risk_4_pax(df_ctrl.copy())
+    df_ctrl_preg = ec_pregnant_risk_4_pax(df_ctrl).copy()
+
+    return df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk,df_ctrl_preg
 
 
 def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
@@ -757,23 +905,34 @@ if __name__ == "__main__":
 
         # df_treat, df_control = more_ec_for_cohort_selection(df)
         # df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection(df)
-        df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection_new_order(df)
-
+        # df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk = more_ec_for_cohort_selection_new_order(df)
+        df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
 
         df_pos_risk['treated'] = 1
         df_pos_norisk['treated'] = 1
+        df_pos_preg['treated'] = 1
+
         df_ctrl_risk['treated'] = 0
         df_ctrl_norisk['treated'] = 0
+        df_ctrl_preg['treated'] = 0
 
-        print('len(df_pos_risk)', len(df_pos_risk), 'len(df_pos_norisk)', len(df_pos_norisk))
-        print('len(df_ctrl_risk)', len(df_ctrl_risk), 'len(df_ctrl_norisk)', len(df_ctrl_norisk))
-        df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRisk-since202203.csv'))
-        df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk-since202203.csv'))
+        print('len(df_pos_risk)', len(df_pos_risk),
+              'len(df_pos_norisk)', len(df_pos_norisk),
+              'len(df_pos_preg)', len(df_pos_preg))
 
-        df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRisk-since202203.csv'))
-        df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk-since202203.csv'))
+        print('len(df_ctrl_risk)', len(df_ctrl_risk),
+              'len(df_ctrl_norisk)', len(df_ctrl_norisk),
+              'len(df_ctrl_preg)', len(df_ctrl_preg))
 
-        pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS-since202203.csv'))
+        df_pos_risk.to_csv(out_data_file.replace('.csv', '-treated-atRiskNoPreg-220301-230201.csv'))
+        df_pos_norisk.to_csv(out_data_file.replace('.csv', '-treated-noRisk-220301-230201.csv'))
+        df_pos_preg.to_csv(out_data_file.replace('.csv', '-treated-pregnant-220301-230201.csv'))
+
+        df_ctrl_risk.to_csv(out_data_file.replace('.csv', '-ctrl-atRiskNoPreg-220301-230201.csv'))
+        df_ctrl_norisk.to_csv(out_data_file.replace('.csv', '-ctrl-noRisk-220301-230201.csv'))
+        df_ctrl_preg.to_csv(out_data_file.replace('.csv', '-ctrl-pregnant-220301-230201.csv'))
+
+        pd.DataFrame(df_pos_risk.columns).to_csv(out_data_file.replace('.csv', '-COLUMNS-220301-230201.csv'))
 
         # utils.dump((df_pos_risk, df_pos_norisk, df_ctrl_risk, df_ctrl_norisk),
         #            r'./recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats-selectedCohorts.pkl')
