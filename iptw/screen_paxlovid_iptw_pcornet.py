@@ -72,7 +72,7 @@ def parse_args():
     parser.add_argument('--cohorttype',
                         choices=['atrisknopreg', 'norisk', 'pregnant',
                                  'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx'],
-                        default='atrisknopreg')
+                        default='norisk')
     args = parser.parse_args()
 
     # More args
@@ -128,6 +128,52 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     })
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
+
+
+def feature_process_pregnancy(df):
+    print('feature_process_additional, df.shape', df.shape)
+    start_time = time.time()
+
+    df['gestational age at delivery'] = np.nan
+    df['gestational age of infection'] = np.nan
+    df['preterm birth'] = np.nan
+
+    df['infection at trimester1'] = 0
+    df['infection at trimester2'] = 0
+    df['infection at trimester3'] = 0
+
+    # ['flag_delivery_type_Spontaneous', 'flag_delivery_type_Cesarean',
+    # 'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal', 'flag_delivery_type_other-unsepc',]
+    df['flag_delivery_type_other-unsepc'] = (
+            (df['flag_delivery_type_Other'] + df['flag_delivery_type_Unspecified']) >= 1).astype('int')
+    df['flag_delivery_type_Vaginal-Spontaneous'] = (
+            (df['flag_delivery_type_Spontaneous'] + df['flag_delivery_type_Vaginal']) >= 1).astype('int')
+    df['flag_delivery_type_Cesarean-Operative'] = (
+            (df['flag_delivery_type_Cesarean'] + df['flag_delivery_type_Operative']) >= 1).astype('int')
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
+        index_date = row['index date']
+        del_date = row['flag_delivery_date']
+        preg_date = row['flag_pregnancy_start_date']
+        if pd.notna(del_date) and pd.notna(preg_date):
+            gesage = (del_date - preg_date).days / 7
+            df.loc[index, 'gestational age at delivery'] = gesage
+            df.loc[index, 'preterm birth'] = int(gesage < 37)
+
+        if pd.notna(index_date) and pd.notna(preg_date):
+            infectage = (index_date - preg_date).days / 7
+            df.loc[index, 'gestational age of infection'] = infectage
+            if infectage <= 13:
+                df.loc[index, 'infection at trimester1'] = 1
+            elif infectage <= 27:
+                df.loc[index, 'infection at trimester2'] = 1
+            elif infectage > 27:
+                df.loc[index, 'infection at trimester3'] = 1
+
+    print('feature_process_additional Done! Time used:',
+          time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df
 
 
 def select_subpopulation(df, severity):
@@ -647,11 +693,13 @@ if __name__ == "__main__":
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
     elif args.cohorttype in ['pregnant', 'pregnantlabdx']:
+        df = feature_process_pregnancy(df)
         covs_columns = [
             # 'Female', 'Male', 'Other/Missing',
             'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
             'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years',
             'age@50-64',  # 'age@65+', # # expand 65
+            'infection at trimester1', 'infection at trimester2', 'infection at trimester3',
             'RE:Asian Non-Hispanic',
             'RE:Black or African American Non-Hispanic',
             'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
@@ -662,8 +710,8 @@ if __name__ == "__main__":
             # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
             'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
             'inpatient visits >=5',
-            'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
-            'outpatient visits >=5',
+            # 'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+            # 'outpatient visits >=5',
             'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
             'emergency visits >=5',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
