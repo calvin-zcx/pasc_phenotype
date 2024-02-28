@@ -75,7 +75,7 @@ def plot_forest_for_dx_organ_pax(star=True, text_right=False):
     indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet/'
     indir = r'../data/recover/output/results/Paxlovid-atrisk-anyfollowupdx-pcornet/'
     indir = r'../data/recover/output/results/Paxlovid-atrisk-PaxRisk_Tuberculosis-pcornet/'
-
+    indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V2/'
     output_dir = indir + r'figure/'
 
     df = pd.read_csv(indir + 'causal_effects_specific.csv')
@@ -186,7 +186,7 @@ def plot_forest_for_dx_organ_pax(star=True, text_right=False):
 
     p = EffectMeasurePlot(label=labs, effect_measure=measure, lcl=lower, ucl=upper,
                           nabs=nabsv, ncumIncidence=ncumv)
-    p.labels(scale='log')
+    # p.labels(scale='log')
 
     # organ = 'ALL'
     # p.labels(effectmeasure='aHR', add_label1='CIF per\n1000', add_label2='No. of\nCases')  # aHR
@@ -198,10 +198,12 @@ def plot_forest_for_dx_organ_pax(star=True, text_right=False):
 
     c = '#F65453'
     p.colors(pointshape="o", errorbarcolor=c, pointcolor=c)  # , linecolor='black'),   # , linecolor='#fcb2ab')
-    ax = p.plot_with_incidence(figsize=(9, .47 * len(labs)), t_adjuster=0.0108, max_value=1.3, min_value=0.5,
+    # ax = p.plot_with_incidence(figsize=(9, .47 * len(labs)), t_adjuster=0.0108, max_value=1.3, min_value=0.5,
+    #                            size=5, decimal=2,
+    #                            text_right=text_right)
+    ax = p.plot_with_incidence(figsize=(9, .47 * len(labs)), t_adjuster=0.0108, max_value=6, min_value=0.2,
                                size=5, decimal=2,
                                text_right=text_right)
-
     # plt.title(drug_name, loc="right", x=.7, y=1.045) #"Random Effect Model(Risk Ratio)"
     # plt.title('pasc', loc="center", x=0, y=0)
     # plt.suptitle("Missing Data Imputation Method", x=-0.1, y=0.98)

@@ -153,6 +153,10 @@ def _load_mapping():
     icd_addedPaxRisk = utils.load(r'../data/mapping/icd_addedPaxRisk_mapping.pkl')
     addedPaxRisk_encoding = utils.load(r'../data/mapping/addedPaxRisk_index_mapping.pkl')
 
+    # add negative control outcomes
+    icd_negctrlpasc = utils.load(r'../data/mapping/icd_negative-outcome-control_mapping.pkl')
+    negctrlpasc_encoding = utils.load(r'../data/mapping/negative-outcome-control_index_mapping.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
@@ -160,7 +164,7 @@ def _load_mapping():
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
             icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist,
             icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
-            icd_addedPaxRisk, addedPaxRisk_encoding)
+            icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding)
 
 
 def _encoding_age(age):
@@ -1402,7 +1406,7 @@ def build_feature_matrix(args):
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
-     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping()  # no load fips_ziplist
+     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding) = _load_mapping()  # no load fips_ziplist
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1421,7 +1425,7 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         #
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-negctrl.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1538,8 +1542,20 @@ def build_feature_matrix(args):
                                                     'hospitalization-base', 'hospitalization-t2eall']
 
             #
+            # negative contrl outcomes
+            # 99 negative control NEO001-NEO074   'FAC003', 'FAC006', 'FAC008'
+            negctrloutcome_flag = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_t2e = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_baseline = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_t2eall = []
+
+            negctrloutcome_column_names = ['negctrldx-out@' + x for x in negctrlpasc_encoding.keys()] + \
+                                   ['negctrldx-t2e@' + x for x in negctrlpasc_encoding.keys()] + \
+                                   ['negctrldx-base@' + x for x in negctrlpasc_encoding.keys()]+ \
+                                   ['negctrldx-t2eall@' + x for x in negctrlpasc_encoding.keys()]
+
             column_names = (['patid', 'site', 'covid', ] + outcome_CFR_column_names + addPaxRisk_column_names +
-                            outcome_U099_column_names + outcome_hospitalization_column_names)
+                            outcome_U099_column_names + outcome_hospitalization_column_names + negctrloutcome_column_names)
 
             # if args.positive_only:
             #     if not flag:
@@ -1609,6 +1625,10 @@ def build_feature_matrix(args):
                 _encoding_outcome_hospitalization_withalldays(encounter, index_date, default_t2e)
             outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
 
+            # negative outcome ctrl, 2024-2-28
+            negctrloutcome_flag[i, :], negctrloutcome_t2e[i, :], negctrloutcome_baseline[i, :], negctrloutcome_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_negctrlpasc, negctrlpasc_encoding, index_date, default_t2e)
+            negctrloutcome_t2eall.append(negctrloutcome_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
@@ -1628,6 +1648,10 @@ def build_feature_matrix(args):
                                     outcome_hospitalization_t2e,
                                     outcome_hospitalization_baseline,
                                     np.asarray(outcome_hospitalization_t2eall),
+                                    negctrloutcome_flag,
+                                    negctrloutcome_t2e,
+                                    negctrloutcome_baseline,
+                                    np.asarray(negctrloutcome_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)

@@ -238,6 +238,8 @@ def plot_forest_for_dx_organ_pax(star=True, text_right=False):
 
 def plot_forest_for_dx_organ_pax_lib2(star=True, text_right=False):
     indir = r'../data/recover/output/results/Paxlovid-atrisknopreg-all-pcornet-V2/'
+    # indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V2/'
+
     output_dir = indir + r'figure/'
 
     df = pd.read_csv(indir + 'causal_effects_specific.csv')
@@ -366,7 +368,8 @@ def plot_forest_for_dx_organ_pax_lib2(star=True, text_right=False):
                                       'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
                                       'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
                                       'p-val-sci', 'sigsym'])
-    df_result['-aHR'] = -1 * df_result['aHR']
+    # df_result['-aHR'] = -1 * df_result['aHR']
+    df_result = df_result.loc[~df_result['aHR'].isna()]
     plt.rc('font', family='serif')
     # fig, ax = plt.subplots()
     axs = fp.forestplot(
@@ -608,8 +611,8 @@ def plot_forest_for_pax_subgroup_lib2(star=True, text_right=False):
 if __name__ == '__main__':
     # plot_forest_for_dx_organ_pax()
 
-    # df_result = plot_forest_for_dx_organ_pax_lib2()
-    df_result = plot_forest_for_pax_subgroup_lib2()
+    df_result = plot_forest_for_dx_organ_pax_lib2()
+    # df_result = plot_forest_for_pax_subgroup_lib2()
 
     # df = fp.load_data("sleep")  # companion example data
     # df.head(3)

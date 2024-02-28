@@ -425,8 +425,18 @@ if __name__ == "__main__":
     print('fname2:', fname2)
 
     # %% Step 1. Load  Data
-    df1 = pd.read_csv(fname1, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
-    df2 = pd.read_csv(fname2, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
+    df1 = pd.read_csv(fname1, dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date', 'dob',
+                                   'flag_delivery_date',
+                                   'flag_pregnancy_start_date',
+                                   'flag_pregnancy_end_date'])
+
+    df2 = pd.read_csv(fname2, dtype={'patid': str, 'site': str, 'zip': str},
+                      parse_dates=['index date', 'dob',
+                                   'flag_delivery_date',
+                                   'flag_pregnancy_start_date',
+                                   'flag_pregnancy_end_date'
+                                   ])
     df = pd.concat([df1, df2], ignore_index=True)
 
     print('treated df1.shape', df1.shape,
