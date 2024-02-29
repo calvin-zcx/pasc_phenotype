@@ -443,7 +443,7 @@ def plot_forest_for_pax_subgroup_lib2(star=True, text_right=False):
         'norisk': ['No Documented Risk Factors', 'Without Indication'],
         'pregnant': ['Pregnant', 'Without Indication'],
         'VA': ['VA-like cohort', 'Sensitivity Analysis'],
-        'CFR':['Cognitive/Fatigue/Respiratory', 'Sensitivity Analysis'],
+        'CFR':['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
         'female': ['Female', 'Sex'],
         'male': ['Male', 'Sex'],
         'white': ['White', 'Race'],
@@ -612,7 +612,7 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ_pax()
 
     df_result = plot_forest_for_dx_organ_pax_lib2()
-    # df_result = plot_forest_for_pax_subgroup_lib2()
+    df_result = plot_forest_for_pax_subgroup_lib2()
 
     # df = fp.load_data("sleep")  # companion example data
     # df.head(3)
