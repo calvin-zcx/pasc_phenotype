@@ -15,132 +15,12 @@ import os
 from lifelines.plotting import add_at_risk_counts
 import seaborn as sns
 from matplotlib import ticker as mplticker
+import scipy.stats as st
 
 # Define unbalanced threshold, where SMD > SMD_THRESHOLD are defined as unbalanced features
 SMD_THRESHOLD = 0.1
 
-import warnings
-from lifelines.statistics import *
-from lifelines.statistics import _chisq_test_p_value
-from lifelines import utils
-from lifelines.utils import (
-    group_survival_table_from_events,
-    string_rjustify,
-    format_p_value,
-    format_floats,
-    interpolate_at_times_and_return_pandas,
-    _expected_value_of_survival_up_to_t,
-    _expected_value_of_survival_squared_up_to_t,
-)
-
-def my_survival_difference_at_fixed_point_in_time_test(point_in_time, fitterA, fitterB, **result_kwargs):
-    """
-        my takes, 2024-2-28: Revised this to support cumulative incidence, and confidence interval
-
-    Often analysts want to compare the survival-ness of groups at specific times, rather than comparing the entire survival curves against each other.
-    For example, analysts may be interested in 5-year survival. Statistically comparing the naive Kaplan-Meier points at a specific time
-    actually has reduced power (see [1]). By transforming the survival function, we can recover more power. This function uses
-    the log(-log(·)) transformation.
-
-    Parameters
-    ----------
-    point_in_time: float,
-        the point in time to analyze the survival curves at.
-
-    fitterA:
-        A lifelines univariate model fitted to the data. This can be a ``KaplanMeierFitter``, ``WeibullFitter``, etc.
-
-    fitterB:
-        the second lifelines model to compare against.
-
-    result_kwargs:
-        add keywords and meta-data to the experiment summary
-
-    Returns
-    -------
-
-    StatisticalResult
-      a StatisticalResult object with properties ``p_value``, ``summary``, ``test_statistic``, ``print_summary``
-
-    Examples
-    --------
-    .. code:: python
-
-        T1 = [1, 4, 10, 12, 12, 3, 5.4]
-        E1 = [1, 0, 1,  0,  1,  1, 1]
-        kmf1 = KaplanMeierFitter().fit(T1, E1)
-
-        T2 = [4, 5, 7, 11, 14, 20, 8, 8]
-        E2 = [1, 1, 1, 1,  1,  1,  1, 1]
-        kmf2 = KaplanMeierFitter().fit(T2, E2)
-
-        from lifelines.statistics import survival_difference_at_fixed_point_in_time_test
-        results = survival_difference_at_fixed_point_in_time_test(12.0, kmf1, kmf2)
-
-        results.print_summary()
-        print(results.p_value)        # 0.77
-        print(results.test_statistic) # 0.09
-
-    Notes
-    -----
-    1. Other transformations are possible, but Klein et al. [1] showed that the log(-log(·)) transform has the most desirable
-    statistical properties.
-
-    2. The API of this function changed in v0.25.3. This new API allows for right, left and interval censoring models to be tested.
-
-
-    References
-    -----------
-
-    [1] Klein, J. P., Logan, B. , Harhoff, M. and Andersen, P. K. (2007), Analyzing survival curves at a fixed point in time. Statist. Med., 26: 4505-4519. doi:10.1002/sim.2864
-
-    """
-    if type(fitterB) != type(fitterA):
-        warnings.warn(
-            "This test compares survival functions, but your fitters are estimating the survival functions differently. This means that this test is also testing the different ways to estimate the survival function and will be unreliable.",
-            UserWarning,
-        )
-
-    log = np.log
-    clog = lambda s: log(-log(s))
-
-    sA_t = fitterA.predict(point_in_time)
-    sB_t = fitterB.predict(point_in_time)
-
-    from lifelines.fitters import NonParametricUnivariateFitter, ParametricUnivariateFitter
-
-    if isinstance(fitterA, AalenJohansenFitter):
-        sigma_sqA = interpolate_at_times_and_return_pandas(fitterA.variance_, point_in_time)
-        sA_t = 1 - sA_t
-    elif isinstance(fitterA, NonParametricUnivariateFitter):
-        sigma_sqA = interpolate_at_times_and_return_pandas(fitterA._cumulative_sq_, point_in_time)
-    elif isinstance(fitterA, ParametricUnivariateFitter):
-        sigma_sqA = fitterA._compute_variance_of_transform(fitterA._survival_function, [point_in_time]).squeeze()
-
-    if isinstance(fitterB, NonParametricUnivariateFitter):
-        sigma_sqB = interpolate_at_times_and_return_pandas(fitterB.variance_, point_in_time)
-        sB_t = 1 - sB_t
-    elif isinstance(fitterB, NonParametricUnivariateFitter):
-        sigma_sqB = interpolate_at_times_and_return_pandas(fitterB._cumulative_sq_, point_in_time)
-    elif isinstance(fitterB, ParametricUnivariateFitter):
-        sigma_sqB = fitterB._compute_variance_of_transform(fitterB._survival_function, [point_in_time]).squeeze()
-
-    X = (clog(sA_t) - clog(sB_t)) ** 2 / (sigma_sqA / log(sA_t) ** 2 + sigma_sqB / log(sB_t) ** 2)
-    p_value = _chisq_test_p_value(X, 1)
-
-    # 1. add difference
-    # 2. add CI of differences
-    return StatisticalResult(
-        p_value,
-        X,
-        null_distribution="chi squared",
-        degrees_of_freedom=1,
-        point_in_time=point_in_time,
-        test_name="survival_difference_at_fixed_point_in_time_test",
-        fitterA=fitterA,
-        fitterB=fitterB,
-        **result_kwargs
-    )
+from misc.causal_contrast import st_survival_difference_at_fixed_point
 
 
 def model_eval_common(X, T, Y, PS_logits, loss=None, normalized=False, verbose=1, figsave='', report=5):
@@ -460,8 +340,8 @@ def cal_deviation(covariates, golds_treatment, logits_treatment, normalized, ver
     max_unbalanced_weighted = np.max(np.abs(covariates_deviation_w))
 
     return max_unbalanced_original, covariates_deviation, max_unbalanced_weighted, covariates_deviation_w, \
-           (covariates_treated_mu, covariates_treated_var, covariates_controlled_mu, covariates_controlled_var), \
-           (covariates_treated_w_mu, covariates_treated_w_var, covariates_controlled_w_mu, covariates_controlled_w_var)
+        (covariates_treated_mu, covariates_treated_var, covariates_controlled_mu, covariates_controlled_var), \
+        (covariates_treated_w_mu, covariates_treated_w_var, covariates_controlled_w_mu, covariates_controlled_w_var)
 
 
 def cal_ATE(golds_treatment, logits_treatment, golds_outcome, normalized):
@@ -557,9 +437,9 @@ def cal_survival_KM(golds_treatment, logits_treatment, golds_outcome, normalized
         cph_ori = HR_ori = CI_ori = None
 
     return (kmf1, kmf0, ate, survival_1, survival_0, results), \
-           (kmf1_w, kmf0_w, ate_w, survival_1_w, survival_0_w, results_w), \
-           (HR_ori, CI_ori, cph_ori), \
-           (HR, CI, cph)
+        (kmf1_w, kmf0_w, ate_w, survival_1_w, survival_0_w, results_w), \
+        (HR_ori, CI_ori, cph_ori), \
+        (HR, CI, cph)
 
 
 def flag_2binary(label):
@@ -578,7 +458,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # considering competing risk in this version, 2022-03-20
     #
     if legends is None:
-        legends = {'case': 'COVID+', 'control': 'Control'}
+        legends = {'case': 'Exposed', 'control': 'Control'}
     ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
     treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
     treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
@@ -586,25 +466,35 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
 
     # Part-1. https://lifelines.readthedocs.io/en/latest/fitters/univariate/KaplanMeierFitter.html
     kmf1 = KaplanMeierFitter(label=legends['case']).fit(treated_t2e,
-                                                 event_observed=flag_2binary(treated_flag), label=legends['case'])
+                                                        event_observed=flag_2binary(treated_flag),
+                                                        label=legends['case'])
     kmf0 = KaplanMeierFitter(label=legends['control']).fit(controlled_t2e,
-                                                  event_observed=flag_2binary(controlled_flag), label=legends['control'])
+                                                           event_observed=flag_2binary(controlled_flag),
+                                                           label=legends['control'])
 
     point_in_time = [60, 90, 120, 150, 180]
     if ('death_acute' in title) or ('hospitalization_acute' in title):
         point_in_time = [30, 30, 30, 30, 30]
 
-    results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
+    # results = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1, kmf0)
+    km_results = st_survival_difference_at_fixed_point(point_in_time, kmf1, kmf0)
+
     # results.print_summary()
     survival_1 = kmf1.predict(point_in_time).to_numpy()
     survival_0 = kmf0.predict(point_in_time).to_numpy()
     ate = survival_1 - survival_0
 
-    kmf1_w = KaplanMeierFitter(label=legends['case'] + " Adjusted").fit(treated_t2e, event_observed=flag_2binary(treated_flag),
-                                                            label=legends['case'] + " Adjusted", weights=treated_w)
-    kmf0_w = KaplanMeierFitter(label=legends['control'] + " Adjusted").fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
-                                                             label=legends['control'] + " Adjusted", weights=controlled_w)
-    results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
+    kmf1_w = KaplanMeierFitter(label=legends['case'] + " Adjusted").fit(treated_t2e,
+                                                                        event_observed=flag_2binary(treated_flag),
+                                                                        label=legends['case'] + " Adjusted",
+                                                                        weights=treated_w)
+    kmf0_w = KaplanMeierFitter(label=legends['control'] + " Adjusted").fit(controlled_t2e,
+                                                                           event_observed=flag_2binary(controlled_flag),
+                                                                           label=legends['control'] + " Adjusted",
+                                                                           weights=controlled_w)
+    # results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
+    km_results_w = st_survival_difference_at_fixed_point(point_in_time, kmf1_w, kmf0_w)
+
     # results_w.print_summary()
     survival_1_w = kmf1_w.predict(point_in_time).to_numpy()
     survival_0_w = kmf0_w.predict(point_in_time).to_numpy()
@@ -640,6 +530,8 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cif_0_CILower = ajf0_CI[ajf0_CI.columns[0]].asof(point_in_time).to_numpy()
     cif_0_CIUpper = ajf0_CI[ajf0_CI.columns[1]].asof(point_in_time).to_numpy()
 
+    aj_results = st_survival_difference_at_fixed_point(point_in_time, ajf1, ajf0)
+
     ajf1w = AalenJohansenFitter(calculate_variance=True).fit(treated_t2e, treated_flag,
                                                              event_of_interest=1,
                                                              label=legends['case'], weights=treated_w)
@@ -649,7 +541,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     cif_1_w = ajf1w.predict(point_in_time).to_numpy()
     cif_0_w = ajf0w.predict(point_in_time).to_numpy()
     cifdiff_w = cif_1_w - cif_0_w
-    results = survival_difference_at_fixed_point_in_time_test(point_in_time, ajf1w, ajf0w)
+
     ajf1w_CI = ajf1w.confidence_interval_cumulative_density_
     ajf0w_CI = ajf0w.confidence_interval_cumulative_density_
     cif_1_w_CILower = ajf1w_CI[ajf1w_CI.columns[0]].asof(point_in_time).to_numpy()
@@ -660,6 +552,8 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
     # cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
     # cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
+
+    aj_results_w = st_survival_difference_at_fixed_point(point_in_time, ajf1w, ajf0w)
 
     if fig_outfile:
         with open(fig_outfile.replace('-km.png', '-cumIncidence-ajf1w-ajf0w.pkl'), 'wb') as f:
@@ -672,9 +566,9 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
         add_at_risk_counts(ajf1w, ajf0w, ax=ax)
         if ('death_acute' in title) or ('hospitalization_acute' in title):
-            plt.xlim([0, 30])
+            plt.xlim(0, 30)
         else:
-            plt.xlim([0, 180])
+            plt.xlim(0, 180)
         plt.tight_layout()
 
         # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
@@ -689,7 +583,7 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     # Competing risk sceneriao: 0 for censoring, 1 for target event, 2 for competing risk death
     # --> competing risk 2, death, as censoring in cox model. Only caring event 1
     # https://github.com/CamDavidsonPilon/lifelines/issues/619
-    cph = CoxPHFitter() # penalizer=0.01
+    cph = CoxPHFitter()  # penalizer=0.01
     cox_data = pd.DataFrame(
         {'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment, 'weights': weights})
     try:
@@ -697,12 +591,13 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         HR = cph.hazard_ratios_['treatment']
         CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
         test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
-                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w, weights_B=controlled_w, )
+                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w,
+                                    weights_B=controlled_w, )
         test_p = test_results.p_value
         hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
         hr_different_time = hr_different_time['treatment'].to_numpy()
 
-        cph_ori = CoxPHFitter() # penalizer=0.01
+        cph_ori = CoxPHFitter()  # penalizer=0.01
         cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
         cph_ori.fit(cox_data_ori, 'T', 'event', show_progress=False)
         HR_ori = cph_ori.hazard_ratios_['treatment']
@@ -716,14 +611,16 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
     except:
         cph = HR = CI = test_p_ori = None
         cph_ori = HR_ori = CI_ori = test_p = None
-        hr_different_time = hr_different_time_ori = [np.nan]*len(point_in_time)
+        hr_different_time = hr_different_time_ori = [np.nan] * len(point_in_time)
 
-    return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
-           (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
-           (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
-           (HR, CI, test_p, cph, hr_different_time), \
-           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
-           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower, cif_0_w_CIUpper)
+    return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, km_results), \
+        (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, km_results_w), \
+        (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
+        (HR, CI, test_p, cph, hr_different_time), \
+        (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower,
+         cif_0_CIUpper, aj_results), \
+        (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower,
+         cif_0_w_CIUpper, aj_results_w)
 
 
 def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, database_flag, fig_outfile='', title=''):
@@ -751,7 +648,8 @@ def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, dat
 
     kmf1_w = KaplanMeierFitter(label='COVID+ Adjusted').fit(treated_t2e, event_observed=flag_2binary(treated_flag),
                                                             label="COVID+ Adjusted", weights=treated_w)
-    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e, event_observed=flag_2binary(controlled_flag),
+    kmf0_w = KaplanMeierFitter(label='Control Adjusted').fit(controlled_t2e,
+                                                             event_observed=flag_2binary(controlled_flag),
                                                              label="Control Adjusted", weights=controlled_w)
     results_w = survival_difference_at_fixed_point_in_time_test(point_in_time, kmf1_w, kmf0_w)
     # results_w.print_summary()
@@ -838,7 +736,8 @@ def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, dat
         HR = cph.hazard_ratios_['treatment']
         CI = np.exp(cph.confidence_intervals_.values.reshape(-1))
         test_results = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
-                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w, weights_B=controlled_w, )
+                                    event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w,
+                                    weights_B=controlled_w, )
         test_p = test_results.p_value
         hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
         hr_different_time = hr_different_time['treatment'].to_numpy()
@@ -875,13 +774,14 @@ def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, dat
     except:
         cph = HR = CI = test_p_ori = None
         cph_ori = HR_ori = CI_ori = test_p = None
-        hr_different_time = hr_different_time_ori = [np.nan]*len(point_in_time)
+        hr_different_time = hr_different_time_ori = [np.nan] * len(point_in_time)
         HR_inter_treat = CI_inter_treat = HR_inter = CI_inter = HR_inter_database = CI_inter_database = cph_inter = None
 
     return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, results), \
-           (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
-           (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
-           (HR, CI, test_p, cph, hr_different_time), \
-           (HR_inter_treat, CI_inter_treat, HR_inter, CI_inter, HR_inter_database, CI_inter_database, cph_inter), \
-           (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
-           (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower, cif_0_w_CIUpper)
+        (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, results_w), \
+        (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
+        (HR, CI, test_p, cph, hr_different_time), \
+        (HR_inter_treat, CI_inter_treat, HR_inter, CI_inter, HR_inter_database, CI_inter_database, cph_inter), \
+        (ajf1, ajf0, cifdiff, point_in_time, cif_1, cif_0, cif_1_CILower, cif_1_CIUpper, cif_0_CILower, cif_0_CIUpper), \
+        (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower,
+         cif_0_w_CIUpper)

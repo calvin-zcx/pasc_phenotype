@@ -57,7 +57,7 @@ def parse_args():
                                                'PaxRisk:Sickle cell disease or thalassemia',
                                                'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
                                                'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
-                                               'VA', '2022-04', '2022-03'
+                                               'VA', '2022-04', '2022-03', 'pax1stwave', 'pax2ndwave',
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -342,6 +342,14 @@ def select_subpopulation(df, severity):
         print('before build df', len(df), df.shape)
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)), :].copy()
         print('after build, final cohort df', len(df), df.shape)
+    elif severity == 'pax1stwave':
+        print('Considering patients in pax1stwave, 22-3-1 to 22-10-1')
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) & (
+                df['index date'] < datetime.datetime(2022, 10, 1, 0, 0)), :].copy()
+    elif severity == 'pax2ndwave':
+        print('Considering patients in pax1stwave, 22-10-1 to 23-2-1 to ')
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 10, 1, 0, 0)) & (
+                df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :].copy()
     else:
         print('Considering ALL cohorts')
 
@@ -514,9 +522,9 @@ if __name__ == "__main__":
             for j in pasc_keys:
                 if j.startswith(x):
                     select_key.append(j)
-        df['dx-out@' + select_group_name] = df[['dx-out@' + x for x in select_key]].any(axis=1).astype('int')
-        df['dx-base@' + select_group_name] = df[['dx-base@' + x for x in select_key]].any(axis=1).astype('int')
-        df['dx-t2e@' + select_group_name] = df[['dx-t2e@' + x for x in select_key]].min(axis=1)
+        df['negctrldx-out@' + select_group_name] = df[['negctrldx-out@' + x for x in select_key]].any(axis=1).astype('int')
+        df['negctrldx-base@' + select_group_name] = df[['negctrldx-base@' + x for x in select_key]].any(axis=1).astype('int')
+        df['negctrldx-t2e@' + select_group_name] = df[['negctrldx-t2e@' + x for x in select_key]].min(axis=1)
 
     negctrlpasc_list = []
 
@@ -865,7 +873,7 @@ if __name__ == "__main__":
     #                         brainfog_list)
 
     selected_screen_list = negctrlpasc_list + list(negctrlpasc_encoding.keys())
-
+    print('len(selected_screen_list):', len(selected_screen_list), selected_screen_list)
     causal_results = []
     results_columns_name = []
     for i, pasc in tqdm(enumerate(selected_screen_list, start=1), total=len(selected_screen_list)):
@@ -917,6 +925,10 @@ if __name__ == "__main__":
             pasc_flag = (df['dxCFR-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')
             pasc_baseline = df['dxCFR-base@' + pasc]
+        elif pasc in (negctrlpasc_list + list(negctrlpasc_encoding.keys())):
+            pasc_flag = (df['negctrldx-out@' + pasc].copy() >= 1).astype('int')
+            pasc_t2e = df['negctrldx-t2e@' + pasc].astype('float')
+            pasc_baseline = df['negctrldx-base@' + pasc]
 
         # considering competing risks of death, and (all, acute, post-acute) death as outcomes
         if pasc == 'death':
