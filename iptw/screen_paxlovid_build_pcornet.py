@@ -794,7 +794,7 @@ if __name__ == "__main__":
             print('df.shape:', df.shape)
 
             # add new columns
-            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital.csv'.format(
+            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-negctrl.csv'.format(
                 site, site)
             print('add columns from:', data_file_add)
             df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
@@ -866,7 +866,7 @@ if __name__ == "__main__":
         df = df.loc[df['covid'] == 1, :].copy()
 
         print('covid+: df.shape:', df.shape)
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl.csv'
         if args.cohorttype == 'lab-dx':
             out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
         print('dump to', out_data_file)
@@ -876,7 +876,7 @@ if __name__ == "__main__":
     else:
         # out_data_file = 'recoverINSIGHT5Nov27_covid_pos_addcolumns.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl.csv'
         if args.cohorttype == 'lab-dx':
             out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
 
@@ -892,7 +892,7 @@ if __name__ == "__main__":
         df = add_col(df)
         print('add cols, then df.shape:', df.shape)
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-addPaxRisk-Preg_4PCORNetPax-addPaxFeats.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats.csv'
 
         if args.cohorttype == 'lab-dx':
             out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
