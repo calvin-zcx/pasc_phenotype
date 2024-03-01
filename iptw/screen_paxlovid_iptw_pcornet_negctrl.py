@@ -385,6 +385,12 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
     return ctrl_list
 
 
+def _clean_name_(s, maxlen=50):
+    s = s.replace(':', '-').replace('/', '-')
+    s_trunc = (s[:maxlen] + '..') if len(s) > maxlen else s
+    return s_trunc
+
+
 if __name__ == "__main__":
     # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-V2.txt
     # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-anyfollowupdx-V2.txt
@@ -479,7 +485,6 @@ if __name__ == "__main__":
               'control df4.shape', df4.shape,
               'combined df.shape', df.shape, )
 
-
     print('Before select_subpopulation, len(df)', len(df))
     df = select_subpopulation(df, args.severity)
     print('After select_subpopulation, len(df)', len(df))
@@ -545,19 +550,23 @@ if __name__ == "__main__":
     icd_negctrlpasc = utils.load(r'../data/mapping/icd_negative-outcome-control_mapping.pkl')
     negctrlpasc_encoding = utils.load(r'../data/mapping/negative-outcome-control_index_mapping.pkl')
 
+
     def group_dx_col(df, select_codes, select_group_name, pasc_keys):
         select_key = []
         for x in select_codes:
             for j in pasc_keys:
                 if j.startswith(x):
                     select_key.append(j)
-        df['negctrldx-out@' + select_group_name] = df[['negctrldx-out@' + x for x in select_key]].any(axis=1).astype('int')
-        df['negctrldx-base@' + select_group_name] = df[['negctrldx-base@' + x for x in select_key]].any(axis=1).astype('int')
+        df['negctrldx-out@' + select_group_name] = df[['negctrldx-out@' + x for x in select_key]].any(axis=1).astype(
+            'int')
+        df['negctrldx-base@' + select_group_name] = df[['negctrldx-base@' + x for x in select_key]].any(axis=1).astype(
+            'int')
         df['negctrldx-t2e@' + select_group_name] = df[['negctrldx-t2e@' + x for x in select_key]].min(axis=1)
+
 
     negctrlpasc_list = []
 
-    select_codes = ['EXT{:03d}'.format(x) for x in range(1,31)]
+    select_codes = ['EXT{:03d}'.format(x) for x in range(1, 31)]
     select_group_name = 'external cause'
     negctrlpasc_list.append(select_group_name)
     group_dx_col(df, select_codes, select_group_name, negctrlpasc_encoding.keys())
@@ -572,7 +581,7 @@ if __name__ == "__main__":
     negctrlpasc_list.append(select_group_name)
     group_dx_col(df, select_codes, select_group_name, negctrlpasc_encoding.keys())
 
-    select_codes = ['NEO{:03d}'.format(x) for x in range(1,11)]
+    select_codes = ['NEO{:03d}'.format(x) for x in range(1, 11)]
     select_group_name = 'Head and neck cancers'
     negctrlpasc_list.append(select_group_name)
     group_dx_col(df, select_codes, select_group_name, negctrlpasc_encoding.keys())
@@ -626,7 +635,6 @@ if __name__ == "__main__":
     select_group_name = 'Conditions due to neoplasm or the treatment of neoplasm'
     negctrlpasc_list.append(select_group_name)
     group_dx_col(df, select_codes, select_group_name, negctrlpasc_encoding.keys())
-
 
     pasc_simname = {}
     pasc_organ = {}
@@ -1046,10 +1054,10 @@ if __name__ == "__main__":
         )
         out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/{}-{}-results.csv'.format(
             args.cohorttype,
-            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+            _clean_name_(args.severity),
             'pcornet',  # '-select' if args.selectpasc else '',
             i,
-            pasc.replace(':', '-').replace('/', '-'))
+            _clean_name_(pasc))
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
@@ -1057,24 +1065,28 @@ if __name__ == "__main__":
         df_summary.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
-                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                _clean_name_(args.severity),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')))
+                i,
+                _clean_name_(pasc))
+        )
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
         dfps.to_csv(
             '../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
-                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                _clean_name_(args.severity),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')))
+                i,
+                _clean_name_(pasc)))
         try:
             figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/{}-{}-PS.png'.format(
                 args.cohorttype,
-                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                _clean_name_(args.severity),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-'))
+                i,
+                _clean_name_(pasc))
             print('Dump ', figout)
 
             ax = plt.subplot(111)
@@ -1096,9 +1108,10 @@ if __name__ == "__main__":
             covid_label, iptw, pasc_flag, pasc_t2e,
             fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/{}-{}-km.png'.format(
                 args.cohorttype,
-                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                _clean_name_(args.severity),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')),
+                i,
+                _clean_name_(pasc)),
             title=pasc,
             legends={'case': 'Paxlovid', 'control': 'Control'})
 
@@ -1139,7 +1152,7 @@ if __name__ == "__main__":
                     to_csv(
                     r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
-                        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                        _clean_name_(args.severity),
                         'pcornet',  # '-select' if args.selectpasc else '',
                         i))
         except:
@@ -1149,7 +1162,7 @@ if __name__ == "__main__":
             df_causal.to_csv(
                 r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
-                    args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+                    _clean_name_(args.severity),
                     'pcornet',  # '-select' if args.selectpasc else '',
                 ))
 
@@ -1160,7 +1173,7 @@ if __name__ == "__main__":
     df_causal.to_csv(
         r'../data/recover/output/results/Paxlovid-{}-{}-{}-NEGCTRL/causal_effects_specific.csv'.format(
             args.cohorttype,
-            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+            _clean_name_(args.severity),
             'pcornet',  # '-select' if args.selectpasc else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

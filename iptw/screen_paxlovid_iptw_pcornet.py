@@ -384,6 +384,11 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
     print('Done, {}/{} no match'.format(n_no_match, len(df_case)))
     return ctrl_list
 
+def _clean_name_(s, maxlen=50):
+    s = s.replace(':', '-').replace('/', '-')
+    s_trunc = (s[:maxlen] + '..') if len(s) > maxlen else s
+    return s_trunc
+
 
 if __name__ == "__main__":
     # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-V2.txt
