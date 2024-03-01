@@ -348,7 +348,7 @@ def select_subpopulation(df, severity):
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 3, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2022, 10, 1, 0, 0)), :].copy()
     elif severity == 'pax2ndwave':
-        print('Considering patients in pax1stwave, 22-10-1 to 23-2-1 to ')
+        print('Considering patients in pax2ndwave, 22-10-1 to 23-2-1 to ')
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 10, 1, 0, 0)) & (
                 df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :].copy()
     else:
@@ -383,6 +383,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
     print('Done, {}/{} no match'.format(n_no_match, len(df_case)))
     return ctrl_list
+
 
 def _clean_name_(s, maxlen=50):
     s = s.replace(':', '-').replace('/', '-')
@@ -961,8 +962,8 @@ if __name__ == "__main__":
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
-            i,
-            pasc.replace(':', '-').replace('/', '-'))
+            i, _clean_name_(pasc))
+
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
@@ -972,7 +973,7 @@ if __name__ == "__main__":
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')))
+                i, _clean_name_(pasc)))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
@@ -981,13 +982,13 @@ if __name__ == "__main__":
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')))
+                i, _clean_name_(pasc)))
         try:
             figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-'))
+                i, _clean_name_(pasc))
             print('Dump ', figout)
 
             ax = plt.subplot(111)
@@ -1011,7 +1012,7 @@ if __name__ == "__main__":
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
-                i, pasc.replace(':', '-').replace('/', '-')),
+                i, _clean_name_(pasc)),
             title=pasc,
             legends={'case': 'Paxlovid', 'control': 'Control'})
 
@@ -1034,7 +1035,8 @@ if __name__ == "__main__":
                         km_w[2], km_w[3], km_w[6].p_value,
                         list(km_w[6].diff_of_mean), list(km_w[6].diff_of_mean_lower), list(km_w[6].diff_of_mean_upper),
                         cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
-                        list(cif_w[10].diff_of_mean), list(cif_w[10].diff_of_mean_lower), list(cif_w[10].diff_of_mean_upper),
+                        list(cif_w[10].diff_of_mean), list(cif_w[10].diff_of_mean_lower),
+                        list(cif_w[10].diff_of_mean_upper),
                         cif_w[10].p_value,
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],

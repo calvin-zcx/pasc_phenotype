@@ -7,7 +7,6 @@
 # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisknopreg --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisknopreg-anyfollowupdx-V2.txt
 
 
-
 #python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisklabdx --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisklabdx-all.txt
 #python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisklabdx --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisklabdx-anyfollowupdx.txt
 
