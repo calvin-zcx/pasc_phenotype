@@ -71,6 +71,7 @@ def parse_args():
     #                     default='atrisk')
     parser.add_argument('--cohorttype',
                         choices=['atrisknopreg', 'norisk', 'pregnant',
+                                 'atrisk',
                                  'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx'],
                         default='norisk')
     args = parser.parse_args()
@@ -413,6 +414,13 @@ if __name__ == "__main__":
         print('select pregnant cohort')
         fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-treated-pregnant-220301-230201.csv'
         fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-ctrl-pregnant-220301-230201.csv'
+    elif args.cohorttype == 'atrisk':
+        print('select At risk and with Pregnant cohort')
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
+        fname3 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-treated-pregnant-220301-230201.csv'
+        fname4 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-ctrl-pregnant-220301-230201.csv'
+
     # elif args.cohorttype == 'atrisknopreglabdx':
     #     print('select AT risk cohort w/o pregnant')
     #     fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRiskNoPreg-220301-230201.csv'
@@ -446,10 +454,31 @@ if __name__ == "__main__":
                                    'flag_pregnancy_end_date'
                                    ])
     df = pd.concat([df1, df2], ignore_index=True)
-
     print('treated df1.shape', df1.shape,
           'control df2.shape', df2.shape,
           'combined df.shape', df.shape, )
+
+    if args.cohorttype == 'atrisk':
+        print('fname3:', fname3)
+        print('fname4:', fname4)
+
+        df3 = pd.read_csv(fname3, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'])
+
+        df4 = pd.read_csv(fname4, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'
+                                       ])
+        df = pd.concat([df, df3, df4], ignore_index=True)
+        print('Further combine df3 and df4 treated df3.shape', df3.shape,
+              'control df4.shape', df4.shape,
+              'combined df.shape', df.shape, )
+
 
     print('Before select_subpopulation, len(df)', len(df))
     df = select_subpopulation(df, args.severity)
@@ -734,7 +763,7 @@ if __name__ == "__main__":
 
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    if args.cohorttype in ['atrisknopreg', 'atrisknopreglabdx']:
+    if args.cohorttype in ['atrisk', 'atrisknopreg', 'atrisknopreglabdx']:
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
             'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',  # 'age@65+', # # expand 65
