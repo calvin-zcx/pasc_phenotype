@@ -119,6 +119,12 @@ def label_map(x):
         'DX: Obstructive sleep apnea': 'Obstructive sleep apnea',
         'DX: Epstein-Barr and Infectious Mononucleosis (Mono)': 'EBV and Infectious Mono',
         'DX: Herpes Zoster': 'Herpes Zoster',
+        'pregage:18-<25 years': 'age:18-24',
+        'pregage:25-<30 years': 'age:25-29',
+        'pregage:30-<35 years': 'age:30-34',
+        'pregage:35-<40 years': 'age:35-39',
+        'pregage:40-<45 years': 'age:40-44',
+        'pregage:45-50 years': 'age:45-50',
     }
     return covs_map[x]
 
@@ -126,7 +132,11 @@ def label_map(x):
 if __name__ == '__main__':
     # pass
     indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+    indir = r'../data/recover/output/results/Paxlovid-norisk-all-pcornet-V3/'
+
     output_dir = indir + r'figure/'
+    print('indir', indir)
+    print('outdir', output_dir)
 
     df = pd.read_csv(indir + '1-any_pasc-evaluation_balance.csv')
     df = df.iloc[::-1]

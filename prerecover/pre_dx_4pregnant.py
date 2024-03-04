@@ -18,17 +18,17 @@ from misc.utilsql import *
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='preprocess diagnosis')
+    parser = argparse.ArgumentParser(description='preprocess diagnosis for pregnant cohort')
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
-    args.output_file = r'../data/recover/output/{}/covid_diagnosis_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output/{}/pregnant_diagnosis_{}.csv'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
 
-def read_diagnosis_4_covid(args, chunksize=100000, ):
+def read_diagnosis_4_pregnant(args, code_set, chunksize=100000, ):
     """
     :param data_file: input demographics file with std format
     :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
@@ -44,20 +44,16 @@ def read_diagnosis_4_covid(args, chunksize=100000, ):
 
     """
     start_time = time.time()
-    print('In read_diagnosis_4_covid...')
+    print('In read_diagnosis_4_pregnant')
     print('Choose dataset:', args.dataset, 'chunksize:', chunksize, )
 
-    # step 1: set covid dx codee:
-    # 2024-3-4
-    # add J1282, J1281, U072 for inclusion, might not be used for confirmed later, but used for exlcusion covid negative
-
-    print('Step 1: use dx U071, J1282, J1281, U072 to find covid patients')
-    code_set = {'U071', 'U07.1', 'J12.82', 'J1282', 'J12.81', 'J1281', 'U072', 'U07.2',}
-    print('COVID-19 dx codes: ', code_set)
+    # step 1: load covid lab test codes, may be updated by:
+    print('Step 1: use dx codes for pregnancy/delivery')
     print('len(code_set):', len(code_set))
+    print('code_set:', code_set)
 
     # step 2: read dx results by chunk, due to large file size
-    print('Step 2, read dx data, and select patients who had any COVID-19 diagnoses!')
+    print('Step 2, read dx data, and select patients who had any pregnant/delivery diagnoses!')
     connect_string, cred_dict = load_sql_credential()
     table_name = args.input_file
     table_size = get_table_size(connect_string, table_name)
@@ -149,13 +145,27 @@ def read_diagnosis_4_covid(args, chunksize=100000, ):
 
 
 if __name__ == '__main__':
-    # python pre_dx_4covid.py --dataset wcm 2>&1 | tee  log/pre_dx_4covid
-    # _wcm.txt
+    # python pre_dx_4pregnant.py --dataset wcm_pcornet_all 2>&1 | tee  log/pre_dx_4pregnant
 
     start_time = time.time()
     args = parse_args()
+    # step 1: load pregnancy/delivery related diagnosis
+    df_include = pd.read_excel(r'../data/mapping/RECOVER Preg CP_Technical Details_v3_11.8.22.xlsx',
+                               sheet_name='Inclusion',
+                               dtype=str)
+    df_exclude = pd.read_excel(r'../data/mapping/RECOVER Preg CP_Technical Details_v3_11.8.22.xlsx',
+                               sheet_name='Exclusion',
+                               dtype=str)
+
+    df_preg = pd.concat([df_include, df_exclude, ], ignore_index=True, sort=False)
+    df_preg_dx = df_preg.loc[df_preg['CodeType'] == 'ICD-10-CM', 'Code']
+    code_set = set(df_preg_dx.to_list())
+    print('Selected all pregnant/delivery related ICD-10-CM diagnosis codes, both inclusion and exclusion: ')
+    print('len(code_set):', len(code_set))
+    print('code_set:', code_set)
+
     print('Selected site:', args.dataset)
     print('args:', args)
-    df = read_diagnosis_4_covid(args, )
+    df = read_diagnosis_4_pregnant(args, code_set)
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
