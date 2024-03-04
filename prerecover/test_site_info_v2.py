@@ -136,8 +136,8 @@ if __name__ == '__main__':
     pd_results = pd.concat(results, ignore_index=True)
     df_combined = pd.merge(pd_results, df_site, left_on='site', right_on='Schema name',
                            how='left')  # df_site.loc[df_site['selected'] == 1]
-    df_combined.to_csv('output/db_info/site_table_date-{}.csv'.format(date_time))
+    df_combined.to_csv('output/db_info/site_pcornet_all_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)
-    pd_error.to_csv('output/db_info/site_table_date_ErrorMsg-{}.csv'.format(date_time))
+    pd_error.to_csv('output/db_info/site_pcornet_all_table_date_ErrorMsg-{}.csv'.format(date_time))
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

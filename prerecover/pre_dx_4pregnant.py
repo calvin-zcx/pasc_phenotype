@@ -19,7 +19,7 @@ from misc.utilsql import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess diagnosis for pregnant cohort')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='wcm_pcornet_all', help='site dataset')
     args = parser.parse_args()
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
@@ -47,13 +47,13 @@ def read_diagnosis_4_pregnant(args, code_set, chunksize=100000, ):
     print('In read_diagnosis_4_pregnant')
     print('Choose dataset:', args.dataset, 'chunksize:', chunksize, )
 
-    # step 1: load covid lab test codes, may be updated by:
+    # step 1: load dx codes for pregnancy/delivery:
     print('Step 1: use dx codes for pregnancy/delivery')
     print('len(code_set):', len(code_set))
     print('code_set:', code_set)
 
     # step 2: read dx results by chunk, due to large file size
-    print('Step 2, read dx data, and select patients who had any pregnant/delivery diagnoses!')
+    print('Step 2, read dx data, and select patients with any pregnant/delivery diagnoses!')
     connect_string, cred_dict = load_sql_credential()
     table_name = args.input_file
     table_size = get_table_size(connect_string, table_name)
@@ -72,10 +72,10 @@ def read_diagnosis_4_pregnant(args, code_set, chunksize=100000, ):
     i = 0
     n_rows = 0
     dfs = []
-    dfs_covid = []
-    n_covid_rows = 0
+    dfs_pregnant = []
+    n_pregnant_rows = 0
     patid_set = set([])
-    patid_covid_set = set([])
+    patid_pregnant_set = set([])
     # cnt = Counter([])
     cnt_code = Counter([])
 
@@ -92,56 +92,56 @@ def read_diagnosis_4_pregnant(args, code_set, chunksize=100000, ):
             print('chunk.columns', chunk.columns)
 
         chunk_dx = chunk['DX'].apply(lambda x: x.strip().replace('.', '').upper() if isinstance(x, str) else x)
-        chunk_covid_records = chunk.loc[chunk_dx.isin(code_set), :].copy()
-        chunk_covid_records.rename(columns=lambda x: x.upper(), inplace=True)
-        dfs_covid.append(chunk_covid_records)
-        # only select cohorts with covid dx.
+        chunk_pregnant_records = chunk.loc[chunk_dx.isin(code_set), :].copy()
+        chunk_pregnant_records.rename(columns=lambda x: x.upper(), inplace=True)
+        dfs_pregnant.append(chunk_pregnant_records)
+        # only select cohorts with pregnant dx.
 
         patid_set.update(chunk['PATID'])
-        patid_covid_set.update(chunk_covid_records['PATID'])
+        patid_pregnant_set.update(chunk_pregnant_records['PATID'])
 
         n_rows += len(chunk)
-        n_covid_rows += len(chunk_covid_records)
+        n_pregnant_rows += len(chunk_pregnant_records)
 
-        cnt_code.update(chunk_covid_records['DX'])
+        cnt_code.update(chunk_pregnant_records['DX'])
 
         # # monte case, too large, error. other sites ok
         # dfs.append(chunk[['PATID', 'ENCOUNTERID', 'ENC_TYPE', "ADMIT_DATE", 'DX', "DX_TYPE"]])
         dfs.append(chunk[["ADMIT_DATE"]])
 
         if i % 50 == 0:
-            print('chunk:', i, 'len(dfs):', len(dfs), 'len(dfs_covid):', len(dfs_covid),
+            print('chunk:', i, 'len(dfs):', len(dfs), 'len(dfs_pregnant):', len(dfs_pregnant),
                   'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-            print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows, )
+            print('n_rows:', n_rows, 'n_pregnant_rows:', n_pregnant_rows, )
             print('len(patid_set):', len(patid_set))
-            print('len(patid_covid_set):', len(patid_covid_set))
+            print('len(patid_pregnant_set):', len(patid_pregnant_set))
 
-    print('n_rows:', n_rows, 'n_covid_rows:', n_covid_rows, '#chunk: ', i, 'chunk size:', chunksize)
+    print('n_rows:', n_rows, 'n_pregnant_rows:', n_pregnant_rows, '#chunk: ', i, 'chunk size:', chunksize)
     print('len(patid_set):', len(patid_set))
-    print('len(patid_covid_set):', len(patid_covid_set))
-    print('covid DX Counter:', cnt_code)
+    print('len(patid_pregnant_set):', len(patid_pregnant_set))
+    print('pregnant DX Counter:', cnt_code)
 
     dfs = pd.concat(dfs)
     print('dfs.shape', dfs.shape)
     print('Time range of diagnosis table of all patients:',
           pd.to_datetime(dfs["ADMIT_DATE"]).describe(datetime_is_numeric=True))
 
-    dfs_covid_all = pd.concat(dfs_covid)
-    print('dfs_covid_all.shape', dfs_covid_all.shape)
-    print('dfs_covid_all.columns', dfs_covid_all.columns)
-    dfs_covid_all.rename(columns=lambda x: x.upper(), inplace=True)
-    print('dfs_covid_all.columns', dfs_covid_all.columns)
-    print('Time range of diagnosis table of selected covid patients:',
-          pd.to_datetime(dfs_covid_all["ADMIT_DATE"]).describe(datetime_is_numeric=True))
+    dfs_pregnant_all = pd.concat(dfs_pregnant)
+    print('dfs_pregnant_all.shape', dfs_pregnant_all.shape)
+    print('dfs_pregnant_all.columns', dfs_pregnant_all.columns)
+    dfs_pregnant_all.rename(columns=lambda x: x.upper(), inplace=True)
+    print('dfs_pregnant_all.columns', dfs_pregnant_all.columns)
+    print('Time range of diagnosis table of selected pregnant patients:',
+          pd.to_datetime(dfs_pregnant_all["ADMIT_DATE"]).describe(datetime_is_numeric=True))
 
     print('Output file:', args.output_file)
     utils.check_and_mkdir(args.output_file)
-    dfs_covid_all.to_csv(args.output_file, index=False)
+    dfs_pregnant_all.to_csv(args.output_file, index=False)
 
     connection.close()
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    return dfs_covid_all
+    return dfs_pregnant_all
 
 
 if __name__ == '__main__':
@@ -158,6 +158,8 @@ if __name__ == '__main__':
                                dtype=str)
 
     df_preg = pd.concat([df_include, df_exclude, ], ignore_index=True, sort=False)
+    print(df_preg['CodeType'].value_counts())
+
     df_preg_dx = df_preg.loc[df_preg['CodeType'] == 'ICD-10-CM', 'Code']
     code_set = set(df_preg_dx.to_list())
     print('Selected all pregnant/delivery related ICD-10-CM diagnosis codes, both inclusion and exclusion: ')

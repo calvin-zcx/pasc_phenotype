@@ -18,24 +18,24 @@ from misc.utilsql import *
 
 
 def parse_args():
-    parser = argparse.ArgumentParser(description='preprocess procedure for pregnant cohort')
+    parser = argparse.ArgumentParser(description='preprocess encounter for pregnant cohort')
     parser.add_argument('--dataset', default='wcm_pcornet_all',
                         help='all recover sites')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
 
-    args.input_file = r'{}.procedures'.format(args.dataset)
-    args.output_file = r'../data/recover/output/{}/pregnant_procedures_{}.csv'.format(args.dataset, args.dataset)
-    args.output_file_xlsx = r'../data/recover/output/{}/pregnant_procedures_{}.xlsx'.format(args.dataset, args.dataset)
+    args.input_file = r'{}.encounter'.format(args.dataset)
+    args.output_file = r'../data/recover/output/{}/pregnant_encounter_{}.csv'.format(args.dataset, args.dataset)
+    args.output_file_xlsx = r'../data/recover/output/{}/pregnant_encounter_{}.xlsx'.format(args.dataset, args.dataset)
 
     print('args:', args)
 
     return args
 
 
-def read_procedures_4_pregnant(args, code_set, chunksize=100000, debug=False):
+def read_encounter_4_pregnant(args, code_set, chunksize=100000, debug=False):
     start_time = time.time()
-    print('In read_procedures_4_pregnant')
+    print('In read_encounter_4_pregnant')
     print('Choose dataset:', args.dataset, 'chunksize:', chunksize, 'debug:', debug)
 
     # step 1: load procedures codes for pregnant/delivery:
@@ -84,7 +84,7 @@ def read_procedures_4_pregnant(args, code_set, chunksize=100000, debug=False):
         if debug:
             dfs.append(chunk)
 
-        chunk_pregnant_records = chunk.loc[chunk['PX'].isin(code_set), :]
+        chunk_pregnant_records = chunk.loc[chunk['DRG'].isin(code_set), :]
         dfs_pregnant.append(chunk_pregnant_records)
 
         patid_set.update(chunk['PATID'])
@@ -93,15 +93,15 @@ def read_procedures_4_pregnant(args, code_set, chunksize=100000, debug=False):
         n_rows += len(chunk)
         n_pregnant_rows += len(chunk_pregnant_records)
 
-        cnt.update(chunk_pregnant_records['PX_TYPE'])
-        cnt_code.update(chunk_pregnant_records['PX'])
+        cnt.update(chunk_pregnant_records['DRG_TYPE'])
+        cnt_code.update(chunk_pregnant_records['DRG'])
 
         if i % 50 == 0:
             print('chunk:', i, 'time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
             print('len(patid_set):', len(patid_set))
             print('len(patid_pregnant_set):', len(patid_pregnant_set))
-            print('cnt, PX type:', cnt)
-            print('cnt_code, PX code:', cnt_code)
+            print('cnt, DRG type:', cnt)
+            print('cnt_code, DRG code:', cnt_code)
 
             if debug:
                 print('IN DEBUG MODE, BREAK, AND DUMP!')
@@ -166,12 +166,12 @@ if __name__ == '__main__':
     df_preg = pd.concat([df_include, df_exclude, ], ignore_index=True, sort=False)
     print(df_preg['CodeType'].value_counts())
 
-    df_preg_pro = df_preg.loc[(df_preg['CodeType'] == 'ICD-10-PCS') | (df_preg['CodeType'] == 'CPT'), 'Code']
+    df_preg_pro = df_preg.loc[(df_preg['CodeType'] == 'MS-DRG'), 'Code']
     code_set = set(df_preg_pro.to_list())
-    print('Selected all pregnant/delivery related ICD-10-PCS and CPT procedure codes, both inclusion and exclusion: ')
+    print('Selected all pregnant/delivery related MS-DRG codes, both inclusion and exclusion: ')
     print('len(code_set):', len(code_set))
     print('code_set:', code_set)
 
     print(args)
-    dfs_pregnant_all = read_procedures_4_pregnant(args, code_set, debug=args.debug)
+    dfs_pregnant_all = read_encounter_4_pregnant(args, code_set, debug=args.debug)
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
