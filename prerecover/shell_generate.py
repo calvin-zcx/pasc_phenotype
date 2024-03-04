@@ -416,7 +416,7 @@ python pre_med_4covid.py --dataset nyu_pcornet_all 2>&1 | tee  log_pcornet_all\p
 
     # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
     # of shells
-    divide = 3
+    divide = 6
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list) / divide))
     ndelta = npersite * siteperdivide
