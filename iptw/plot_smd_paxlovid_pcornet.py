@@ -133,16 +133,18 @@ if __name__ == '__main__':
 
     fig, axes = plt.subplots(figsize=(20, 28))
     ind = np.arange(len(df))
-    color_dict = {'apcd': '#F08080', 'hidd': '#90EE90', 'khin': '#DA70D6'}
+
     width = 0.3
     axes.axvline(x=0, color='black')
     axes.axvline(x=0.1, linestyle='dashed', color='grey')
     axes.axvline(x=-0.1, linestyle='dashed', color='grey')
 
     axes.scatter(df['SMD before re-weighting'], ind, s=220,
-                 edgecolors='grey', marker='^', c='lightgray',  label='Before reweighting') #  facecolors='none',
+                 edgecolors='grey', marker='^', c='lightgray',
+                 label='Before reweighting')  # facecolors='none',
     axes.scatter(df['SMD after re-weighting'], ind, s=220,
-                 edgecolors='purple', marker='o', c='red', label='After reweighting')
+                 edgecolors='purple', marker='o', c='red',
+                 label='After reweighting')
 
     y_labels = ['\n'.join(wrap(label_map(x), 45)) for x in df['Unnamed: 0']]
     axes.set(yticks=ind, yticklabels=y_labels, ylim=[2 * width - 1, len(df)])
