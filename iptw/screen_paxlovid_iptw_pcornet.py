@@ -58,6 +58,9 @@ def parse_args():
                                                'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
                                                'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
                                                'VA', '2022-04', '2022-03', 'pax1stwave', 'pax2ndwave',
+                                               'RUCA1@1', 'RUCA1@2', 'RUCA1@3', 'RUCA1@4', 'RUCA1@5',
+                                               'RUCA1@6', 'RUCA1@7', 'RUCA1@8', 'RUCA1@9', 'RUCA1@10',
+                                               'RUCA1@99', 'ZIPMissing',
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -351,6 +354,13 @@ def select_subpopulation(df, severity):
         print('Considering patients in pax2ndwave, 22-10-1 to 23-2-1 to ')
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 10, 1, 0, 0)) & (
                 df['index date'] <= datetime.datetime(2023, 2, 1, 0, 0)), :].copy()
+    elif severity in ['RUCA1@1', 'RUCA1@2', 'RUCA1@3', 'RUCA1@4', 'RUCA1@5',
+                      'RUCA1@6', 'RUCA1@7', 'RUCA1@8', 'RUCA1@9', 'RUCA1@10',
+                      'RUCA1@99', 'ZIPMissing']:
+        print('Considering RUCA codes, ', severity)
+        print('before selection', len(df))
+        df = df.loc[(df[severity] == 1), :].copy()
+        print('after selecting RUCA', severity, len(df))
     else:
         print('Considering ALL cohorts')
 
@@ -386,7 +396,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 def _clean_name_(s, maxlen=50):
-    s = s.replace(':', '-').replace('/', '-')
+    s = s.replace(':', '-').replace('/', '-').replace('@', '-')
     s_trunc = (s[:maxlen] + '..') if len(s) > maxlen else s
     return s_trunc
 

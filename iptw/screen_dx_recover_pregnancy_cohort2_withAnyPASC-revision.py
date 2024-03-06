@@ -252,7 +252,7 @@ def select_subpopulation(df, severity):
     return df
 
 
-def add_any_pasc(df, exclude_list = []):
+def add_any_pasc(df, exclude_list=[]):
     # pre-process PASC info
     print('in add_any_pasc, exlcude_list:', len(exclude_list), exclude_list)
 
@@ -328,7 +328,7 @@ if __name__ == "__main__":
                  'ochsner', 'ucsf',  # 'lsu',
                  'vumc']
 
-        # sites = ['wcm', 'montefiore', 'mshs',]
+        # sites = ['wcm', 'montefiore', 'mshs', ]
         # sites = ['wcm', ]
         # sites = ['pitt', ]
         print('len(sites), sites:', len(sites), sites)
@@ -343,7 +343,8 @@ if __name__ == "__main__":
     df_list = []
     for ith, site in tqdm(enumerate(sites)):
         print('Loading: ', ith, site)
-        data_file = r'../data/recover/output/pregnancy_data-20230825/pregnancy_{}.csv'.format(site)
+        # data_file = r'../data/recover/output/pregnancy_data-20230825/pregnancy_{}.csv'.format(site)
+        data_file = r'../data/recover/output/results_before_20230903/pregnancy_data/pregnancy_{}.csv'.format(site)
         # Load Covariates Data
         print('Load data covariates file:', data_file)
         df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
@@ -423,7 +424,7 @@ if __name__ == "__main__":
                    [x for x in
                     list(df.columns)[
                     df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('obc:Pulmonary hypertension'))]
-                    if (not x.startswith('YM:')) and (
+                    if (not x.startswith('YM:')) and (not x.startswith('ADI')) and (
                             x not in ['Female', 'Male', 'hospitalized', 'Other/Missing', 'DX: Pregnant',
                                       'No evidence - Post-index', 'Fully vaccinated - Post-index',
                                       'Partially vaccinated - Post-index',
@@ -436,7 +437,20 @@ if __name__ == "__main__":
                                       'obc:Placenta accreta spectrum', 'obc:Placental abruption',
                                       'obc:Twin/multiple pregnancy',
                                       'obc:Placenta previa, complete or partial'])
-                    ]
+                    ] + ['age_linear', 'bmi_linear', 'adi_linear']
+
+    df['age_linear'] = (df['age'] - 18) / (50 - 18)
+    df.loc[df['age_linear'].isna(), 'age_linear'] = df['age_linear'].quantile(0.5)
+
+    bmi_upper = 50  # df['bmi'].quantile(0.99)
+    bmi_lower = 15  # df['bmi'].quantile(0.01)
+    df['bmi_clip'] = df['bmi'].clip(lower=bmi_lower, upper=bmi_upper)
+    df['bmi_linear'] = (df['bmi_clip'] - bmi_lower) / (bmi_upper - bmi_lower)
+    df.loc[df['bmi_linear'].isna(), 'bmi_linear'] = df['bmi_linear'].quantile(0.5)
+
+    df['adi_clip'] = df['adi'].clip(lower=1, upper=100)
+    df.loc[df['adi_clip'].isna(), 'adi_clip'] = df['adi_clip'].quantile(0.5)
+    df['adi_linear'] = (df['adi_clip'] - 0) / (100 - 0)
 
     days = (df['index date'] - datetime.datetime(2020, 3, 1, 0, 0)).apply(lambda x: x.days)
     days = np.array(days).reshape((-1, 1))
@@ -449,19 +463,21 @@ if __name__ == "__main__":
 
     print('len(covs_columns):', len(covs_columns))
 
-    # delet old date feature and use spline
-    covs_columns = [x for x in covs_columns if x not in
-                    ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
-                     '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23']]
-    print('after delete 8 days len(covs_columns):', len(covs_columns))
-    df_covs = df.loc[:, covs_columns].astype('float')
+    # # delet old date feature and use spline
+    # covs_columns = [x for x in covs_columns if x not in
+    #                 ['03/20-06/20', '07/20-10/20', '11/20-02/21', '03/21-06/21',
+    #                  '07/21-10/21', '11/21-02/22', '03/22-06/22', '07/22-10/22', '11/22-02/23']]
+    # print('after delete 8 days len(covs_columns):', len(covs_columns))
+    # df_covs = df.loc[:, covs_columns].astype('float')
+    #
+    # new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
+    # covs_columns += new_day_cols
+    # print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
+    # for i in range(days_sp.shape[1]):
+    #     print('add', i, new_day_cols[i])
+    #     df_covs[new_day_cols[i]] = days_sp[:, i]
 
-    new_day_cols = ['days_splie_{}'.format(i) for i in range(days_sp.shape[1])]
-    covs_columns += new_day_cols
-    print('after adding {} days len(covs_columns):'.format(days_sp.shape[1]), len(covs_columns))
-    for i in range(days_sp.shape[1]):
-        print('add', i, new_day_cols[i])
-        df_covs[new_day_cols[i]] = days_sp[:, i]
+    df_covs = df.loc[:, covs_columns].astype('float')
 
     # # days between pregnancy and infection
     # days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
@@ -483,7 +499,8 @@ if __name__ == "__main__":
     # df_info = pd.concat(df_info_list, ignore_index=True)
     # df_label = pd.concat(df_label_list, ignore_index=True)
     # df_covs = pd.concat(df_covs_list, ignore_index=True)
-    df = df_outcome
+
+    # df = df_outcome
 
     print('all',
           'df.shape', df.shape,
@@ -521,8 +538,6 @@ if __name__ == "__main__":
     #     selected_list = df_select.index.tolist()
     #     print('Selected: len(selected_list):', len(selected_list))
     #     print(df_select['PASC Name Simple'])
-
-
 
     causal_results = []
     results_columns_name = []
@@ -780,10 +795,11 @@ if __name__ == "__main__":
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
 
-            if i % 50 == 0:
+            if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
-                    to_csv(r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
-                    args.severity, '-select' if args.selectpasc else '', i))
+                    to_csv(
+                    r'../data/recover/output/results-20230825/DX-{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                        args.severity, '-select' if args.selectpasc else '', i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
