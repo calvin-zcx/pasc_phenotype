@@ -28,6 +28,22 @@ from scipy import stats
 from datetime import datetime, date
 
 
+def pformat_symbol(p):
+    if p <= 0.001:
+        sigsym = '$^{***}$'
+        p_format = '{:.1e}'.format(p)
+    elif p <= 0.01:
+        sigsym = '$^{**}$'
+        p_format = '{:.3f}'.format(p)
+    elif p <= 0.05:
+        sigsym = '$^{*}$'
+        p_format = '{:.3f}'.format(p)
+    else:
+        sigsym = '$^{ns}$'
+        p_format = '{:.3f}'.format(p)
+    return p_format, sigsym
+
+
 def boot_matrix(z, B):
     """Bootstrap sample
     Returns all bootstrap samples in a matrix"""
@@ -144,6 +160,12 @@ def ndc_normalization(x):
         ndc = ''
 
     return ndc
+
+
+def _clean_path_name_(s, maxlen=50):
+    s = s.replace(':', '-').replace('/', '-')
+    s_trunc = (s[:maxlen] + '..') if len(s) > maxlen else s
+    return s_trunc
 
 
 def check_and_mkdir(path):

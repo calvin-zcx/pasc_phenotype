@@ -13,7 +13,7 @@ import numpy as np
 import csv
 from collections import Counter, defaultdict
 import pandas as pd
-from misc.utils import check_and_mkdir, stringlist_2_str, stringlist_2_list
+from misc.utils import check_and_mkdir, stringlist_2_str, stringlist_2_list, pformat_symbol
 from scipy import stats
 import re
 import itertools
@@ -63,7 +63,7 @@ def load_pasc_info():
         pasc_simname[p] = (p, 'cognitive-fatigue-respiratory')
         pasc_organ[p] = 'cognitive-fatigue-respiratory'
 
-    pasc_simname['any_pasc'] = ('Any PASC', 'Any PASC')
+    pasc_simname['any_pasc'] = ('Long COVID', 'Any PASC')
     pasc_simname['smell and taste'] = ('Smell and taste', 'General')
 
     pasc_simname['death'] = ('Death Overall', 'Death')
@@ -419,31 +419,31 @@ def plot_forest_for_dx_organ_pax_lib2(star=True, text_right=False):
 
 def plot_forest_for_pax_subgroup_lib2(star=True, text_right=False):
     subgroup_list = [
-                     'female', 'male',
-                     'white', 'black',
-                     'less65', 'above65',
-                     'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
-                     'PaxRisk:Chronic liver disease',
-                     'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
-                     'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
-                     'PaxRisk:Disabilities',
-                     'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
-                     'PaxRisk:HIV infection',
-                     'PaxRisk:immune',
-                     'PaxRisk:Mental health conditions',
-                     'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
-                     'PaxRisk:Sickle cell disease or thalassemia',
-                     'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
-                     'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        'female', 'male',
+        'white', 'black',
+        'less65', 'above65',
+        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
+        'PaxRisk:Chronic liver disease',
+        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
+        'PaxRisk:Disabilities',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+        'PaxRisk:HIV infection',
+        'PaxRisk:immune',
+        'PaxRisk:Mental health conditions',
+        'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
         'norisk', 'pregnant',
-                     'VA',
-                     'CFR']
+        'VA',
+        'CFR']
 
     subgroup_info_map = {
         'norisk': ['No Documented Risk Factors', 'Without Indication'],
         'pregnant': ['Pregnant', 'Without Indication'],
         'VA': ['VA-like cohort', 'Sensitivity Analysis'],
-        'CFR':['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
+        'CFR': ['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
         'female': ['Female', 'Sex'],
         'male': ['Male', 'Sex'],
         'white': ['White', 'Race'],
@@ -506,7 +506,6 @@ def plot_forest_for_pax_subgroup_lib2(star=True, text_right=False):
             df = pd.read_csv(indir + 'causal_effects_specific-snapshot-2.csv')
             row = df.loc[df['pasc'] == 'any_pasc', :].squeeze()
             name = 'Any PASC'
-
 
         pasc = row['pasc']
         if row['case+'] < 500:
@@ -608,55 +607,1058 @@ def plot_forest_for_pax_subgroup_lib2(star=True, text_right=False):
     return df_result
 
 
+def plot_forest_for_dx_organ_pax_lib2_cifdiff(show='full'):
+    indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+    # indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+
+    output_dir = indir + r'figure/'
+
+    df = pd.read_csv(indir + 'causal_effects_specific.csv')
+    df.drop_duplicates(subset=['pasc'], keep='last', inplace=True, )
+
+    pasc_simname_organ = load_pasc_info()
+
+    df.insert(df.columns.get_loc('pasc') + 1, 'Organ Domain', '')
+    df.insert(df.columns.get_loc('pasc') + 1, 'PASC Name Simple', '')
+
+    for key, row in df.iterrows():
+        pasc = row['pasc']
+        if pasc in pasc_simname_organ:
+            df.loc[key, 'PASC Name Simple'] = pasc_simname_organ[pasc][0]
+            df.loc[key, 'Organ Domain'] = pasc_simname_organ[pasc][1]
+
+    df_select = df.sort_values(by='hr-w', ascending=True)
+    # df_select = df_select.loc[df_select['selected'] == 1, :]  #
+    print('df_select.shape:', df_select.shape)
+
+    organ_list = df_select['Organ Domain'].unique()
+    print(organ_list)
+    organ_list = [
+        'Any PASC',
+        'Death',
+        'Hospitalization',
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General',
+        # 'General-add',
+        # 'brainfog',
+        # 'Any CFR',
+        # 'cognitive-fatigue-respiratory',
+    ]
+    organ_mapname = {
+        'Any PASC': 'Overall',
+        'Death': 'Overall',
+        'Hospitalization': 'Overall',
+        'Diseases of the Nervous System': 'Neurologic',
+        'Diseases of the Skin and Subcutaneous Tissue': 'Skin',
+        'Diseases of the Respiratory System': 'Pulmonary',
+        'Diseases of the Circulatory System': 'Circulatory',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism': 'Blood',
+        'Endocrine, Nutritional and Metabolic Diseases': 'Metabolic',
+        'Diseases of the Digestive System': 'Digestive',
+        'Diseases of the Genitourinary System': 'Genitourinary',
+        'Diseases of the Musculoskeletal System and Connective Tissue': 'Musculoskeletal',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General': 'General',
+        # 'General-add',
+        # 'brainfog',
+        'Any CFR': 'CFR',
+        'cognitive-fatigue-respiratory': 'CFR',
+    }
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+
+    organ_n = np.zeros(len(organ_list))
+    results_list = []
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple'].strip('*')
+            # if len(name.split()) >= 5:
+            #     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+            if name == 'Dyspnea':
+                name = 'Shortness of breath'
+            elif name == 'Death Overall':
+                continue
+            elif name == 'Abnormal heartbeat':
+                name = 'Dysrhythmia'
+            elif name == 'Diabetes mellitus':
+                name = 'Diabetes'
+
+            pasc = row['pasc']
+            print(name, pasc)
+            hr = row['hr-w']
+            if pd.notna(row['hr-w-CI']):
+                ci = stringlist_2_list(row['hr-w-CI'])
+            else:
+                ci = [np.nan, np.nan]
+            p = row['hr-w-p']
+            # # p_format =
+            # if p <= 0.001:
+            #     sigsym = '$^{***}$'
+            #     p_format = '{:.1e}'.format(p)
+            # elif p <= 0.01:
+            #     sigsym = '$^{**}$'
+            #     p_format = '{:.3f}'.format(p)
+            # elif p <= 0.05:
+            #     sigsym = '$^{*}$'
+            #     p_format = '{:.3f}'.format(p)
+            # else:
+            #     sigsym = '$^{ns}$'
+            #     p_format = '{:.3f}'.format(p)
+            # p_format += sigsym
+
+            ahr_pformat, ahr_psym = pformat_symbol(p)
+
+            domain = row['Organ Domain']
+            cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+            cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+            # use nabs for ncum_ci_negative
+            cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+            cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+            cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+            cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                           stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+            cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+            cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+            result = [name, pasc, organ_mapname[organ],
+                      hr, '{:.2f}'.format(hr), p, '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                      '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                      cif1, cif1_ci[0], cif1_ci[1], '{:.2f}'.format(cif1),
+                      cif0, cif0_ci[0], cif0_ci[1], '{:.2f}'.format(cif0),
+                      ahr_pformat + ahr_psym, ahr_psym,
+                      cif_diff, '{:.2f}'.format(cif_diff), cif_diff_p,
+                      '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                      '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                      cif_diff_pformat + cif_diff_psym, cif_diff_psym
+                      ]
+
+            if domain == organ:
+                results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['name', 'pasc', 'group',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+    # df_result['-aHR'] = -1 * df_result['aHR']
+
+    df_result = df_result.loc[~df_result['aHR'].isna()]
+    plt.rc('font', family='serif')
+    if show == 'full':
+        rightannote = ["aHR-str", "aHR-CI-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-CI-str', 'cif_diff-p-format',
+                       'CIF1-str', 'CIF0-str']
+        right_annoteheaders = ["aHR", "95% CI", "P-value",
+                               'CIF-DIFF (%)', '95% CI', 'P-Value',
+                               'CIF1', 'CIF0']
+    else:
+        rightannote = ["aHR-str", "aHR-CI-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-CI-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["aHR", "95% CI", "P-value",
+                               'CIF-DIFF (%)', '95% CI', 'P-Value',
+                               ]
+
+    # fig, ax = plt.subplots()
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(4, 12),
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="name",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=[],  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        annoteheaders=[],
+        rightannote=rightannote,
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,  # p_format, ^corresponding headers
+        groupvar="group",  # column containing group labels
+        group_order=df_result['group'].unique(),
+        xlabel="adjusted Hazard Ratio",  # x-label title
+        xticks=[0.4, 1, 1.2],  # x-ticks to be printed
+        color_alt_rows=True,
+        # flush=True,
+        sort=True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        # logscale=True,
+        # Additional kwargs for customizations
+        **{
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 12,  # adjust x-ticker fontsize
+
+        },
+    )
+
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_moretabs-{}.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+
+def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
+    indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+    # indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+
+    output_dir = indir + r'figure/'
+
+    df = pd.read_csv(indir + 'causal_effects_specific.csv')
+    df.drop_duplicates(subset=['pasc'], keep='last', inplace=True, )
+
+    pasc_simname_organ = load_pasc_info()
+
+    df.insert(df.columns.get_loc('pasc') + 1, 'Organ Domain', '')
+    df.insert(df.columns.get_loc('pasc') + 1, 'PASC Name Simple', '')
+
+    for key, row in df.iterrows():
+        pasc = row['pasc']
+        if pasc in pasc_simname_organ:
+            df.loc[key, 'PASC Name Simple'] = pasc_simname_organ[pasc][0]
+            df.loc[key, 'Organ Domain'] = pasc_simname_organ[pasc][1]
+
+    df_select = df.sort_values(by='hr-w', ascending=True)
+    # df_select = df_select.loc[df_select['selected'] == 1, :]  #
+    print('df_select.shape:', df_select.shape)
+
+    organ_list = df_select['Organ Domain'].unique()
+    print(organ_list)
+    organ_list = [
+        'Any PASC',
+        'Death',
+        'Hospitalization',
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General',
+        # 'General-add',
+        # 'brainfog',
+        # 'Any CFR',
+        # 'cognitive-fatigue-respiratory',
+    ]
+    organ_mapname = {
+        'Any PASC': 'Overall',
+        'Death': 'Overall',
+        'Hospitalization': 'Overall',
+        'Diseases of the Nervous System': 'Neurologic',
+        'Diseases of the Skin and Subcutaneous Tissue': 'Skin',
+        'Diseases of the Respiratory System': 'Pulmonary',
+        'Diseases of the Circulatory System': 'Circulatory',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism': 'Blood',
+        'Endocrine, Nutritional and Metabolic Diseases': 'Metabolic',
+        'Diseases of the Digestive System': 'Digestive',
+        'Diseases of the Genitourinary System': 'Genitourinary',
+        'Diseases of the Musculoskeletal System and Connective Tissue': 'Musculoskeletal',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General': 'General',
+        # 'General-add',
+        # 'brainfog',
+        'Any CFR': 'CFR',
+        'cognitive-fatigue-respiratory': 'CFR',
+    }
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+
+    organ_n = np.zeros(len(organ_list))
+    results_list = []
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple'].strip('*')
+            # if len(name.split()) >= 5:
+            #     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+            if name == 'Dyspnea':
+                name = 'Shortness of breath'
+            elif name == 'Death Overall':
+                continue
+            elif name == 'Abnormal heartbeat':
+                name = 'Dysrhythmia'
+            elif name == 'Diabetes mellitus':
+                name = 'Diabetes'
+
+            pasc = row['pasc']
+            print(name, pasc)
+            hr = row['hr-w']
+            if pd.notna(row['hr-w-CI']):
+                ci = stringlist_2_list(row['hr-w-CI'])
+            else:
+                ci = [np.nan, np.nan]
+            p = row['hr-w-p']
+            # # p_format =
+            # if p <= 0.001:
+            #     sigsym = '$^{***}$'
+            #     p_format = '{:.1e}'.format(p)
+            # elif p <= 0.01:
+            #     sigsym = '$^{**}$'
+            #     p_format = '{:.3f}'.format(p)
+            # elif p <= 0.05:
+            #     sigsym = '$^{*}$'
+            #     p_format = '{:.3f}'.format(p)
+            # else:
+            #     sigsym = '$^{ns}$'
+            #     p_format = '{:.3f}'.format(p)
+            # p_format += sigsym
+
+            ahr_pformat, ahr_psym = pformat_symbol(p)
+
+            domain = row['Organ Domain']
+            cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+            cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+            # use nabs for ncum_ci_negative
+            cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+            cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+            cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+            cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                           stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+            cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+            cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+            result = [name, pasc, organ_mapname[organ],
+                      hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                      '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                      '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                      cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                      cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                      ahr_pformat + ahr_psym, ahr_psym,
+                      cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                      '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                      '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                      cif_diff_pformat + cif_diff_psym, cif_diff_psym
+                      ]
+
+            if domain == organ:
+                results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['name', 'pasc', 'group',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+    # df_result['-aHR'] = -1 * df_result['aHR']
+
+    df_result = df_result.loc[~df_result['aHR'].isna()]
+    plt.rc('font', family='serif')
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["aHR-str",
+                       'cif_diff-str',
+                       ]
+        right_annoteheaders = ["HR (95% CI)",
+                               'DIFF/100',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    # fig, ax = plt.subplots()
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(4, 12),
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="name",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        annoteheaders=left_annoteheaders,  # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        rightannote=rightannote,
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,  # p_format, ^corresponding headers
+        groupvar="group",  # column containing group labels
+        group_order=df_result['group'].unique(),
+        xlabel="Hazard Ratio",  # x-label title
+        xticks=[0.4, 1, 1.2],  # x-ticks to be printed
+        color_alt_rows=True,
+        # flush=True,
+        sort=True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        # logscale=True,
+        # Additional kwargs for customizations
+        **{
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 12,  # adjust x-ticker fontsize
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+        },
+    )
+
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_moretabs-{}.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+
+def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
+    subgroup_list = [
+        'all',
+        'female', 'male',
+        'white', 'black',
+        'less65', 'above65',
+        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
+        'PaxRisk:Chronic liver disease',
+        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
+        'PaxRisk:Disabilities',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+        'PaxRisk:HIV infection',
+        'PaxRisk:immune',
+        'PaxRisk:Mental health conditions',
+        'PaxRisk:Overweight and obesity',  'pregnant', # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        'pax1stwave',
+        'pax2ndwave',
+        'RUCA1@1',
+        'RUCA1@2',
+        'RUCA1@3',
+        'RUCA1@4',
+        'RUCA1@5',
+        'RUCA1@6',
+        'RUCA1@7',
+        'RUCA1@8',
+        'RUCA1@9',
+        'RUCA1@10',
+        'norisk', # 'pregnant',
+        'VA',
+        'CFR']
+
+    subgroup_info_map = {
+        'all': ['all', 'Overall'],
+        'norisk': ['Not at Risk', 'Without Indication'],
+        # 'pregnant': ['Pregnant', 'Without Indication'],
+        'pregnant': ['Pregnant', 'With Risk Factor'],
+        'VA': ['VA-like cohort', 'Sensitivity Analysis'],
+        'CFR': ['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
+        'female': ['Female', 'Sex'],
+        'male': ['Male', 'Sex'],
+        'white': ['White', 'Race'],
+        'black': ['Black', 'Race'],
+        'less65': ['<65', 'Age'],
+        'above65': ['≥65', 'Age'],
+        'PaxRisk:Cancer': ['Cancer', 'With Risk Factor'],
+        'PaxRisk:Chronic kidney disease': ['Chronic Kidney Disease', 'With Risk Factor'],
+        'PaxRisk:Chronic liver disease': ['Chronic Liver Disease', 'With Risk Factor'],
+        'PaxRisk:Chronic lung disease': ['Chronic Lung Disease', 'With Risk Factor'],
+        'PaxRisk:Cystic fibrosis': ['Cystic Fibrosis', 'With Risk Factor'],
+        'PaxRisk:Dementia or other neurological conditions': ['Dementia or Neurological', 'With Risk Factor'],
+        'PaxRisk:Diabetes': ['Diabetes', 'With Risk Factor'],
+        'PaxRisk:Disabilities': ['Disabilities', 'With Risk Factor'],
+        'PaxRisk:Heart conditions': ['Heart Conditions', 'With Risk Factor'],
+        'PaxRisk:Hypertension': ['Hypertension', 'With Risk Factor'],
+        'PaxRisk:HIV infection': ['HIV', 'With Risk Factor'],
+        'PaxRisk:immune': ['Immune Dysfunction', 'With Risk Factor'],
+        'PaxRisk:Mental health conditions': ['Mental Health', 'With Risk Factor'],
+        'PaxRisk:Overweight and obesity': ['Overweight and Obesity', 'With Risk Factor'],  # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia': ['Sickle Cell or Anemia', 'With Risk Factor'],
+        'PaxRisk:Smoking current': ['Smoker current or former', 'With Risk Factor'],
+        'PaxRisk:Stroke or cerebrovascular disease': ['Stroke or Cerebrovascular', 'With Risk Factor'],
+        'PaxRisk:Substance use disorders': ['Substance Use Disorders', 'With Risk Factor'],
+        'PaxRisk:Tuberculosis': ['Tuberculosis', 'With Risk Factor'],
+        'RUCA1@1': ['Metropolitan core', 'Rural-Urban Commuting'],
+        'RUCA1@2': ['Metropolitan high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@3': ['Metropolitan low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@4': ['Micropolitan core', 'Rural-Urban Commuting'],
+        'RUCA1@5': ['Micropolitan high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@6': ['Micropolitan low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@7': ['Small town core', 'Rural-Urban Commuting'],
+        'RUCA1@8': ['Small town high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@9': ['Small town low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@10': ['Rural areas', 'Rural-Urban Commuting'],
+        'pax1stwave': ['3/1/22 to 9/30/22', 'Infection Time'],
+        'pax2ndwave': ['10/1/22 to 2/1/23', 'Infection Time'],
+    }
+
+    output_dir = r'../data/recover/output/results/figure_subgroup/'
+
+    results_list = []
+    for subgroup in subgroup_list:
+        indir = r'../data/recover/output/results/Paxlovid-atrisk-{}-pcornet-V3/'.format(
+            subgroup.replace(':', '_').replace('/', '-').replace(' ', '_')
+        )
+        info = subgroup_info_map[subgroup]
+        subgroupname = info[0]
+        grouplabel = info[1]
+
+        # subgroupname = subgroup.split(':')[-1]
+        if subgroup == 'norisk':
+            indir = r'../data/recover/output/results/Paxlovid-norisk-all-pcornet-V3/'
+            # subgroupname = 'No documented risk factors'
+        elif subgroup == 'pregnant':
+            indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+            # subgroupname = 'Pregnant'
+        elif subgroup == 'CFR':
+            indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+        elif subgroup == 'all':
+            indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+
+        print('read:', indir)
+        # if subgroup == 'PaxRisk:Dementia or other neurological conditions':
+        #     df = pd.read_csv(indir + 'causal_effects_specific-snapshot-18.csv')
+        #     subgroupname = 'Dementia or other neurological'
+        # else:
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+
+        if subgroup == 'CFR':
+            df = pd.read_csv(indir + 'causal_effects_specific.csv')
+            row = df.loc[df['pasc'] == 'any_CFR', :].squeeze()
+            name = 'Any CFR'
+        else:
+            df = pd.read_csv(indir + 'causal_effects_specific-snapshot-2.csv')
+            row = df.loc[df['pasc'] == 'any_pasc', :].squeeze()
+            name = 'Any PASC'
+
+        pasc = row['pasc']
+        if row['case+'] < 500:
+            print(subgroup, 'is very small (<500 in exposed), skip', row['case+'], row['ctrl-'])
+            continue
+        # print(name, pasc)
+        hr = row['hr-w']
+        if pd.notna(row['hr-w-CI']):
+            ci = stringlist_2_list(row['hr-w-CI'])
+        else:
+            ci = [np.nan, np.nan]
+        p = row['hr-w-p']
+        # p_format =
+        # if p <= 0.001:
+        #     sigsym = '$^{***}$'
+        #     p_format = '{:.1e}'.format(p)
+        # elif p <= 0.01:
+        #     sigsym = '$^{**}$'
+        #     p_format = '{:.3f}'.format(p)
+        # elif p <= 0.05:
+        #     sigsym = '$^{*}$'
+        #     p_format = '{:.3f}'.format(p)
+        # else:
+        #     sigsym = '$^{ns}$'
+        #     p_format = '{:.3f}'.format(p)
+        # p_format += sigsym
+
+        ahr_pformat, ahr_psym = pformat_symbol(p)
+
+        # domain = row['Organ Domain']
+        cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+        cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+        # use nabs for ncum_ci_negative
+        cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+        cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+        cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+        cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+        cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+        cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+        result = [subgroupname, grouplabel, name, pasc,
+                  '{:.0f}'.format(row['case+']), '{:.0f}'.format(row['ctrl-']),
+                  hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                  '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                  '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                  ahr_pformat + ahr_psym, ahr_psym,
+                  cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                  '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                  '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                  cif_diff_pformat + cif_diff_psym, cif_diff_psym]
+
+        results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['subgroup', 'grouplabel', 'name', 'pasc', 'No. in 1', 'No. in 0',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+
+    df_result['-aHR'] = -1 * df_result['aHR']
+    plt.rc('font', family='serif')
+    # fig, ax = plt.subplots()
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       'No. in 1', 'No. in 0',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               'Paxlovid N=', 'Ctrl N=',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["aHR-str",
+                       'cif_diff-str',
+
+                       ]
+        right_annoteheaders = ["HR (95% CI)",
+                               'DIFF/100',
+
+                               ]
+
+        leftannote = ['No. in 1', 'No. in 0', 'CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['Paxlovid N=', 'Ctrl N=', 'CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(5, 12), #(7, 12), #(6, 10), # (4.5, 13)
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="subgroup",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ['No. in 1', 'No. in 0', ],  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        annoteheaders=left_annoteheaders,  # ['No.Paxlovid', 'No.Ctrl', ],
+        rightannote=rightannote,  # ["aHR-str", "aHR-CI-str", 'p-val-sci', 'CIF1-str', 'CIF0-str'],
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,
+        # ["aHR", "95% CI", "P-value", 'CIF1', 'CIF0'],  # p_format, ^corresponding headers
+        groupvar="grouplabel",  # column containing group labels
+        # group_order=df_result['group'].unique(),
+        xlabel="Hazard Ratio",  # x-label title
+        xticks=[0.6, 1, 1.5],  # x-ticks to be printed
+        color_alt_rows=True,
+        # flush=True,
+        # sort=True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        # logscale=True,
+        # Additional kwargs for customizations
+        **{
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 14,  # adjust x-ticker fontsize
+
+        },
+    )
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_subgroup-{}.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full', ):
+    subgroup_list = [
+        'all',
+        'female', 'male',
+        'white', 'black',
+        'less65', 'above65',
+        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
+        'PaxRisk:Chronic liver disease',
+        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
+        'PaxRisk:Disabilities',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+        'PaxRisk:HIV infection',
+        'PaxRisk:immune',
+        'PaxRisk:Mental health conditions',
+        'PaxRisk:Overweight and obesity',  'pregnant', # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        'pax1stwave',
+        'pax2ndwave',
+        'RUCA1@1',
+        'RUCA1@2',
+        'RUCA1@3',
+        'RUCA1@4',
+        'RUCA1@5',
+        'RUCA1@6',
+        'RUCA1@7',
+        'RUCA1@8',
+        'RUCA1@9',
+        'RUCA1@10',
+        'norisk', # 'pregnant',
+        'VA',
+        #'CFR'
+    ]
+
+    subgroup_info_map = {
+        'all': ['all', 'Overall'],
+        'norisk': ['Not at Risk', 'Without Indication'],
+        # 'pregnant': ['Pregnant', 'Without Indication'],
+        'pregnant': ['Pregnant', 'With Risk Factor'],
+        'VA': ['VA-like cohort', 'Sensitivity Analysis'],
+        'CFR': ['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
+        'female': ['Female', 'Sex'],
+        'male': ['Male', 'Sex'],
+        'white': ['White', 'Race'],
+        'black': ['Black', 'Race'],
+        'less65': ['<65', 'Age'],
+        'above65': ['≥65', 'Age'],
+        'PaxRisk:Cancer': ['Cancer', 'With Risk Factor'],
+        'PaxRisk:Chronic kidney disease': ['Chronic Kidney Disease', 'With Risk Factor'],
+        'PaxRisk:Chronic liver disease': ['Chronic Liver Disease', 'With Risk Factor'],
+        'PaxRisk:Chronic lung disease': ['Chronic Lung Disease', 'With Risk Factor'],
+        'PaxRisk:Cystic fibrosis': ['Cystic Fibrosis', 'With Risk Factor'],
+        'PaxRisk:Dementia or other neurological conditions': ['Dementia or Neurological', 'With Risk Factor'],
+        'PaxRisk:Diabetes': ['Diabetes', 'With Risk Factor'],
+        'PaxRisk:Disabilities': ['Disabilities', 'With Risk Factor'],
+        'PaxRisk:Heart conditions': ['Heart Conditions', 'With Risk Factor'],
+        'PaxRisk:Hypertension': ['Hypertension', 'With Risk Factor'],
+        'PaxRisk:HIV infection': ['HIV', 'With Risk Factor'],
+        'PaxRisk:immune': ['Immune Dysfunction', 'With Risk Factor'],
+        'PaxRisk:Mental health conditions': ['Mental Health', 'With Risk Factor'],
+        'PaxRisk:Overweight and obesity': ['Overweight and Obesity', 'With Risk Factor'],  # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia': ['Sickle Cell or Anemia', 'With Risk Factor'],
+        'PaxRisk:Smoking current': ['Smoker current or former', 'With Risk Factor'],
+        'PaxRisk:Stroke or cerebrovascular disease': ['Stroke or Cerebrovascular', 'With Risk Factor'],
+        'PaxRisk:Substance use disorders': ['Substance Use Disorders', 'With Risk Factor'],
+        'PaxRisk:Tuberculosis': ['Tuberculosis', 'With Risk Factor'],
+        'RUCA1@1': ['Metropolitan core', 'Rural-Urban Commuting'],
+        'RUCA1@2': ['Metropolitan high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@3': ['Metropolitan low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@4': ['Micropolitan core', 'Rural-Urban Commuting'],
+        'RUCA1@5': ['Micropolitan high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@6': ['Micropolitan low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@7': ['Small town core', 'Rural-Urban Commuting'],
+        'RUCA1@8': ['Small town high commuting', 'Rural-Urban Commuting'],
+        'RUCA1@9': ['Small town low commuting', 'Rural-Urban Commuting'],
+        'RUCA1@10': ['Rural areas', 'Rural-Urban Commuting'],
+        'pax1stwave': ['3/1/22 to 9/30/22', 'Infection Time'],
+        'pax2ndwave': ['10/1/22 to 2/1/23', 'Infection Time'],
+    }
+    pasc_simname_organ = load_pasc_info()
+
+    output_dir = r'../data/recover/output/results/figure_subgroup/' + pasc_outcome + '/'
+
+    results_list = []
+    for subgroup in subgroup_list:
+        indir = r'../data/recover/output/results/Paxlovid-atrisk-{}-pcornet-V3/'.format(
+            subgroup.replace(':', '_').replace('/', '-').replace(' ', '_')
+        )
+        info = subgroup_info_map[subgroup]
+        subgroupname = info[0]
+        grouplabel = info[1]
+
+        # subgroupname = subgroup.split(':')[-1]
+        if subgroup == 'norisk':
+            indir = r'../data/recover/output/results/Paxlovid-norisk-all-pcornet-V3/'
+            # subgroupname = 'No documented risk factors'
+        elif subgroup == 'pregnant':
+            indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+            # subgroupname = 'Pregnant'
+        # elif subgroup == 'CFR':
+        #     indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+        elif subgroup == 'all':
+            indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+
+        print('read:', indir)
+        # if subgroup == 'PaxRisk:Dementia or other neurological conditions':
+        #     df = pd.read_csv(indir + 'causal_effects_specific-snapshot-18.csv')
+        #     subgroupname = 'Dementia or other neurological'
+        # else:
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+
+        # if subgroup == 'CFR':
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+        #     row = df.loc[df['pasc'] == 'any_CFR', :].squeeze()
+        #     name = 'Any CFR'
+        # else:
+        #     df = pd.read_csv(indir + 'causal_effects_specific-snapshot-2.csv')
+        #     row = df.loc[df['pasc'] == 'any_pasc', :].squeeze()
+        #     name = 'Any PASC'
+
+        try:
+            df = pd.read_csv(indir + 'causal_effects_specific.csv')
+        except:
+            df = pd.read_csv(indir + 'causal_effects_specific-snapshot-20.csv')
+
+        df.drop_duplicates(subset=['pasc'], keep='last', inplace=True, )
+
+        row = df.loc[df['pasc'] == pasc_outcome, :].squeeze()
+        name = pasc_simname_organ[pasc_outcome][0] #'Any PASC'
+
+        pasc = row['pasc']
+        if row['case+'] < 500:
+            print(subgroup, 'is very small (<500 in exposed), skip', row['case+'], row['ctrl-'])
+            continue
+        # print(name, pasc)
+        hr = row['hr-w']
+        if (hr <= 0.001) or pd.isna(hr):
+            print('HR, ', hr, 'in subgroup', subgroup)
+            continue
+
+        if pd.notna(row['hr-w-CI']):
+            ci = stringlist_2_list(row['hr-w-CI'])
+        else:
+            ci = [np.nan, np.nan]
+        p = row['hr-w-p']
+        # p_format =
+        # if p <= 0.001:
+        #     sigsym = '$^{***}$'
+        #     p_format = '{:.1e}'.format(p)
+        # elif p <= 0.01:
+        #     sigsym = '$^{**}$'
+        #     p_format = '{:.3f}'.format(p)
+        # elif p <= 0.05:
+        #     sigsym = '$^{*}$'
+        #     p_format = '{:.3f}'.format(p)
+        # else:
+        #     sigsym = '$^{ns}$'
+        #     p_format = '{:.3f}'.format(p)
+        # p_format += sigsym
+
+        ahr_pformat, ahr_psym = pformat_symbol(p)
+
+        # domain = row['Organ Domain']
+        cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+        cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+        # use nabs for ncum_ci_negative
+        cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+        cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+        cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+        cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+        cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+        cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+        result = [subgroupname, grouplabel, name, pasc,
+                  '{:.0f}'.format(row['case+']), '{:.0f}'.format(row['ctrl-']),
+                  hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                  '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                  '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                  ahr_pformat + ahr_psym, ahr_psym,
+                  cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                  '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                  '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                  cif_diff_pformat + cif_diff_psym, cif_diff_psym]
+
+        results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['subgroup', 'grouplabel', 'name', 'pasc', 'No. in 1', 'No. in 0',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+
+    df_result['-aHR'] = -1 * df_result['aHR']
+    plt.rc('font', family='serif')
+    # fig, ax = plt.subplots()
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       'No. in 1', 'No. in 0',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               'Paxlovid N=', 'Ctrl N=',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["aHR-str",
+                       'cif_diff-str',
+
+                       ]
+        right_annoteheaders = ["HR (95% CI)",
+                               'DIFF/100',
+
+                               ]
+
+        leftannote = ['No. in 1', 'No. in 0', 'CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['Paxlovid N=', 'Ctrl N=', 'CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+
+    if pasc_outcome == 'death_postacute':
+        xticks = [0.05, 1, 4]
+    elif pasc_outcome == 'PASC-General':
+        xticks = [0.1, 1, 5]
+    elif pasc_outcome == 'hospitalization_postacute':
+        xticks = [0.4, 1, 2]
+    elif pasc_outcome == 'any_CFR':
+        xticks = [0.3, 1, 1.5]
+    else:
+        xticks = [0.6, 1, 1.5]
+
+
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(5, 12), #(7, 12), #(6, 10), # (4.5, 13)
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="subgroup",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ['No. in 1', 'No. in 0', ],  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        annoteheaders=left_annoteheaders,  # ['No.Paxlovid', 'No.Ctrl', ],
+        rightannote=rightannote,  # ["aHR-str", "aHR-CI-str", 'p-val-sci', 'CIF1-str', 'CIF0-str'],
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,
+        # ["aHR", "95% CI", "P-value", 'CIF1', 'CIF0'],  # p_format, ^corresponding headers
+        groupvar="grouplabel",  # column containing group labels
+        # group_order=df_result['group'].unique(),
+        xlabel="Hazard Ratio",  # x-label title
+        xticks=xticks, #[0.6, 1, 1.5],  # x-ticks to be printed
+        color_alt_rows=True,
+        # flush=True,
+        # sort=True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        # logscale=True,
+        # Additional kwargs for customizations
+        **{
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 14,  # adjust x-ticker fontsize
+
+        },
+    )
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_subgroup-{}.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+
 if __name__ == '__main__':
     # plot_forest_for_dx_organ_pax()
 
-    df_result = plot_forest_for_dx_organ_pax_lib2()
-    df_result = plot_forest_for_pax_subgroup_lib2()
+    # 2024-2-28
+    # df_result = plot_forest_for_dx_organ_pax_lib2()
+    # df_result = plot_forest_for_pax_subgroup_lib2()
 
-    # df = fp.load_data("sleep")  # companion example data
-    # df.head(3)
-    #
-    # # fig = plt.figure(figsize=(3, 8))  # figsize=(12, 9)
-    # # ax = fig.add_subplot(1, 1, 1)
-    # fp.forestplot(
-    #     df,  # the dataframe with results data
-    #     estimate="r",  # col containing estimated effect size
-    #     ll="ll",
-    #     hl="hl",  # lower & higher limits of conf. int.
-    #     varlabel="label",  # column containing the varlabels to be printed on far left
-    #     capitalize="capitalize",  # Capitalize labels
-    #     pval="p-val",  # column containing p-values to be formatted
-    #     annote=["n", "power", "est_ci"],  # columns to report on left of plot
-    #     annoteheaders=["N", "Power", "Est. (95% Conf. Int.)"],  # ^corresponding headers
-    #     rightannote=["formatted_pval", "group"],  # columns to report on right of plot
-    #     right_annoteheaders=["P-value", "Variable group"],  # ^corresponding headers
-    #     groupvar="group",  # column containing group labels
-    #     group_order=[
-    #         "labor factors",
-    #         "occupation",
-    #         "age",
-    #         "health factors",
-    #         "family factors",
-    #         "area of residence",
-    #         "other factors",
-    #     ],
-    #     xlabel="Pearson correlation coefficient",  # x-label title
-    #     xticks=[-0.4, -0.2, 0, 0.2],  # x-ticks to be printed
-    #     sort=True,  # sort estimates in ascending order
-    #     table=True,  # Format as a table
-    #     # Additional kwargs for customizations
-    #     **{
-    #         "marker": "D",  # set maker symbol as diamond
-    #         "markersize": 35,  # adjust marker size
-    #         "xlinestyle": (0, (10, 5)),  # long dash for x-reference line
-    #         "xlinecolor": ".1",  # gray color for x-reference line
-    #         "xtick_size": 12,  # adjust x-ticker fontsize
-    #     },
-    # )
-    #
-    # # plt.tight_layout()
-    # plt.savefig("hr_plot_test.png", dpi="figure", bbox_inches="tight")
-    # plt.savefig("hr_plot_test.pdf", dpi="figure", bbox_inches="tight")
-    # plt.show()
+    # 2024-3-6
+    # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full')
+    # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full-nopval')
+    # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='short')
+
+    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full')
+    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full-nopval')
+    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='short')
+
+    pasc_outcome = 'death_postacute'
+    pasc_outcome = 'hospitalization_postacute'
+    pasc_outcome = 'PASC-General'
+    pasc_outcome = 'any_CFR'
+
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full')
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='short')
+
     print('Done!')

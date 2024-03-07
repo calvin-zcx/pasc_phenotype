@@ -75,7 +75,8 @@ def parse_args():
     parser.add_argument('--cohorttype',
                         choices=['atrisknopreg', 'norisk', 'pregnant',
                                  'atrisk',
-                                 'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx'],
+                                 'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx',
+                                 'overall',],
                         default='norisk')
     args = parser.parse_args()
 
@@ -436,6 +437,13 @@ if __name__ == "__main__":
         fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
         fname3 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
         fname4 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
+    elif args.cohorttype == 'overall':
+        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
+        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
+        fname3 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
+        fname4 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
+        fname5 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-220301-230201.csv'
+        fname6 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-220301-230201.csv'
     elif args.cohorttype == 'atrisknopreglabdx':
         print('select AT risk cohort w/o pregnant')
         fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRiskNoPreg-220301-230201.csv'
@@ -495,6 +503,39 @@ if __name__ == "__main__":
         print('treated df3.shape', df3.shape,
               'control df4.shape', df4.shape,
               'combined df.shape', df.shape, )
+    elif args.cohortype == 'overall':
+        df3 = pd.read_csv(fname3, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'])
+
+        df4 = pd.read_csv(fname4, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'
+                                       ])
+        df5 = pd.read_csv(fname5, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'])
+
+        df6 = pd.read_csv(fname6, dtype={'patid': str, 'site': str, 'zip': str},
+                          parse_dates=['index date', 'dob',
+                                       'flag_delivery_date',
+                                       'flag_pregnancy_start_date',
+                                       'flag_pregnancy_end_date'
+                                       ])
+        df = pd.concat([df, df3, df4, df5, df6], ignore_index=True)
+        print('treated df3.shape', df3.shape,
+              'control df4.shape', df4.shape,
+              'control df5.shape', df5.shape,
+              'combined df6.shape', df6.shape,
+              'combined df.shape', df.shape,
+              )
+
 
     print('Before select_subpopulation, len(df)', len(df))
     df = select_subpopulation(df, args.severity)
