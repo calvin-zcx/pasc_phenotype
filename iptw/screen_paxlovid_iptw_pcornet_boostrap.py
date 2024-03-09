@@ -1093,7 +1093,7 @@ if __name__ == "__main__":
         print('diff_quantile_ci:', diff_quantile_ci, 'mean:', np.mean(cif_diff_list))
         print('cif1_quantile_ci:', cif1_quantile_ci, 'mean:', np.mean(cif1_list))
         print('cif0_quantile_ci:', cif0_quantile_ci, 'mean:', np.mean(cif0_list))
-        test_result = st_survival_difference_at_fixed_point_withBoostrapResults(cif1_list, cif0_list)
+        test_result = st_survival_difference_at_fixed_point_withBoostrapResults(cif1_list, cif0_list, curvetype='cif',)
 
         try:
             _results = [i, pasc,
