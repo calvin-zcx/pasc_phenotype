@@ -142,7 +142,7 @@ def st_survival_difference_at_fixed_point(point_in_time, fitterA, fitterB, **res
     return results
 
 
-def st_survival_difference_at_fixed_point_withBoostrapResults(cifA_list, cifB_list, **result_kwargs):
+def st_survival_difference_at_fixed_point_withBoostrapResults(cifA_list, cifB_list, curvetype='cif', **result_kwargs):
     """
         my takes, 2024-2-28: Revised this to support cumulative incidence, and confidence interval
 
@@ -214,7 +214,12 @@ def st_survival_difference_at_fixed_point_withBoostrapResults(cifA_list, cifB_li
     sigma_sqA = np.var(cifA_list)
     sigma_sqB = np.var(cifB_list)
 
-    X = (clog(sA_t) - clog(sB_t)) ** 2 / (sigma_sqA / log(sA_t) ** 2 + sigma_sqB / log(sB_t) ** 2)
+    if curvetype == 'cif':
+        X = (clog(1 - sA_t) - clog(1 - sB_t)) ** 2 / (sigma_sqA / log(1 - sA_t) ** 2 + sigma_sqB / log(1 - sB_t) ** 2)
+    elif curvetype == 'survival':
+        X = (clog(sA_t) - clog(sB_t)) ** 2 / (sigma_sqA / log(sA_t) ** 2 + sigma_sqB / log(sB_t) ** 2)
+    else:
+        raise ValueError
     p_value = _chisq_test_p_value(X, 1)
 
     # http://fmwww.bc.edu/repec/bocode/s/stsurvdiff.ado
