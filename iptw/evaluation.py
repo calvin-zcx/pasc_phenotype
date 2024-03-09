@@ -16,6 +16,7 @@ from lifelines.plotting import add_at_risk_counts
 import seaborn as sns
 from matplotlib import ticker as mplticker
 import scipy.stats as st
+from tqdm import tqdm
 
 # Define unbalanced threshold, where SMD > SMD_THRESHOLD are defined as unbalanced features
 SMD_THRESHOLD = 0.1
@@ -621,6 +622,90 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
          cif_0_CIUpper, aj_results), \
         (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower,
          cif_0_w_CIUpper, aj_results_w)
+
+
+def weighted_CIF_boostrap(df, ntimes=500,
+                          fig_outfile='', title='',
+                          legends=None):
+    # considering competing risk in this version, 2022-03-20
+    # golds_treatment, weights, events_flag, events_t2e,
+    if legends is None:
+        legends = {'case': 'Exposed', 'control': 'Control'}
+
+    result_list = []
+    for iter in tqdm(range(ntimes), total=ntimes):
+        # print('iter:', iter)
+        df_sample = df.sample(frac=1, replace=True, random_state=iter)
+        # pd.DataFrame({'index': pos_neg_selected, 'ps': ps, 'iptw': iptw, 'treated': covid_label, 'event': pasc_flag,
+        #               't2e': pasc_t2e})
+
+        golds_treatment = df_sample['treated'].to_numpy()
+        weights = df_sample['iptw'].to_numpy()
+        events_flag = df_sample['event'].to_numpy()
+        events_t2e = df_sample['t2e'].to_numpy()
+
+        ones_idx, zeros_idx = golds_treatment == 1, golds_treatment == 0
+        treated_w, controlled_w = weights[ones_idx], weights[zeros_idx]
+        treated_flag, controlled_flag = events_flag[ones_idx], events_flag[zeros_idx]
+        treated_t2e, controlled_t2e = events_t2e[ones_idx], events_t2e[zeros_idx]
+        point_in_time = [60, 90, 120, 150, 180]
+        if ('death_acute' in title) or ('hospitalization_acute' in title):
+            point_in_time = [30, 30, 30, 30, 30]
+
+        ajf1w = AalenJohansenFitter(calculate_variance=False).fit(treated_t2e, treated_flag,
+                                                                  event_of_interest=1,
+                                                                  label=legends['case'], weights=treated_w)
+        ajf0w = AalenJohansenFitter(calculate_variance=False).fit(controlled_t2e, controlled_flag,
+                                                                  event_of_interest=1,
+                                                                  label=legends['control'], weights=controlled_w)
+        cif_1_w = ajf1w.predict(point_in_time).to_numpy()
+        cif_0_w = ajf0w.predict(point_in_time).to_numpy()
+        cifdiff_w = cif_1_w - cif_0_w
+        print('iter:', iter, cifdiff_w, cif_1_w, cif_0_w)
+        # not computing variance, nor CI, nor difference CI
+        # ajf1w_CI = ajf1w.confidence_interval_cumulative_density_
+        # ajf0w_CI = ajf0w.confidence_interval_cumulative_density_
+        # cif_1_w_CILower = ajf1w_CI[ajf1w_CI.columns[0]].asof(point_in_time).to_numpy()
+        # cif_1_w_CIUpper = ajf1w_CI[ajf1w_CI.columns[1]].asof(point_in_time).to_numpy()
+        # cif_0_w_CILower = ajf0w_CI[ajf0w_CI.columns[0]].asof(point_in_time).to_numpy()
+        # cif_0_w_CIUpper = ajf0w_CI[ajf0w_CI.columns[1]].asof(point_in_time).to_numpy()
+        # cif_1_w_CILower = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[0]].to_numpy()
+        # cif_1_w_CIUpper = ajf1w_CI.loc[point_in_time, ajf1w_CI.columns[1]].to_numpy()
+        # cif_0_w_CILower = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[0]].to_numpy()
+        # cif_0_w_CIUpper = ajf0w_CI.loc[point_in_time, ajf0w_CI.columns[1]].to_numpy()
+
+        # aj_results_w = st_survival_difference_at_fixed_point(point_in_time, ajf1w, ajf0w)
+
+        result_list.append([cif_1_w, cif_0_w, cifdiff_w, ]) # ajf1w, ajf0w,
+        if fig_outfile:
+            if (iter % 200) == 0:
+                with open(fig_outfile.replace('-km.png', '-result_list-{}.pkl'.format(iter)), 'wb') as f:
+                    pickle.dump(result_list, f)  #
+        #
+        #     ax = plt.subplot(111)
+        #     # ajf1.plot(ax=ax)
+        #     ajf1w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))  # 0, 180
+        #     # ajf0.plot(ax=ax)
+        #     ajf0w.plot(ax=ax, loc=slice(0., controlled_t2e.max()))
+        #     add_at_risk_counts(ajf1w, ajf0w, ax=ax)
+        #     if ('death_acute' in title) or ('hospitalization_acute' in title):
+        #         plt.xlim(0, 30)
+        #     else:
+        #         plt.xlim(0, 180)
+        #     plt.tight_layout()
+        #
+        #     # plt.ylim([0, ajf0w.cumulative_density_.loc[180][0] * 3])
+        #
+        #     plt.title(title, fontsize=12)
+        #     plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.png'), bbox_inches='tight', dpi=600)
+        #     plt.savefig(fig_outfile.replace('-km.png', '-cumIncidence.pdf'), bbox_inches='tight', transparent=True)
+        #     plt.close()
+
+        # return (ajf1w, ajf0w, cifdiff_w, point_in_time, cif_1_w, cif_0_w, cif_1_w_CILower, cif_1_w_CIUpper, cif_0_w_CILower,
+        #         cif_0_w_CIUpper, aj_results_w)
+    with open(fig_outfile.replace('-km.png', '-result_list.pkl'), 'wb') as f:
+        pickle.dump(result_list, f)  #
+    return result_list
 
 
 def weighted_KM_HR_pooled(golds_treatment, weights, events_flag, events_t2e, database_flag, fig_outfile='', title=''):

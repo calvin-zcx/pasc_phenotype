@@ -140,3 +140,109 @@ def st_survival_difference_at_fixed_point(point_in_time, fitterA, fitterB, **res
     # 1. add difference
     # 2. add CI of differences
     return results
+
+
+def st_survival_difference_at_fixed_point_withBoostrapResults(cifA_list, cifB_list, **result_kwargs):
+    """
+        my takes, 2024-2-28: Revised this to support cumulative incidence, and confidence interval
+
+    Often analysts want to compare the survival-ness of groups at specific times, rather than comparing the entire survival curves against each other.
+    For example, analysts may be interested in 5-year survival. Statistically comparing the naive Kaplan-Meier points at a specific time
+    actually has reduced power (see [1]). By transforming the survival function, we can recover more power. This function uses
+    the log(-log(·)) transformation.
+
+    Parameters
+    ----------
+    point_in_time: float,
+        the point in time to analyze the survival curves at.
+
+    fitterA:
+        A lifelines univariate model fitted to the data. This can be a ``KaplanMeierFitter``, ``WeibullFitter``, etc.
+
+    fitterB:
+        the second lifelines model to compare against.
+
+    result_kwargs:
+        add keywords and meta-data to the experiment summary
+
+    Returns
+    -------
+
+    StatisticalResult
+      a StatisticalResult object with properties ``p_value``, ``summary``, ``test_statistic``, ``print_summary``
+
+    Examples
+    --------
+    .. code:: python
+
+        T1 = [1, 4, 10, 12, 12, 3, 5.4]
+        E1 = [1, 0, 1,  0,  1,  1, 1]
+        kmf1 = KaplanMeierFitter().fit(T1, E1)
+
+        T2 = [4, 5, 7, 11, 14, 20, 8, 8]
+        E2 = [1, 1, 1, 1,  1,  1,  1, 1]
+        kmf2 = KaplanMeierFitter().fit(T2, E2)
+
+        from lifelines.statistics import survival_difference_at_fixed_point_in_time_test
+        results = survival_difference_at_fixed_point_in_time_test(12.0, kmf1, kmf2)
+
+        results.print_summary()
+        print(results.p_value)        # 0.77
+        print(results.test_statistic) # 0.09
+
+    Notes
+    -----
+    1. Other transformations are possible, but Klein et al. [1] showed that the log(-log(·)) transform has the most desirable
+    statistical properties.
+
+    2. The API of this function changed in v0.25.3. This new API allows for right, left and interval censoring models to be tested.
+
+
+    References
+    -----------
+
+    [1] Klein, J. P., Logan, B. , Harhoff, M. and Andersen, P. K. (2007), Analyzing survival curves at a fixed point in time. Statist. Med., 26: 4505-4519. doi:10.1002/sim.2864
+
+    """
+
+    log = np.log
+    clog = lambda s: log(-log(s))
+
+    sA_t = np.mean(cifA_list)
+    sB_t = np.mean(cifB_list)
+
+    sigma_sqA = np.var(cifA_list)
+    sigma_sqB = np.var(cifB_list)
+
+    X = (clog(sA_t) - clog(sB_t)) ** 2 / (sigma_sqA / log(sA_t) ** 2 + sigma_sqB / log(sB_t) ** 2)
+    p_value = _chisq_test_p_value(X, 1)
+
+    # http://fmwww.bc.edu/repec/bocode/s/stsurvdiff.ado
+    # https://discourse.datamethods.org/t/kaplan-meier-se-for-absolute-difference-in-time-point-survival/5035/14
+
+    diff_of_mean = sA_t - sB_t
+    std_diff_of_mean = np.sqrt(sigma_sqA + sigma_sqB)
+    z = st.norm.ppf(0.975)  # = 1.959963984540054, when \alpha = 0.05, two sided 1.0 - 0.05/2
+    diff_of_mean_lower = diff_of_mean - z * std_diff_of_mean
+    diff_of_mean_upper = diff_of_mean + z * std_diff_of_mean
+
+    results = StatisticalResult(
+        p_value,
+        X,
+        null_distribution="chi squared",
+        degrees_of_freedom=1,
+        point_in_time=np.nan,
+        test_name="survival_difference_at_fixed_point_in_time_test",
+        fitterA=cifA_list,
+        fitterB=cifB_list,
+        **result_kwargs
+    )
+
+    results.diff_of_mean = diff_of_mean
+    results.std_diff_of_mean = std_diff_of_mean
+    results.diff_of_mean_lower = diff_of_mean_lower
+    results.diff_of_mean_upper = diff_of_mean_upper
+
+    # 1. add difference
+    # 2. add CI of differences
+    return results

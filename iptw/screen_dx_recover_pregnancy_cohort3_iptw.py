@@ -651,7 +651,9 @@ if __name__ == "__main__":
               'df2_matched.shape', df2_matched.shape)
 
     # ## step 1.5 add CFR columns, also need boolean operations!
-    df_add = pd.read_csv('recover29Nov27_covid_pos_addCFR_only_4_pregnancy.csv',
+    # df_add = pd.read_csv('recover29Nov27_covid_pos_addCFR_only_4_pregnancy.csv',
+    #                      dtype={'patid': str, 'site': str})
+    df_add = pd.read_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax.csv',
                          dtype={'patid': str, 'site': str})
     print('df1.shape:', df1.shape)
     df1 = pd.merge(df1, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
@@ -699,6 +701,12 @@ if __name__ == "__main__":
     df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 30) & (df['death t2e'] < 180)).astype('int')
     df['death t2e postacute'] = df['death t2e all']
 
+    #
+    df['hospitalization-acute-flag'] = (df['hospitalization-acute-flag'] >= 1).astype('int')
+    df['hospitalization-acute-t2e'] = df['hospitalization-acute-t2e'].clip(upper=31)
+    df['hospitalization-postacute-flag'] = (df['hospitalization-postacute-flag'] >= 1).astype('int')
+
+    #
 
     # step 2: load and preprocess PASC info
     print('Step 2: load and preprocess PASC info')
@@ -968,8 +976,11 @@ if __name__ == "__main__":
     SMMpasc_list = list(SMMpasc_encoding.keys())
 
     # smm outcomes only make sense when comparison groups are also pregnant
-    selected_screen_list = ['any_pasc',
-                            'PASC-General', 'death', 'death_acute', 'death_postacute', 'any_CFR'] + CFR_list + pasc_list + addedPASC_list + brainfog_list # + SMMpasc_list
+    selected_screen_list = (['any_pasc', 'PASC-General',
+                             'death', 'death_acute', 'death_postacute',
+                             'any_CFR',
+                             'hospitalization_acute', 'hospitalization_postacute'] +
+                            CFR_list + pasc_list + addedPASC_list + brainfog_list) # + SMMpasc_list
     causal_results = []
     results_columns_name = []
     # for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
@@ -991,6 +1002,14 @@ if __name__ == "__main__":
             pasc_flag = df['death postacute'].astype('int')
             pasc_t2e = df['death t2e postacute'].astype('float')
             pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
+        elif pasc == 'hospitalization_acute':
+            pasc_flag = df['hospitalization-acute-flag'].astype('int')
+            pasc_t2e = df['hospitalization-acute-t2e'].astype('float')
+            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
+        elif pasc == 'hospitalization_postacute':
+            pasc_flag = df['hospitalization-postacute-flag'].astype('int')
+            pasc_t2e = df['hospitalization-postacute-t2e'].astype('float')
+            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
         elif pasc in pasc_list:
             pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
             pasc_t2e = df['dx-t2e@' + pasc].astype('float')
@@ -1106,7 +1125,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-results.csv'.format(
             args.usedx,
             args.kmatch,
             args.useacute,
@@ -1117,7 +1136,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-evaluation_balance.csv'.format(
                 args.usedx,
                 args.kmatch,
                 args.useacute,
@@ -1126,13 +1145,13 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'pregnancy': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.usedx,
                 args.kmatch,
                 args.useacute,
                 i, pasc.replace(':', '-').replace('/', '-')))
         try:
-            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-PS.png'.format(
                 args.usedx,
                 args.kmatch,
                 args.useacute,
@@ -1156,7 +1175,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-km.png'.format(
                 args.usedx,
                 args.kmatch,
                 args.useacute,
@@ -1166,6 +1185,7 @@ if __name__ == "__main__":
 
         try:
             # change 2022-03-20 considering competing risk 2
+            # change 2024-02-29 add CI for CIF difference and KM difference
             _results = [i, pasc,
                         covid_label.sum(), (covid_label == 0).sum(),
                         (pasc_flag[covid_label == 1] == 1).sum(), (pasc_flag[covid_label == 0] == 1).sum(),
@@ -1175,23 +1195,33 @@ if __name__ == "__main__":
                         (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value,
+                        list(km[6].diff_of_mean), list(km[6].diff_of_mean_lower), list(km[6].diff_of_mean_upper),
                         cif[2], cif[4], cif[5], cif[6], cif[7], cif[8], cif[9],
+                        list(cif[10].diff_of_mean), list(cif[10].diff_of_mean_lower), list(cif[10].diff_of_mean_upper),
+                        cif[10].p_value,
                         km_w[2], km_w[3], km_w[6].p_value,
+                        list(km_w[6].diff_of_mean), list(km_w[6].diff_of_mean_lower), list(km_w[6].diff_of_mean_upper),
                         cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
+                        list(cif_w[10].diff_of_mean), list(cif_w[10].diff_of_mean_lower),
+                        list(cif_w[10].diff_of_mean_upper),
+                        cif_w[10].p_value,
                         cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
                         cox_w[4], model.best_hyper_paras]
             causal_results.append(_results)
             results_columns_name = [
-                'i', 'pasc', 'covid+', 'covid-',
+                'i', 'pasc', 'case+', 'ctrl-',
                 'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
+                'km-diff-2', 'km-diff-CILower', 'km-diff-CIUpper',
                 'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
+                'cif-diff-2', 'cif-diff-CILower', 'cif-diff-CIUpper', 'cif-diff-p',
                 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                'km-w-diff-2', 'km-w-diff-CILower', 'km-w-diff-CIUpper',
                 'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
-                "cif_0_w_CIUpper",
+                "cif_0_w_CIUpper", 'cif-w-diff-2', 'cif-w-diff-CILower', 'cif-w-diff-CIUpper', 'cif-w-diff-p',
                 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
                 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
@@ -1199,7 +1229,7 @@ if __name__ == "__main__":
             if i % 5 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/causal_effects_specific-snapshot-{}.csv'.format(
                         args.usedx,
                         args.kmatch,
                         args.useacute,
@@ -1209,7 +1239,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.usedx,
                     args.kmatch, args.useacute,))
 
@@ -1218,7 +1248,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V2/causal_effects_specific.csv'.format(
+        r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/causal_effects_specific.csv'.format(
             args.usedx,
             args.kmatch, args.useacute,))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

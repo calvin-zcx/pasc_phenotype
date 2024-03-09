@@ -503,7 +503,7 @@ if __name__ == "__main__":
         print('treated df3.shape', df3.shape,
               'control df4.shape', df4.shape,
               'combined df.shape', df.shape, )
-    elif args.cohortype == 'overall':
+    elif args.cohorttype == 'overall':
         df3 = pd.read_csv(fname3, dtype={'patid': str, 'site': str, 'zip': str},
                           parse_dates=['index date', 'dob',
                                        'flag_delivery_date',
