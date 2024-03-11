@@ -1142,12 +1142,12 @@ if __name__ == "__main__":
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    # df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
+    df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
     #
-    # df_causal.to_csv(
-    #     r'../data/recover/output/results/Paxlovid-{}-{}-{}-boostrap/causal_effects_specific.csv'.format(
-    #         args.cohorttype,
-    #         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-    #         'pcornet',  # '-select' if args.selectpasc else '',
-    #     ))
+    df_causal.to_csv(
+        r'../data/recover/output/results/Paxlovid-{}-{}-{}-boostrap/causal_effects_specific.csv'.format(
+            args.cohorttype,
+            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+            'pcornet',  # '-select' if args.selectpasc else '',
+        ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -9,3 +9,4 @@ python screen_paxlovid_iptw_pcornet_negctrl.py  --cohorttype norisk --severity a
 python screen_paxlovid_iptw_pcornet_negctrl.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-negctrlV3.txt
 
 python screen_paxlovid_iptw_pcornet_boostrap.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-boostrapV3.txt
+python screen_paxlovid_iptw_pcornet_boostrap.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all-boostrapV3.txt
