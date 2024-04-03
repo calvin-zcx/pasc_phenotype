@@ -157,6 +157,9 @@ def _load_mapping():
     icd_negctrlpasc = utils.load(r'../data/mapping/icd_negative-outcome-control_mapping.pkl')
     negctrlpasc_encoding = utils.load(r'../data/mapping/negative-outcome-control_index_mapping.pkl')
 
+    # add ssri drugs
+    ssri_med = utils.load(r'../data/mapping/ssri_snri_drugs_mapping.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
@@ -164,7 +167,7 @@ def _load_mapping():
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
             icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist,
             icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
-            icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding)
+            icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med)
 
 
 def _encoding_age(age):
@@ -1406,7 +1409,7 @@ def build_feature_matrix(args):
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
-     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding) = _load_mapping()  # no load fips_ziplist
+     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med) = _load_mapping()  # no load fips_ziplist
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1644,7 +1647,7 @@ def build_feature_matrix(args):
 
             # 2024-4-3  capture ssri and snri for exploration
             ssritreat_flag[i, :], ssritreat_t2e[i, :], ssritreat_t2eall_1row = \
-                _encoding_covidtreat(med, ssritreat_names, covid_med_update, index_date, default_t2e)
+                _encoding_covidtreat(med, ssritreat_names, ssri_med, index_date, default_t2e)
             ssritreat_t2eall.append(ssritreat_t2eall_1row)
             #
 
