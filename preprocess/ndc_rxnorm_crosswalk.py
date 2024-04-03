@@ -693,6 +693,75 @@ def generate_covid_drug_list():
     df_merge.to_excel('../prerecover/output/remdesivir-ndc-rxnom-merged.xlsx', )
 
 
+# 2024-4-2 used for ssri, better automation than paxlovid and dementia drug building
+# might exlucde some unrelated codes
+def generate_drug_list_by_name(drugname='fluvoxamine'):
+    print('Generate drug list by drugname', drugname)
+
+    # step 1
+    df = get_rx_from_namestr(drugname)
+    df.to_csv('../prerecover/output/{}.csv'.format(drugname))
+    print('To expand len(df) rx codes', len(df))
+
+    # step 2
+    rx_df_list = []
+    for i, (index, row) in enumerate(df.iterrows()):
+        rx = row['code']
+        name = row['name']
+        syn = row['synonym']
+        print(i, '||', rx, '||', name, '||', syn)
+        _df = get_allrelated_from_rx(rx)
+        rx_df_list.append(_df)
+
+    # Instead, using tty to distinguish
+    # https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix5.html
+    # https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix2.html
+    # https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix3.html
+    # discard_rx_set = {'316943': 'Extended Release Oral Capsule',
+    #                   '1151131': 'Oral Product',
+    #                   '1151133': 'Pill',
+    #                   '317541': 'Oral Tablet',
+    #                   '316965': 'Oral Capsule',
+    #                   '91058': 'Chewable Tablet',
+    #                   '1294716': 'Chewable Product',
+    #                   '316968': 'Oral Solution',
+    #                   '1151137': 'Oral Liquid Product',
+    #                   '316995': 'Delayed Release Oral Capsule'}
+
+    # to delete tty == DF, or DFG
+    df_rx = pd.concat(rx_df_list, ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    print('Exclude dose form related code, by excluding tty in [DF, DFG, ET]')
+    print('More details at https://www.nlm.nih.gov/research/umls/rxnorm/docs/appendix5.html')
+    df_rx_nodup = df_rx_nodup.loc[~df_rx_nodup['tty'].isin(['DF', 'DFG', 'ET'])]
+    df_rx_nodup.to_csv('../prerecover/output/{}-combined-nodup-rxcui.csv'.format(drugname))
+    print('Dump rxcui len(df_rx_nodup)', len(df_rx_nodup))
+
+    # step 3
+    df_ndc = get_ndc_from_rxnorm(df_rx_nodup['code'])
+    df_ndc_nodup = df_ndc.drop_duplicates(['code', 'code type', "name", ])
+    print('df_ndc.shape', df_ndc.shape, 'df_ndc_nodup.shape', df_ndc_nodup.shape, )
+    df_ndc_nodup.to_csv('../prerecover/output/{}-combined-nodup-NDC.csv'.format(drugname), )
+    print('Dump NDC len(df_ndc_nodup)', len(df_ndc_nodup))
+
+    # step 4
+    df_merge = df_rx_nodup.merge(df_ndc_nodup, on=['code', 'code type', 'name', 'query source'], how='outer')
+    df_merge['drug'] = drugname
+    df_merge.to_excel('../prerecover/output/{}-ndc-rxnom-merged.xlsx'.format(drugname), )
+    print('Dump ', drugname, 'done! len(df_merge)', len(df_merge))
+
+    # step 5
+    print("""
+        # Of note, DOUBLE-CHECK dumped rxcui or the final code list to
+        # 1. exclude tty in Dose Form (DF) or Dose Form Group (DFG)
+        # 2. to determine if include drug combination or not
+        # 3. to determine if to exclude other proportions brought by combined drugs
+        # 4. to delete unrelated drugs due to NDC changes, check name
+        """)
+
+    return df_merge
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -700,7 +769,6 @@ if __name__ == '__main__':
     ## 2023-8-31
     # generate dementia drug list
     # generate covid drug list
-
 
     ## end 2023-8-31
 
@@ -778,4 +846,19 @@ if __name__ == '__main__':
     # df_result.to_csv(
     #     r'../data/V15_COVID19/output/character/cp_dm/table_DM-All.csv')
 
+    # 2024-4-2 generate ssri drug list
+    drugname = 'fluvoxamine'
+    drugname = 'fluoxetine'
+    drugname = 'escitalopram'
+    drugname = 'citalopram'
+    drugname = 'sertraline'
+    drugname = 'paroxetine'
+
+    # snri list
+    drugname = 'desvenlafaxine'
+    drugname = 'duloxetine'
+    drugname = 'levomilnacipran'
+    drugname = 'milnacipran'
+    drugname = 'venlafaxine'
+    df = generate_drug_list_by_name(drugname=drugname)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

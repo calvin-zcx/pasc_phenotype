@@ -1425,7 +1425,7 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         #
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-negctrl.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1542,32 +1542,20 @@ def build_feature_matrix(args):
                                                     'hospitalization-base', 'hospitalization-t2eall']
 
             #
-            # # negative contrl outcomes
-            # # 99 negative control NEO001-NEO074   'FAC003', 'FAC006', 'FAC008'
-            # negctrloutcome_flag = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
-            # negctrloutcome_t2e = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
-            # negctrloutcome_baseline = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
-            # negctrloutcome_t2eall = []
-            #
-            # negctrloutcome_column_names = ['negctrldx-out@' + x for x in negctrlpasc_encoding.keys()] + \
-            #                        ['negctrldx-t2e@' + x for x in negctrlpasc_encoding.keys()] + \
-            #                        ['negctrldx-base@' + x for x in negctrlpasc_encoding.keys()]+ \
-            #                        ['negctrldx-t2eall@' + x for x in negctrlpasc_encoding.keys()]
+            # negative contrl outcomes
+            # 99 negative control NEO001-NEO074   'FAC003', 'FAC006', 'FAC008'
+            negctrloutcome_flag = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_t2e = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_baseline = np.zeros((n, len(negctrlpasc_encoding)), dtype='int16')
+            negctrloutcome_t2eall = []
 
-            # 2024-4-3 ssri, snri drug updated codes
-            ssritreat_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline',
-                                'paroxetine',
-                                'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
-            ssritreat_flag = np.zeros((n, 11), dtype='int16')
-            ssritreat_t2e = np.zeros((n, 11), dtype='int16')  # date of earliest prescriptions
-            ssritreat_t2eall = []
-            ssritreat_column_names = (
-                    ['treat-flag@' + x for x in ssritreat_names] +
-                    ['treat-t2e@' + x for x in ssritreat_names] +
-                    ['treat-t2eall@' + x for x in ssritreat_names])
+            negctrloutcome_column_names = ['negctrldx-out@' + x for x in negctrlpasc_encoding.keys()] + \
+                                   ['negctrldx-t2e@' + x for x in negctrlpasc_encoding.keys()] + \
+                                   ['negctrldx-base@' + x for x in negctrlpasc_encoding.keys()]+ \
+                                   ['negctrldx-t2eall@' + x for x in negctrlpasc_encoding.keys()]
 
             column_names = (['patid', 'site', 'covid', ] + outcome_CFR_column_names + addPaxRisk_column_names +
-                            outcome_U099_column_names + outcome_hospitalization_column_names + ssritreat_column_names)
+                            outcome_U099_column_names + outcome_hospitalization_column_names + negctrloutcome_column_names)
 
             # if args.positive_only:
             #     if not flag:
@@ -1637,16 +1625,10 @@ def build_feature_matrix(args):
                 _encoding_outcome_hospitalization_withalldays(encounter, index_date, default_t2e)
             outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
 
-            # # negative outcome ctrl, 2024-2-28
-            # negctrloutcome_flag[i, :], negctrloutcome_t2e[i, :], negctrloutcome_baseline[i, :], negctrloutcome_t2eall_1row = \
-            #     _encoding_outcome_dx_withalldays(dx, icd_negctrlpasc, negctrlpasc_encoding, index_date, default_t2e)
-            # negctrloutcome_t2eall.append(negctrloutcome_t2eall_1row)
-
-            # 2024-4-3  capture ssri and snri for exploration
-            ssritreat_flag[i, :], ssritreat_t2e[i, :], ssritreat_t2eall_1row = \
-                _encoding_covidtreat(med, ssritreat_names, covid_med_update, index_date, default_t2e)
-            ssritreat_t2eall.append(ssritreat_t2eall_1row)
-            #
+            # negative outcome ctrl, 2024-2-28
+            negctrloutcome_flag[i, :], negctrloutcome_t2e[i, :], negctrloutcome_baseline[i, :], negctrloutcome_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_negctrlpasc, negctrlpasc_encoding, index_date, default_t2e)
+            negctrloutcome_t2eall.append(negctrloutcome_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
@@ -1666,9 +1648,10 @@ def build_feature_matrix(args):
                                     outcome_hospitalization_t2e,
                                     outcome_hospitalization_baseline,
                                     np.asarray(outcome_hospitalization_t2eall),
-                                    ssritreat_flag,
-                                    ssritreat_t2e,
-                                    np.asarray(ssritreat_t2eall),
+                                    negctrloutcome_flag,
+                                    negctrloutcome_t2e,
+                                    negctrloutcome_baseline,
+                                    np.asarray(negctrloutcome_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)

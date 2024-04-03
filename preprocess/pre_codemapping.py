@@ -1150,7 +1150,8 @@ def ICD_to_PASC_cognitive_fatigue_respiratory():
                                  dtype=str,
                                  sheet_name='Sheet1')
     print('df_pasc_list.shape', df_pasc_list.shape)
-    df_pasc_list['ICD-10-CM CODE'] = df_pasc_list['ICD-10-CM CODE'].apply(lambda x: x.strip().strip(r'\'').upper().replace('.', ''))
+    df_pasc_list['ICD-10-CM CODE'] = df_pasc_list['ICD-10-CM CODE'].apply(
+        lambda x: x.strip().strip(r'\'').upper().replace('.', ''))
     pasc_codes = df_pasc_list['ICD-10-CM CODE']  # .str.upper().replace('.', '', regex=False)  # .to_list()
     pasc_codes_set = set(pasc_codes)
     print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
@@ -1695,6 +1696,31 @@ def ICD_to_addedPaxRisk():
     return icd_cci, cci_index, dict_df_cci
 
 
+def build_ssri_snri_drug_map():
+    med_code = {}
+    fname_dict = {'ssri_drug_list.xlsx': 'ssri', 'snri_drug_list.xlsx': 'snri', }
+
+    for fname, drugtype in fname_dict.items():
+        df_all = pd.read_excel(r'../data/mapping/' + fname, sheet_name=None, dtype=str)
+        print(fname, drugtype, 'len(df_all)', len(df_all))
+        for ith, (key, df) in enumerate(df_all.items()):
+            print('drug:', key, 'index:', ith, '#code:', len(df)) #, df[['code']].value_counts())
+            code_dict = {}
+            for index, row in df.iterrows():
+                code = row['code'].strip()
+                type = row['code type']
+                name = row['name']
+                drug_ingcat = row['drug']
+
+                code_dict[code] = [code, type, name, drug_ingcat, drugtype]
+
+            med_code[key] = code_dict
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/ssri_snri_drugs_mapping.pkl')
+    return med_code
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1769,5 +1795,8 @@ if __name__ == '__main__':
     # (med_info, pro_info, dx_info, other_info), df_indication = build_n3c_pax_indication()
 
     # 17 added covs for paxlovid risk  (2024-2-13)
-    icd_addedPaxRisk, addedPaxRisk_index, dict_df_addedPaxRisk = ICD_to_addedPaxRisk()
+    #icd_addedPaxRisk, addedPaxRisk_index, dict_df_addedPaxRisk = ICD_to_addedPaxRisk()
+
+    # 18 ssri snri drugs map (2024-4-2)
+    ssrisnrimed_code = build_ssri_snri_drug_map()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -189,6 +189,11 @@ class PropensityEstimator:
         pred_ps = self.best_model.predict_proba(X)[:, 1]
         return pred_ps
 
+    def predict_logit(self, X):
+        T_pre = self.predict_ps(X)
+        logit = np.log(T_pre/(1-T_pre))
+        return logit
+
     def predict_inverse_weight(self, X,  T, stabilized=True, clip=False):
         T_pre = self.predict_ps(X)
         treated_w, controlled_w = cal_weights(T, T_pre, normalized=True, stabilized=stabilized, clip=clip)

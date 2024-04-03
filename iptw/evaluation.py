@@ -595,8 +595,6 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
                                     event_observed_B=flag_2binary(controlled_flag), weights_A=treated_w,
                                     weights_B=controlled_w, )
         test_p = test_results.p_value
-        hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
-        hr_different_time = hr_different_time['treatment'].to_numpy()
 
         cph_ori = CoxPHFitter()  # penalizer=0.01
         cox_data_ori = pd.DataFrame({'T': events_t2e, 'event': flag_2binary(events_flag), 'treatment': golds_treatment})
@@ -606,14 +604,20 @@ def weighted_KM_HR(golds_treatment, weights, events_flag, events_t2e, fig_outfil
         test_results_ori = logrank_test(treated_t2e, controlled_t2e, event_observed_A=flag_2binary(treated_flag),
                                         event_observed_B=flag_2binary(controlled_flag))
         test_p_ori = test_results_ori.p_value
-        hr_different_time_ori = cph_ori.compute_followup_hazard_ratios(cox_data, point_in_time)
-        hr_different_time_ori = hr_different_time_ori['treatment'].to_numpy()
 
     except:
         cph = HR = CI = test_p_ori = None
         cph_ori = HR_ori = CI_ori = test_p = None
-        hr_different_time = hr_different_time_ori = [np.nan] * len(point_in_time)
+        # hr_different_time = hr_different_time_ori = [np.nan] * len(point_in_time)
 
+    try:
+        hr_different_time = cph.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time = hr_different_time['treatment'].to_numpy()
+        hr_different_time_ori = cph_ori.compute_followup_hazard_ratios(cox_data, point_in_time)
+        hr_different_time_ori = hr_different_time_ori['treatment'].to_numpy()
+    except:
+        hr_different_time = hr_different_time_ori = [np.nan] * len(point_in_time)
+    
     return (kmf1, kmf0, ate, point_in_time, survival_1, survival_0, km_results), \
         (kmf1_w, kmf0_w, ate_w, point_in_time, survival_1_w, survival_0_w, km_results_w), \
         (HR_ori, CI_ori, test_p_ori, cph_ori, hr_different_time_ori), \
