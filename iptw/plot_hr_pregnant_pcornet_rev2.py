@@ -408,6 +408,8 @@ def load_pasc_info():
 
 def plot_forest_for_dx_organ_preg_lib2(show='full'):
     indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
+    # indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2RerunOri/'
+
     output_dir = indir + r'figure/'
 
     # df = pd.read_csv(indir + 'causal_effects_specific.csv')
@@ -477,6 +479,7 @@ def plot_forest_for_dx_organ_preg_lib2(show='full'):
 
     organ_n = np.zeros(len(organ_list))
     results_list = []
+    results_list_more = []
     for i, organ in enumerate(organ_list):
         print(i + 1, 'organ', organ)
         for key, row in df_select.iterrows():
@@ -495,9 +498,6 @@ def plot_forest_for_dx_organ_preg_lib2(show='full'):
             pasc = row['pasc']
             print(name, pasc)
             hr = row['hr-w']
-            if (hr <= 0.001) or pd.isna(hr):
-                print('Ignore HR, ', hr, 'for ', name, pasc)
-                continue
 
             if pd.notna(row['hr-w-CI']):
                 ci = stringlist_2_list(row['hr-w-CI'])
@@ -537,7 +537,13 @@ def plot_forest_for_dx_organ_preg_lib2(show='full'):
                       ]
 
             if domain == organ:
+                results_list_more.append(result)
+                if (hr <= 0.001) or pd.isna(hr):
+                    print('Ignore HR, ', hr, 'for ', name, pasc)
+                    continue
+
                 results_list.append(result)
+
 
     df_result = pd.DataFrame(results_list,
                              columns=['name', 'pasc', 'group',
@@ -550,6 +556,7 @@ def plot_forest_for_dx_organ_preg_lib2(show='full'):
                                       'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
                                       'cif_diff-p-format', 'cif_diff-p-symbol'])
     # df_result['-aHR'] = -1 * df_result['aHR']
+    df_result_more = pd.DataFrame(results_list_more, columns=df_result.columns)
 
     df_result = df_result.loc[~df_result['aHR'].isna()]
     print(df_result)
@@ -627,9 +634,9 @@ def plot_forest_for_dx_organ_preg_lib2(show='full'):
     check_and_mkdir(output_dir)
     plt.savefig(output_dir + 'hr_moretabs-{}.png'.format(show), bbox_inches='tight', dpi=600)
     plt.savefig(output_dir + 'hr_moretabs-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
-
+    df_result_more.to_csv(output_dir + 'hr_moretabs-{}.csv'.format(show))
     print('Done')
-    return df_result
+    return df_result_more
 
 
 if __name__ == '__main__':

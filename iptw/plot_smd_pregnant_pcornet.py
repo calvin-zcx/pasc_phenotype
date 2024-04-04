@@ -183,6 +183,7 @@ if __name__ == '__main__':
     # pass
 
     indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
+    # indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2RerunOri/'
 
     output_dir = indir + r'figure/'
     print('indir', indir)
@@ -204,7 +205,15 @@ if __name__ == '__main__':
                  label='PSM')  # facecolors='none',
     axes.scatter(df['SMD after re-weighting'], ind, s=220,
                  edgecolors='purple', marker='o', c='red',
-                 label='PSM+IPTW')
+                 label='PSM+IPW')
+
+    # axes.scatter(df['SMD before re-weighting'], ind, s=220,
+    #              edgecolors='grey', marker='^', c='indigo',  # 'lightgray',
+    #              label='Before reweighting')  # facecolors='none',
+    # axes.scatter(df['SMD after re-weighting'], ind, s=220,
+    #              edgecolors='purple', marker='o', c='red',
+    #              label='After reweighting')
+
 
     y_labels = ['\n'.join(wrap(label_map(x), 45)) for x in df['Unnamed: 0']]
     axes.set(yticks=ind, yticklabels=y_labels, ylim=[2 * width - 1, len(df)])

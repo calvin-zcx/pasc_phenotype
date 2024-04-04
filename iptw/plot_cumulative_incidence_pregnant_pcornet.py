@@ -222,7 +222,7 @@ if __name__ == "__main__":
     fullyscale = True
     fullyscale = False
     indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2RerunOri/'
-    # indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
+    indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
 
     infile = indir + r'{}-{}-cumIncidence-ajf1w-ajf0w.pkl'.format(i, _clean_name_(pasc))
     output_file = indir + r'figure/{}-{}-cumIncidence-nogrid{}.png'.format(
@@ -327,21 +327,41 @@ if __name__ == "__main__":
     #     )
 
     if not fullyscale:
-        ax.annotate('COVID Infected Pregnant vs. NonPregnant:\n'
+        # ax.annotate('COVID Infected Pregnant vs. NonPregnant:\n'
+        #             'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+        #     cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
+        # ),
+        #     xy=(0.35, 0.03), xycoords='axes fraction', fontsize=11,
+        #     # horizontalalignment='right',
+        #     verticalalignment='bottom'
+        # )
+        ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
+                    'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
                     'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+            hr, ci[0], ci[1], ahr_pformat,
             cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
         ),
-            xy=(0.35, 0.03), xycoords='axes fraction', fontsize=11,
+            xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
             # horizontalalignment='right',
             verticalalignment='bottom'
         )
 
     else:
-        ax.annotate('COVID Infected Pregnant vs. NonPregnant:\n'
+        # ax.annotate('COVID Infected Pregnant vs. NonPregnant:\n'
+        #             'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+        #     cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
+        # ),
+        #     xy=(0.02, 0.6), xycoords='axes fraction', fontsize=11,
+        #     # horizontalalignment='right',
+        #     verticalalignment='bottom'
+        # )
+        ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
+                    'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
                     'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+            hr, ci[0], ci[1], ahr_pformat,
             cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
         ),
-            xy=(0.02, 0.6), xycoords='axes fraction', fontsize=11,
+            xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
             # horizontalalignment='right',
             verticalalignment='bottom'
         )
