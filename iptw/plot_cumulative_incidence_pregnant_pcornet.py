@@ -219,13 +219,14 @@ if __name__ == "__main__":
     i = 1
     pasc = 'any_pasc'
 
+    hastext = False
     fullyscale = True
-    fullyscale = False
+    # fullyscale = False
     indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2RerunOri/'
-    indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
+    # indir = r'../data/recover/output/results-20230825/DX-pospreg-posnonpreg-Rev2PSM1to1/'
 
     infile = indir + r'{}-{}-cumIncidence-ajf1w-ajf0w.pkl'.format(i, _clean_name_(pasc))
-    output_file = indir + r'figure/{}-{}-cumIncidence-nogrid{}.png'.format(
+    output_file = indir + r'figure/{}-{}-cumIncidence-nogrid{}-notext.png'.format(
         i,
         _clean_name_(pasc),
         '-fullyscale' if fullyscale else '')
@@ -236,6 +237,8 @@ if __name__ == "__main__":
     print('infile:', infile)
     ajf1w, ajf0w = utils.load(infile)
     # results_w = survival_difference_at_fixed_point_in_time_test(180, ajf1w, ajf0w)
+    ajf1w._label = "COVID Pos Pregnant"
+    ajf0w._label = "COVID Pos NonPregnant"
 
     plt.rc('font', family='serif')
     fig = plt.figure(figsize=(6 , 3.5))  # figsize=(12, 9)
@@ -243,7 +246,7 @@ if __name__ == "__main__":
 
     # ax = plt.subplot(111)
     # ajf1.plot(ax=ax)
-    ajf1w.plot(ax=ax, loc=slice(0., 180), color='#d62728')  # 0, 180  loc=slice(0., controlled_t2e.max())
+    ajf1w.plot(ax=ax, loc=slice(0., 180), color='#d62728', )  # 0, 180  loc=slice(0., controlled_t2e.max())
     # ajf0.plot(ax=ax)
     ajf0w.plot(ax=ax, loc=slice(0., 180), color='#1f77b4', linestyle='dashed', )  # loc=slice(0., controlled_t2e.max())
     # add_at_risk_counts(ajf1w, ajf0w, ax=ax, )
@@ -335,16 +338,17 @@ if __name__ == "__main__":
         #     # horizontalalignment='right',
         #     verticalalignment='bottom'
         # )
-        ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
-                    'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
-                    'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
-            hr, ci[0], ci[1], ahr_pformat,
-            cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
-        ),
-            xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
-            # horizontalalignment='right',
-            verticalalignment='bottom'
-        )
+        if hastext:
+            ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
+                        'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
+                        'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+                hr, ci[0], ci[1], ahr_pformat,
+                cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
+            ),
+                xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
+                # horizontalalignment='right',
+                verticalalignment='bottom'
+            )
 
     else:
         # ax.annotate('COVID Infected Pregnant vs. NonPregnant:\n'
@@ -355,16 +359,17 @@ if __name__ == "__main__":
         #     # horizontalalignment='right',
         #     verticalalignment='bottom'
         # )
-        ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
-                    'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
-                    'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
-            hr, ci[0], ci[1], ahr_pformat,
-            cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
-        ),
-            xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
-            # horizontalalignment='right',
-            verticalalignment='bottom'
-        )
+        if hastext:
+            ax.annotate('COVID Infected Pregnant vs. PS-matched NonPregnant:\n'
+                        'HR, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}\n'
+                        'Difference, {:.2f} (95% CI, {:.2f} to {:.2f})\nPval, {}'.format(
+                hr, ci[0], ci[1], ahr_pformat,
+                cif_diff, cif_diff_ci[0], cif_diff_ci[1], cif_diff_pformat,
+            ),
+                xy=(0.03, 0.5), xycoords='axes fraction', fontsize=11,
+                # horizontalalignment='right',
+                verticalalignment='bottom'
+            )
     ax.legend(frameon=False, loc='upper center', ncol=2)
 
     plt.tight_layout()
