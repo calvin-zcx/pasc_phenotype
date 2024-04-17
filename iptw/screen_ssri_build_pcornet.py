@@ -1088,8 +1088,7 @@ if __name__ == "__main__":
         df['snri-treat-0-30-flag'] = (df['snri-treat-0-30-cnt'] > 0).astype('int')
         df['snri-treat--30-30-flag'] = (df['snri-treat--30-30-cnt'] > 0).astype('int')
 
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
-        df.to_csv(out_data_file.replace('.csv', '-addGeneralEC-withexposure.csv'))
+        df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
         # df_pos_risk['treated'] = 1
         # df_pos_norisk['treated'] = 1
