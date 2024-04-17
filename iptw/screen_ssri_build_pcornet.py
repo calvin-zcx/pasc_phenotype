@@ -716,7 +716,6 @@ def more_ec_for_cohort_selection_4_ssri_part2(df):
     df_ec_start = df.copy()
     print('Build df_ec_start for calculating EC proportion, len(df_ec_start)', len(df_ec_start))
 
-
     def ec_no_U099_baseline(_df):
         print('before ec_no_U099_baseline, _df.shape', _df.shape)
         n0 = len(_df)
@@ -947,7 +946,6 @@ if __name__ == "__main__":
             df = pd.merge(df, df_add, how='left', left_on='patid', right_on='patid', suffixes=('', '_y'), )
             print('After left merge, merged df.shape:', df.shape)
 
-
             # if args.cohorttype == 'lab-dx':
             #     print('select subcohort cohorttype', args.cohorttype)
             #     # e.g. cohorts_covid_posOnly18base_columbia_lab-dx.pkl
@@ -970,8 +968,6 @@ if __name__ == "__main__":
         print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
         print(r"df['site'].value_counts()", df['site'].value_counts())
 
-
-
         df = df.loc[df['covid'] == 1, :].copy()
 
         print('covid+: df.shape:', df.shape)
@@ -984,27 +980,27 @@ if __name__ == "__main__":
         print('dump done!')
     else:
 
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
-        # if args.cohorttype == 'lab-dx':
-        #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
+        # # if args.cohorttype == 'lab-dx':
+        # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+        #
+        # print('Load data covariates file:', out_data_file)
+        # df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
+        #                  parse_dates=['index date', 'dob',
+        #                               'flag_delivery_date',
+        #                               'flag_pregnancy_start_date',
+        #                               'flag_pregnancy_end_date'
+        #                               ])
+        # print('df.shape:', df.shape)
+        #
+        # df = add_col(df)
+        # print('add cols, then df.shape:', df.shape)
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
+        # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
+        # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
+        # df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
 
-        print('Load data covariates file:', out_data_file)
-        df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                         parse_dates=['index date', 'dob',
-                                      'flag_delivery_date',
-                                      'flag_pregnancy_start_date',
-                                      'flag_pregnancy_end_date'
-                                      ])
-        print('df.shape:', df.shape)
-
-        df = add_col(df)
-        print('add cols, then df.shape:', df.shape)
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
-        # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
-        df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
-        df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
-
-
+        # zz
         # load after general EC and explore. Even general EC will be revised later
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats-addGeneralEC.csv'
         df = pd.read_csv(in_mediate_file,
@@ -1033,11 +1029,68 @@ if __name__ == "__main__":
               df.loc[df['covid'] == 0, 'treat-flag-bool@paxlovid'].sum(),
               df.loc[df['covid'] == 0, 'treat-flag-bool@paxlovid'].mean())
 
-        df = more_ec_for_cohort_selection_4_ssri_part2(df)
-        (df.loc[df['treat-flag-bool@paxlovid'] == 1, 'treat-flag@fluvoxamine'] > 0).sum()
+        # df = more_ec_for_cohort_selection_4_ssri_part2(df)
+        print((df.loc[df['treat-flag-bool@paxlovid'] == 1, 'treat-flag@fluvoxamine'] > 0).sum())
 
-        (df.loc[df['treat-flag-bool@paxlovid'] == 0, 'treat-flag@fluvoxamine'] > 0).sum()
+        print((df.loc[df['treat-flag-bool@paxlovid'] == 0, 'treat-flag@fluvoxamine'] > 0).sum())
         #
+        # define user and non-users
+        # ssri lacks vilazodone, add later
+        ssri_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline', 'paroxetine', ]
+        snri_names = ['desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
+
+        for x in ssri_names:
+            df['ssri-treat-0-30@' + x] = 0
+            df['ssri-treat--30-30@' + x] = 0
+
+        for x in snri_names:
+            df['snri-treat-0-30@' + x] = 0
+            df['snri-treat--30-30@' + x] = 0
+
+
+        def _t2eall_to_int_list(t2eall):
+            t2eall = t2eall.strip(';').split(';')
+            t2eall = list(map(int, t2eall))
+            return t2eall
+
+
+        for index, row in tqdm(df.iterrows(), total=len(df)):
+            # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
+            index_date = pd.to_datetime(row['index date'])
+
+            for x in ssri_names:
+                t2eall = row['treat-t2eall@' + x]
+                if pd.notna(t2eall):
+                    t2eall = _t2eall_to_int_list(t2eall)
+                    for t2e in t2eall:
+                        if 0 <= t2e <= 30:
+                            df.loc[index, 'ssri-treat-0-30@' + x] = 1
+                        if -30 <= t2e <= 30:
+                            df.loc[index, 'ssri-treat--30-30@' + x] = 1
+
+            for x in snri_names:
+                t2eall = row['treat-t2eall@' + x]
+                if pd.notna(t2eall):
+                    t2eall = _t2eall_to_int_list(t2eall)
+                    for t2e in t2eall:
+                        if 0 <= t2e <= 30:
+                            df.loc[index, 'snri-treat-0-30@' + x] = 1
+                        if -30 <= t2e <= 30:
+                            df.loc[index, 'snri-treat--30-30@' + x] = 1
+
+        df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--30-30-cnt'] = df[['ssri-treat--30-30@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat-0-30-flag'] = (df['ssri-treat-0-30-cnt'] > 0).astype('int')
+        df['ssri-treat--30-30-flag'] = (df['ssri-treat--30-30-cnt'] > 0).astype('int')
+
+        df['snri-treat-0-30-cnt'] = df[['snri-treat-0-30@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--30-30-cnt'] = df[['snri-treat--30-30@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat-0-30-flag'] = (df['snri-treat-0-30-cnt'] > 0).astype('int')
+        df['snri-treat--30-30-flag'] = (df['snri-treat--30-30-cnt'] > 0).astype('int')
+
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
+        df.to_csv(out_data_file.replace('.csv', '-addGeneralEC-withexposure.csv'))
+
         # df_pos_risk['treated'] = 1
         # df_pos_norisk['treated'] = 1
         # df_pos_preg['treated'] = 1
