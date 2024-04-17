@@ -1088,6 +1088,11 @@ if __name__ == "__main__":
         df['snri-treat-0-30-flag'] = (df['snri-treat-0-30-cnt'] > 0).astype('int')
         df['snri-treat--30-30-flag'] = (df['snri-treat--30-30-cnt'] > 0).astype('int')
 
+        print('ssri-treat-0-30-flag', df['ssri-treat-0-30-flag'].sum())
+        print('ssri-treat--30-30-flag', df['ssri-treat--30-30-flag'].sum())
+        print('snri-treat-0-30-flag', df['snri-treat-0-30-flag'].sum())
+        print('snri-treat--30-30-flag', df['snri-treat--30-30-flag'].sum())
+
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
         # df_pos_risk['treated'] = 1
