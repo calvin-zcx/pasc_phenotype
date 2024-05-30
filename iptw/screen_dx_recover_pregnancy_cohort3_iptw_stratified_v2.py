@@ -41,14 +41,19 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha', 'preg-pos-neg',
+                                               '1stwave', 'alpha', 'delta', 'omicron', 'omicronafter', 'preg-pos-neg',
                                                'pospreg-posnonpreg',
                                                'followupanydx',
                                                'trimester1', 'trimester2', 'trimester3', 'delivery1week',
                                                'trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow',
                                                'delivery1week-anyfollow',
                                                'inpatienticu-anyfollow', 'outpatient-anyfollow',
-                                               'controlInpatient'
+                                               'controlInpatient',
+                                               'less35', 'above35',
+                                               'bminormal','bmioverweight','bmiobese',
+                                               'pregwithcond',
+                                               'pregwithoutcond',
+
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -69,6 +74,7 @@ def parse_args():
     # args.save_model_filename = os.path.join(args.output_dir, '_S{}{}'.format(args.random_seed, args.run_model))
     # utils.check_and_mkdir(args.save_model_filename)
     return args
+
 
 def _evaluation_helper(X, T, PS_logits, loss):
     y_pred_prob = logits_to_probability(PS_logits, normalized=False)
@@ -215,17 +221,75 @@ def select_subpopulation(df, severity, args):
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
-    elif severity == 'delta':
-        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
-                df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'alpha':
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    elif severity == 'delta':
+        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
+                df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+    elif severity == 'omicron':
+        print('Considering patients in omicron wave, December-1-2021 to March.-30-2022')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) & (
+                df['index date'] < datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+    elif severity == 'omicronafter':
+        print('Considering patients in omicronafter wave, April-1-2022 to end of inclusion windows')
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
     elif severity == 'followupanydx':
         print('Considering patients with any follow up dx')
         df = df.loc[(df['followupanydx'] == 1), :].copy()
+    elif severity == 'less35':
+        print('Considering less35 pregnant cohorts')
+        df = df.loc[
+             (df['pregage:18-<25 years'] == 1) | (df['pregage:25-<30 years',] == 1) | (df['pregage:30-<35 years'] == 1),
+             :].copy()
+    elif severity == 'above35':
+        print('Considering above35 pregnant cohorts')
+        df = df.loc[
+             (df['pregage:35-<40 years'] == 1) | (df['pregage:40-<45 years'] == 1) | (df['pregage:45-50 years'] == 1),
+             :].copy()
+    elif severity == 'fullyvac':
+        print('Considering fullyvac pregnant cohorts')
+        df = df.loc[(df['Fully vaccinated - Pre-index'] == 1), :].copy()
+    elif severity == 'partialvac':
+        print('Considering partialvac pregnant cohorts')
+        df = df.loc[(df['Partially vaccinated - Pre-index'] == 1), :].copy()
+    elif severity == 'anyvac':
+        print('Considering both fullyvac and partialvac pregnant cohorts')
+        df = df.loc[(df['Fully vaccinated - Pre-index'] == 1) | (df['Partially vaccinated - Pre-index'] == 1), :].copy()
+    elif severity == 'novacdata':
+        print('Considering novacdata pregnant cohorts')
+        df = df.loc[(df['No evidence - Pre-index'] == 1), :].copy()
+
+    elif severity == 'bminormal':
+        print('Considering bminormal  pregnant cohorts')
+        df = df.loc[(df['BMI: 18.5-<25 normal weight'] == 1), :].copy()
+    elif severity == 'bmioverweight':
+        print('Considering bmioverweight  pregnant cohorts')
+        df = df.loc[(df['BMI: 25-<30 overweight '] == 1), :].copy()
+    elif severity == 'bmiobese':
+        print('Considering bmiobese  pregnant cohorts')
+        df = df.loc[(df['BMI: >=30 obese '] == 1), :].copy()
+
+    elif severity == 'pregwithcond':
+        print('Considering pregnancy with pre-existing conditions cohorts')
+        df = df.loc[(df["DX: Diabetes Type 1"] >= 1) |
+                    (df["DX: Diabetes Type 2"] >= 1) |
+                    (df["DX: Hypertension"] >= 1) |
+                    (df["DX: Asthma"] >= 1) |
+                    (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] == 1) |
+                    (df['bmi'] >= 40), :].copy()
+
+    elif severity == 'pregwithoutcond':
+        print('Considering pregnancy withOUT pre-existing conditions cohorts')
+        df = df.loc[~((df["DX: Diabetes Type 1"] >= 1) |
+                    (df["DX: Diabetes Type 2"] >= 1) |
+                    (df["DX: Hypertension"] >= 1) |
+                    (df["DX: Asthma"] >= 1) |
+                    (df["DX: Severe Obesity  (BMI>=40 kg/m2)"] == 1) |
+                    (df['bmi'] >= 40)), :].copy()
+
     elif severity in ['trimester1', 'trimester2', 'trimester3', 'delivery1week',
                       'trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow',
                       'delivery1week-anyfollow']:
@@ -598,7 +662,6 @@ def feature_process_additional(df):
     df.loc[df['death t2e'] < 0, 'death'] = 0
     df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
 
-
     df['gestational age at delivery'] = np.nan
     df['gestational age of infection'] = np.nan
     df['preterm birth'] = np.nan
@@ -644,6 +707,15 @@ def feature_process_additional(df):
             df.loc[index, 'cci_quan:11+'] = 1
 
     print('feature_process_additional Done! Time used:',
+          time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df
+
+
+def feature_process_4_subgroup(df):
+    print('feature_process_4_subgroup, df.shape', df.shape)
+    start_time = time.time()
+
+    print('feature_process_4_subgroup Done! Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return df
 
@@ -954,9 +1026,9 @@ if __name__ == "__main__":
                                                 ]
     df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    covs_columns = [#'inpatient', 'icu', 'outpatient',
-                    'ventilation', 'criticalcare',
-                    "Type 1 or 2 Diabetes Diagnosis", "autoimmune/immune suppression", "Severe Obesity", ] + \
+    covs_columns = [  #'inpatient', 'icu', 'outpatient',
+                       'ventilation', 'criticalcare',
+                       "Type 1 or 2 Diabetes Diagnosis", "autoimmune/immune suppression", "Severe Obesity", ] + \
                    [x for x in
                     list(df.columns)[
                     df.columns.get_loc('pregage:18-<25 years'):(df.columns.get_loc('No evidence - Post-index'))]
@@ -996,7 +1068,6 @@ if __name__ == "__main__":
     # for i in range(days_sp.shape[1]):
     #     print('add', i, new_day_cols[i])
     #     df_covs[new_day_cols[i]] = days_sp[:, i]
-
 
     # # days between pregnancy and infection,  only make sense when comparison groups are also pregnant
     # days_since_preg = (df['index date'] - df['flag_pregnancy_start_date']).apply(lambda x: x.days)
@@ -1058,7 +1129,7 @@ if __name__ == "__main__":
                              'death', 'death_acute', 'death_postacute',
                              'any_CFR',
                              'hospitalization_acute', 'hospitalization_postacute'] +
-                            CFR_list + pasc_list + addedPASC_list + brainfog_list) # + SMMpasc_list
+                            CFR_list + pasc_list + addedPASC_list + brainfog_list)  # + SMMpasc_list
     causal_results = []
     results_columns_name = []
     # for i, pasc in tqdm(enumerate(pasc_encoding.keys(), start=1), total=len(pasc_encoding)):
@@ -1140,7 +1211,6 @@ if __name__ == "__main__":
             print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:',
                   df_label[(death_t2e == pasc_t2e)].sum(),
                   'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
-
 
         # Select population free of outcome at baseline
         idx = (pasc_baseline < 1)
@@ -1325,7 +1395,7 @@ if __name__ == "__main__":
             df_causal.to_csv(
                 r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3-{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.usedx,
-                    args.kmatch, args.useacute, args.severity,))
+                    args.kmatch, args.useacute, args.severity, ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
@@ -1334,5 +1404,5 @@ if __name__ == "__main__":
     df_causal.to_csv(
         r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3-{}/causal_effects_specific.csv'.format(
             args.usedx,
-            args.kmatch, args.useacute, args.severity,))
+            args.kmatch, args.useacute, args.severity, ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

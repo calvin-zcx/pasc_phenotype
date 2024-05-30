@@ -42,9 +42,7 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg',
-                                               'pospreg-posnonpreg',
-                                               'fullyvac', 'partialvac', 'anyvac', 'novacdata',
-                                               ],
+                                               'pospreg-posnonpreg'],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
@@ -291,6 +289,77 @@ def more_ec_for_cohort_selection(df):
     n = len(df)
     df = df.loc[df['age'] <= 50, :]
     print('After selecting age <= 50, len(df)\n',
+          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+
+    print('Branching building two groups here:')
+    # group1: pregnant and covid+ in pregnancy
+    # pregnant patients only
+    print('Branch-1, building eligible covid infection during pregnancy')
+    print('Before selecting, len(df)', len(df))
+    df1 = df.loc[df['flag_pregnancy'] == 1, :]
+    print('After selecting pregnant females, len(df1)', len(df1))
+
+    # infection during pregnancy period
+    df1 = df1.loc[(df1['index date'] >= df1['flag_pregnancy_start_date'] - datetime.timedelta(days=7)) & (
+            df1['index date'] <= df1['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
+    print('After selecting infection in gestational period, len(df1)', len(df1))
+
+    # group2: non-pregnant group
+    print('Branch-2, building eligible covid infected Non-pregnant female')
+    print('Before selecting, len(df)', len(df))
+    df2 = df.loc[(df['flag_pregnancy'] == 0) & (df['flag_exclusion'] == 0), :].copy()
+    print('After selecting non-pregnant female, len(df2)', len(df2))
+
+    # group3: pregnant but with ectopic/abortions/etc not expected delivery outcome, should be combined with pregnant group?
+    print(
+        'Branch-3, building pregnant but with ectopic/abortions/etc not expected delivery outcome, might be combined with group1')
+    print('Before selecting, len(df)', len(df))
+    df3 = df.loc[(df['flag_exclusion'] == 1), :].copy()
+    print('After selecting error-pregnant female, len(df3)', len(df3))  # 391
+    ## currently not implement flag_pregnancy_start_date for Pregnancy with abortive outcome
+    # df3 = df3.loc[(df3['index date'] >= df3['flag_pregnancy_start_date'] - datetime.timedelta(days=7)) & (
+    #         df3['index date'] <= df3['flag_delivery_date'] + datetime.timedelta(days=7)), :].copy()
+    # print('After selecting infection in gestational period, len(df3)', len(df3))
+
+    print('*' * 100)
+    print('more_ec_for_cohort_selection Done! Time used:',
+          time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df_general, df1, df2
+
+
+def more_ec_for_cohort_selection_v2(df):
+    print('more_ec_for_cohort_selection, df.shape', df.shape)
+    start_time = time.time()
+    print('*' * 100)
+    print('in more_ec_for_cohort_selection, len(df)', len(df))
+    print('Applying more specific/flexible eligibility criteria for cohort selection')
+    N = len(df)
+    # covid positive patients only
+    print('Before selecting covid+, len(df)\n', len(df))
+    n = len(df)
+    df = df.loc[df['covid'] == 1, :]
+    print('After selecting covid+, len(df),\n',
+          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+
+    # at least 6 month follow-up, up to 2023-4-30
+    n = len(df)
+    df = df.loc[(df['index date'] <= datetime.datetime(2022, 10, 31, 0, 0)), :]  # .copy()
+    print('After selecting index date <= 2022-10-31, len(df)\n',
+          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+
+    # covid+, inclusion windows
+    df_general = df.copy()
+
+    # select age 18-50
+    n = len(df)
+    df = df.loc[df['age'] <= 50, :]
+    print('After selecting age <= 50, len(df)\n',
+          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+
+    # select female
+    n = len(df)
+    df = df.loc[df['Female'] == 1, :]  # .copy()
+    print('After selecting female, len(df)\n',
           '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
 
     print('Branching building two groups here:')
@@ -606,91 +675,95 @@ if __name__ == "__main__":
     # %% 1. Load  Data
     print('In cohorts_characterization_build_data...')
 
-    # if args.site == 'all':
-    #     sites = ['ochin',
-    #              'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
-    #              'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
-    #              'ufh', 'emory', 'usf', 'nch', 'miami',
-    #              'pitt', 'osu', 'psu', 'temple', 'michigan',
-    #              'ochsner', 'ucsf', 'lsu',
-    #              'vumc', 'duke', 'musc']
-    #
-    #     df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
-    #     _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
-    #     site_network = {x[0].strip(): x[1].strip() for x in _site_network}
-    #     # sites = ['wcm', 'montefiore', 'mshs', ]
-    #     # sites = ['wcm', ]
-    #     # sites = ['pitt', ]
-    #     print('len(sites), sites:', len(sites), sites)
-    # else:
-    #     sites = [args.site, ]
-    #
-    # df_info_list = []
-    # df_label_list = []
-    # df_covs_list = []
-    # df_outcome_list = []
-    #
-    # df_list = []
-    # for ith, site in tqdm(enumerate(sites), total=len(sites)):
-    #     print('Loading: ', ith, site)
-    #     # matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_mshs + pregnancy tag afterwards
-    #     data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
-    #     # Load Covariates Data
-    #     print('Load data covariates file:', data_file)
-    #     df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
-    #                      parse_dates=['index date', 'dob',
-    #                                   'flag_delivery_date',
-    #                                   'flag_pregnancy_start_date',
-    #                                   'flag_pregnancy_end_date'])
-    #     # because a patid id may occur in multiple sites. patid were site specific
-    #     df['pcornet'] = site_network[site]
-    #     print('df.shape:', df.shape)
-    #     df_list.append(df)
-    #
-    # # combine all sites and select subcohorts
-    # df = pd.concat(df_list, ignore_index=True)
-    #
-    # # print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
-    # print(r"df['site'].value_counts()", df['site'].value_counts())
-    # print('over all: df.shape:', df.shape)
-    # print('Pregnant in all:',
-    #       len(df),
-    #       df['flag_pregnancy'].sum(),
-    #       df['flag_pregnancy'].mean())
-    # print('Pregnant in pos:',
-    #       len(df.loc[df['covid'] == 1, :]),
-    #       df.loc[df['covid'] == 1, 'flag_pregnancy'].sum(),
-    #       df.loc[df['covid'] == 1, 'flag_pregnancy'].mean())
-    # print('Pregnant in neg:',
-    #       len(df.loc[df['covid'] == 0, :]),
-    #       df.loc[df['covid'] == 0, 'flag_pregnancy'].sum(),
-    #       df.loc[df['covid'] == 0, 'flag_pregnancy'].mean())
-    # print('Pregnant excluded special cases in all:',
-    #       len(df),
-    #       df['flag_exclusion'].sum(),
-    #       df['flag_exclusion'].mean())
-    #
-    # # %% 2. Cohort building
-    # df = select_subpopulation(df, args.severity)
+    if args.site == 'all':
+        sites = ['ochin',
+                 'intermountain', 'mcw', 'iowa', 'missouri', 'nebraska', 'utah', 'utsw',
+                 'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',
+                 'ufh', 'emory', 'usf', 'nch', 'miami',
+                 'pitt', 'osu', 'psu', 'temple', 'michigan',
+                 'ochsner', 'ucsf', 'lsu',
+                 'vumc', 'duke', 'musc']
+
+        df_site = pd.read_excel(r'../prerecover/RECOVER Adult Site schemas_edit.xlsx')
+        _site_network = df_site[['Schema name', 'pcornet']].values.tolist()
+        site_network = {x[0].strip(): x[1].strip() for x in _site_network}
+        # sites = ['wcm', 'montefiore', 'mshs', ]
+        # sites = ['wcm', ]
+        # sites = ['pitt', ]
+        print('len(sites), sites:', len(sites), sites)
+    else:
+        sites = [args.site, ]
+
+    df_info_list = []
+    df_label_list = []
+    df_covs_list = []
+    df_outcome_list = []
+
+    df_list = []
+    for ith, site in tqdm(enumerate(sites), total=len(sites)):
+        print('Loading: ', ith, site)
+        # matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_mshs + pregnancy tag afterwards
+        data_file = r'../data/recover/output/pregnancy_data/pregnancy_{}.csv'.format(site)
+        # Load Covariates Data
+        print('Load data covariates file:', data_file)
+        df = pd.read_csv(data_file, dtype={'patid': str, 'site': str, 'zip': str},
+                         parse_dates=['index date', 'dob',
+                                      'flag_delivery_date',
+                                      'flag_pregnancy_start_date',
+                                      'flag_pregnancy_end_date'])
+        # because a patid id may occur in multiple sites. patid were site specific
+        df['pcornet'] = site_network[site]
+        print('df.shape:', df.shape)
+        df_list.append(df)
+
+    # combine all sites and select subcohorts
+    df = pd.concat(df_list, ignore_index=True)
+
+    # print(r"df['site'].value_counts(sort=False)", df['site'].value_counts(sort=False))
+    print(r"df['site'].value_counts()", df['site'].value_counts())
+    print('over all: df.shape:', df.shape)
+    print('Pregnant in all:',
+          len(df),
+          df['flag_pregnancy'].sum(),
+          df['flag_pregnancy'].mean())
+    print('Pregnant in pos:',
+          len(df.loc[df['covid'] == 1, :]),
+          df.loc[df['covid'] == 1, 'flag_pregnancy'].sum(),
+          df.loc[df['covid'] == 1, 'flag_pregnancy'].mean())
+    print('Pregnant in neg:',
+          len(df.loc[df['covid'] == 0, :]),
+          df.loc[df['covid'] == 0, 'flag_pregnancy'].sum(),
+          df.loc[df['covid'] == 0, 'flag_pregnancy'].mean())
+    print('Pregnant excluded special cases in all:',
+          len(df),
+          df['flag_exclusion'].sum(),
+          df['flag_exclusion'].mean())
+
+    # %% 2. Cohort building
+    df = select_subpopulation(df, args.severity)
+
+    # 2024-5-29 for cohort diagram
     # df_general, df1, df2 = more_ec_for_cohort_selection(df)
-    # zz
-    # df1 = feature_process_additional(df1)
-    # df2 = feature_process_additional(df2)
-    #
-    # utils.check_and_mkdir(r'../data/recover/output/pregnancy_output/')
-    # df1.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_pregnant.csv')
-    # df2.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_Non-pregnant.csv')
-    # utils.dump((df1, df2), r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
-    #
-    # print('Severity cohorts:', args.severity,
-    #       'df.shape:', df.shape,
-    #       'df_general.shape:', df_general.shape,
-    #       'df1.shape:', df1.shape,
-    #       'df2.shape:', df2.shape,
-    #       )
-    # print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    #
-    # zz
+    df_general, df1, df2 = more_ec_for_cohort_selection_v2(df)
+
+    zz
+    df1 = feature_process_additional(df1)
+    df2 = feature_process_additional(df2)
+
+    utils.check_and_mkdir(r'../data/recover/output/pregnancy_output/')
+    df1.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_pregnant.csv')
+    df2.to_csv(r'../data/recover/output/pregnancy_output/covidpos_eligible_Non-pregnant.csv')
+    utils.dump((df1, df2), r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
+
+    print('Severity cohorts:', args.severity,
+          'df.shape:', df.shape,
+          'df_general.shape:', df_general.shape,
+          'df1.shape:', df1.shape,
+          'df2.shape:', df2.shape,
+          )
+    print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    zz
 
     df1, df2 = utils.load(r'../data/recover/output/pregnancy_output/_selected_preg_cohort_1-2.pkl')
     print(r"df1['site'].value_counts()", df1['site'].value_counts())

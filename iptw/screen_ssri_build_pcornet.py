@@ -1046,12 +1046,22 @@ if __name__ == "__main__":
             df['ssri-treat--15-15@' + x] = 0
             df['ssri-treat-0-5@' + x] = 0
 
+            df['ssri-treat--30-0@' + x] = 0
+            df['ssri-treat--60-0@' + x] = 0
+            df['ssri-treat--90-0@' + x] = 0
+            df['ssri-treat--120-0@' + x] = 0
+
         for x in snri_names:
             df['snri-treat-0-30@' + x] = 0
             df['snri-treat--30-30@' + x] = 0
             df['snri-treat-0-15@' + x] = 0
             df['snri-treat--15-15@' + x] = 0
             df['snri-treat-0-5@' + x] = 0
+
+            df['snri-treat--30-0@' + x] = 0
+            df['snri-treat--60-0@' + x] = 0
+            df['snri-treat--90-0@' + x] = 0
+            df['snri-treat--120-0@' + x] = 0
 
 
         def _t2eall_to_int_list(t2eall):
@@ -1081,6 +1091,15 @@ if __name__ == "__main__":
                         if -15 <= t2e <= 15:
                             df.loc[index, 'ssri-treat--15-15@' + x] = 1
 
+                        if -30 <= t2e <0:
+                            df.loc[index, 'ssri-treat--30-0@' + x] = 1
+                        if -60 <= t2e <0:
+                            df.loc[index, 'ssri-treat--60-0@' + x] = 1
+                        if -90 <= t2e <0:
+                            df.loc[index, 'ssri-treat--90-0@' + x] = 1
+                        if -120 <= t2e <0:
+                            df.loc[index, 'ssri-treat--120-0@' + x] = 1
+
             for x in snri_names:
                 t2eall = row['treat-t2eall@' + x]
                 if pd.notna(t2eall):
@@ -1098,6 +1117,15 @@ if __name__ == "__main__":
                         if -15 <= t2e <= 15:
                             df.loc[index, 'snri-treat--15-15@' + x] = 1
 
+                        if -30 <= t2e <0:
+                            df.loc[index, 'snri-treat--30-0@' + x] = 1
+                        if -60 <= t2e <0:
+                            df.loc[index, 'snri-treat--60-0@' + x] = 1
+                        if -90 <= t2e <0:
+                            df.loc[index, 'snri-treat--90-0@' + x] = 1
+                        if -120 <= t2e <0:
+                            df.loc[index, 'snri-treat--120-0@' + x] = 1
+
         df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat-0-30-flag'] = (df['ssri-treat-0-30-cnt'] > 0).astype('int')
         df['ssri-treat--30-30-cnt'] = df[['ssri-treat--30-30@' + x for x in ssri_names]].sum(axis=1)
@@ -1108,6 +1136,16 @@ if __name__ == "__main__":
         df['ssri-treat-0-5-flag'] = (df['ssri-treat-0-5-cnt'] > 0).astype('int')
         df['ssri-treat--15-15-cnt'] = df[['ssri-treat--15-15@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat--15-15-flag'] = (df['ssri-treat--15-15-cnt'] > 0).astype('int')
+
+        df['ssri-treat--30-0-cnt'] = df[['ssri-treat--30-0@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--30-0-flag'] = (df['ssri-treat--30-0-cnt'] > 0).astype('int')
+        df['ssri-treat--60-0-cnt'] = df[['ssri-treat--60-0@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--60-0-flag'] = (df['ssri-treat--60-0-cnt'] > 0).astype('int')
+        df['ssri-treat--90-0-cnt'] = df[['ssri-treat--90-0@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--90-0-flag'] = (df['ssri-treat--90-0-cnt'] > 0).astype('int')
+        df['ssri-treat--120-0-cnt'] = df[['ssri-treat--120-0@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--120-0-flag'] = (df['ssri-treat--120-0-cnt'] > 0).astype('int')
+
 
         df['snri-treat-0-30-cnt'] = df[['snri-treat-0-30@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat-0-30-flag'] = (df['snri-treat-0-30-cnt'] > 0).astype('int')
@@ -1120,17 +1158,37 @@ if __name__ == "__main__":
         df['snri-treat--15-15-cnt'] = df[['snri-treat--15-15@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat--15-15-flag'] = (df['snri-treat--15-15-cnt'] > 0).astype('int')
 
+        df['snri-treat--30-0-cnt'] = df[['snri-treat--30-0@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--30-0-flag'] = (df['snri-treat--30-0-cnt'] > 0).astype('int')
+        df['snri-treat--60-0-cnt'] = df[['snri-treat--60-0@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--60-0-flag'] = (df['snri-treat--60-0-cnt'] > 0).astype('int')
+        df['snri-treat--90-0-cnt'] = df[['snri-treat--90-0@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--90-0-flag'] = (df['snri-treat--90-0-cnt'] > 0).astype('int')
+        df['snri-treat--120-0-cnt'] = df[['snri-treat--120-0@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--120-0-flag'] = (df['snri-treat--120-0-cnt'] > 0).astype('int')
+
         print('ssri-treat-0-30-flag', df['ssri-treat-0-30-flag'].sum())
         print('ssri-treat--30-30-flag', df['ssri-treat--30-30-flag'].sum())
         print('ssri-treat-0-15-flag', df['ssri-treat-0-15-flag'].sum())
         print('ssri-treat-0-5-flag', df['ssri-treat-0-5-flag'].sum())
         print('ssri-treat--15-15-flag', df['ssri-treat--15-15-flag'].sum())
 
+        print('ssri-treat--30-0-flag', df['ssri-treat--30-0-flag'].sum())
+        print('ssri-treat--60-0-flag', df['ssri-treat--60-0-flag'].sum())
+        print('ssri-treat--90-0-flag', df['ssri-treat--90-0-flag'].sum())
+        print('ssri-treat--120-0-flag', df['ssri-treat--120-0-flag'].sum())
+
+
         print('snri-treat-0-30-flag', df['snri-treat-0-30-flag'].sum())
         print('snri-treat--30-30-flag', df['snri-treat--30-30-flag'].sum())
         print('snri-treat-0-15-flag', df['snri-treat-0-15-flag'].sum())
         print('snri-treat-0-5-flag', df['snri-treat-0-5-flag'].sum())
         print('snri-treat--15-15-flag', df['snri-treat--15-15-flag'].sum())
+
+        print('snri-treat--30-0-flag', df['snri-treat--30-0-flag'].sum())
+        print('snri-treat--60-0-flag', df['snri-treat--60-0-flag'].sum())
+        print('snri-treat--90-0-flag', df['snri-treat--90-0-flag'].sum())
+        print('snri-treat--120-0-flag', df['snri-treat--120-0-flag'].sum())
 
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 

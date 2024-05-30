@@ -41,6 +41,17 @@ def add_col(df):
             ((df["DX: Diabetes Type 1"] >= 1).astype('int') + (df["DX: Diabetes Type 2"] >= 1).astype(
                 'int')) >= 1).astype('int')
 
+    # add new covs 2024-5-29
+    df['PaxRisk:Diabetes'] = (
+            ((df["DX: Diabetes Type 1"] >= 1).astype('int') +
+             (df["DX: Diabetes Type 2"] >= 1).astype('int') +
+             (df['CCI:Diabetes without complications'] >= 1).astype('int') +
+             (df['CCI:Diabetes with complications'] >= 1).astype('int')
+             ) >= 1
+    ).astype('int')
+    df['PaxRisk:Chronic kidney disease'] = (df["DX: Chronic Kidney Disease"] >= 1).astype('int')
+
+
     selected_cols = [x for x in df.columns if (
             x.startswith('DX:') or
             x.startswith('MEDICATION:') or
@@ -147,6 +158,7 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         # df_pos = df.loc[df["flag_pregnancy"] == 1, :]
         # df_neg = df.loc[df["flag_pregnancy"] == 0, :]
         out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5-4added.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5-4added-20240529.xlsx'
         output_columns = ['All', 'COVID Positive Pregnant', 'COVID Positive Non-Pregnant', 'SMD']
 
     else:
@@ -466,7 +478,10 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         ] + [
               "autoimmune/immune suppression",
               "Severe Obesity",
+                'PaxRisk:Chronic kidney disease',
+        'PaxRisk:Diabetes'
               ]
+
 
     col_names_out = ["Alcohol Abuse", "Anemia", "Arrythmia", "Asthma", "Cancer",
                      "Chronic Kidney Disease", "Chronic Pulmonary Disorders", "Cirrhosis",
@@ -509,6 +524,8 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
         ] + [
               "autoimmune/immune suppression",
               "Severe Obesity",
+        'PaxRisk:Chronic kidney disease',
+        'PaxRisk:Diabetes'
               ]
 
     row_names.extend(col_names_out)
