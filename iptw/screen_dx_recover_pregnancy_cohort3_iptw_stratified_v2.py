@@ -50,9 +50,10 @@ def parse_args():
                                                'inpatienticu-anyfollow', 'outpatient-anyfollow',
                                                'controlInpatient',
                                                'less35', 'above35',
-                                               'bminormal','bmioverweight','bmiobese',
+                                               'bminormal', 'bmioverweight', 'bmiobese',
                                                'pregwithcond',
                                                'pregwithoutcond',
+                                               'fullyvac', 'partialvac', 'anyvac', 'novacdata',
 
                                                ],
                         default='all')
@@ -242,7 +243,7 @@ def select_subpopulation(df, severity, args):
     elif severity == 'less35':
         print('Considering less35 pregnant cohorts')
         df = df.loc[
-             (df['pregage:18-<25 years'] == 1) | (df['pregage:25-<30 years',] == 1) | (df['pregage:30-<35 years'] == 1),
+             (df['pregage:18-<25 years'] == 1) | (df['pregage:25-<30 years'] == 1) | (df['pregage:30-<35 years'] == 1),
              :].copy()
     elif severity == 'above35':
         print('Considering above35 pregnant cohorts')
@@ -810,10 +811,10 @@ if __name__ == "__main__":
                    suffixes=('', '_y'), )
     print('after merge CFR columns, df1.shape:', df1.shape)
 
-    print('df2.shape:', df2.shape)
-    df2 = pd.merge(df2, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
-                   suffixes=('', '_y'), )
-    print('after merge CFR columns, df2.shape:', df2.shape)
+    # print('df2.shape:', df2.shape)
+    # df2 = pd.merge(df2, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
+    #                suffixes=('', '_y'), )
+    # print('after merge CFR columns, df2.shape:', df2.shape)
 
     print('df2_matched.shape:', df2_matched.shape)
     df2_matched = pd.merge(df2_matched, df_add, how='left', left_on=['site', 'patid'], right_on=['site', 'patid'],
