@@ -1074,7 +1074,8 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
         'PaxRisk:HIV infection',
         'PaxRisk:immune',
         'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity', 'pregnant',  # 'PaxRisk:Pregnancy',
+        'PaxRisk:Overweight and obesity',
+        #'pregnant',  # 'PaxRisk:Pregnancy',
         'PaxRisk:Sickle cell disease or thalassemia',
         'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
         'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
@@ -1095,8 +1096,8 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
         'CFR']
 
     subgroup_info_map = {
-        'all': ['all', 'Overall'],
-        'norisk': ['Not at Risk', 'Without Indication'],
+        'all': ['Overall', 'High-Risk Patients'],
+        'norisk': ['Not at Risk', 'Low-Risk Patients'],
         # 'pregnant': ['Pregnant', 'Without Indication'],
         'pregnant': ['Pregnant', 'With Risk Factor'],
         'VA': ['VA-like cohort', 'Sensitivity Analysis'],
@@ -1308,7 +1309,7 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
         groupvar="grouplabel",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Hazard Ratio",  # x-label title
-        xticks=[0.6, 1, 1.5],  # x-ticks to be printed
+        xticks=[0.6, 1, 1.2],  # x-ticks to be printed  if add pregnant, use 1.5
         color_alt_rows=True,
         # flush=True,
         # sort=True,  # sort estimates in ascending order
@@ -1327,8 +1328,8 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
     )
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_subgroup-{}.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_subgroup-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'hr_subgroup-{}-r1.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-{}-r1.pdf'.format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -1907,9 +1908,9 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='short')
 
     # #plot subgroup analysis for primary pasc outcomes
-    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full')
-    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full-nopval')
-    # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='short')
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full')
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full-nopval')
+    df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='short')
 
     # #plot subgroup analysis for different pasc outcomes (secondary, death, etc)
     # pasc_outcome = 'death_postacute'
@@ -1922,6 +1923,6 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='short')
 
     # comparing pasc individual conditions CI with boostrap results
-    df_result = summarize_CI_from_primary_and_boostrap_cifdiff()
+    # df_result = summarize_CI_from_primary_and_boostrap_cifdiff()
 
     print('Done!')
