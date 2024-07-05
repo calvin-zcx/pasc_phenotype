@@ -28,7 +28,7 @@ def parse_args():
     # parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(args.dataset,
                                                                                                  args.dataset)
     args.input_file = r'{}.lab_result_cm'.format(args.dataset)
     args.output_csv_file = r'../data/recover/output/{}/lab_result_select_{}.csv'.format(args.dataset, args.dataset)

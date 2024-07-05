@@ -473,6 +473,9 @@ def shell_lab_dx_med_4covid_202407():
             cmdstr = """python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
 python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
 python pre_med_4covid.py --dataset nyu 2>&1 | tee  log\pre_med_4covid_nyu.txt
+python pre_dx_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_dx_4pregnant_nyu.txt
+python pre_procedure_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_procedure_4pregnant_nyu.txt
+python pre_encounter_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_encounter_4pregnant_nyu.txt
 python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
 python pre_covid_records.py --dataset nyu 2>&1 | tee  log\pre_covid_records_nyu.txt
 python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
@@ -491,7 +494,7 @@ python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
 
     # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
     # of shells
-    divide = 4  #9
+    divide = 6  # 9
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list) / divide))
     ndelta = npersite * siteperdivide

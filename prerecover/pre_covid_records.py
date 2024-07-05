@@ -19,7 +19,7 @@ from misc.utils import clean_date_str
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
-    parser.add_argument('--dataset', default='temple', help='site dataset')
+    parser.add_argument('--dataset', default='utah_pcornet_all', help='site dataset')
     args = parser.parse_args()
 
     args.input_lab = r'../data/recover/output/{}/covid_lab_{}.csv'.format(args.dataset, args.dataset)
@@ -28,12 +28,18 @@ def parse_args():
     args.input_med_admin = r'../data/recover/output/{}/covid_med_admin_{}.csv'.format(args.dataset, args.dataset)
     args.input_dispensing = r'../data/recover/output/{}/covid_dispensing_{}.csv'.format(args.dataset, args.dataset)
 
+    args.preg_diagnosis = r'../data/recover/output/{}/pregnant_diagnosis_{}.csv'.format(args.dataset, args.dataset)
+    args.preg_procedure = r'../data/recover/output/{}/pregnant_procedures_{}.csv'.format(args.dataset, args.dataset)
+    args.preg_encounter = r'../data/recover/output/{}/pregnant_encounter_{}.csv'.format(args.dataset, args.dataset)
+
     args.demo_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
     args.output_file_lab = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
     args.output_file_labdx = r'../data/recover/output/{}/patient_covid_lab-dx_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_labdxmed = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset,
-                                                                                                    args.dataset)
+    args.output_file_labdxmed = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(
+        args.dataset, args.dataset)
+    args.output_file_labdxmedpreg = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(
+        args.dataset, args.dataset)
 
     print('args:', args)
     return args
@@ -681,6 +687,255 @@ def read_covid_dispensing(input_file, id_demo):
     return id_med, df
 
 
+def read_pregnant_diagnosis(input_file, id_demo):
+    """
+    :param data_file: input demographics file with std format
+    :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
+    :return: id_code-list[patid] = [(time, ICD), ...]  sorted by time
+    :Notice:
+        discard rows with NULL admit_date or dx
+
+        1.COL data: e.g:
+        df.shape: (16666999, 19)
+
+        2. WCM data: e.g.
+        df.shape: (47319049, 19)
+
+    """
+    start_time = time.time()
+    print('In read_pregnant_diagnosis, input_file:', input_file)
+    df = pd.read_csv(input_file, dtype=str, parse_dates=['ADMIT_DATE', "DX_DATE"])
+    df.rename(columns=lambda x: x.upper(), inplace=True)
+    print('df.shape', df.shape)
+    print('df.columns', df.columns)
+    print('Unique patid:', len(df['PATID'].unique()))
+    print('Time range of All Covid dx:', df["ADMIT_DATE"].describe(datetime_is_numeric=True))
+
+    id_dx = defaultdict(list)
+    i = 0
+    n_no_dx = 0
+    n_no_date = 0
+    n_discard_row = 0
+    n_recorded_row = 0
+    n_no_dob_row = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=5):
+        i += 1
+        patid = row['PATID']
+        enc_id = row['ENCOUNTERID']
+        enc_type = row['ENC_TYPE']
+        dx = row['DX']
+        dx_type = row["DX_TYPE"]
+        dx_date = row["ADMIT_DATE"]  # dx_date may be null. no imputation. If there is no date, not recording
+
+        if pd.isna(dx):
+            n_no_dx += 1
+        if pd.isna(dx_date):
+            n_no_date += 1
+
+        if pd.isna(dx) or pd.isna(dx_date):
+            n_discard_row += 1
+        else:
+            if patid in id_demo:
+                # updated 2022-10-26.
+                if pd.notna(id_demo[patid][0]):
+                    age = (dx_date - pd.to_datetime(
+                        id_demo[patid][0])).days / 365  # (lab_date - id_demo[patid][0]).days // 365
+                else:
+                    age = np.nan
+            else:
+                age = np.nan
+                n_no_dob_row += 1
+                print(n_no_dob_row, 'No age information for:', index, i, patid, dx_date, )
+
+            # (date, code, result_label,  age,  enc_id, encounter_type, CP-method )
+            id_dx[patid].append((dx_date, dx, 'Pregnant', age, enc_id, enc_type, 'preg-dx'))
+            n_recorded_row += 1
+
+    print('Readlines:', i, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
+          'n_recorded_row:', n_recorded_row, 'n_no_dob_row:', n_no_dob_row, 'len(id_dx):', len(id_dx))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # sort and de-duplicates
+    print('sort dx list in id_dx by time')
+    for patid, dx_list in id_dx.items():
+        # add a set operation to reduce duplicates
+        # sorted returns a sorted list
+        dx_list_sorted = sorted(set(dx_list), key=lambda x: x[0])
+        id_dx[patid] = dx_list_sorted
+    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return id_dx, df
+
+
+def read_pregnant_procedure(input_file, id_demo):
+    """
+    :param data_file: input demographics file with std format
+    :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
+    :return: id_code-list[patid] = [(time, ICD), ...]  sorted by time
+    :Notice:
+        discard rows with NULL admit_date or dx
+
+        1.COL data: e.g:
+        df.shape: (16666999, 19)
+
+        2. WCM data: e.g.
+        df.shape: (47319049, 19)
+
+    """
+    start_time = time.time()
+    print('In read_pregnant_procedure, input_file:', input_file)
+    df = pd.read_csv(input_file, dtype=str, parse_dates=['ADMIT_DATE', "PX_DATE"])
+    df.rename(columns=lambda x: x.upper(), inplace=True)
+    print('df.shape', df.shape)
+    print('df.columns', df.columns)
+    print('Unique patid:', len(df['PATID'].unique()))
+    print('Time range of All Covid dx:', df["ADMIT_DATE"].describe(datetime_is_numeric=True))
+
+    id_dx = defaultdict(list)
+    i = 0
+    n_no_dx = 0
+    n_no_date = 0
+    n_discard_row = 0
+    n_recorded_row = 0
+    n_no_dob_row = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=5):
+        i += 1
+        patid = row['PATID']
+        enc_id = row['ENCOUNTERID']
+        enc_type = row['ENC_TYPE']
+        dx = row['PX']
+        dx_type = row["PX_TYPE"]
+        dx_date = row["PX_DATE"]  #
+        dx_date2 = row["ADMIT_DATE"]  #
+
+        if pd.isna(dx) or (dx == ''):
+            n_no_dx += 1
+
+        if pd.isna(dx_date):
+            if pd.notna(dx_date2):
+                dx_date = dx_date2
+            else:
+                n_no_date += 1
+
+        if pd.isna(dx) or pd.isna(dx_date) or (dx == ''):
+            n_discard_row += 1
+        else:
+            if patid in id_demo:
+                # updated 2022-10-26.
+                if pd.notna(id_demo[patid][0]):
+                    age = (dx_date - pd.to_datetime(
+                        id_demo[patid][0])).days / 365  # (lab_date - id_demo[patid][0]).days // 365
+                else:
+                    age = np.nan
+            else:
+                age = np.nan
+                n_no_dob_row += 1
+                print(n_no_dob_row, 'No age information for:', index, i, patid, dx_date, )
+
+            # (date, code, result_label,  age,  enc_id, encounter_type, CP-method )
+            id_dx[patid].append((dx_date, dx, 'Pregnant', age, enc_id, enc_type, 'preg-px'))
+            n_recorded_row += 1
+
+    print('Readlines:', i, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
+          'n_recorded_row:', n_recorded_row, 'n_no_dob_row:', n_no_dob_row, 'len(id_dx):', len(id_dx))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # sort and de-duplicates
+    print('sort px list in id_px by time')
+    for patid, dx_list in id_dx.items():
+        # add a set operation to reduce duplicates
+        # sorted returns a sorted list
+        dx_list_sorted = sorted(set(dx_list), key=lambda x: x[0])
+        id_dx[patid] = dx_list_sorted
+    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return id_dx, df
+
+
+def read_pregnant_encounter(input_file, id_demo):
+    """
+    :param data_file: input demographics file with std format
+    :param out_file: output id_code-list[patid] = [(time, ICD), ...] pickle sorted by time
+    :return: id_code-list[patid] = [(time, ICD), ...]  sorted by time
+    :Notice:
+        discard rows with NULL admit_date or dx
+
+        1.COL data: e.g:
+        df.shape: (16666999, 19)
+
+        2. WCM data: e.g.
+        df.shape: (47319049, 19)
+
+    """
+    start_time = time.time()
+    print('In read_pregnant_encounter, input_file:', input_file)
+    df = pd.read_csv(input_file, dtype=str, parse_dates=['ADMIT_DATE', "DISCHARGE_DATE"])
+    df.rename(columns=lambda x: x.upper(), inplace=True)
+    print('df.shape', df.shape)
+    print('df.columns', df.columns)
+    print('Unique patid:', len(df['PATID'].unique()))
+    print('Time range of All Covid dx:', df["ADMIT_DATE"].describe(datetime_is_numeric=True))
+
+    id_dx = defaultdict(list)
+    i = 0
+    n_no_dx = 0
+    n_no_date = 0
+    n_discard_row = 0
+    n_recorded_row = 0
+    n_no_dob_row = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df), mininterval=5):
+        i += 1
+        patid = row['PATID']
+        enc_id = row['ENCOUNTERID']
+        enc_type = row['ENC_TYPE']
+        dx = row['DRG'] # drg code from encounter table for pregnant cp
+        dx_type = row["DRG_TYPE"]
+        dx_date = row["ADMIT_DATE"]  #
+        dx_date2 = row["DISCHARGE_DATE"]  #
+
+        if pd.isna(dx):
+            n_no_dx += 1
+        if pd.isna(dx_date):
+            n_no_date += 1
+
+        if pd.isna(dx) or pd.isna(dx_date):
+            n_discard_row += 1
+        else:
+            if patid in id_demo:
+                # updated 2022-10-26.
+                if pd.notna(id_demo[patid][0]):
+                    age = (dx_date - pd.to_datetime(
+                        id_demo[patid][0])).days / 365  # (lab_date - id_demo[patid][0]).days // 365
+                else:
+                    age = np.nan
+            else:
+                age = np.nan
+                n_no_dob_row += 1
+                print(n_no_dob_row, 'No age information for:', index, i, patid, dx_date, )
+
+            # (date, code, result_label,  age,  enc_id, encounter_type, CP-method )
+            id_dx[patid].append((dx_date, dx, 'Pregnant', age, enc_id, enc_type, 'preg-encdrg'))
+            n_recorded_row += 1
+
+    print('Readlines:', i, 'n_no_dx:', n_no_dx, 'n_no_date:', n_no_date, 'n_discard_row:', n_discard_row,
+          'n_recorded_row:', n_recorded_row, 'n_no_dob_row:', n_no_dob_row, 'len(id_dx):', len(id_dx))
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    # sort and de-duplicates
+    print('sort encounter list in id_dx by time')
+    for patid, dx_list in id_dx.items():
+        # add a set operation to reduce duplicates
+        # sorted returns a sorted list
+        dx_list_sorted = sorted(set(dx_list), key=lambda x: x[0])
+        id_dx[patid] = dx_list_sorted
+    print('Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    return id_dx, df
+
+
 def data_analysis(id_lab):
     cnt = []
     for k, v in id_lab.items():
@@ -755,10 +1010,24 @@ if __name__ == '__main__':
     print('Combine prescripting and med_admi and dispensing')
     id_med = combine_2_id_records(id_med1, id_meddispensing)
 
-    print('Combine labdx and med')
-    id_labdxmed = combine_2_id_records(id_labdx, id_med, output_file=args.output_file_labdxmed)
+    # 2024-7-5 add pregnant portions to include more
+    # pregnant related records/labels/potential new patients
+    id_pregdx, df_pregdx = read_pregnant_diagnosis(args.preg_diagnosis, id_demo)
+    id_pregpx, df_pregpx = read_pregnant_procedure(args.preg_procedure, id_demo)
+    id_pregenc, df_pregenc = read_pregnant_encounter(args.preg_encounter, id_demo)
 
+    print('combine preg from dx, px and enc-drg')
+    id_preg1 = combine_2_id_records(id_pregdx, id_pregpx)
+    id_preg = combine_2_id_records(id_preg1, id_pregenc)
+
+    print('Combine labdx and med, and dump to:', args.output_file_labdxmed)
+    id_labdxmed = combine_2_id_records(id_labdx, id_med, output_file=args.output_file_labdxmed)
+    print('Combine labdxmed and preg, and dump to:', args.output_file_labdxmedpreg)
+    id_labdxmedpreg = combine_2_id_records(id_labdxmed, id_preg, output_file=args.output_file_labdxmedpreg)
     print('len(id_lab)', len(id_lab), 'len(id_labdx)', len(id_labdx), 'len(id_labdxmed)', len(id_labdxmed))
+    print('len(id_pregdx)', len(id_pregdx), 'len(id_pregpx)', len(id_pregpx),
+          'len(id_pregenc)', len(id_pregenc), 'len(id_preg)', len(id_preg),
+          'len(id_labdxmedpreg)', len(id_labdxmedpreg))
 
     # print('PCR+Antigen+Antibody-test #total:', len(df.loc[:, 'PATID'].unique()))
     # print('PCR/Antigen-test #total:', len(df_pcr.loc[:, 'PATID'].unique()))

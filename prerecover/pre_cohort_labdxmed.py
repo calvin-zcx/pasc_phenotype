@@ -29,7 +29,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess cohorts')
     parser.add_argument('--dataset', default='wcm', help='site dataset')
     parser.add_argument('--positive_only', action='store_true')
-    parser.add_argument('--cohorttype', choices=['lab-dx-med', 'lab-dx', 'lab'], default='lab-dx-med')
+    parser.add_argument('--cohorttype', choices=['lab-dx-med-preg', 'lab-dx-med', 'lab-dx', 'lab'], default='lab-dx-med')
 
     args = parser.parse_args()
 
@@ -652,6 +652,8 @@ def _clean_covid_pcr_label(x):
             x = 'NEGATIVE'
         elif x.startswith(('DETECTED', 'POSITIVE', 'POS')):
             x = 'POSITIVE'
+        elif x.startswith(('Pregnant', 'PREGNANT')):
+            x = 'PREGNANT'
         else:
             x = 'NI'
     else:
@@ -674,6 +676,10 @@ def integrate_data_and_apply_eligibility(args):
     n_with_ni = 0
     for i, (pid, row) in enumerate(id_lab.items()):
         # v_lables = [x[2].upper() for x in row]
+        # how to deal with pregnant information?
+        # group-1: positive,
+        # group-2: negative, and
+        # group-3: additional added from pregnant-related information w/o covid-related information
         v_lables = [_clean_covid_pcr_label(x[2]) for x in row]
 
         if 'POSITIVE' in v_lables:

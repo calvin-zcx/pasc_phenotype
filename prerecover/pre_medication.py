@@ -27,8 +27,8 @@ def parse_args():
     parser.add_argument('--dataset', default='nebraska', help='site dataset')
     args = parser.parse_args()
 
-    # use all selected patients by lab-dx-med, selected covid-CP specific cohorts later in pre_cohort_**.py
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(args.dataset, args.dataset)
+    # use all selected patients by lab-dx-med-preg, selected covid-CP specific cohorts later in pre_cohort_**.py
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(args.dataset, args.dataset)
     # args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
 
     args.med_admin_file = r'{}.med_admin'.format(args.dataset)
