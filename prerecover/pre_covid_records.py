@@ -38,6 +38,8 @@ def parse_args():
     args.output_file_labdx = r'../data/recover/output/{}/patient_covid_lab-dx_{}.pkl'.format(args.dataset, args.dataset)
     args.output_file_labdxmed = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(
         args.dataset, args.dataset)
+
+    args.output_file_pregnant = r'../data/recover/output/{}/patient_pregnant_{}.pkl'.format(args.dataset, args.dataset)
     args.output_file_labdxmedpreg = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(
         args.dataset, args.dataset)
 
@@ -1018,10 +1020,11 @@ if __name__ == '__main__':
 
     print('combine preg from dx, px and enc-drg')
     id_preg1 = combine_2_id_records(id_pregdx, id_pregpx)
-    id_preg = combine_2_id_records(id_preg1, id_pregenc)
+    id_preg = combine_2_id_records(id_preg1, id_pregenc, output_file=args.output_file_pregnant)
 
     print('Combine labdx and med, and dump to:', args.output_file_labdxmed)
     id_labdxmed = combine_2_id_records(id_labdx, id_med, output_file=args.output_file_labdxmed)
+
     print('Combine labdxmed and preg, and dump to:', args.output_file_labdxmedpreg)
     id_labdxmedpreg = combine_2_id_records(id_labdxmed, id_preg, output_file=args.output_file_labdxmedpreg)
     print('len(id_lab)', len(id_lab), 'len(id_labdx)', len(id_labdx), 'len(id_labdxmed)', len(id_labdxmed))
