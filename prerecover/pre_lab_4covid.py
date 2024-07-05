@@ -17,7 +17,7 @@ from misc.utilsql import *
 
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess-count pos and negative from lab file in all recover sites')
-    parser.add_argument('--dataset', default='temple',
+    parser.add_argument('--dataset', default='wcm_pcornet_all',
                         help='all recover sites')
     parser.add_argument('--debug', action='store_true')
     args = parser.parse_args()
