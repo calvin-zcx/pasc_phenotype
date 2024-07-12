@@ -64,7 +64,7 @@ def parse_args():
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=1)  # 5
+    parser.add_argument('--negative_ratio', type=int, default=5)  # 5
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
 
@@ -435,13 +435,18 @@ if __name__ == "__main__":
 
     df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1), :]
     df1['treated'] = 1
+    df1['SSRI'] = 1
     n1 = len(df1)
     print('n1', n1)
+
+    print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
     df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
+    df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0) & (df['PaxRisk:Mental health conditions'] > 0), :]
     print('n0', len(df0))
     df0 = df0.sample(n=int(args.negative_ratio * n1), replace=False, random_state=args.random_seed)
     print('after sample, n0', len(df0))
     df0['treated'] = 0
+    df0['SSRI'] = 0
 
     df = pd.concat([df1, df0], ignore_index=True)
 
