@@ -984,6 +984,8 @@ if __name__ == "__main__":
         print('dump done!')
     else:
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
+        #
         # # if args.cohorttype == 'lab-dx':
         # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
         #
@@ -999,13 +1001,18 @@ if __name__ == "__main__":
         # df = add_col(df)
         # print('add cols, then df.shape:', df.shape)
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats.csv'
+        #
         # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
         # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
         # df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
-
+        #
         # zz
+        #
         # load after general EC and explore. Even general EC will be revised later
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats-addGeneralEC.csv'
+        in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC.csv'
+
         df = pd.read_csv(in_mediate_file,
                          dtype={'patid': str, 'site': str, 'zip': str},
                          parse_dates=['index date', 'dob',
