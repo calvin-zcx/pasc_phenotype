@@ -853,12 +853,13 @@ if __name__ == '__main__':
     drugname = 'citalopram'
     drugname = 'sertraline'
     drugname = 'paroxetine'
+    drugname = 'vilazodone'  # missed 1 ssri, add 2024-7-12
 
     # snri list
-    drugname = 'desvenlafaxine'
-    drugname = 'duloxetine'
-    drugname = 'levomilnacipran'
-    drugname = 'milnacipran'
-    drugname = 'venlafaxine'
+    # drugname = 'desvenlafaxine'
+    # drugname = 'duloxetine'
+    # drugname = 'levomilnacipran'
+    # drugname = 'milnacipran'
+    # drugname = 'venlafaxine'
     df = generate_drug_list_by_name(drugname=drugname)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

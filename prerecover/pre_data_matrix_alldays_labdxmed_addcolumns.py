@@ -1559,10 +1559,10 @@ def build_feature_matrix(args):
 
             # 2024-4-3 ssri, snri drug updated codes
             ssritreat_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline',
-                                'paroxetine',
+                                'paroxetine', 'vilazodone',
                                 'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
-            ssritreat_flag = np.zeros((n, 11), dtype='int16')
-            ssritreat_t2e = np.zeros((n, 11), dtype='int16')  # date of earliest prescriptions
+            ssritreat_flag = np.zeros((n, 12), dtype='int16')
+            ssritreat_t2e = np.zeros((n, 12), dtype='int16')  # date of earliest prescriptions
             ssritreat_t2eall = []
             ssritreat_column_names = (
                     ['treat-flag@' + x for x in ssritreat_names] +

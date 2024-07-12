@@ -1798,5 +1798,6 @@ if __name__ == '__main__':
     #icd_addedPaxRisk, addedPaxRisk_index, dict_df_addedPaxRisk = ICD_to_addedPaxRisk()
 
     # 18 ssri snri drugs map (2024-4-2)
+    # updated 2024-7-12 by adding vilazodone
     ssrisnrimed_code = build_ssri_snri_drug_map()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
