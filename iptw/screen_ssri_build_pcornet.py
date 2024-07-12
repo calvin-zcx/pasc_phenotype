@@ -1196,9 +1196,9 @@ if __name__ == "__main__":
         df['snri-treat--120-0-cnt'] = df[['snri-treat--120-0@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat--120-0-flag'] = (df['snri-treat--120-0-cnt'] > 0).astype('int')
 
-        df['snri-treat--120-120-cnt'] = df[['snri-treat--120-120@' + x for x in ssri_names]].sum(axis=1)
+        df['snri-treat--120-120-cnt'] = df[['snri-treat--120-120@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat--120-120-flag'] = (df['snri-treat--120-120-cnt'] > 0).astype('int')
-        df['snri-treat--180-180-cnt'] = df[['snri-treat--180-180@' + x for x in ssri_names]].sum(axis=1)
+        df['snri-treat--180-180-cnt'] = df[['snri-treat--180-180@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat--180-180-flag'] = (df['snri-treat--180-180-cnt'] > 0).astype('int')
 
         print('ssri-treat-0-30-flag', df['ssri-treat-0-30-flag'].sum())
