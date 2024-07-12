@@ -1046,7 +1046,7 @@ if __name__ == "__main__":
         #
         # define user and non-users
         # ssri lacks vilazodone, add later
-        ssri_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline', 'paroxetine', ]
+        ssri_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline', 'paroxetine', 'vilazodone']
         snri_names = ['desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
 
         for x in ssri_names:
