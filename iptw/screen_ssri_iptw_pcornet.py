@@ -432,8 +432,10 @@ if __name__ == "__main__":
     # define treated and untreated here
     treadcol = 'ssri-treat-0-15-flag'
     print('exposre strategy', treadcol)
-    appendix = '0-15-allmental'
-    df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    appendix = '120-0-allmental' #'0-15-allmental'
+    # df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+
     df1['treated'] = 1
     df1['SSRI'] = 1
     n1 = len(df1)
@@ -443,7 +445,7 @@ if __name__ == "__main__":
     # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (df['PaxRisk:Mental health conditions'] > 0), :]
     print('n0', len(df0))
-    df0 = df0.sample(n=int(args.negative_ratio * n1), replace=False, random_state=args.random_seed)
+    df0 = df0.sample(n=min(len(df0), int(args.negative_ratio * n1)), replace=False, random_state=args.random_seed)
     print('after sample, n0', len(df0))
     df0['treated'] = 0
     df0['SSRI'] = 0
