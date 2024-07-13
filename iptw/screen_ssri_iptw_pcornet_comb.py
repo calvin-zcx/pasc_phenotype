@@ -430,20 +430,38 @@ if __name__ == "__main__":
     print('df.shape:', df.shape)
 
     # define treated and untreated here
+    # treadcol = 'ssri-treat-0-15-flag'
+    # print('exposre strategy', treadcol)
+    # appendix = 'ssripax-0-15-allmental'
+    # df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) &
+    #             (df['treat-flag@paxlovid'] > 0) & (df['treat-t2e@paxlovid'] <= 5), :]
+    # df1['treated'] = 1
+    # df1['SSRI'] = 1
+    # n1 = len(df1)
+    # print('n1', n1)
+    #
+    # print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
+    # # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
+    # df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) &
+    #              (df['PaxRisk:Mental health conditions'] > 0) & (df['treat-flag@paxlovid'] == 0), :]
+
     treadcol = 'ssri-treat-0-15-flag'
     print('exposre strategy', treadcol)
-    appendix = 'ssripax-0-15-allmental'
-    df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) &
-                (df['treat-flag@paxlovid'] > 0) & (df['treat-t2e@paxlovid'] <= 5), :]
+    appendix = 'vs-snri-0-15-allmental'
+    df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1)
+                 & (df['PaxRisk:Mental health conditions'] > 0)
+                 & (df['snri-treat--180-180-flag'] == 0), :]
     df1['treated'] = 1
     df1['SSRI'] = 1
     n1 = len(df1)
     print('n1', n1)
 
-    print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
+    print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
     # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
-    df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) &
-                 (df['PaxRisk:Mental health conditions'] > 0) & (df['treat-flag@paxlovid'] == 0), :]
+    df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1)
+                 & (df['PaxRisk:Mental health conditions'] > 0)
+                 & (df['ssri-treat--180-180-flag'] == 0), :]
+
     print('n0', len(df0))
     df0 = df0.sample(n=int(args.negative_ratio * n1), replace=False, random_state=args.random_seed)
     print('after sample, n0', len(df0))
