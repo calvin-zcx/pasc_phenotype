@@ -8,7 +8,7 @@ import pickle
 import numpy as np
 import argparse
 from misc import utils
-from eligibility_setting import _is_in_baseline, _is_in_followup, INDEX_AGE_MINIMUM, INDEX_AGE_MINIMUM_18
+from eligibility_setting_test import _is_in_baseline, _is_in_followup, INDEX_AGE_MINIMUM, INDEX_AGE_MINIMUM_18
 import functools
 from collections import Counter
 
