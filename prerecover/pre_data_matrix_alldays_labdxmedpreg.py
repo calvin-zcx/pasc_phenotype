@@ -1943,7 +1943,7 @@ def build_feature_matrix(args):
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
-                                    np.array(covid_list).reshape(-1, 1).astype(bool), #np.array(covid_list).reshape(-1, 1).astype(int),
+                                    np.array(covid_list).reshape(-1, 1), #np.array(covid_list).reshape(-1, 1).astype(int),
                                     np.asarray(preg_or_tup_list).reshape(-1, 1),
                                     np.asarray(indexdate_list).reshape(-1, 1),
                                     np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
