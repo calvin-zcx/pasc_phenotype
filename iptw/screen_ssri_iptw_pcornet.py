@@ -68,7 +68,24 @@ def parse_args():
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
 
-    # parser.add_argument('--covtype', choices=['n3c', 'pcornet'], default='pcornet')
+    parser.add_argument('--exptype',
+                        choices=['ssri-base-180-0',
+                                 'ssri-base-120-0',
+                                 'ssri-acute0-15',
+                                 'ssri-acute0-7',
+
+                                 'snri-base-180-0',
+                                 'snri-base-120-0',
+                                 'snri-acute0-15',
+                                 'snri-acute0-7',
+
+                                 'ssriVSsnri-base-180-0',
+                                 'ssriVSsnri-base-120-0',
+                                 'ssriVSsnri-acute0-15',
+                                 'ssriVSsnri-acute0-7',
+
+                                 ], default='base180-0')
+
     # parser.add_argument('--cohorttype',
     #                     choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],
     #                     default='atrisk')
@@ -409,6 +426,8 @@ if __name__ == "__main__":
     # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all-V2.txt
     # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx-V2.txt
 
+    # python screen_ssri_iptw_pcornet.py  --exptype ssri-base-180-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-180-0.txt
+
     start_time = time.time()
     args = parse_args()
 
@@ -430,23 +449,88 @@ if __name__ == "__main__":
     print('df.shape:', df.shape)
 
     # define treated and untreated here
-    treadcol = 'ssri-treat-0-15-flag'
-    print('exposre strategy', treadcol)
-    appendix = '120-0-allmental' #'0-15-allmental'
-    # df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-    df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
 
+    print('exposre strategy, args.exptype:', args.exptype)
+    print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
+
+    if args.exptype == 'ssri-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'ssri-base-120-0':
+        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'ssri-acute0-7':
+        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'ssri-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'snri-base-180-0':
+        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'snri-base-120-0':
+        df1 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'snri-acute0-7':
+        df1 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'snri-acute0-15':
+        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0), :]
+
+    elif args.exptype == 'ssriVSsnri-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+
+    elif args.exptype == 'ssriVSsnri-base-120-0':
+        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+
+    elif args.exptype == 'ssriVSsnri-acute0-7':
+        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+
+    elif args.exptype == 'ssriVSsnri-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+
+
+
+    # treadcol = 'ssri-treat-0-15-flag'
+    # print('exposre strategy', treadcol)
+    # appendix = '120-0-allmental' #'0-15-allmental'
+    # # df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    # df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    #
+    # df1['treated'] = 1
+    # df1['SSRI'] = 1
+    # n1 = len(df1)
+    # print('n1', n1)
+    #
+    # print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
+    # # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
+    # df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    # print('n0', len(df0))
+    # df0 = df0.sample(n=min(len(df0), int(args.negative_ratio * n1)), replace=False, random_state=args.random_seed)
+    # print('after sample, n0', len(df0))
+    # df0['treated'] = 0
+    # df0['SSRI'] = 0
+
+
+    n1 = len(df1)
+    print('n1', n1, 'n0', len(df0))
+    df0 = df0.sample(n=min(len(df0), int(args.negative_ratio * n1)), replace=False, random_state=args.random_seed)
+    print('after sample, n0', len(df0), 'with ratio:', args.negative_ratio, args.negative_ratio * n1)
     df1['treated'] = 1
     df1['SSRI'] = 1
-    n1 = len(df1)
-    print('n1', n1)
-
-    print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
-    # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
-    df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (df['PaxRisk:Mental health conditions'] > 0), :]
-    print('n0', len(df0))
-    df0 = df0.sample(n=min(len(df0), int(args.negative_ratio * n1)), replace=False, random_state=args.random_seed)
-    print('after sample, n0', len(df0))
     df0['treated'] = 0
     df0['SSRI'] = 0
 
@@ -859,7 +943,7 @@ if __name__ == "__main__":
         out_file_balance = r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-            appendix,  # '-select' if args.selectpasc else '',
+            args.exptype,  # '-select' if args.selectpasc else '',
             i, _clean_name_(pasc))
 
         utils.check_and_mkdir(out_file_balance)
@@ -870,7 +954,7 @@ if __name__ == "__main__":
             '../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                appendix,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc)))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
@@ -879,13 +963,13 @@ if __name__ == "__main__":
             '../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                appendix,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc)))
         try:
             figout = r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                appendix,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc))
             print('Dump ', figout)
 
@@ -909,7 +993,7 @@ if __name__ == "__main__":
             fig_outfile=r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                appendix,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc)),
             title=pasc,
             legends={'case': 'SSRI', 'control': 'Control'})
@@ -963,7 +1047,7 @@ if __name__ == "__main__":
                     r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                        appendix,  # '-select' if args.selectpasc else '',
+                        args.exptype,  # '-select' if args.selectpasc else '',
                         i))
         except:
             print('Error in ', i, pasc)
@@ -973,7 +1057,7 @@ if __name__ == "__main__":
                 r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                    appendix,  # '-select' if args.selectpasc else '',
+                    args.exptype,  # '-select' if args.selectpasc else '',
                 ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -984,6 +1068,6 @@ if __name__ == "__main__":
         r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-            appendix,  # '-select' if args.selectpasc else '',
+            args.exptype,  # '-select' if args.selectpasc else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
