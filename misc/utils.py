@@ -18,6 +18,7 @@ import csv
 import functools
 import requests
 import json
+import pgzip
 
 print = functools.partial(print, flush=True)
 # import joblib
@@ -170,6 +171,9 @@ def _clean_path_name_(s, maxlen=50):
 
 def check_and_mkdir(path):
     dirname = os.path.dirname(path)
+    if dirname == '':
+        dirname = '.'
+
     if not os.path.exists(dirname):
         os.makedirs(dirname)
         print('make dir:', dirname)
@@ -198,6 +202,24 @@ def split_dict_data_and_dump(infile, chunk=4):
 
     print('Split dict into pieces done!')
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
+def dump_compressed(data, filename, num_cpu=8, blocksize=2 * 10 ** 8):
+    start_time = time.time()
+    print('Try to dump data to {}'.format(filename), ', compressed by gzip')
+    check_and_mkdir(filename)
+    if not filename.lower().endswith(('.gz', '.gzip')):
+        filename += '.gz'
+
+    try:
+        with pgzip.open(filename, "wb", thread=num_cpu, blocksize=blocksize) as fw:
+            pickle.dump(data, fw)
+
+        print('Dump Done by dump_compressed! Saved as:', filename)
+        print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    except Exception as e:
+        print(e)
 
 
 def dump(data, filename, chunk=2, chunk_must=False):
@@ -254,29 +276,40 @@ def dump(data, filename, chunk=2, chunk_must=False):
         #     print('Dump Done by pickle.dump! Saved as:', filename+'-part2')
 
 
-def load(filename, chunk=2):
+def load(filename, chunk=2, num_cpu=8):
     start_time = time.time()
     print('Try to load data file', filename)
-    try:
-        with open(filename, 'rb') as f:
-            data = pickle.load(f)
-        print('Load done by pickle.load! len(data):', len(data),
+
+    # 2024-7-25 add compressed pickle support, using pgzip
+    if filename.lower().endswith(('.gz', '.gzip')):
+        print('Detect .gz file, using gzip to depress and load...')
+
+        with pgzip.open(filename, "rb", thread=num_cpu) as fr:
+            data = pickle.load(fr)
+        print('Load done by pgzip.open >> pickle.load! len(data):', len(data),
               'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
         return data
-    except Exception as e:
-        print(e)
-        print('Try to load {} chunks:'.format(chunk))
-        with open(filename + '-part1', 'rb') as f:
-            data = pickle.load(f)
-            print('load {}-part1 done, len:{}'.format(filename, len(data)))
-        for i in range(1, chunk):
-            with open(filename + '-part{}'.format(i + 1), 'rb') as f:
-                data_part = pickle.load(f)
-                print('load {}-part{} done, len:{}'.format(filename, i + 1, len(data_part)))
-                data.update(data_part)
-        print('Load and combine data done, len(data):', len(data),
-              'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-        return data
+    else:
+        try:
+            with open(filename, 'rb') as f:
+                data = pickle.load(f)
+            print('Load done by pickle.load! len(data):', len(data),
+                  'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+            return data
+        except Exception as e:
+            print(e)
+            print('Try to load {} chunks:'.format(chunk))
+            with open(filename + '-part1', 'rb') as f:
+                data = pickle.load(f)
+                print('load {}-part1 done, len:{}'.format(filename, len(data)))
+            for i in range(1, chunk):
+                with open(filename + '-part{}'.format(i + 1), 'rb') as f:
+                    data_part = pickle.load(f)
+                    print('load {}-part{} done, len:{}'.format(filename, i + 1, len(data_part)))
+                    data.update(data_part)
+            print('Load and combine data done, len(data):', len(data),
+                  'Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+            return data
 
 
 # def sas_2_csv(infile, outfile):
