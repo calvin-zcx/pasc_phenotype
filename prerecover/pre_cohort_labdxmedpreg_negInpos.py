@@ -58,7 +58,7 @@ def parse_args():
     # changed 2022-04-08 V2, add vital information in V2
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(
     # args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posnegpreg-negInpos_{}{}.pkl'.format(
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posnegpreg-negInpos_{}{}.pkl.gz'.format(
         args.dataset,
         args.dataset,
         '' if args.cohorttype == 'lab-dx-med-preg' else '_' + args.cohorttype)
@@ -845,9 +845,10 @@ def integrate_data_and_apply_eligibility(args):
     cohort_info.to_csv(args.output_file_cohortinfo)
     print(cohort_info)
 
-    utils.dump(data, args.output_file_covid, chunk=4)
-    # utils.dump(data2, args.output_file_covid2, chunk=4)
+    # utils.dump(data, args.output_file_covid, chunk=4)
+    # # utils.dump(data2, args.output_file_covid2, chunk=4)
 
+    utils.dump_compressed(data, args.output_file_covid)
 
     # dump final selected
     # data = _local_build_data(id_indexrecord)
