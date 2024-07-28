@@ -825,12 +825,28 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff(show='full'):
 
 
 def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
-    indir = r'../data/recover/output/results/SSRI-overall-all-120-0-allmental/'
+    # indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+
+    # indir = r'../data/recover/output/results/SSRI-overall-all-120-0-allmental/'
     # indir = r'../data/recover/output/results/SSRI-overall-all-0-15-allmental/'
     # indir = r'../data/recover/output/results/SSRI-overall-all-vs-snri-30-30-allmental/'
-    indir = r'../data/recover/output/results/SSRI-overall-all-ssripax-0-15-allmental/'
+    # indir = r'../data/recover/output/results/SSRI-overall-all-ssripax-0-15-allmental/'
 
-    # indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base-180-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base-120-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-acute0-7/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-acute0-15/'
+
+    indir = r'../data/recover/output/results/SSRI-overall-all-snri-base-180-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-snri-base-120-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-snri-acute0-7/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-snri-acute0-15/'
+
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssriVSsnri-base-180-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssriVSsnri-base-120-0/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssriVSsnri-acute0-7/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssriVSsnri-acute0-15/'
+
 
     output_dir = indir + r'figure/'
 

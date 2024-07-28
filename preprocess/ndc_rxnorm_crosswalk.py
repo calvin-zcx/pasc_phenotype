@@ -855,6 +855,7 @@ if __name__ == '__main__':
     drugname = 'paroxetine'
     drugname = 'vilazodone'  # missed 1 ssri, add 2024-7-12
 
+    drugname = 'wellbutrin'
     # snri list
     # drugname = 'desvenlafaxine'
     # drugname = 'duloxetine'
