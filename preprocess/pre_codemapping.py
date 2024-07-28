@@ -1698,7 +1698,9 @@ def ICD_to_addedPaxRisk():
 
 def build_ssri_snri_drug_map():
     med_code = {}
-    fname_dict = {'ssri_drug_list.xlsx': 'ssri', 'snri_drug_list.xlsx': 'snri', }
+    fname_dict = {'ssri_drug_list.xlsx': 'ssri',
+                  'snri_drug_list.xlsx': 'snri',
+                  'other_mental_drug_list.xlsx': 'other'}
 
     for fname, drugtype in fname_dict.items():
         df_all = pd.read_excel(r'../data/mapping/' + fname, sheet_name=None, dtype=str)
