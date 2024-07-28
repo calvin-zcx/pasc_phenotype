@@ -1753,12 +1753,13 @@ def build_feature_matrix(args):
                                        ['smm-t2eall@' + x for x in SMMpasc_encoding.keys()]
 
             #
-            # 2024-4-3 and 2024-7-23 ssri, snri drug updated codes
+            # 2024-4-3 and 2024-7-23 ssri, snri drug updated codes, 2024-7-28 add 'wellbutrin' others
             ssritreat_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline',
                                'paroxetine', 'vilazodone',
-                               'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
-            ssritreat_flag = np.zeros((n, 12), dtype='int16')
-            ssritreat_t2e = np.zeros((n, 12), dtype='int16')  # date of earliest prescriptions
+                               'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine',
+                               'wellbutrin']
+            ssritreat_flag = np.zeros((n, 13), dtype='int16')
+            ssritreat_t2e = np.zeros((n, 13), dtype='int16')  # date of earliest prescriptions
             ssritreat_t2eall = []
             ssritreat_column_names = (
                     ['treat-flag@' + x for x in ssritreat_names] +

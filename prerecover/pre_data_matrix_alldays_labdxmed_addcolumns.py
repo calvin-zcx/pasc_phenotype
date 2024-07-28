@@ -1428,14 +1428,15 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         # change to v2 on 2024-7-12
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v2.csv'.format(
+        # v3 on 2024-7-28 adding other mental drugs
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v3.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
         #     args.dataset, args.cohorts, args.dataset)
         #
         # output_dx_info = r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(
-        #     args.dataset, args.cohorts, args.dataset)
+        #     args.dataset, args.cohorts, args.dataset)c
 
         print('Load cohorts pickle data file:', input_file)
         id_data = utils.load(input_file, chunk=4)
@@ -1558,11 +1559,13 @@ def build_feature_matrix(args):
             #                        ['negctrldx-t2eall@' + x for x in negctrlpasc_encoding.keys()]
 
             # 2024-4-3 ssri, snri drug updated codes
+            # 2024-7-28 add more
             ssritreat_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline',
                                 'paroxetine', 'vilazodone',
-                                'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
-            ssritreat_flag = np.zeros((n, 12), dtype='int16')
-            ssritreat_t2e = np.zeros((n, 12), dtype='int16')  # date of earliest prescriptions
+                                'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine',
+                                'wellbutrin']
+            ssritreat_flag = np.zeros((n, 13), dtype='int16')
+            ssritreat_t2e = np.zeros((n, 13), dtype='int16')  # date of earliest prescriptions
             ssritreat_t2eall = []
             ssritreat_column_names = (
                     ['treat-flag@' + x for x in ssritreat_names] +

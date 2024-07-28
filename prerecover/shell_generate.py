@@ -262,7 +262,7 @@ def shell_lab_dx_med_4covid_addcolumnes():
 # """.replace('nyu', site)
 #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-negctrl.txt
 # """.replace('nyu', site)
-            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v2.txt
+            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
@@ -533,11 +533,11 @@ if __name__ == '__main__':
 
     # shell_lab_dx_med_4covid()
     # shell_lab_dx_med_4covid_aux()
-    # shell_lab_dx_med_4covid_addcolumnes()
+    shell_lab_dx_med_4covid_addcolumnes()
     # shell_iptw_subgroup()
     # shell_build_lab_dx_4covid_sensitivity()
     # shell_lab_dx_med_4covidAndPregnant()
 
-    shell_lab_dx_med_4covid_202407()
+    # shell_lab_dx_med_4covid_202407()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
