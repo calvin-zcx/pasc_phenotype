@@ -84,6 +84,9 @@ def parse_args():
                                  'ssriVSsnri-acute0-15',
                                  'ssriVSsnri-acute0-7',
 
+                                 'ssriVSwellbutrin-base-180-0',
+                                 'ssriVSwellbutrin-acute0-15',
+
                                  ], default='base180-0')
 
     # parser.add_argument('--cohorttype',
@@ -438,7 +441,7 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # add matched cohorts later
-    in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC-withexposure.csv'
+    in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC-withexposure.csv'
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -521,6 +524,20 @@ if __name__ == "__main__":
         df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'SNRI-0-15'
+    elif args.exptype == 'ssriVSwellbutrin-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['other-treat--180-180@wellbutrin'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0'
+        ctrl_label = 'Wellbutrin-180-0'
+    elif args.exptype == 'ssriVSwellbutrin-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['other-treat--180-180@wellbutrin'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15'
+        ctrl_label = 'Wellbutrin-0-15'
 
 
     # treadcol = 'ssri-treat-0-15-flag'
