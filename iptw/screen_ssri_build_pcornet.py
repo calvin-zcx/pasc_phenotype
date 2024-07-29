@@ -941,7 +941,10 @@ if __name__ == "__main__":
             # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI.csv'.format(
             #     site, site)
             # 2024-7-12 add missing 1 ssri
-            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v2.csv'.format(
+            # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v2.csv'.format(
+            #     site, site)
+            # 2024-7-29 add weillbutrin
+            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v3.csv'.format(
                 site, site)
             print('add columns from:', data_file_add)
             df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
@@ -975,11 +978,11 @@ if __name__ == "__main__":
         df = df.loc[df['covid'] == 1, :].copy()
 
         print('covid+: df.shape:', df.shape)
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
         # if args.cohorttype == 'lab-dx':
         #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
         print('dump to', out_data_file)
-        df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v2.csv')
+        df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v3.csv')
         df.to_csv(out_data_file)
         print('dump done!')
     else:
