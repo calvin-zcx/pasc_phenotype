@@ -988,6 +988,7 @@ if __name__ == "__main__":
     else:
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
         #
         # # if args.cohorttype == 'lab-dx':
         # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
@@ -1005,6 +1006,7 @@ if __name__ == "__main__":
         # print('add cols, then df.shape:', df.shape)
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats.csv'
         #
         # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
         # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
@@ -1015,6 +1017,7 @@ if __name__ == "__main__":
         # load after general EC and explore. Even general EC will be revised later
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats-addGeneralEC.csv'
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC.csv'
+        in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC.csv'
 
         df = pd.read_csv(in_mediate_file,
                          dtype={'patid': str, 'site': str, 'zip': str},
@@ -1051,6 +1054,7 @@ if __name__ == "__main__":
         # ssri lacks vilazodone, add later
         ssri_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline', 'paroxetine', 'vilazodone']
         snri_names = ['desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine']
+        other_names = ['wellbutrin']
 
         for x in ssri_names:
             df['ssri-treat-0-30@' + x] = 0
@@ -1085,6 +1089,23 @@ if __name__ == "__main__":
 
             df['snri-treat--120-120@' + x] = 0
             df['snri-treat--180-180@' + x] = 0
+
+        for x in other_names:
+            df['other-treat-0-30@' + x] = 0
+            df['other-treat--30-30@' + x] = 0
+            df['other-treat-0-15@' + x] = 0
+            df['other-treat--15-15@' + x] = 0
+            df['other-treat-0-5@' + x] = 0
+            df['other-treat-0-7@' + x] = 0
+
+            df['other-treat--30-0@' + x] = 0
+            df['other-treat--60-0@' + x] = 0
+            df['other-treat--90-0@' + x] = 0
+            df['other-treat--120-0@' + x] = 0
+            df['other-treat--180-0@' + x] = 0
+
+            df['other-treat--120-120@' + x] = 0
+            df['other-treat--180-180@' + x] = 0
 
         def _t2eall_to_int_list(t2eall):
             t2eall = t2eall.strip(';').split(';')
@@ -1166,6 +1187,42 @@ if __name__ == "__main__":
                             df.loc[index, 'snri-treat--120-120@' + x] = 1
                         if -180 <= t2e <180:
                             df.loc[index, 'snri-treat--180-180@' + x] = 1
+
+            for x in other_names:
+                t2eall = row['treat-t2eall@' + x]
+                if pd.notna(t2eall):
+                    t2eall = _t2eall_to_int_list(t2eall)
+                    for t2e in t2eall:
+                        if 0 <= t2e <= 30:
+                            df.loc[index, 'other-treat-0-30@' + x] = 1
+                        if -30 <= t2e <= 30:
+                            df.loc[index, 'other-treat--30-30@' + x] = 1
+
+                        if 0 <= t2e <= 15:
+                            df.loc[index, 'other-treat-0-15@' + x] = 1
+                        if 0 <= t2e <= 5:
+                            df.loc[index, 'other-treat-0-5@' + x] = 1
+                        if 0 <= t2e <= 7:
+                            df.loc[index, 'other-treat-0-7@' + x] = 1
+                        if -15 <= t2e <= 15:
+                            df.loc[index, 'other-treat--15-15@' + x] = 1
+
+                        if -30 <= t2e <0:
+                            df.loc[index, 'other-treat--30-0@' + x] = 1
+                        if -60 <= t2e <0:
+                            df.loc[index, 'other-treat--60-0@' + x] = 1
+                        if -90 <= t2e <0:
+                            df.loc[index, 'other-treat--90-0@' + x] = 1
+                        if -120 <= t2e <0:
+                            df.loc[index, 'other-treat--120-0@' + x] = 1
+                        if -180 <= t2e <0:
+                            df.loc[index, 'other-treat--180-0@' + x] = 1
+
+                        if -120 <= t2e <120:
+                            df.loc[index, 'other-treat--120-120@' + x] = 1
+                        if -180 <= t2e <180:
+                            df.loc[index, 'other-treat--180-180@' + x] = 1
+
 
         df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat-0-30-flag'] = (df['ssri-treat-0-30-cnt'] > 0).astype('int')
@@ -1258,6 +1315,10 @@ if __name__ == "__main__":
 
         print('snri-treat--120-120-flag', df['snri-treat--120-120-flag'].sum())
         print('snri-treat--180-180-flag', df['snri-treat--180-180-flag'].sum())
+
+        print('other-treat-0-15@wellbutrin', df['other-treat-0-15@wellbutrin'].sum())
+        print('other-treat--180-0@wellbutrin', df['other-treat--180-0@wellbutrin'].sum())
+        print('other-treat--180-180@wellbutrin', df['other-treat--180-180@wellbutrin'].sum())
 
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
