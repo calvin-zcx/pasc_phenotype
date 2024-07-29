@@ -84,6 +84,8 @@ def parse_args():
                                  'ssriVSsnri-acute0-15',
                                  'ssriVSsnri-acute0-7',
 
+                                 'wellbutrin-base-180-0',
+                                 'wellbutrin-acute0-15'
                                  'ssriVSwellbutrin-base-180-0',
                                  'ssriVSwellbutrin-acute0-15',
 
@@ -538,6 +540,19 @@ if __name__ == "__main__":
                     df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'Wellbutrin-0-15'
+    elif args.exptype == 'wellbutrin-base-180-0':
+        df1 = df.loc[(df['other-treat--180-0@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0)& (df['other-treat--180-180@wellbutrin'] == 0), :]
+        case_label = 'Wellbutrin-180-0'
+        ctrl_label = 'Nouser'
+
+    elif args.exptype == 'wellbutrin-acute0-15':
+        df1 = df.loc[(df['other-treat-0-15@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@wellbutrin'] == 0), :]
+        case_label = 'Wellbutrin-0-15'
+        ctrl_label = 'Nouser'
 
 
     # treadcol = 'ssri-treat-0-15-flag'
