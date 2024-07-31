@@ -28,3 +28,4 @@ python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'bm
 python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'bmiobese' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-bmiobese.txt
 
 
+python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'omicronbroad' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-omicronbroad.txt

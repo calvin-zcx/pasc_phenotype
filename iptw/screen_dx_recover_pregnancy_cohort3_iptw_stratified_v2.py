@@ -42,7 +42,7 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'alpha', 'delta', 'omicron', 'omicronafter', 'preg-pos-neg',
-                                               'pospreg-posnonpreg',
+                                               'pospreg-posnonpreg', 'omicronbroad',
                                                'followupanydx',
                                                'trimester1', 'trimester2', 'trimester3', 'delivery1week',
                                                'trimester1-anyfollow', 'trimester2-anyfollow', 'trimester3-anyfollow',
@@ -237,6 +237,9 @@ def select_subpopulation(df, severity, args):
     elif severity == 'omicronafter':
         print('Considering patients in omicronafter wave, April-1-2022 to end of inclusion windows')
         df = df.loc[(df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+    elif severity == 'omicronbroad':
+        print('Considering patients in omicron wave, >= December-1-2021 ')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'followupanydx':
         print('Considering patients with any follow up dx')
         df = df.loc[(df['followupanydx'] == 1), :].copy()
