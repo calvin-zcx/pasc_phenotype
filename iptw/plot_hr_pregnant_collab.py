@@ -1363,7 +1363,7 @@ def plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2(show='full')
     # df = pd.concat([df_1, df_2], ignore_index=True, sort=False)
 
     pasc_simname_organ = load_pasc_info()
-    pasc_simname_organ['CP PASC-N3C'] = ('Long COVID (N3C)', 'Any PASC (N3C)')
+    pasc_simname_organ['CP PASC-N3C'] = ('PASC (N3C)', 'Any PASC (N3C)')
     pasc_simname_organ['U09/B94-N3C'] = ('U099/B948 (N3C)', 'General (N3C)')
     pasc_simname_organ['Cognitive-N3C'] = ('Cognitive (N3C)', 'cognitive-fatigue-respiratory (N3C)')
     pasc_simname_organ['Fatigue-N3C'] = ('Fatigue (N3C)', 'cognitive-fatigue-respiratory (N3C)')
@@ -1423,7 +1423,7 @@ def plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2(show='full')
         #'cognitive-fatigue-respiratory (N3C)',
     ]
     organ_mapname = {
-        'Any PASC': 'Primary-PCORNet',
+        'Any PASC': 'PCORNet-Primary',
         'Death': 'Overall',
         'Hospitalization': 'Overall',
         'Diseases of the Nervous System': 'Neurologic',
@@ -1442,7 +1442,7 @@ def plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2(show='full')
         'Any CFR': 'Secondary-CFR',
         'cognitive-fatigue-respiratory': 'CFR Individuals',
 
-        'Any PASC (N3C)': 'Primary-N3C',
+        'Any PASC (N3C)': 'N3C-Primary',
         'General (N3C)':'Secondary-General (N3C)',
         'Any CFR (N3C)': 'Secondary-CFR (N3C)',
         'cognitive-fatigue-respiratory (N3C)': 'CFR Individuals (N3C)',
@@ -1599,8 +1599,8 @@ def plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2(show='full')
     )
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}-updatedResultsV2-reorderV2.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}-updatedResultsV2-reorderV2.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'hr_moretabs-{}-updatedResultsV2-reorderV2-namerevise.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-updatedResultsV2-reorderV2-namerevise.pdf'.format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -2867,7 +2867,7 @@ def plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full', outcome='an
         'less35', 'above35',
         'trimester1', 'trimester2', 'trimester3',
         #'delivery1week',
-        '1stwave', 'alpha', 'delta', 'omicron', 'omicronafter',
+        '1stwave', 'alpha', 'delta', 'omicron', 'omicronafter', #'omicronbroad',
         'bminormal', 'bmioverweight', 'bmiobese',
         'pregwithcond', 'pregwithoutcond',
         'fullyvac', #'partialvac',
@@ -2889,6 +2889,7 @@ def plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full', outcome='an
         'delta': 'delta',
         'omicron': 'omicron',
         'omicronafter': 'omicron-post',
+        'omicronbroad': 'omicron',
         'bminormal': 'normalBMI',
         'bmioverweight': 'overweightBMI',
         'bmiobese': 'obeseBMI',
@@ -2900,7 +2901,7 @@ def plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full', outcome='an
         'novacdata': 'novacc',
     }
 
-    outcome_map = {'any_pasc': 'Long COVID',
+    outcome_map = {'any_pasc': 'PASC', #'Long COVID',
                    'PASC-General': 'U099/B948',
                    'any_CFR': 'Any CFR'}
 
@@ -2923,8 +2924,9 @@ def plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full', outcome='an
         '1stwave': ['1st wave', 'Infection Time'],
         'alpha': ['Alpha', 'Infection Time'],
         'delta': ['Delta', 'Infection Time'],
-        'omicron': ['Omicron', 'Infection Time'],
-        'omicronafter': ['Post-Omicron', 'Infection Time'],
+        'omicron': ['Omicron-BA.1&BA.2', 'Infection Time'],
+        'omicronafter': ['Omicron-other subs', 'Infection Time'],
+        'omicronbroad': ['Omicron', 'Infection Time'],
         'bminormal': ['Normal', 'BMI'],
         'bmioverweight': ['Overweight', 'BMI'],
         'bmiobese': ['Obese', 'BMI'],
@@ -3151,8 +3153,8 @@ def plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full', outcome='an
     )
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_subgroup-withN3C-{}-{}.png'.format(show, outcome), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_subgroup-withN3C-{}-{}.pdf'.format(show, outcome), bbox_inches='tight',
+    plt.savefig(output_dir + 'hr_subgroup-withN3C-{}-{}-namerevise.png'.format(show, outcome), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-withN3C-{}-{}-namerevise.pdf'.format(show, outcome), bbox_inches='tight',
                 transparent=True)
 
     print('Done')
@@ -3475,6 +3477,7 @@ if __name__ == '__main__':
     # plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2(show='full-nopval')
     # plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorder(show='full-nopval')
 
+    ### 2024/7/31 revise name, June results for primary
     # plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2(show='full-nopval')
     # plot_forest_for_dx_organ_preg_lib2_with_N3C_updatedV2_reorderV2_sensitivity(show='full-nopval')
 
@@ -3500,9 +3503,9 @@ if __name__ == '__main__':
     # subgroup aggregated results, with n3c results together
     # 2024-6-26
     # plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full-nopval', outcome='any_pasc')
-    # plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full-nopval', outcome='PASC-General')
-    # plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full-nopval', outcome='any_CFR')
+    plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full-nopval', outcome='PASC-General')
+    plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C(show='full-nopval', outcome='any_CFR')
 
     # 2024-07-30
-    plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C_v2(show='full-nopval', outcome='any_pasc')
+    # plot_forest_for_preg_subgroup_lib2_cifdiff_with_N3C_v2(show='full-nopval', outcome='any_pasc')
     print('Done!')
