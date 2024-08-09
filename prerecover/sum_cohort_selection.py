@@ -95,7 +95,7 @@ def before_20231207():
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
 
-if __name__ == '__main__':
+def before_20240809():
     start_time = time.time()
 
     df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
@@ -117,6 +117,43 @@ if __name__ == '__main__':
     dfec_sum = reduce(lambda x, y: x.add(y, fill_value=0), vdfec)
     print(dfec_sum)
     dfec_sum.to_csv(r'output/cohorts_covid_posOnly18base_all_info-20231207.csv')
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('len(site_list)', len(site_list), site_list)
+
+    # 2024-8-9 for pulmonary
+    site_list = ['mcw', 'nebraska', 'utah', 'utsw',  # GPC cohort
+             'wcm', 'montefiore', 'mshs', 'columbia', 'nyu',  # insight
+             'ufh', 'nch',  # OneFlorida cohort
+             'pitt', 'psu', 'temple', 'michigan',  # PaTH cohort
+             'ochsner', 'ucsf', 'lsu',  # REACHnet cohort
+             'vumc',  # Star cohort #
+             'duke', 'emory', 'iowa', 'musc', 'osu', 'missouri'
+             ]  # 25 sites,
+
+    # remove     'intermountain', 'ochin', 'miami', 'usf'
+    vdfec = []
+    for i, site in tqdm(enumerate(site_list)):
+        print(i, site)
+        try:
+            df_ec = pd.read_csv(r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}_info.csv'.format(site, site))
+            df_ec['n_site'] = 1
+            vdfec.append(df_ec)
+
+        except Exception as e:
+            print('[ERROR:]', e, file=sys.stderr)
+            continue
+    dfec_sum = reduce(lambda x, y: x.add(y, fill_value=0), vdfec)
+    print(dfec_sum)
+    dfec_sum.to_csv(r'output/cohorts_covid_posOnly18base_all_info-20240809-pulmomnary25.csv')
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
