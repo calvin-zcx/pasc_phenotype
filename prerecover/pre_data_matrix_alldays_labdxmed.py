@@ -1402,7 +1402,7 @@ def build_feature_matrix(args):
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
      fips_ziplist, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping()
-    zz
+
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     # if args.dataset == 'ALL':
