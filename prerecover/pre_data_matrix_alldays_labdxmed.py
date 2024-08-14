@@ -31,7 +31,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['covid_posneg18base', 'covid_posOnly18base'],
                         default='covid_posOnly18base', help='cohorts')
-    parser.add_argument('--dataset', default='ucsf', help='site dataset')
+    parser.add_argument('--dataset', default='columbia', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
@@ -1402,7 +1402,7 @@ def build_feature_matrix(args):
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
      fips_ziplist, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding) = _load_mapping()
-
+    zz
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
     # if args.dataset == 'ALL':
