@@ -1078,7 +1078,6 @@ if __name__ == '__main__':
     # df, df_tab = table1_cohorts_characterization_analyse(pivot='covid')
     # df, df_tab = table1_cohorts_characterization_analyse(pivot='pregnancy')
     # df, df_tab = table1_cohorts_characterization_analyse(pivot='pregnancymatched')
-    # df, df_tab = table1_cohorts_characterization_analyse(pivot='pregnancymatchediptw')
 
     df, df_tab = table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw')
 
