@@ -1088,6 +1088,8 @@ if __name__ == "__main__":
         covs_array = df_covs.loc[pos_neg_selected, :]
         pasc_flag = pasc_flag[pos_neg_selected]
         pasc_t2e = pasc_t2e[pos_neg_selected]
+
+        df_raw = df.loc[pos_neg_selected, :]
         print('pasc_t2e.describe():', pasc_t2e.describe())
         # pasc_t2e[pasc_t2e <= 30] = 30
 
@@ -1125,6 +1127,10 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
+        utils.dump((covs_array, df_raw, covid_label, iptw),
+                   r'../data/recover/output/pregnancy_output/anypasc_for_table1.pkl')
+        zz
+        #
         out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-results.csv'.format(
             args.usedx,
             args.kmatch,
