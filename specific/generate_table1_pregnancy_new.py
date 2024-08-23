@@ -603,6 +603,41 @@ def table1_cohorts_characterization_analyse(pivot='covid'):
     print('Dump done ', df_out)
     return df, df_out
 
+def weighted_quantile(values, quantiles, sample_weight=None,
+                      values_sorted=False, old_style=False):
+    """ Very close to numpy.percentile, but supports weights.
+    NOTE: quantiles should be in [0, 1]!
+    :param values: numpy.array with data
+    :param quantiles: array-like with many quantiles needed
+    :param sample_weight: array-like of the same length as `array`
+    :param values_sorted: bool, if True, then will avoid sorting of
+        initial array
+    :param old_style: if True, will correct output to be consistent
+        with numpy.percentile.
+    :return: numpy.array with computed quantiles.
+    """
+    values = np.array(values)
+    quantiles = np.array(quantiles)
+    if sample_weight is None:
+        sample_weight = np.ones(len(values))
+    sample_weight = np.array(sample_weight)
+    assert np.all(quantiles >= 0) and np.all(quantiles <= 1), \
+        'quantiles should be in [0, 1]'
+
+    if not values_sorted:
+        sorter = np.argsort(values)
+        values = values[sorter]
+        sample_weight = sample_weight[sorter]
+
+    weighted_quantiles = np.cumsum(sample_weight) - 0.5 * sample_weight
+    if old_style:
+        # To be convenient with numpy.percentile
+        weighted_quantiles -= weighted_quantiles[0]
+        weighted_quantiles /= weighted_quantiles[-1]
+    else:
+        weighted_quantiles /= np.sum(sample_weight)
+    return np.interp(quantiles, weighted_quantiles, values)
+
 
 def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     # severity in 'hospitalized', 'ventilation', None
@@ -627,65 +662,90 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                               or (x == 'death date')
                               ] + list(df.dtypes[df.dtypes == 'object'].index))
         df['n'] = 1
-        df = iptw.reshape(-1, 1) * df
+        print('times weight here? or later')
+        df['iptw'] = iptw
+        # df = iptw.reshape(-1, 1) * df
+
         df_pos = df.loc[label == 1, :]
         df_neg = df.loc[label == 0, :]
         # df = pd.concat([df_pos, df_neg], ignore_index=True)
         #
         pcol = 'flag_pregnancy'
-        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5-4added-20240816-matchedctrliptw.xlsx'
+        out_file = r'pos_preg_femalenot_covaraite_summary_PCORnet29Dec5-4added-20240816-matchedctrliptw_revised.xlsx'
         output_columns = ['All', 'COVID Positive Pregnant', 'COVID Positive Non-Pregnant', 'SMD']
 
     else:
         raise ValueError
 
     # print('Load data covariates file:', data_file, df.shape, pcol)
+    def weighted_sum(x, w):
+        x_w = np.multiply(x, w)
+        s = np.sum(x_w, axis=0)
+        return s
 
-    def _n_str(n):
-        return '{:,.1f}'.format(n)
+    def weighted_mean(x, w):
+        # input: x: n * d, w: n * 1
+        # output: d
+        x_w = np.multiply(x, w)
+        n_w = w.sum()
+        m_w = np.sum(x_w, axis=0) / n_w
+        return m_w
 
-    def _quantile_str(x):
-        v = x.quantile([0.25, 0.5, 0.75]).to_list()
+    def weighted_var(x, w):
+        # x: n * d, w: n * 1
+        m_w = weighted_mean(x, w)  # d
+        nw, nsw = w.sum(), (w ** 2).sum()
+        var = np.multiply((x - m_w) ** 2, w)  # n*d
+        var = np.sum(var, axis=0) * (nw / (nw ** 2 - nsw))
+        return var
+
+    def _n_str(w):
+        return '{:,.1f}'.format(w)
+
+    # weighted quantile, not defined.
+    def _quantile_str(x, w):
+        v = weighted_quantile(x, [0.25, 0.5, 0.75], w)
+        # v = x.quantile([0.25, 0.5, 0.75]).to_list()
         return '{:.0f} ({:.0f}—{:.0f})'.format(v[1], v[0], v[2])
 
-    def _percentage_str(x):
-        n = x.sum()
-        per = x.mean()
+    def _percentage_str(x, w):
+        n = weighted_sum(x, w)
+        per = weighted_mean(x, w)
         return '{:,.1f} ({:.1f})'.format(n, per * 100)
 
-    def _mean_std_str(x):
-        m = x.mean()
-        s = x.std()
+    def _mean_std_str(x, w):
+        m = weighted_mean(x, w)
+        s = weighted_var(x, w)
         return '{:,.1f} ({:.1f})'.format(m, s)
 
-    def _smd(x1, x2):
-        m1 = x1.mean()
-        m2 = x2.mean()
-        v1 = x1.var()
-        v2 = x2.var()
-
-        VAR = np.sqrt((v1 + v2) / 2)
+    def _smd(x1, w1, x2, w2):
+        # Weighted SMD
+        covariates_treated_w_mu, covariates_treated_w_var = weighted_mean(x1, w1), weighted_var(x1, w1)
+        covariates_controlled_w_mu, covariates_controlled_w_var = weighted_mean(x2, w2), weighted_var(x2, w2)
+        VAR_w = np.sqrt((covariates_treated_w_var + covariates_controlled_w_var) / 2)
         smd = np.divide(
-            m1 - m2,
-            VAR, out=np.zeros_like(m1), where=VAR != 0)
+            covariates_treated_w_mu - covariates_controlled_w_mu,
+            VAR_w, out=np.zeros_like(covariates_treated_w_mu), where=VAR_w != 0)
+        # m1 = x1.mean()
+        # m2 = x2.mean()
+        # v1 = x1.var()
+        # v2 = x2.var()
+        #
+        # VAR = np.sqrt((v1 + v2) / 2)
+        # smd = np.divide(
+        #     m1 - m2,
+        #     VAR, out=np.zeros_like(m1), where=VAR != 0)
         return smd
 
     row_names = []
     records = []
 
     # N
-    # row_names.append('N')
-    # records.append([
-    #     _n_str(len(df)),
-    #     _n_str(len(df_pos)),
-    #     _n_str(len(df_neg)),
-    #     np.nan
-    # ])
     row_names.append('N')
     records.append([
-        _n_str(df['n'].sum()),
-        _n_str(df_pos['n'].sum()),
-        _n_str(df_neg['n'].sum()),
+        _n_str(df['iptw'].sum()),
+        _n_str(df_pos['iptw'].sum()),
+        _n_str(df_neg['iptw'].sum()),
         np.nan
     ])
 
@@ -694,24 +754,27 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     col_names = ['outpatient', 'inpatient', 'icu', 'inpatienticu']
     row_names.extend(col_names)
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # age
     row_names.append('Median age (IQR) — yr')
     records.append([
-        _quantile_str(df['age']),
-        _quantile_str(df_pos['age']),
-        _quantile_str(df_neg['age']),
-        _smd(df_pos['age'], df_neg['age'])
+        _quantile_str(df['age'], df['iptw']),
+        _quantile_str(df_pos['age'], df_pos['iptw']),
+        _quantile_str(df_neg['age'], df_neg['iptw']),
+        _smd(df_pos['age'], df_pos['iptw'], df_neg['age'], df_neg['iptw'])
     ])
 
     row_names.append('Mean age (std) — yr')
     records.append([
-        _mean_std_str(df['age']),
-        _mean_std_str(df_pos['age']),
-        _mean_std_str(df_neg['age']),
-        _smd(df_pos['age'], df_neg['age'])
+        _mean_std_str(df['age'], df['iptw']),
+        _mean_std_str(df_pos['age'], df_pos['iptw']),
+        _mean_std_str(df_neg['age'], df_neg['iptw']),
+        _smd(df_pos['age'], df_pos['iptw'], df_neg['age'], df_neg['iptw'])
     ])
 
 
@@ -729,8 +792,15 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
 
     row_names.extend(age_col)
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in age_col])
+    #
+    # records.extend(
+    #     [[_percentage_str(df[c], df['iptw']), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in age_col])
 
     # gestational age
     row_names.append('Gestational age (IQR) — weeks')
@@ -738,15 +808,18 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     ges_age_col = ['gestational age at delivery', 'gestational age of infection']
     row_names.extend(ges_age_col)
     records.extend(
-        [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_quantile_str(df[c], df['iptw']),
+          _quantile_str(df_pos[c], df_pos['iptw']),
+          _quantile_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in ges_age_col])
 
     row_names.append('preterm birth percentage')
     records.append([
-        _percentage_str(df['preterm birth']),
-        _percentage_str(df_pos['preterm birth']),
-        _percentage_str(df_neg['preterm birth']),
-        _smd(df_pos['preterm birth'], df_neg['preterm birth'])
+        _percentage_str(df['preterm birth'], df['iptw']),
+        _percentage_str(df_pos['preterm birth'], df_pos['iptw']),
+        _percentage_str(df_neg['preterm birth'], df_neg['iptw']),
+        _smd(df_pos['preterm birth'], df_pos['iptw'], df_neg['preterm birth'], df_neg['iptw'])
     ])
 
     # Delivery Mode
@@ -762,8 +835,14 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                     'Vaginal/Spontaneous', 'Cesarean/Operative', 'Others/Unknown', ]
 
     row_names.extend(mode_col_out)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in mode_col])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in mode_col])
 
     # Sex
@@ -773,8 +852,14 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     sex_col = ['Female', 'Male']
 
     row_names.extend(sex_col)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in sex_col])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in sex_col])
 
     # Race
@@ -782,8 +867,14 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     records.append([])
     col_names = ['Asian', 'Black or African American', 'White', 'Other', 'Missing']
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # Ethnic group
@@ -791,34 +882,40 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     records.append([])
     col_names = ['Hispanic: Yes', 'Hispanic: No', 'Hispanic: Other/Missing']
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # ADI
     row_names.append('Median area deprivation index (IQR) — rank')
     records.append([
-        _quantile_str(df['adi']),
-        _quantile_str(df_pos['adi']),
-        _quantile_str(df_neg['adi']),
-        _smd(df_pos['adi'], df_neg['adi'])
+        _quantile_str(df['adi'], df['iptw']),
+        _quantile_str(df_pos['adi'], df_pos['iptw']),
+        _quantile_str(df_neg['adi'], df_neg['iptw']),
+        _smd(df_pos['adi'], df_pos['iptw'], df_neg['adi'], df_neg['iptw'])
     ])
 
     row_names.append('Mean area deprivation index (std) — rank')
     records.append([
-        _mean_std_str(df['adi']),
-        _mean_std_str(df_pos['adi']),
-        _mean_std_str(df_neg['adi']),
-        _smd(df_pos['adi'], df_neg['adi'])
+        _mean_std_str(df['adi'], df['iptw']),
+        _mean_std_str(df_pos['adi'], df_pos['iptw']),
+        _mean_std_str(df_neg['adi'], df_neg['iptw']),
+        _smd(df_pos['adi'], df_pos['iptw'], df_neg['adi'], df_neg['iptw'])
     ])
 
     # follow-up
     row_names.append('Follow-up days (IQR)')
     records.append([
-        _quantile_str(df['maxfollowup']),
-        _quantile_str(df_pos['maxfollowup']),
-        _quantile_str(df_neg['maxfollowup']),
-        _smd(df_pos['maxfollowup'], df_neg['maxfollowup'])
+        _quantile_str(df['maxfollowup'], df['iptw']),
+        _quantile_str(df_pos['maxfollowup'], df_pos['iptw']),
+        _quantile_str(df_neg['maxfollowup'], df_neg['iptw']),
+        _smd(df_pos['maxfollowup'], df_pos['iptw'], df_neg['maxfollowup'], df_neg['iptw'])
     ])
 
     # utilization
@@ -830,9 +927,16 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                      'No. of Emergency Visits', 'No. of Other Visits']
 
     row_names.extend(col_names_out)
+    # records.extend(
+    #     [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in
+    #      col_names])
+
     records.extend(
-        [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])] for c in
-         col_names])
+        [[_quantile_str(df[c], df['iptw']),
+          _quantile_str(df_pos[c], df_pos['iptw']),
+          _quantile_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
+         for c in col_names])
 
     # part2
     col_names = ['inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
@@ -863,39 +967,59 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                      'Outpatient 0', 'Outpatient 1-2', 'Outpatient >=3',
                      'Emergency 0', 'Emergency 1-2', 'Emergency >=3']
     row_names.extend(col_names_out)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # BMI
-    row_names.append('BMI (IQR)')
-    records.append([
-        _quantile_str(df['bmi']),
-        _quantile_str(df_pos['bmi']),
-        _quantile_str(df_neg['bmi']),
-        _smd(df_pos['bmi'], df_neg['bmi'])
-    ])
+    # row_names.append('BMI (IQR)')
+    # records.append([
+    #     _quantile_str(df['bmi']),
+    #     _quantile_str(df_pos['bmi']),
+    #     _quantile_str(df_neg['bmi']),
+    #     _smd(df_pos['bmi'], df_neg['bmi'])
+    # ])
 
     row_names.append('Mean BMI (std) — rank')
     records.append([
-        _mean_std_str(df['bmi']),
-        _mean_std_str(df_pos['bmi']),
-        _mean_std_str(df_neg['bmi']),
-        _smd(df_pos['bmi'], df_neg['bmi'])
+        _mean_std_str(df['bmi'], df['iptw']),
+        _mean_std_str(df_pos['bmi'], df_pos['iptw']),
+        _mean_std_str(df_neg['bmi'], df_neg['iptw']),
+        _smd(df_pos['bmi'], df_pos['iptw'], df_neg['bmi'], df_neg['iptw'])
     ])
+
 
     col_names = ['BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight',
                  'BMI: 25-<30 overweight ', 'BMI: >=30 obese ', 'BMI: missing']
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
+
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # Smoking:
     col_names = ['Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing']
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # Vaccine:
@@ -907,8 +1031,14 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                  'No evidence - Post-index',
                  ]
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     # time of index period
@@ -921,10 +1051,15 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
                  '03/22-06/22', '07/22-10/22', '11/22-02/23',
                  '03/23-06/23', '07/23-10/23', '11/23-02/24', ]
     row_names.extend(col_names)
+    # records.extend(
+    #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
-
     # part 2
     col_names = ["YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
                  "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
@@ -940,8 +1075,10 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
 
     row_names.extend(col_names)
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
-         for c in col_names])
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])] for c in col_names])
 
     # df = pd.DataFrame(records, columns=['Covid+', 'Covid-', 'SMD'], index=row_names)
 
@@ -1045,14 +1182,23 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
 
     row_names.extend(col_names_out)
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     col_names = ['score_cci_charlson', 'score_cci_quan']
     col_names_out = ['score_cci_charlson', 'score_cci_quan']
     row_names.extend(col_names_out)
+    # records.extend(
+    #     [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+    #      for c in col_names])
     records.extend(
-        [[_quantile_str(df[c]), _quantile_str(df_pos[c]), _quantile_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_quantile_str(df[c], df['iptw']),
+          _quantile_str(df_pos[c], df_pos['iptw']),
+          _quantile_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
     row_names.append('CCI Score — no. (%)')
     records.append([])
@@ -1061,7 +1207,10 @@ def table1_cohorts_characterization_analyse_iptw(pivot='pregnancymatchediptw'):
     col_names_out = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     row_names.extend(col_names_out)
     records.extend(
-        [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
+        [[_percentage_str(df[c], df['iptw']),
+          _percentage_str(df_pos[c], df_pos['iptw']),
+          _percentage_str(df_neg[c], df_neg['iptw']),
+          _smd(df_pos[c], df_pos['iptw'], df_neg[c], df_neg['iptw'])]
          for c in col_names])
 
     df_out = pd.DataFrame(records, columns=output_columns, index=row_names)
