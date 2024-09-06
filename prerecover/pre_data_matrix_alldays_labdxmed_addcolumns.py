@@ -1676,9 +1676,9 @@ def build_feature_matrix(args):
             #
 
             # mental cov breakdown, majorly use baseline portion, 2024-9-6
-            outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i, :], outcome_hospitalization_t2eall_1row = \
+            outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i, :], outcome_mental_t2eall_1row = \
                 _encoding_outcome_dx_withalldays(dx, icd_mental, mental_encoding, index_date, default_t2e)
-            outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
+            outcome_mental_t2eall.append(outcome_mental_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
