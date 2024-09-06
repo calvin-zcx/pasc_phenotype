@@ -1074,6 +1074,57 @@ def _encoding_outcome_dx_withalldays(dx_list, icd_pasc, pasc_encoding, index_dat
     return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
 
 
+def _encoding_outcome_dx_withalldaysoveralltime(dx_list, icd_pasc, pasc_encoding, index_date, default_t2e):
+    # encoding 137 outcomes from our PASC list
+    # outcome_t2e = np.zeros((n, 137), dtype='int')
+    # outcome_flag = np.zeros((n, 137), dtype='int')
+    # outcome_baseline = np.zeros((n, 137), dtype='int')
+
+    # 2022-02-18 initialize t2e:  last encounter, event, end of followup, whichever happens first
+    outcome_t2e = np.ones((1, len(pasc_encoding)), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_tlast = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_t2eall = [''] * len(pasc_encoding)
+
+    for records in dx_list:
+        # dx_date, icd = records[:2]
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+
+        flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+
+        if flag:
+            days = (dx_date - index_date).days
+            pasc_info = icd_pasc[icdprefix]
+            pasc = pasc_info[0]
+            rec = pasc_encoding[pasc]
+            pos = rec[0]
+
+            outcome_t2eall[pos] += '{};'.format(days)
+
+            if ecs._is_in_baseline(dx_date, index_date):
+                outcome_baseline[0, pos] += 1
+
+            if ecs._is_in_followup(dx_date, index_date):
+                # days = (dx_date - index_date).days
+                # flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+                if outcome_flag[0, pos] == 0:
+                    # only records the first event and time
+                    if days < outcome_t2e[0, pos]:
+                        outcome_t2e[0, pos] = days
+                    outcome_flag[0, pos] = 1
+                    outcome_tlast[0, pos] = days
+                else:
+                    outcome_flag[0, pos] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
+
+
 def _encoding_outcome_U099_withalldays(dx_list, index_date, default_t2e):
     # outcome_U099_flag = np.zeros((n, 2), dtype='int16')
     # outcome_U099_t2e = np.zeros((n, 2), dtype='int16')
@@ -1436,8 +1487,9 @@ def build_feature_matrix(args):
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         # change to v2 on 2024-7-12
         # v3 on 2024-7-28 adding other mental drugs
-        # v4-with mental on 2024-09-06, add more mental covs, and update bupropion
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v4-withmental.csv'.format(
+        # v4-with mental on 2024-09-06, add more mental covs, and update bupropion, only store time at followup
+        # v5-with mental on 2024-09-06, add more mental covs, and update bupropion, store time over all time
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v5-withmental.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1676,8 +1728,10 @@ def build_feature_matrix(args):
             #
 
             # mental cov breakdown, majorly use baseline portion, 2024-9-6
+            # baseline are counts can be > 1, and t2eall are only stored during post-acute phase
+            # if want to store time all time, need revision
             outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i, :], outcome_mental_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_mental, mental_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date, default_t2e)
             outcome_mental_t2eall.append(outcome_mental_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
