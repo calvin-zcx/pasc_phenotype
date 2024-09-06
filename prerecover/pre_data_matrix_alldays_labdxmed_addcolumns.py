@@ -160,6 +160,10 @@ def _load_mapping():
     # add ssri drugs
     ssri_med = utils.load(r'../data/mapping/ssri_snri_drugs_mapping.pkl')
 
+    # add mental covs 2024-09-05
+    icd_mental = utils.load(r'../data/mapping/icd_mental_mapping.pkl')
+    mental_encoding = utils.load(r'../data/mapping/mental_index_mapping.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
@@ -167,7 +171,8 @@ def _load_mapping():
             zip_ruca, icd_cci, cci_encoding, covid_med_update,
             icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist,
             icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
-            icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med)
+            icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med,
+            icd_mental, mental_encoding)
 
 
 def _encoding_age(age):
@@ -1409,7 +1414,9 @@ def build_feature_matrix(args):
      icd_OBC, OBC_encoding, icd_SMMpasc, SMMpasc_encoding,
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
-     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med) = _load_mapping()  # no load fips_ziplist
+     _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med,
+     icd_mental, mental_encoding) = _load_mapping()  # no load fips_ziplist
+
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1429,7 +1436,8 @@ def build_feature_matrix(args):
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl'.format(site, args.cohorts, site)
         # change to v2 on 2024-7-12
         # v3 on 2024-7-28 adding other mental drugs
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v3.csv'.format(
+        # v4-with mental on 2024-09-06, add more mental covs, and update bupropion
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v4-withmental.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
@@ -1560,10 +1568,11 @@ def build_feature_matrix(args):
 
             # 2024-4-3 ssri, snri drug updated codes
             # 2024-7-28 add more
+            # 2024-09-06 'wellbutrin' --> change name to --> bupropion
             ssritreat_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline',
-                                'paroxetine', 'vilazodone',
-                                'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine',
-                                'wellbutrin']
+                                'paroxetine', 'vilazodone', # ssri
+                                'desvenlafaxine', 'duloxetine', 'levomilnacipran', 'milnacipran', 'venlafaxine', #snri
+                                'bupropion']  # others # 'wellbutrin'
             ssritreat_flag = np.zeros((n, 13), dtype='int16')
             ssritreat_t2e = np.zeros((n, 13), dtype='int16')  # date of earliest prescriptions
             ssritreat_t2eall = []
@@ -1572,8 +1581,20 @@ def build_feature_matrix(args):
                     ['treat-t2e@' + x for x in ssritreat_names] +
                     ['treat-t2eall@' + x for x in ssritreat_names])
 
+            # 2024-09-26 add more mental covs breakdown, majorly for baseline covs
+            print('len(mental_encoding), should be 13', len(mental_encoding))
+            outcome_mental_flag = np.zeros((n, 13), dtype='int16') # use 13 to warn if changed len(mental_encoding)
+            outcome_mental_t2e = np.zeros((n, 13), dtype='int16')
+            outcome_mental_baseline = np.zeros((n, 13), dtype='int16')
+            outcome_mental_t2eall = []
+            outcome_mental_column_names = ['mental-out@' + x for x in mental_encoding.keys()] + \
+                                             ['mental-t2e@' + x for x in mental_encoding.keys()] + \
+                                             ['mental-base@' + x for x in mental_encoding.keys()] + \
+                                             ['mental-t2eall@' + x for x in mental_encoding.keys()]
+
             column_names = (['patid', 'site', 'covid', ] + outcome_CFR_column_names + addPaxRisk_column_names +
-                            outcome_U099_column_names + outcome_hospitalization_column_names + ssritreat_column_names)
+                            outcome_U099_column_names + outcome_hospitalization_column_names + ssritreat_column_names +
+                            outcome_mental_column_names)
 
             # if args.positive_only:
             #     if not flag:
@@ -1654,6 +1675,11 @@ def build_feature_matrix(args):
             ssritreat_t2eall.append(ssritreat_t2eall_1row)
             #
 
+            # mental cov breakdown, majorly use baseline portion, 2024-9-6
+            outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i, :], outcome_hospitalization_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_mental, mental_encoding, index_date, default_t2e)
+            outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
+
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
@@ -1675,6 +1701,10 @@ def build_feature_matrix(args):
                                     ssritreat_flag,
                                     ssritreat_t2e,
                                     np.asarray(ssritreat_t2eall),
+                                    outcome_mental_flag,
+                                    outcome_mental_t2e,
+                                    outcome_mental_baseline,
+                                    np.asarray(outcome_mental_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)

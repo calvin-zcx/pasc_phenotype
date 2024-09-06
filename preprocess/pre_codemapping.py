@@ -1696,6 +1696,86 @@ def ICD_to_addedPaxRisk():
     return icd_cci, cci_index, dict_df_cci
 
 
+def ICD_to_mental():
+    # 2023-9-5
+    start_time = time.time()
+
+    icd_mental = {}
+    mental_index = {}
+
+    # part 1, from dsm related categories
+    print('part 1, from dsm related categories')
+    df_dsm = pd.read_excel(r'../data/mapping/dsm-5.xlsx', dtype=str, sheet_name='Sheet1')
+    print('len(df_dsm)', len(df_dsm))
+
+    cat_list_ = df_dsm['category'].unique()
+    print(len(cat_list_), cat_list_)
+    cat_list = [x for x in cat_list_ if pd.notna(x)]
+    print(len(cat_list), cat_list)
+
+    ith_cat = 0
+    for cat in cat_list:
+        df_cat = df_dsm.loc[df_dsm['category'] == cat, :]
+        icd_mental_buff = {}
+        for index, row in df_cat.iterrows():
+            icd10 = row['ICD-10–CM'] #.strip().upper().replace('.', '')
+            icd9 = row['ICD-9–CM']
+            name = row['Disorder, condition, or problem']
+
+            if pd.notna(icd10):
+                icd10 = icd10.strip().upper().replace('.', '')
+                icd_mental_buff[icd10] = [cat, 'icd10', name, ith_cat]
+
+            if pd.notna(icd9):
+                icd9 = icd9.strip().upper().replace('.', '')
+                icd_mental_buff[icd9] = [cat, 'icd9', name, ith_cat]
+
+        mental_index[cat] = [ith_cat, len(icd_mental_buff)]
+        icd_mental.update(icd_mental_buff)
+        ith_cat += 1
+
+    # part 2, from revised elixhauser, Severe Mental Illnesses (SMI)  vs non SMI
+    print('part 2, from revised elixhauser, Severe Mental Illnesses (SMI)  vs non SMI')
+    df_elix= pd.read_excel(r'../data/mapping/mental_elix_tailored_SP.xlsx', dtype=str, sheet_name='Sheet1')
+    print('len(df_elix)', len(df_elix))
+
+    cat_list_ = df_elix['Category'].unique()
+    print(len(cat_list_), cat_list_)
+    cat_list = [x for x in cat_list_ if pd.notna(x)]
+    print(len(cat_list), cat_list)
+    for cat in cat_list:
+        df_cat = df_elix.loc[df_elix['Category'] == cat, :]
+        icd_mental_buff = {}
+        for index, row in df_cat.iterrows():
+            icd = row['code1']
+            type = row['codetype1']
+            name = row['long description']
+
+            if pd.notna(icd):
+                icd = icd.strip().strip('*').upper().replace('.', '')
+                icd_mental_buff[icd] = [cat, type, name, ith_cat]
+
+        mental_index[cat] = [ith_cat, len(icd_mental_buff)]
+        icd_mental.update(icd_mental_buff)
+        ith_cat += 1
+
+
+    print('len(icd_mental):', len(icd_mental))
+    output_file = r'../data/mapping/icd_mental_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_mental, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(mental_index):', len(mental_index))
+    output_file = r'../data/mapping/mental_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(mental_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_mental, mental_index, [df_dsm, df_elix]
+
+
 def build_ssri_snri_drug_map():
     med_code = {}
     fname_dict = {'ssri_drug_list.xlsx': 'ssri',
@@ -1801,5 +1881,10 @@ if __name__ == '__main__':
 
     # 18 ssri snri drugs map (2024-4-2)
     # updated 2024-7-12 by adding vilazodone
+    # 2024-09-06 replace 'wellbutrin' with name bupropion
     ssrisnrimed_code = build_ssri_snri_drug_map()
+
+    # 19 add more mental categories 2024-09-05
+    icd_mental, mental_index, list_df_menta = ICD_to_mental()
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

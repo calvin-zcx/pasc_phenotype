@@ -757,9 +757,24 @@ def generate_drug_list_by_name(drugname='fluvoxamine'):
         # 2. to determine if include drug combination or not
         # 3. to determine if to exclude other proportions brought by combined drugs
         # 4. to delete unrelated drugs due to NDC changes, check name
+        
+        # 5. wellbutrin is the brand name of Bupropion, use which to search? or both
+        # 6. some drug combinations are not used for the same indications, might need remove, 
+        # e.g., CONTRAVE, contains a combination of bupropion and naltrexone, is an FDA-approved weight-loss medication
+        # using bupropion is better than wellbutrin, superset 
         """)
 
     return df_merge
+
+
+def _drop_dup():
+    df1 = pd.read_excel('../prerecover/output/bupropion-ndc-rxnom-merged-edited.xlsx', sheet_name='Sheet1', dtype=str)
+    df2 = pd.read_excel('../prerecover/output/wellbutrin-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+
+    df_rx = pd.concat([df1, df2], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_excel('../prerecover/output/bupropion-wellbutrin-combined-ndc-rxnom-merged.xlsx'.format(drugname), )
+    print('Dump ', drugname, 'done! len(df_rx_nodup)', len(df_rx_nodup))
 
 
 if __name__ == '__main__':
@@ -855,12 +870,17 @@ if __name__ == '__main__':
     drugname = 'paroxetine'
     drugname = 'vilazodone'  # missed 1 ssri, add 2024-7-12
 
-    drugname = 'wellbutrin'
     # snri list
     # drugname = 'desvenlafaxine'
     # drugname = 'duloxetine'
     # drugname = 'levomilnacipran'
     # drugname = 'milnacipran'
     # drugname = 'venlafaxine'
+
+    # other antidepressants 2024-09-05
+    # drugname = 'wellbutrin'
+    drugname = 'bupropion'  # wellbutrin is the brand name of Bupropion, use which to search? use bupropion, superset
     df = generate_drug_list_by_name(drugname=drugname)
+    _drop_dup()
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
