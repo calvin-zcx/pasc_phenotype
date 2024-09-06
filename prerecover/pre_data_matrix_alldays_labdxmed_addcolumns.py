@@ -1582,7 +1582,7 @@ def build_feature_matrix(args):
                     ['treat-t2eall@' + x for x in ssritreat_names])
 
             # 2024-09-26 add more mental covs breakdown, majorly for baseline covs
-            print('len(mental_encoding), should be 13', len(mental_encoding))
+            # print('len(mental_encoding), should be 13', len(mental_encoding))
             outcome_mental_flag = np.zeros((n, 13), dtype='int16') # use 13 to warn if changed len(mental_encoding)
             outcome_mental_t2e = np.zeros((n, 13), dtype='int16')
             outcome_mental_baseline = np.zeros((n, 13), dtype='int16')

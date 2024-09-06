@@ -262,7 +262,9 @@ def shell_lab_dx_med_4covid_addcolumnes():
 # """.replace('nyu', site)
 #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-negctrl.txt
 # """.replace('nyu', site)
-            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
+#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
+# """.replace('nyu', site)
+            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v4withmental.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
