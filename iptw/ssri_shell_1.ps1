@@ -1,12 +1,13 @@
+python screen_ssri_iptw_pcornet.py  --exptype ssri-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-180-0-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-base-180-0-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-acute0-15-clean-mentalcov.txt
+
 python screen_ssri_iptw_pcornet.py  --exptype ssri-base-180-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-180-0-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-base-180-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-base-180-0-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-acute0-15  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-acute0-15-mentalcov.txt
 
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-180-0-clean-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-clean-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-base-180-0-clean-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssriVSbupropion-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSbupropion-acute0-15-clean-mentalcov.txt
 
 
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-7-mentalcov.txt
