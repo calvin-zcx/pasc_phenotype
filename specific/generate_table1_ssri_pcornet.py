@@ -42,7 +42,8 @@ def add_col(df):
                       x.startswith('dxbrainfog-out@') or
                       x.startswith('covidmed-out@') or
                       x.startswith('smm-out@') or
-                      x.startswith('dxdxCFR-out@')
+                      x.startswith('dxdxCFR-out@') or
+                      x.startswith('mental-base@')
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
@@ -158,6 +159,8 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
 
     # add matched cohorts later
     in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC-withexposure.csv'
+    in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC-withexposure.csv'
+
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -248,7 +251,33 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                     df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'SNRI-0-15'
+    elif exptype == 'ssriVSbupropion-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0'
+        ctrl_label = 'bupropion-180-0'
+    elif exptype == 'ssriVSbupropion-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15'
+        ctrl_label = 'bupropion-0-15'
+    elif exptype == 'bupropion-base-180-0':
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-180-0'
+        ctrl_label = 'Nouser'
 
+    elif exptype == 'bupropion-acute0-15':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-0-15'
+        ctrl_label = 'Nouser'
     # treadcol = 'ssri-treat-0-15-flag'
     # print('exposre strategy', treadcol)
     # appendix = '120-0-allmental' #'0-15-allmental'
@@ -285,7 +314,7 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     df_pos = df.loc[df['treated'] == 1,:]
     df_neg = df.loc[df['treated'] == 0, :]
 
-    out_file = r'./ssri_output/Table-recover29Nov27_covid_pos_{}.xlsx'.format(exptype)
+    out_file = r'./ssri_output/Table-recover29Nov27_covid_pos_{}-mentalCov.xlsx'.format(exptype)
     output_columns = ['All', case_label, ctrl_label, 'SMD']
 
     print('treated df_pos.shape', df_pos.shape,
@@ -657,7 +686,22 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                      'CCI:AIDS/HIV',
                  ] + [
                 'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
-                ])
+                ] + [
+                     'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
+                     'mental-base@Depressive Disorders',
+                     'mental-base@Bipolar and Related Disorders',
+                     'mental-base@Anxiety Disorders',
+                     'mental-base@Obsessive-Compulsive and Related Disorders',
+                     'mental-base@Post-traumatic stress disorder',
+                     'mental-base@Bulimia nervosa',
+                     'mental-base@Binge eating disorder',
+                     'mental-base@premature ejaculation',
+                     'mental-base@Autism spectrum disorder',
+                     'mental-base@Premenstrual dysphoric disorder',
+                     'mental-base@SMI',
+                     'mental-base@non-SMI',
+                     'other-treat--1095-0-flag',
+                 ])
 
     col_names_out = (['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
                       'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
@@ -737,7 +781,24 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                          'CCI:AIDS/HIV',
                      ] + [
                 'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
-                ])
+                ]+
+                 [
+                         'Schizophrenia Spectrum and Other Psychotic Disorders',
+                         'Depressive Disorders',
+                         'Bipolar and Related Disorders',
+                         'Anxiety Disorders',
+                         'Obsessive-Compulsive and Related Disorders',
+                         'Post-traumatic stress disorder',
+                         'Bulimia nervosa',
+                         'Binge eating disorder',
+                         'premature ejaculation',
+                         'Autism spectrum disorder',
+                         'Premenstrual dysphoric disorder',
+                         'SMI',
+                         'non-SMI',
+                         'bupropion--1095-0',
+                     ]
+                     )
 
 
     row_names.extend(col_names_out)
@@ -1143,10 +1204,11 @@ if __name__ == '__main__':
     start_time = time.time()
 
 
-    # table1_more_4_analyse(exptype='ssri-base-180-0', cohort='all') #
+    table1_more_4_analyse(exptype='ssri-base-180-0', cohort='all') #
     table1_more_4_analyse(exptype='ssri-acute0-15', cohort='all')
-    # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
-    # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
+
+    table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
+    table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
 
     # table1_less_4_print(cohort='all')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
