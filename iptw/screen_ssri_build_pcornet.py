@@ -992,35 +992,36 @@ if __name__ == "__main__":
         df.to_csv(out_data_file)
         print('dump done!')
     else:
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental.csv'
-
-        # if args.cohorttype == 'lab-dx':
-        #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
-
-        print('Load data covariates file:', out_data_file)
-        df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                         parse_dates=['index date', 'dob',
-                                      'flag_delivery_date',
-                                      'flag_pregnancy_start_date',
-                                      'flag_pregnancy_end_date'
-                                      ])
-        print('df.shape:', df.shape)
-
-        df = add_col(df)
-        print('add cols, then df.shape:', df.shape)
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats.csv'
-
-        # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
-        df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
-        df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
-
-        zz
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental.csv'
+        #
+        # # if args.cohorttype == 'lab-dx':
+        # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+        #
+        # print('Load data covariates file:', out_data_file)
+        # df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
+        #                  parse_dates=['index date', 'dob',
+        #                               'flag_delivery_date',
+        #                               'flag_pregnancy_start_date',
+        #                               'flag_pregnancy_end_date'
+        #                               ])
+        # print('df.shape:', df.shape)
+        #
+        # df = add_col(df)
+        # print('add cols, then df.shape:', df.shape)
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats.csv'
+        #
+        # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
+        # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
+        # print('df_before_treatsep.shape:', df_before_treatsep.shape)
+        # df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
+        #
+        # zz
         #
         # load after general EC and explore. Even general EC will be revised later
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-addPaxFeats-addGeneralEC.csv'

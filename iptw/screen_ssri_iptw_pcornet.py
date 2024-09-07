@@ -84,10 +84,10 @@ def parse_args():
                                  'ssriVSsnri-acute0-15',
                                  'ssriVSsnri-acute0-7',
 
-                                 'wellbutrin-base-180-0',
-                                 'wellbutrin-acute0-15'
-                                 'ssriVSwellbutrin-base-180-0',
-                                 'ssriVSwellbutrin-acute0-15',
+                                 'bupropion-base-180-0',
+                                 'bupropion-acute0-15'
+                                 'ssriVSbupropion-base-180-0',
+                                 'ssriVSbupropion-acute0-15',
 
                                  ], default='base180-0')
 
@@ -507,53 +507,60 @@ if __name__ == "__main__":
         case_label = 'SNRI-0-15'
         ctrl_label = 'Nouser'
     elif args.exptype == 'ssriVSsnri-base-180-0':
-        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-180-0'
         ctrl_label = 'SNRI-180-0'
     elif args.exptype == 'ssriVSsnri-base-120-0':
-        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-120-0'
         ctrl_label = 'SNRI-120-0'
     elif args.exptype == 'ssriVSsnri-acute0-7':
-        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-7'
         ctrl_label = 'SNRI-0-7'
     elif args.exptype == 'ssriVSsnri-acute0-15':
-        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                    df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'SNRI-0-15'
-    elif args.exptype == 'ssriVSwellbutrin-base-180-0':
+    elif args.exptype == 'ssriVSbupropion-base-180-0':
         df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['other-treat--180-180@wellbutrin'] == 0), :]
-        df0 = df.loc[(df['other-treat--180-0@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-180-0'
-        ctrl_label = 'Wellbutrin-180-0'
-    elif args.exptype == 'ssriVSwellbutrin-acute0-15':
+        ctrl_label = 'bupropion-180-0'
+    elif args.exptype == 'ssriVSbupropion-acute0-15':
         df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['other-treat--180-180@wellbutrin'] == 0), :]
-        df0 = df.loc[(df['other-treat-0-15@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
-        ctrl_label = 'Wellbutrin-0-15'
-    elif args.exptype == 'wellbutrin-base-180-0':
-        df1 = df.loc[(df['other-treat--180-0@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        ctrl_label = 'bupropion-0-15'
+    elif args.exptype == 'bupropion-base-180-0':
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0)& (df['other-treat--180-180@wellbutrin'] == 0), :]
-        case_label = 'Wellbutrin-180-0'
+                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-180-0'
         ctrl_label = 'Nouser'
 
-    elif args.exptype == 'wellbutrin-acute0-15':
-        df1 = df.loc[(df['other-treat-0-15@wellbutrin'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'bupropion-acute0-15':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@wellbutrin'] == 0), :]
-        case_label = 'Wellbutrin-0-15'
+                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-0-15'
         ctrl_label = 'Nouser'
-
 
     # treadcol = 'ssri-treat-0-15-flag'
     # print('exposre strategy', treadcol)
@@ -574,7 +581,6 @@ if __name__ == "__main__":
     # print('after sample, n0', len(df0))
     # df0['treated'] = 0
     # df0['SSRI'] = 0
-
 
     n1 = len(df1)
     print('n1', n1, 'n0', len(df0))
@@ -610,7 +616,8 @@ if __name__ == "__main__":
                       x.startswith('dxbrainfog-out@') or
                       x.startswith('covidmed-out@') or
                       x.startswith('smm-out@') or
-                      x.startswith('dxCFR-out@')
+                      x.startswith('dxCFR-out@') or
+                      x.startswith('mental-base@')
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
@@ -817,6 +824,21 @@ if __name__ == "__main__":
         'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
         "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
         'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
+        'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
+        'mental-base@Depressive Disorders',
+        'mental-base@Bipolar and Related Disorders',
+        'mental-base@Anxiety Disorders',
+        'mental-base@Obsessive-Compulsive and Related Disorders',
+        'mental-base@Post-traumatic stress disorder',
+        'mental-base@Bulimia nervosa',
+        'mental-base@Binge eating disorder',
+        'mental-base@premature ejaculation',
+        'mental-base@Autism spectrum disorder',
+        'mental-base@Premenstrual dysphoric disorder',
+        'mental-base@SMI',
+        'mental-base@non-SMI',
+        'other-treat--1095-0-flag'
+
     ]
 
     print('cohorttype:', args.cohorttype)
@@ -991,7 +1013,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
@@ -1002,7 +1024,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
@@ -1011,13 +1033,13 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc)))
         try:
-            figout = r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
@@ -1041,7 +1063,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/SSRI-{}-{}-{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
@@ -1095,7 +1117,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
@@ -1105,7 +1127,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     args.exptype,  # '-select' if args.selectpasc else '',
@@ -1116,7 +1138,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/SSRI-{}-{}-{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/SSRI-{}-{}-{}-mentalcov/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
