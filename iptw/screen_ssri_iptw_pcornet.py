@@ -471,7 +471,7 @@ if __name__ == "__main__":
     print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
 
     # 2024-09-07 replace 'PaxRisk:Mental health conditions' with 'SSRI-Indication-dsmAndExlix-flag'
-    # control group, not using snri criteria?
+    # control group, not using snri criteria? --> add -clean group
     if args.exptype == 'ssri-base-180-0':
         df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
