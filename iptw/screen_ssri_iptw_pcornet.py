@@ -443,7 +443,8 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # add matched cohorts later
-    in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC-withexposure.csv'
+    # in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC-withexposure.csv'
+    in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC-withexposure.csv'
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -837,9 +838,10 @@ if __name__ == "__main__":
         'mental-base@Premenstrual dysphoric disorder',
         'mental-base@SMI',
         'mental-base@non-SMI',
-        'other-treat--1095-0-flag'
 
     ]
+    if 'bupropion' not in args.exptype:
+        covs_columns += ['other-treat--1095-0-flag', ]
 
     print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
