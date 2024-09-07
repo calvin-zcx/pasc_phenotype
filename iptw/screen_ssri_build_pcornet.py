@@ -234,6 +234,25 @@ def add_col(df):
     df['PaxExclude-Count'] = df[pax_exclude_cols].sum(axis=1)
     # Tuberculosis, not captured, need to add columns?
 
+    # 2024-09-07 add ssri indication covs
+    mental_cov = ['mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
+                  'mental-base@Depressive Disorders',
+                  'mental-base@Bipolar and Related Disorders',
+                  'mental-base@Anxiety Disorders',
+                  'mental-base@Obsessive-Compulsive and Related Disorders',
+                  'mental-base@Post-traumatic stress disorder',
+                  'mental-base@Bulimia nervosa',
+                  'mental-base@Binge eating disorder',
+                  'mental-base@premature ejaculation',
+                  'mental-base@Autism spectrum disorder',
+                  'mental-base@Premenstrual dysphoric disorder', ]
+
+    df['SSRI-Indication-dsm-cnt'] = df[mental_cov].sum(axis=1)
+    df['SSRI-Indication-dsm-flag'] = (df['SSRI-Indication-dsm-cnt'] > 0).astype('int')
+
+    df['SSRI-Indication-dsmAndExlix-cnt'] = df[mental_cov + ['mental-base@SMI', 'mental-base@non-SMI',]].sum(axis=1)
+    df['SSRI-Indication-dsmAndExlix-flag'] = (df['SSRI-Indication-dsmAndExlix-cnt'] > 0).astype('int')
+
     # ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     df['cci_quan:0'] = 0
     df['cci_quan:1-2'] = 0

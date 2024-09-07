@@ -3,6 +3,11 @@ python screen_ssri_iptw_pcornet.py  --exptype snri-acute0-15  2>&1 | tee  log_ss
 python screen_ssri_iptw_pcornet.py  --exptype ssriVSsnri-base-180-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSsnri-base-180-0-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssriVSsnri-acute0-15  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSsnri-acute0-15-mentalcov.txt
 
+python screen_ssri_iptw_pcornet.py  --exptype snri-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-snri-base-180-0-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype snri-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-snri-acute0-7-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssriVSsnri-base-180-0-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSsnri-base-180-0-clean-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssriVSsnri-acute0-15-clean  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSsnri-acute0-15-clean-mentalcov.txt
+
 
 ##python screen_ssri_iptw_pcornet.py  --exptype snri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-snri-acute0-7.txt
 ##python screen_ssri_iptw_pcornet.py  --exptype ssriVSsnri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssriVSsnri-acute0-7.txt

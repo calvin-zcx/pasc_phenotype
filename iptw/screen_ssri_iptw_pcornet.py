@@ -73,21 +73,32 @@ def parse_args():
                                  'ssri-base-120-0',
                                  'ssri-acute0-15',
                                  'ssri-acute0-7',
+                                 'ssri-base-180-0-clean',
+                                 'ssri-acute0-15-clean',
 
                                  'snri-base-180-0',
                                  'snri-base-120-0',
                                  'snri-acute0-15',
                                  'snri-acute0-7',
+                                 'snri-base-180-0-clean',
+                                 'snri-acute0-15-clean',
 
                                  'ssriVSsnri-base-180-0',
                                  'ssriVSsnri-base-120-0',
                                  'ssriVSsnri-acute0-15',
                                  'ssriVSsnri-acute0-7',
+                                 'ssriVSsnri-base-180-0-clean',
+                                 'ssriVSsnri-acute0-15-clean',
 
                                  'bupropion-base-180-0',
                                  'bupropion-acute0-15'
                                  'ssriVSbupropion-base-180-0',
                                  'ssriVSbupropion-acute0-15',
+
+                                 'bupropion-base-180-0-clean',
+                                 'bupropion-acute0-15-clean'
+                                 'ssriVSbupropion-base-180-0-clean',
+                                 'ssriVSbupropion-acute0-15-clean',
 
                                  ], default='base180-0')
 
@@ -459,129 +470,200 @@ if __name__ == "__main__":
     print('exposre strategy, args.exptype:', args.exptype)
     print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
 
+    # 2024-09-07 replace 'PaxRisk:Mental health conditions' with 'SSRI-Indication-dsmAndExlix-flag'
+    # control group, not using snri criteria?
     if args.exptype == 'ssri-base-180-0':
-        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SSRI-180-0'
         ctrl_label = 'Nouser'
-    elif args.exptype == 'ssri-base-120-0':
-        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
-        case_label = 'SSRI-120-0'
-        ctrl_label = 'Nouser'
-    elif args.exptype == 'ssri-acute0-7':
-        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
-        case_label = 'SSRI-0-7'
-        ctrl_label = 'Nouser'
+    if args.exptype == 'ssri-base-180-0-clean':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+
+    # elif args.exptype == 'ssri-base-120-0':
+    #     df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SSRI-120-0'
+    #     ctrl_label = 'Nouser'
+    # elif args.exptype == 'ssri-acute0-7':
+    #     df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SSRI-0-7'
+    #     ctrl_label = 'Nouser'
     elif args.exptype == 'ssri-acute0-15':
-        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'Nouser'
+
+    elif args.exptype == 'ssri-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'Nouser-clean'
+
     elif args.exptype == 'snri-base-180-0':
-        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SNRI-180-0'
         ctrl_label = 'Nouser'
-    elif args.exptype == 'snri-base-120-0':
-        df1 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
-        case_label = 'SNRI-120-0'
-        ctrl_label = 'Nouser'
-    elif args.exptype == 'snri-acute0-7':
-        df1 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
-        case_label = 'SNRI-0-7'
-        ctrl_label = 'Nouser'
+
+    elif args.exptype == 'snri-base-180-0-clean':
+        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['ssri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+    # elif args.exptype == 'snri-base-120-0':
+    #     df1 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SNRI-120-0'
+    #     ctrl_label = 'Nouser'
+    # elif args.exptype == 'snri-acute0-7':
+    #     df1 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SNRI-0-7'
+    #     ctrl_label = 'Nouser'
     elif args.exptype == 'snri-acute0-15':
-        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SNRI-0-15'
         ctrl_label = 'Nouser'
+
+    elif args.exptype == 'snri-acute0-15-clean':
+        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['ssri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+
     elif args.exptype == 'ssriVSsnri-base-180-0':
-        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-180-0'
         ctrl_label = 'SNRI-180-0'
-    elif args.exptype == 'ssriVSsnri-base-120-0':
-        df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
-        case_label = 'SSRI-120-0'
-        ctrl_label = 'SNRI-120-0'
-    elif args.exptype == 'ssriVSsnri-acute0-7':
-        df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
-        case_label = 'SSRI-0-7'
-        ctrl_label = 'SNRI-0-7'
+
+    elif args.exptype == 'ssriVSsnri-base-180-0-clean':
+
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'SNRI-180-0-clean'
+
+    # elif args.exptype == 'ssriVSsnri-base-120-0':
+    #     df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['snri-treat--180-180-flag'] == 0), :]
+    #     df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['ssri-treat--180-180-flag'] == 0), :]
+    #     case_label = 'SSRI-120-0'
+    #     ctrl_label = 'SNRI-120-0'
+    # elif args.exptype == 'ssriVSsnri-acute0-7':
+    #     df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['snri-treat--180-180-flag'] == 0), :]
+    #     df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['ssri-treat--180-180-flag'] == 0), :]
+    #     case_label = 'SSRI-0-7'
+    #     ctrl_label = 'SNRI-0-7'
     elif args.exptype == 'ssriVSsnri-acute0-15':
-        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
-        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'SNRI-0-15'
+
+    elif args.exptype == 'ssriVSsnri-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'SNRI-0-15-clean'
+
     elif args.exptype == 'ssriVSbupropion-base-180-0':
-        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
                 df['other-treat--180-180@bupropion'] == 0), :]
-        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
                 df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-180-0'
         ctrl_label = 'bupropion-180-0'
+
+    elif args.exptype == 'ssriVSbupropion-base-180-0-clean':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'bupropion-180-0-clean'
+
     elif args.exptype == 'ssriVSbupropion-acute0-15':
-        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
                 df['other-treat--180-180@bupropion'] == 0), :]
-        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
                 df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'bupropion-0-15'
+
+    elif args.exptype == 'ssriVSbupropion-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'bupropion-0-15-clean'
+
     elif args.exptype == 'bupropion-base-180-0':
-        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
         case_label = 'bupropion-180-0'
         ctrl_label = 'Nouser'
 
-    elif args.exptype == 'bupropion-acute0-15':
-        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
+    elif args.exptype == 'bupropion-base-180-0-clean':
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
         df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
-                df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'bupropion-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+
+
+    elif args.exptype == 'bupropion-acute0-15':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
         case_label = 'bupropion-0-15'
         ctrl_label = 'Nouser'
 
-    # treadcol = 'ssri-treat-0-15-flag'
-    # print('exposre strategy', treadcol)
-    # appendix = '120-0-allmental' #'0-15-allmental'
-    # # df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-    # df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0), :]
-    #
-    # df1['treated'] = 1
-    # df1['SSRI'] = 1
-    # n1 = len(df1)
-    # print('n1', n1)
-    #
-    # print ('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
-    # # df0 = df.loc[(df['ssri-treat--120-0-flag'] == 0) & (df['snri-treat--120-0-flag'] == 0), :]
-    # df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (df['PaxRisk:Mental health conditions'] > 0), :]
-    # print('n0', len(df0))
-    # df0 = df0.sample(n=min(len(df0), int(args.negative_ratio * n1)), replace=False, random_state=args.random_seed)
-    # print('after sample, n0', len(df0))
-    # df0['treated'] = 0
-    # df0['SSRI'] = 0
+    elif args.exptype == 'bupropion-acute0-15-clean':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'bupropion-0-15-clean'
+        ctrl_label = 'Nouser-clean'
 
     n1 = len(df1)
     print('n1', n1, 'n0', len(df0))
