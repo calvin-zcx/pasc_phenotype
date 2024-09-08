@@ -266,6 +266,7 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC-withexposure.csv'
     in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC-withexposure.csv'
 
+    print('in read: ', in_file)
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -898,6 +899,8 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                      'mental-base@SMI',
                      'mental-base@non-SMI',
                      'other-treat--1095-0-flag',
+                     'SSRI-Indication-dsm-flag',
+                     'SSRI-Indication-dsmAndExlix-flag'
                  ])
 
     col_names_out = (['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
@@ -994,6 +997,8 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                          'SMI',
                          'non-SMI',
                          'bupropion--1095-0',
+                         'SSRI-Indication-dsm-flag',
+                         'SSRI-Indication-dsmAndExlix-flag'
                      ]
                      )
 
@@ -1400,12 +1405,15 @@ def table1_less_4_print(cohort='all', subgroup='all'):
 if __name__ == '__main__':
     start_time = time.time()
 
-
     table1_more_4_analyse(exptype='ssri-base-180-0', cohort='all') #
-    table1_more_4_analyse(exptype='ssri-acute0-15', cohort='all')
+    table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
 
-    table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
-    table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
+    table1_more_4_analyse(exptype='ssri-acute0-15', cohort='all')
+    table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
+
+
+    # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
+    # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
 
     # table1_less_4_print(cohort='all')
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
