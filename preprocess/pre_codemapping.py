@@ -1882,7 +1882,7 @@ if __name__ == '__main__':
     # 18 ssri snri drugs map (2024-4-2)
     # updated 2024-7-12 by adding vilazodone
     # 2024-09-06 replace 'wellbutrin' with name bupropion
-    ssrisnrimed_code = build_ssri_snri_drug_map()
+    # ssrisnrimed_code = build_ssri_snri_drug_map()
 
     # 19 add more mental categories 2024-09-05
     icd_mental, mental_index, list_df_menta = ICD_to_mental()

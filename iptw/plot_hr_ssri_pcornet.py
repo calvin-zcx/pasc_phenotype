@@ -849,6 +849,9 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
 
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-acute0-15-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-acute0-15-clean-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-snri-acute0-15-clean-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssriVSbupropion-acute0-15-clean-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-bupropion-acute0-15-clean-mentalcov/'
 
 
     output_dir = indir + r'figure/'
