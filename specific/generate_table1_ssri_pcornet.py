@@ -1405,11 +1405,25 @@ def table1_less_4_print(cohort='all', subgroup='all'):
 if __name__ == '__main__':
     start_time = time.time()
 
-    table1_more_4_analyse(exptype='ssri-base-180-0', cohort='all') #
-    table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
+    # table1_more_4_analyse(exptype='ssri-base-180-0', cohort='all') #
+    # table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
+    #
+    # table1_more_4_analyse(exptype='ssri-acute0-15', cohort='all')
+    # table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
 
-    table1_more_4_analyse(exptype='ssri-acute0-15', cohort='all')
+    table1_more_4_analyse(exptype='ssri-acute0-15-clean', cohort='all')
+    table1_more_4_analyse(exptype='snri-acute0-15-clean', cohort='all')
     table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
+    table1_more_4_analyse(exptype='snri-base-180-0-clean', cohort='all') #
+
+
+    # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='bupropion-base-180-0-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='bupropion-acute0-15-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='ssriVSbupropion-base-180-0-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='ssriVSbupropion-acute0-15-clean', cohort='all')  #
+    # table1_more_4_analyse(exptype='ssri-base-180-0-cleanv2', cohort='all') #
 
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
