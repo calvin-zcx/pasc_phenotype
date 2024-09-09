@@ -91,15 +91,14 @@ def parse_args():
                                  'ssriVSsnri-acute0-15-clean',
 
                                  'bupropion-base-180-0',
-                                 'bupropion-acute0-15'
+                                 'bupropion-acute0-15',
                                  'ssriVSbupropion-base-180-0',
                                  'ssriVSbupropion-acute0-15',
 
                                  'bupropion-base-180-0-clean',
-                                 'bupropion-acute0-15-clean'
+                                 'bupropion-acute0-15-clean',
                                  'ssriVSbupropion-base-180-0-clean',
                                  'ssriVSbupropion-acute0-15-clean',
-
                                  'ssri-base-180-0-cleanv2',
 
                                  ], default='base180-0')
