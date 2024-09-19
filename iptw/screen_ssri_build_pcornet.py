@@ -1047,6 +1047,8 @@ if __name__ == "__main__":
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC.csv'
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC.csv'
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC.csv'
+        # in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5.5-withmental-addPaxFeats-addGeneralEC.csv'
+        # 2024/9/19, 5.5 version, smi still old, just post acute exposure. update smi to v6
 
         df = pd.read_csv(in_mediate_file,
                          dtype={'patid': str, 'site': str, 'zip': str},
@@ -1106,6 +1108,7 @@ if __name__ == "__main__":
             df['ssri-treat--365-0@' + x] = 0
             df['ssri-treat--1095-0@' + x] = 0
             df['ssri-treat-30-180@' + x] = 0
+            df['ssri-treat--1095-30@' + x] = 0
 
         for x in snri_names:
             df['snri-treat-0-30@' + x] = 0
@@ -1127,6 +1130,8 @@ if __name__ == "__main__":
             df['snri-treat--365-0@' + x] = 0
             df['snri-treat--1095-0@' + x] = 0
             df['snri-treat-30-180@' + x] = 0
+            df['snri-treat--1095-30@' + x] = 0
+
 
         for x in other_names:
             df['other-treat-0-30@' + x] = 0
@@ -1148,7 +1153,7 @@ if __name__ == "__main__":
             df['other-treat--365-0@' + x] = 0
             df['other-treat--1095-0@' + x] = 0
             df['other-treat-30-180@' + x] = 0
-
+            df['other-treat--1095-30@' + x] = 0
 
         def _t2eall_to_int_list(t2eall):
             t2eall = t2eall.strip(';').split(';')
@@ -1202,6 +1207,8 @@ if __name__ == "__main__":
                             df.loc[index, 'ssri-treat--1095-0@' + x] = 1
                         if 30 <= t2e < 180:
                             df.loc[index, 'ssri-treat-30-180@' + x] = 1
+                        if -1095 <= t2e < 30:
+                            df.loc[index, 'ssri-treat--1095-30@' + x] = 1
 
             for x in snri_names:
                 t2eall = row['treat-t2eall@' + x]
@@ -1244,6 +1251,8 @@ if __name__ == "__main__":
                             df.loc[index, 'snri-treat--1095-0@' + x] = 1
                         if 30 <= t2e < 180:
                             df.loc[index, 'snri-treat-30-180@' + x] = 1
+                        if -1095 <= t2e < 30:
+                            df.loc[index, 'snri-treat--1095-30@' + x] = 1
 
             for x in other_names:
                 t2eall = row['treat-t2eall@' + x]
@@ -1286,6 +1295,8 @@ if __name__ == "__main__":
                             df.loc[index, 'other-treat--1095-0@' + x] = 1
                         if 30 <= t2e < 180:
                             df.loc[index, 'other-treat-30-180@' + x] = 1
+                        if -1095 <= t2e < 30:
+                            df.loc[index, 'other-treat--1095-30@' + x] = 1
 
         ##
         df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
@@ -1323,7 +1334,8 @@ if __name__ == "__main__":
         df['ssri-treat--1095-0-flag'] = (df['ssri-treat--1095-0-cnt'] > 0).astype('int')
         df['ssri-treat-30-180-cnt'] = df[['ssri-treat-30-180@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat-30-180-flag'] = (df['ssri-treat-30-180-cnt'] > 0).astype('int')
-
+        df['ssri-treat--1095-30-cnt'] = df[['ssri-treat--1095-30@' + x for x in ssri_names]].sum(axis=1)
+        df['ssri-treat--1095-30-flag'] = (df['ssri-treat--1095-30-cnt'] > 0).astype('int')
         ##
         df['snri-treat-0-30-cnt'] = df[['snri-treat-0-30@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat-0-30-flag'] = (df['snri-treat-0-30-cnt'] > 0).astype('int')
@@ -1360,6 +1372,8 @@ if __name__ == "__main__":
         df['snri-treat--1095-0-flag'] = (df['snri-treat--1095-0-cnt'] > 0).astype('int')
         df['snri-treat-30-180-cnt'] = df[['snri-treat-30-180@' + x for x in snri_names]].sum(axis=1)
         df['snri-treat-30-180-flag'] = (df['snri-treat-30-180-cnt'] > 0).astype('int')
+        df['snri-treat--1095-30-cnt'] = df[['snri-treat--1095-30@' + x for x in snri_names]].sum(axis=1)
+        df['snri-treat--1095-30-flag'] = (df['snri-treat--1095-30-cnt'] > 0).astype('int')
 
         ##
         df['other-treat-0-30-cnt'] = df[['other-treat-0-30@' + x for x in other_names]].sum(axis=1)
@@ -1397,6 +1411,9 @@ if __name__ == "__main__":
         df['other-treat--1095-0-flag'] = (df['other-treat--1095-0-cnt'] > 0).astype('int')
         df['other-treat-30-180-cnt'] = df[['other-treat-30-180@' + x for x in other_names]].sum(axis=1)
         df['other-treat-30-180-flag'] = (df['other-treat-30-180-cnt'] > 0).astype('int')
+        df['other-treat--1095-30-cnt'] = df[['other-treat--1095-30@' + x for x in other_names]].sum(axis=1)
+        df['other-treat--1095-30-flag'] = (df['other-treat--1095-30-cnt'] > 0).astype('int')
+
         ##
         print('ssri-treat-0-30-flag', df['ssri-treat-0-30-flag'].sum())
         print('ssri-treat--30-30-flag', df['ssri-treat--30-30-flag'].sum())
@@ -1417,6 +1434,7 @@ if __name__ == "__main__":
         print('ssri-treat--365-0-flag', df['ssri-treat--365-0-flag'].sum())
         print('ssri-treat--1095-0-flag', df['ssri-treat--1095-0-flag'].sum())
         print('ssri-treat-30-180-flag', df['ssri-treat-30-180-flag'].sum())
+        print('ssri-treat--1095-30-flag', df['ssri-treat--1095-30-flag'].sum())
 
         print('snri-treat-0-30-flag', df['snri-treat-0-30-flag'].sum())
         print('snri-treat--30-30-flag', df['snri-treat--30-30-flag'].sum())
@@ -1437,6 +1455,7 @@ if __name__ == "__main__":
         print('snri-treat--365-0-flag', df['snri-treat--365-0-flag'].sum())
         print('snri-treat--1095-0-flag', df['snri-treat--1095-0-flag'].sum())
         print('snri-treat-30-180-flag', df['snri-treat-30-180-flag'].sum())
+        print('snri-treat--1095-30-flag', df['snri-treat--1095-30-flag'].sum())
 
         print('other-treat-0-30-flag', df['other-treat-0-30-flag'].sum())
         print('other-treat--30-30-flag', df['other-treat--30-30-flag'].sum())
@@ -1457,6 +1476,7 @@ if __name__ == "__main__":
         print('other-treat--365-0-flag', df['other-treat--365-0-flag'].sum())
         print('other-treat--1095-0-flag', df['other-treat--1095-0-flag'].sum())
         print('other-treat-30-180-flag', df['other-treat-30-180-flag'].sum())
+        print('other-treat--1095-30-flag', df['other-treat--1095-30-flag'].sum())
 
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
