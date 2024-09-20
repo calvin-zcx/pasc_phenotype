@@ -14,6 +14,8 @@ python screen_ssri_iptw_pcornet.py  --exptype ssri-post30  2>&1 | tee  log_ssri/
 python screen_ssri_iptw_pcornet.py  --exptype ssri-post30-basemental  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-post30-basemental-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssri-post30-nobasemental  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-post30-nobasemental-mentalcov.txt
 
+python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-incident-mentalcov.txt
+
 
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-7-mentalcov.txt
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-base-120-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-120-0-mentalcov.txt
