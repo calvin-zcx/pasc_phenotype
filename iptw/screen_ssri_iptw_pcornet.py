@@ -82,6 +82,9 @@ def parse_args():
                                  'ssri-post30-basemental',
                                  'ssri-post30-nobasemental',
 
+                                 'ssri-base180-acutevsnot',
+                                 'ssri-base180withmental-acutevsnot',
+
                                  'snri-base-180-0',
                                  'snri-base-120-0',
                                  'snri-acute0-15',
@@ -500,6 +503,17 @@ if __name__ == "__main__":
                      & (df['other-treat--180-0-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SSRI-180-0-clean'
         ctrl_label = 'Nouser-clean'
+
+    elif args.exptype == 'ssri-base180-acutevsnot':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-with-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+    elif args.exptype == 'ssri-base180withmental-acutevsnot':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180withmental-with-acute15'
+        ctrl_label = 'SSRI-180withmental-no-acute15'
 
     # elif args.exptype == 'ssri-base-120-0':
     #     df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
