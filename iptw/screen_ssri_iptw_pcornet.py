@@ -78,6 +78,7 @@ def parse_args():
                                  'ssri-acute0-15-cleanv2',
                                  'ssri-acute0-15-incident',
                                  'ssri-acute0-15-incident_nobasemental',
+                                 'ssri-acute0-15-incident_norequiremental',
 
                                  'ssri-post30',
                                  'ssri-post30-basemental',
@@ -565,6 +566,20 @@ if __name__ == "__main__":
                      (df['snri-treat--1095-0-flag'] == 0) &
                      (df['other-treat--1095-0-flag'] == 0) &
                      (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+
+        case_label = 'SSRI-0-15-incident'
+        ctrl_label = 'Nouser-incident'
+
+    elif args.exptype == 'ssri-acute0-15-incident_norequiremental':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) &
+                     (df['ssri-treat--1095-0-flag'] == 0) &
+                     (df['snri-treat--1095-0-flag'] == 0) &
+                     (df['other-treat--1095-0-flag'] == 0), :]
+
+        df0 = df.loc[(df['ssri-treat-0-15-flag'] == 0) &
+                     (df['ssri-treat--1095-0-flag'] == 0) &
+                     (df['snri-treat--1095-0-flag'] == 0) &
+                     (df['other-treat--1095-0-flag'] == 0), :]
 
         case_label = 'SSRI-0-15-incident'
         ctrl_label = 'Nouser-incident'
