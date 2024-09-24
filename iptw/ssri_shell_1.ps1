@@ -21,7 +21,15 @@ python screen_ssri_iptw_pcornet.py  --exptype ssri-base180withmental-acutevsnot 
 python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident_nobasemental 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-incident_nobasemental-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident_norequiremental 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-15-incident_norequiremental-mentalcov.txt
 
+
+python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-pax05 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-ssri-acute0-15-incident-pax05-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-continue 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-ssri-acute0-15-incident-continue-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-pax15 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-ssri-acute0-15-incident-pax15-mentalcov.txt
+
+
 'ssri-acute0-15-incident_norequiremental'
+ 'ssri-acute0-15-incident-pax05',
+                                 'ssri-acute0-15-incident-continue',
 
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-7-mentalcov.txt
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-base-120-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-120-0-mentalcov.txt
