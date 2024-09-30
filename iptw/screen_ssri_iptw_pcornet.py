@@ -83,6 +83,8 @@ def parse_args():
                                  'ssri-acute0-15-incident-pax15',
                                  'ssri-acute0-15-incident-continue',
 
+                                 'fluvoxamine-acute0-15-incident-continue',
+
                                  'ssri-post30',
                                  'ssri-post30-basemental',
                                  'ssri-post30-nobasemental',
@@ -609,6 +611,7 @@ if __name__ == "__main__":
 
         case_label = 'SSRI-0-15-incident-pax05'
         ctrl_label = 'Nouser-incident'
+
     elif args.exptype == 'ssri-acute0-15-incident-continue':
         df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) &
                      (df['ssri-treat--1095-0-flag'] == 0) &
@@ -626,6 +629,24 @@ if __name__ == "__main__":
 
         case_label = 'SSRI-0-15-incident-continue'
         ctrl_label = 'Nouser-incident'
+
+    elif args.exptype == 'fluvoxamine-acute0-15-incident-continue':
+        df1 = df.loc[(df['ssri-treat-0-15@fluvoxamine'] >= 1) &
+                     (df['ssri-treat--1095-0-flag'] == 0) &
+                     (df['snri-treat--1095-0-flag'] == 0) &
+                     (df['other-treat--1095-0-flag'] == 0) &
+                     (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['ssri-treat-30-180-flag'] >= 1), :]
+
+        df0 = df.loc[(df['ssri-treat-0-15@fluvoxamine'] == 0) &
+                     (df['ssri-treat--1095-0-flag'] == 0) &
+                     (df['snri-treat--1095-0-flag'] == 0) &
+                     (df['other-treat--1095-0-flag'] == 0) &
+                     (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['followupanydx'] >= 1), :]
+
+        case_label = 'fluvoxamine-0-15-incident-continue'
+        ctrl_label = 'No-fluvoxamine-user-incident'
 
     elif args.exptype == 'ssri-acute0-15-incident_norequiremental':
         df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) &
