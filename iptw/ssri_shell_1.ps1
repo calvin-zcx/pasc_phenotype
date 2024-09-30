@@ -26,10 +26,14 @@ python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-pax05 2>&1
 python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-continue 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-ssri-acute0-15-incident-continue-mentalcov.txt
 python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-15-incident-pax15 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-ssri-acute0-15-incident-pax15-mentalcov.txt
 
+python screen_ssri_iptw_pcornet.py  --exptype fluvoxamine-base180withmental-acutevsnot 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-fluvoxamine-base180withmental-acutevsnot-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype fluvoxamine-base180-acutevsnot 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-fluvoxamine-base180-acutevsnot-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype fluvoxamine-base180withmental-acutevsnot-continue 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-fluvoxamine-base180withmental-acutevsnot-continue-mentalcov.txt
 
-'ssri-acute0-15-incident_norequiremental'
- 'ssri-acute0-15-incident-pax05',
-                                 'ssri-acute0-15-incident-continue',
+
+'fluvoxamine-base180withmental-acutevsnot',
+'fluvoxamine-base180-acutevsnot',
+'fluvoxamine-base180withmental-acutevsnot-continue',
 
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-acute0-7  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-acute0-7-mentalcov.txt
 ##python screen_ssri_iptw_pcornet.py  --exptype ssri-base-120-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-120-0-mentalcov.txt
