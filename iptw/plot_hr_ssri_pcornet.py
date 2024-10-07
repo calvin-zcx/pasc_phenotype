@@ -856,6 +856,9 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-post30-basemental-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-post30-mentalcov/'
 
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180withmental-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-mentalcov/'
+
 
     output_dir = indir + r'figure/'
 
@@ -1063,13 +1066,13 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
         groupvar="group",  # column containing group labels
         group_order=df_result['group'].unique(),
         xlabel="Hazard Ratio",  # x-label title
-        xticks=[0.5, 1, 35],  #[0.1, 1, 3],  # x-ticks to be printed
+        xticks=[0.1, 1, 3],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
         sort=True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
-        logscale=True,
+        # logscale=False, #True,
         # Additional kwargs for customizations
         **{
             # 'fontfamily': 'sans-serif',  # 'sans-serif'
