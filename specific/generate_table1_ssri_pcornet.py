@@ -1447,7 +1447,8 @@ if __name__ == '__main__':
     # table1_more_4_analyse(exptype='ssriVSbupropion-acute0-15-clean', cohort='all')  #
     # table1_more_4_analyse(exptype='ssri-base-180-0-cleanv2', cohort='all') #
 
-    table1_more_4_analyse(exptype='ssri-base180-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
+    # table1_more_4_analyse(exptype='ssri-base180-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
+    table1_more_4_analyse(exptype='ssri-base180withmental-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
     # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
