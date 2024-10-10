@@ -86,6 +86,9 @@ if __name__ == '__main__':
             print(ith, 'n_notfound', n_notfound, 'n_consist', n_consist, 'n_notconsist', n_notconsist,
                   'n_notconsist0to1', n_notconsist0to1, 'n_notconsist1to0', n_notconsist1to0)
 
-    df_pid_notconsist = pd.concat(pid_notconsist_list)
+    df_pid_notconsist = pd.concat([x.to_frame().T for x in pid_notconsist_list])
+    # df_pid_notconsist = pd.concat(pid_notconsist_list)
     print('n_notfound', n_notfound, 'n_consist', n_consist, 'n_notconsist', n_notconsist)
+    print(ith, 'n_notfound', n_notfound, 'n_consist', n_consist, 'n_notconsist', n_notconsist,
+          'n_notconsist0to1', n_notconsist0to1, 'n_notconsist1to0', n_notconsist1to0)
     df_pid_notconsist.to_csv('df_pid_notconsist.csv')
