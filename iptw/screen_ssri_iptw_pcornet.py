@@ -41,7 +41,9 @@ def parse_args():
                                                'healthy',
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
-                                               '1stwave', 'delta', 'alpha', 'preg-pos-neg',
+                                               '1stwave', 'delta', 'alpha',
+                                               'omicron', 'omicronafter', 'omicronbroad', 'beforeomicron',
+                                               'preg-pos-neg',
                                                'pospreg-posnonpreg', 'anyfollowupdx',
                                                'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
                                                'PaxRisk:Chronic liver disease',
@@ -336,14 +338,28 @@ def select_subpopulation(df, severity):
         print('Considering patients in 1st wave, Mar-1-2020 to Sep.-30-2020')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 3, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2020, 10, 1, 0, 0)), :].copy()
-    elif severity == 'delta':
-        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
-        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
-                df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'alpha':
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    elif severity == 'delta':
+        print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
+                df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+
+    elif severity == 'omicron':
+        print('Considering patients in omicron wave, December-1-2021 to March.-30-2022')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) & (
+                df['index date'] < datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+    elif severity == 'omicronafter':
+        print('Considering patients in omicronafter wave, April-1-2022 to end of inclusion windows')
+        df = df.loc[(df['index date'] >= datetime.datetime(2022, 4, 1, 0, 0)), :].copy()
+    elif severity == 'omicronbroad':
+        print('Considering patients in omicron wave, >= December-1-2021 ')
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
+    elif severity == 'beforeomicron':
+        print('Considering patients in omicron wave, < December-1-2021 ')
+        df = df.loc[(df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
     elif severity == 'anyfollowupdx':
         print('Considering patients with anyfollowupdx')
         print('before followupanydx', len(df))

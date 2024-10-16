@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 /misc/pg_credential.json
 /iptw/log_recover/
 /prerecover/_test_/
@@ -17,3 +18,6 @@
 /prerecover/shell-2023-11-14/
 /prerecover/shell_current_copy/
 
+=======
+/data/
+>>>>>>> origin/master
