@@ -859,6 +859,14 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180withmental-acutevsnot-mentalcov/'
     # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-mentalcov/'
 
+    indir = r'../data/recover/output/results/SSRI-overall-1stwave-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-alpha-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-delta-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-omicron-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-beforeomicron-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-omicronafter-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-omicronbroad-ssri-base180-acutevsnot-mentalcov/'
+
 
     output_dir = indir + r'figure/'
 

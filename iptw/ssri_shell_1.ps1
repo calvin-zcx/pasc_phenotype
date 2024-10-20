@@ -32,9 +32,15 @@
 
 
 
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity beforeomicron 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-beforeomicron-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 1stwave 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-1stwave-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity delta 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-delta-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity beforeomicron 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-beforeomicron-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 1stwave 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-1stwave-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity delta 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-delta-mentalcov.txt
+
+
+python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity less65 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-less65-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 18to25 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-18to25-mentalcov.txt
+python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 25to35 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-25to35-mentalcov.txt
+
 
 #
 #'fluvoxamine-base180withmental-acutevsnot',

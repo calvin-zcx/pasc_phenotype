@@ -35,7 +35,9 @@ def parse_args():
                                                'outpatient', 'inpatient', 'icu', 'inpatienticu',
                                                'female', 'male',
                                                'white', 'black',
-                                               'less65', '65to75', '75above', '20to40', '40to55', '55to65', 'above65',
+                                               '18to25', '25to35', '35to50', '50to65',
+                                               'less65', 'above65',
+                                               '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
                                                'healthy',
@@ -262,6 +264,26 @@ def select_subpopulation(df, severity):
     elif severity == 'black':
         print('Considering black cohorts')
         df = df.loc[(df['Black or African American'] == 1), :].copy()
+    elif severity == '18to25':
+        print('Considering age@18-24 cohorts')
+        df = df.loc[(df['age@18-24'] == 1), :].copy()
+    elif severity == '25to35':
+        print('Considering age@25-34 cohorts')
+        df = df.loc[(df['age@25-34'] == 1), :].copy()
+    elif severity == '35to50':
+        print('Considering age@35-49 cohorts')
+        df = df.loc[(df['age@35-49'] == 1), :].copy()
+    elif severity == '50to65':
+        print('Considering age@50-64 cohorts')
+        df = df.loc[(df['age@50-64'] == 1), :].copy()
+    elif severity == 'less65':
+        print('Considering less65 cohorts')
+        # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
+        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1), :].copy()
+    elif severity == 'above65':
+        print('Considering above65 cohorts')
+        df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+
     elif severity == '20to40':
         print('Considering 20to40 cohorts')
         df = df.loc[(df['20-<40 years'] == 1), :].copy()
@@ -271,18 +293,12 @@ def select_subpopulation(df, severity):
     elif severity == '55to65':
         print('Considering 55to65 cohorts')
         df = df.loc[(df['55-<65 years'] == 1), :].copy()
-    elif severity == 'less65':
-        print('Considering less65 cohorts')
-        df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
     elif severity == '65to75':
         print('Considering 65to75 cohorts')
         df = df.loc[(df['65-<75 years'] == 1), :].copy()
     elif severity == '75above':
         print('Considering 75above cohorts')
         df = df.loc[(df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
-    elif severity == 'above65':
-        print('Considering above65 cohorts')
-        df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
     elif severity == 'Anemia':
         print('Considering Anemia cohorts')
         df = df.loc[(df["DX: Anemia"] == 1), :].copy()
