@@ -37,6 +37,8 @@ def parse_args():
                                                'white', 'black',
                                                '18to25', '25to35', '35to50', '50to65',
                                                'less65', 'above65',
+                                               'less65omicronbroad', 'above65omicronbroad',
+
                                                '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
@@ -283,6 +285,16 @@ def select_subpopulation(df, severity):
     elif severity == 'above65':
         print('Considering above65 cohorts')
         df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+
+    elif severity == 'less65omicronbroad':
+        print('Considering less65omicronbroad cohorts')
+        # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
+        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+             ((df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1)), :].copy()
+    elif severity == 'above65omicronbroad':
+        print('Considering above65omicronbroad cohorts')
+        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+             ((df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1)), :].copy()
 
     elif severity == '20to40':
         print('Considering 20to40 cohorts')
