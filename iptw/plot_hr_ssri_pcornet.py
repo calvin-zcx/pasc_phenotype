@@ -866,6 +866,14 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
     indir = r'../data/recover/output/results/SSRI-overall-beforeomicron-ssri-base180-acutevsnot-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-omicronafter-ssri-base180-acutevsnot-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-omicronbroad-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-less65omicronbroad-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-above65omicronbroad-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-less65-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-above65-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-18to25-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-25to35-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-35to50-ssri-base180-acutevsnot-mentalcov/'
+    indir = r'../data/recover/output/results/SSRI-overall-50to65-ssri-base180-acutevsnot-mentalcov/'
 
 
     output_dir = indir + r'figure/'
@@ -1021,7 +1029,9 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
                                       'cif_diff-p-format', 'cif_diff-p-symbol'])
     # df_result['-aHR'] = -1 * df_result['aHR']
 
-    df_result = df_result.loc[~df_result['aHR'].isna()]
+    # df_result = df_result.loc[~df_result['aHR'].isna()]
+    df_result = df_result.loc[(1e-5 < df_result['aHR']) & (df_result['aHR'] < 100)]
+
     plt.rc('font', family='serif')
     if show == 'full':
         rightannote = ["aHR-str", 'p-val-sci',
@@ -1080,7 +1090,7 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
         sort=True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
-        # logscale=False, #True,
+        logscale=True, #False, #True,
         # Additional kwargs for customizations
         **{
             # 'fontfamily': 'sans-serif',  # 'sans-serif'
