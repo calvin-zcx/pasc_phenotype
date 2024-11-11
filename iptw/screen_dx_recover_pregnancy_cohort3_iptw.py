@@ -42,7 +42,9 @@ def parse_args():
                                                '03-20-06-20', '07-20-10-20', '11-20-02-21',
                                                '03-21-06-21', '07-21-11-21',
                                                '1stwave', 'delta', 'alpha', 'preg-pos-neg',
-                                               'pospreg-posnonpreg'],
+                                               'pospreg-posnonpreg',
+                                               #'nopaxremd',
+                                               ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
     parser.add_argument('--negative_ratio', type=int, default=10)  # 5
@@ -217,6 +219,11 @@ def select_subpopulation(df, severity):
         print('Considering patients in Alpha + others wave, Oct.-1-2020 to May-31-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2020, 10, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 6, 1, 0, 0)), :].copy()
+    # elif severity == 'nopaxremd':
+    ## move to screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py
+    #     print('Not identified by paxlovid or remdesivir, namely t2e of paxlovid or remdesivir is not 0')
+    #     df = df.loc[(df['treat-t2e@paxlovid'] > 0) & (df['treat-t2e@remdesivir'] > 0), :].copy()
+
     else:
         print('Considering ALL cohorts, no selection')
 
@@ -1129,7 +1136,9 @@ if __name__ == "__main__":
         )
         utils.dump((covs_array, df_raw, covid_label, iptw),
                    r'../data/recover/output/pregnancy_output/anypasc_for_table1.pkl')
-        zz
+        # utils.dump((covs_array, df_raw, covid_label, iptw),
+        #            r'../data/recover/output/pregnancy_output/anypasc_for_table1-{}.pkl'.format(args.severity))
+        # zz
         #
         out_file_balance = r'../data/recover/output/pregnancy_output/POSpreg_vs_posnon-usedx{}k{}useacute{}-V3/{}-{}-results.csv'.format(
             args.usedx,

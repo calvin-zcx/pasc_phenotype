@@ -54,6 +54,7 @@ def parse_args():
                                                'pregwithcond',
                                                'pregwithoutcond',
                                                'fullyvac', 'partialvac', 'anyvac', 'novacdata',
+                                               'nopaxremd',
 
                                                ],
                         default='all')
@@ -363,6 +364,9 @@ def select_subpopulation(df, severity, args):
         df = pd.concat([df_case, df_ctrl], ignore_index=True)
         df = df.copy()
         print('df', len(df))
+    elif severity == 'nopaxremd':
+        print('Not identified by paxlovid or remdesivir, namely t2e of paxlovid or remdesivir is not 0')
+        df = df.loc[(df['treat-t2e@paxlovid'] > 0) & (df['treat-t2e@remdesivir'] > 0), :].copy()
     else:
         print('Considering ALL cohorts, no selection')
 
