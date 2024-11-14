@@ -38,3 +38,6 @@ python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'ba
 python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'base2visitand1follow' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-base2visitand1follow.txt
 python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'base2visitand1follow' --kmatch 5 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-base2visitand1follow-k5.txt
 python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'base2visitand1follow' --kmatch 10 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-base2visitand1follow-k10.txt
+
+
+python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2_edema.py  --severity 'all' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-noedema.txt
