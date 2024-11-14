@@ -32,3 +32,7 @@ python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'om
 
 
 python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'nopaxremd' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-nopaxremd.txt
+
+
+python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'base2visit' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-base2visit.txt
+python screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2.py  --severity 'base2visitand1follow' 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort3_iptw_stratified_v2-base2visitand1follow.txt

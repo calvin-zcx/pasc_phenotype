@@ -55,7 +55,7 @@ def parse_args():
                                                'pregwithoutcond',
                                                'fullyvac', 'partialvac', 'anyvac', 'novacdata',
                                                'nopaxremd',
-
+                                               'base2visit', 'base2visitand1follow',
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -367,6 +367,16 @@ def select_subpopulation(df, severity, args):
     elif severity == 'nopaxremd':
         print('Not identified by paxlovid or remdesivir, namely t2e of paxlovid or remdesivir is not 0')
         df = df.loc[(df['treat-t2e@paxlovid'] > 0) & (df['treat-t2e@remdesivir'] > 0), :].copy()
+    elif severity == 'base2visit':
+        print('base2vist, require >= 2 visit at baseline')
+        bvstcnt = df[['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']].sum(axis=1)
+        df = df.loc[(bvstcnt >= 2), :].copy()
+
+    elif severity == 'base2visitand1follow':
+        print('base2vist, require >= 2 visit at baseline and >=1 in followup')
+        bvstcnt = df[['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']].sum(axis=1)
+        df = df.loc[(bvstcnt >= 2) & (df['followupanydx']>0), :].copy()
+
     else:
         print('Considering ALL cohorts, no selection')
 
@@ -834,8 +844,11 @@ if __name__ == "__main__":
     df = pd.concat([df1, df2_matched], ignore_index=True)
 
     print('Before select_subpopulation, len(df)', len(df))
+    print(r"total, case, control:", len(df), (df['flag_pregnancy'] == 1).sum(), (df['flag_pregnancy'] == 0).sum())
+
     df = select_subpopulation(df, args.severity, args)
     print('After select_subpopulation, len(df)', len(df))
+    print(r"total, case, control:", len(df), (df['flag_pregnancy'] == 1).sum(), (df['flag_pregnancy'] == 0).sum())
 
     # some additional feature processing
     selected_cols = [x for x in df.columns if x.startswith('dxCFR-out@')]
