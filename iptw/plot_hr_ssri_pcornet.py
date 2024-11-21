@@ -869,11 +869,11 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
     indir = r'../data/recover/output/results/SSRI-overall-less65omicronbroad-ssri-base180-acutevsnot-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-above65omicronbroad-ssri-base180-acutevsnot-mentalcov/'
     indir = r'../data/recover/output/results/SSRI-overall-less65-ssri-base180-acutevsnot-mentalcov/'
-    indir = r'../data/recover/output/results/SSRI-overall-above65-ssri-base180-acutevsnot-mentalcov/'
-    indir = r'../data/recover/output/results/SSRI-overall-18to25-ssri-base180-acutevsnot-mentalcov/'
-    indir = r'../data/recover/output/results/SSRI-overall-25to35-ssri-base180-acutevsnot-mentalcov/'
-    indir = r'../data/recover/output/results/SSRI-overall-35to50-ssri-base180-acutevsnot-mentalcov/'
-    indir = r'../data/recover/output/results/SSRI-overall-50to65-ssri-base180-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-above65-ssri-base180-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-18to25-ssri-base180-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-25to35-ssri-base180-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-35to50-ssri-base180-acutevsnot-mentalcov/'
+    # indir = r'../data/recover/output/results/SSRI-overall-50to65-ssri-base180-acutevsnot-mentalcov/'
 
 
     output_dir = indir + r'figure/'
@@ -892,7 +892,8 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
             df.loc[key, 'PASC Name Simple'] = pasc_simname_organ[pasc][0]
             df.loc[key, 'Organ Domain'] = pasc_simname_organ[pasc][1]
 
-    df_select = df.sort_values(by='hr-w', ascending=True)
+    # df_select = df.sort_values(by='hr-w', ascending=True)
+    df_select = df
     # df_select = df_select.loc[df_select['selected'] == 1, :]  #
     print('df_select.shape:', df_select.shape)
 
@@ -1030,7 +1031,8 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
     # df_result['-aHR'] = -1 * df_result['aHR']
 
     # df_result = df_result.loc[~df_result['aHR'].isna()]
-    df_result = df_result.loc[(1e-5 < df_result['aHR']) & (df_result['aHR'] < 100)]
+    df_result = df_result.loc[(1e-5 < df_result['aHR']) & (df_result['aHR'] < 100)].reset_index()
+    df_result.loc[df_result['pasc']==r'Headache; including migraine', r'name'] = r'Headache -'
 
     plt.rc('font', family='serif')
     if show == 'full':
@@ -1087,7 +1089,7 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
         xticks=[0.1, 1, 3],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
-        sort=True,  # sort estimates in ascending order
+        # sort=False, #True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
         logscale=True, #False, #True,
@@ -1105,8 +1107,8 @@ def plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full'):
 
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -1947,6 +1949,260 @@ def summarize_CI_from_primary_and_boostrap_cifdiff():
     return df_result
 
 
+def plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full', outcome='any_pasc'):
+    subgroup_list = [
+        'all',
+        # 'white', 'black',
+        # 'less35', 'above35',
+        '18to25', '25to35', '35to50', '50to65', 'less65', 'above65',
+        # 'trimester1', 'trimester2', 'trimester3', 'delivery1week',
+        # '1stwave', 'alpha', 'delta', 'omicron', 'omicronafter',
+        # 'bminormal', 'bmioverweight', 'bmiobese',
+        # 'pregwithcond', 'pregwithoutcond',
+        # 'fullyvac', 'partialvac', 'anyvac', 'novacdata',
+    ]
+
+    outcome_map = {'any_pasc': 'Long COVID',
+                   'PASC-General': 'U099/B948',
+                   'any_CFR': 'Any CFR',
+                   'death': 'death_postacute',
+                   'hospitalization':'hospitalization_postacute'}
+    subgroup_info_map = {
+        # 'all': ['All', 'Overall'],
+        'all': ['All', outcome_map[outcome] + ' in:'],
+        'white': ['White', 'Race'],
+        'black': ['Black', 'Race'],
+        'less35': ['<35', 'Age'],
+        'above35': ['≥35', 'Age'],
+        '18to25':['18-24', 'Age'],
+        '25to35':['25-34', 'Age'],
+        '35to50':['35-49', 'Age'],
+        '50to65':['50-64', 'Age'],
+        'less65': ['<65', 'Age'],
+        'above65': ['≥65', 'Age'],
+        'trimester1': ['I Trimester', 'Trimesters'],
+        'trimester2': ['II Trimester', 'Trimesters'],
+        'trimester3': ['III Trimester', 'Trimesters'],
+        'delivery1week': ['1 week', 'Trimesters'],
+        '1stwave': ['1st wave', 'Infection Time'],
+        'alpha': ['Alpha', 'Infection Time'],
+        'delta': ['Delta', 'Infection Time'],
+        'omicron': ['Omicron', 'Infection Time'],
+        'omicronafter': ['Omicron after', 'Infection Time'],
+        'bminormal': ['Normal', 'BMI'],
+        'bmioverweight': ['Overweight', 'BMI'],
+        'bmiobese': ['Obese', 'BMI'],
+        'pregwithcond': ['with co-existing conditions', 'With Risk Factor'],
+        'pregwithoutcond': ['w/o co-existing conditions', 'With Risk Factor'],
+        'fullyvac': ['fullyvac', 'Vaccine'],
+        'partialvac': ['partialvac', 'Vaccine'],
+        'anyvac': ['anyvac', 'Vaccine'],
+        'novacdata': ['novacdata', 'Vaccine'],
+    }
+
+    output_dir = r'../data/recover/output/results/ssri_figure_subgroup/'
+
+    results_list = []
+    for subgroup in subgroup_list:
+        indir = r'../data/recover/output/results/SSRI-overall-{}-ssri-base180-acutevsnot-mentalcov/'.format(
+            subgroup.replace(':', '_').replace('/', '-').replace(' ', '_')
+        )
+        info = subgroup_info_map[subgroup]
+        subgroupname = info[0]
+        grouplabel = info[1]
+
+        # subgroupname = subgroup.split(':')[-1]
+        # if subgroup == 'all':
+        #     indir = r'../data/recover/output/results/POSpreg_vs_posnon-usedx1k3useacute1-V3/'
+
+        print('read:', indir)
+        # if subgroup == 'PaxRisk:Dementia or other neurological conditions':
+        #     df = pd.read_csv(indir + 'causal_effects_specific-snapshot-18.csv')
+        #     subgroupname = 'Dementia or other neurological'
+        # else:
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+
+        # if subgroup == 'CFR':
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+        #     row = df.loc[df['pasc'] == 'any_CFR', :].squeeze()
+        #     name = 'Any CFR'
+        # else:
+        #     df = pd.read_csv(indir + 'causal_effects_specific-snapshot-2.csv')
+        #     row = df.loc[df['pasc'] == 'any_pasc', :].squeeze()
+        #     name = 'Any PASC'
+
+        # if outcome == 'any_pasc':
+        #     df = pd.read_csv(indir + 'causal_effects_specific.csv')
+        #     row = df.loc[df['pasc'] == 'any_pasc', :].squeeze()
+        #     name = 'Any PASC'
+
+        df = pd.read_csv(indir + 'causal_effects_specific.csv')
+        df = df.drop_duplicates(subset=['pasc'], keep='first')
+        row = df.loc[df['pasc'] == outcome, :].squeeze()
+        name = outcome
+
+        pasc = row['pasc']
+        # if row['case+'] < 500:
+        #     print(subgroup, 'is very small (<500 in exposed), skip', row['case+'], row['ctrl-'])
+        #     continue
+
+        print(name, pasc, outcome)
+
+        if outcome == 'PASC-General' and subgroup == '1stwave':
+            print('No u099 in 1st wave')
+            continue
+
+        hr = row['hr-w']
+        if pd.notna(row['hr-w-CI']):
+            ci = stringlist_2_list(row['hr-w-CI'])
+        else:
+            ci = [np.nan, np.nan]
+        p = row['hr-w-p']
+        # p_format =
+        # if p <= 0.001:
+        #     sigsym = '$^{***}$'
+        #     p_format = '{:.1e}'.format(p)
+        # elif p <= 0.01:
+        #     sigsym = '$^{**}$'
+        #     p_format = '{:.3f}'.format(p)
+        # elif p <= 0.05:
+        #     sigsym = '$^{*}$'
+        #     p_format = '{:.3f}'.format(p)
+        # else:
+        #     sigsym = '$^{ns}$'
+        #     p_format = '{:.3f}'.format(p)
+        # p_format += sigsym
+
+        ahr_pformat, ahr_psym = pformat_symbol(p)
+
+        # domain = row['Organ Domain']
+        cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+        cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+        # use nabs for ncum_ci_negative
+        cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+        cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                   stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+        cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+        cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+        cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+        cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+        result = [subgroupname, grouplabel, name, pasc,
+                  '{:.0f}'.format(row['case+']), '{:.0f}'.format(row['ctrl-']),
+                  hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                  '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                  '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                  ahr_pformat + ahr_psym, ahr_psym,
+                  cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                  '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                  '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                  cif_diff_pformat + cif_diff_psym, cif_diff_psym]
+
+        results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['subgroup', 'grouplabel', 'name', 'pasc', 'No. in 1', 'No. in 0',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+
+    df_result['-aHR'] = -1 * df_result['aHR']
+    plt.rc('font', family='serif')
+    # fig, ax = plt.subplots()
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       'No. in 1', 'No. in 0',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               'SSRI N=', 'Ctrl N=',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Ctrl']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["aHR-str",
+                       'cif_diff-str',
+
+                       ]
+        right_annoteheaders = ["HR (95% CI)",
+                               'DIFF/100',
+
+                               ]
+
+        leftannote = ['No. in 1', 'No. in 0', 'CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['SSRI N=', 'Ctrl N=', 'CIF/100 in SSRI', 'CIF/100 in Ctrl']
+
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(4, 8),  # (7, 12), #(6, 10), # (4.5, 13)
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="subgroup",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ['No. in 1', 'No. in 0', ],  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        annoteheaders=left_annoteheaders,  # ['No.Pregnant', 'No.Ctrl', ],
+        rightannote=rightannote,  # ["aHR-str", "aHR-CI-str", 'p-val-sci', 'CIF1-str', 'CIF0-str'],
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,
+        # ["aHR", "95% CI", "P-value", 'CIF1', 'CIF0'],  # p_format, ^corresponding headers
+        groupvar="grouplabel",  # column containing group labels
+        # group_order=df_result['group'].unique(),
+        xlabel="Hazard Ratio",  # x-label title
+        xticks=[0.1, 1, 3], #[0.01, 1, 1.5] if outcome == 'PASC-General' else [0.35, 1, 1.5],  # x-ticks to be printed
+        color_alt_rows=True,
+        # flush=True,
+        # sort=True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        table=True,  # Format as a table
+        logscale=True,
+        # Additional kwargs for customizations
+        **{
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 14,  # adjust x-ticker fontsize
+
+        },
+    )
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_subgroup-{}-{}.png'.format(show, outcome), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-{}-{}.pdf'.format(show, outcome), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+
+
 if __name__ == '__main__':
     # plot_forest_for_dx_organ_pax()
 
@@ -1957,8 +2213,17 @@ if __name__ == '__main__':
     # 2024-3-6
     # plot primary analysis for pasc with individual conditions
     # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full')
-    df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full-nopval')
+    # 2024-11-17
+    # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='full-nopval')
     # df_result = plot_forest_for_dx_organ_pax_lib2_cifdiff_v2(show='short')
+
+    # 2024-11-17
+    plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full-nopval', outcome='death')
+    # plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full-nopval', outcome='hospitalization')
+
+    plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full-nopval', outcome='any_pasc')
+    plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full-nopval', outcome='PASC-General')
+    plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full-nopval', outcome='any_CFR')
 
     # #plot subgroup analysis for primary pasc outcomes
     # df_result = plot_forest_for_pax_subgroup_lib2_cifdiff(show='full')
