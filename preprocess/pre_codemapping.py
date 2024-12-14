@@ -1103,6 +1103,58 @@ def ICD_to_PASC_added_extension():
     return icd_pasc, pasc_index, df_pasc_list
 
 
+def ICD_to_PASC_ME_CFS():
+    # 2023-12-14 add ME_CFS
+    # allow self-defined categories added
+    # To get code mapping from icd10 to PASC our compiled list.
+
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/PASC_extension_ME_CFS.xlsx'
+    df_pasc_list_all = pd.read_excel(pasc_list_file, sheet_name=r'Sheet1')  # , usecols="A:N")
+    print('df_pasc_list_all.shape', df_pasc_list_all.shape)
+    df_pasc_list = df_pasc_list_all.loc[df_pasc_list_all['include']=='yes', :]
+    print('after selet include==yes, df_pasc_list.shape', df_pasc_list.shape)
+
+    df_pasc_list['ICD-10-CM Code'] = df_pasc_list['ICD-10-CM Code'].apply(lambda x: x.strip().upper().replace('.', ''))
+    pasc_codes = df_pasc_list['ICD-10-CM Code']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        hd_domain = row['HD Domain']
+        ccsr_code = row['CCSR CATEGORY 1']
+        ccsr_category = row['self selected category']  # row['CCSR CATEGORY 1 DESCRIPTION']
+        icd = row['ICD-10-CM Code']
+        icd_name = row['ICD-10-CM Code Description']
+        icd_pasc[icd] = [ccsr_category, ccsr_code, hd_domain, icd_name]
+
+    # df_dim = df_pasc_list['CCSR CATEGORY 1 DESCRIPTION'].value_counts().reset_index()
+    df_dim = df_pasc_list['self selected category'].value_counts(sort=False).reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_mecfs_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/mecfs_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+
 def ICD_to_PASC_brainfog():
     start_time = time.time()
     dict_df_cci = pd.read_excel(r'../data/mapping/RECOVER Brain Fog Code Lists 11.04.2022-category_namerevised.xlsx',
@@ -1180,6 +1232,51 @@ def ICD_to_PASC_cognitive_fatigue_respiratory():
 
     print('len(pasc_index):', len(pasc_index))
     output_file = r'../data/mapping/cognitive-fatigue-respiratory_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(pasc_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_pasc, pasc_index, df_pasc_list
+
+def ICD_to_CVD_death():
+    start_time = time.time()
+    pasc_list_file = r'../data/mapping/death_cardiovascular.xlsx'
+    df_pasc_list = pd.read_excel(pasc_list_file,
+                                 dtype=str,
+                                 sheet_name='Sheet1')
+    print('df_pasc_list.shape', df_pasc_list.shape)
+    df_pasc_list['icd10cm'] = df_pasc_list['icd10cm'].apply(
+        lambda x: x.strip().strip(r'\'').upper().replace('.', ''))
+    pasc_codes = df_pasc_list['icd10cm']  # .str.upper().replace('.', '', regex=False)  # .to_list()
+    pasc_codes_set = set(pasc_codes)
+    print('Load compiled pasc list done from {}\nlen(pasc_codes)'.format(pasc_list_file),
+          len(pasc_codes), 'len(pasc_codes_set):', len(pasc_codes_set))
+
+    icd_pasc = {}
+    pasc_index = {}
+
+    for index, row in df_pasc_list.iterrows():
+        category = row['category']
+        subcategory = row['cvd death subgroup']
+        icd = row['icd10cm']
+        icd_name = row['long description']
+        icd_pasc[icd] = [category, icd, icd_name, subcategory]
+
+    df_dim = df_pasc_list['category'].value_counts(sort=False).reset_index()
+    for index, row in df_dim.iterrows():
+        ccsr_category = row[0]
+        cnt = row[1]
+        pasc_index[ccsr_category] = [index, cnt]
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/icd_cvddeath_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_pasc, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(pasc_index):', len(pasc_index))
+    output_file = r'../data/mapping/cvddeath_index_mapping.pkl'
     utils.check_and_mkdir(output_file)
     pickle.dump(pasc_index, open(output_file, 'wb'))
     print('dump done to {}'.format(output_file))
@@ -1838,8 +1935,11 @@ if __name__ == '__main__':
     # icd_addedPASC, addedPASC_index, df_pasc = ICD_to_PASC_added_extension()
     # icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
     # icd_cfr, cfr_index, dict_df_cfr = ICD_to_PASC_cognitive_fatigue_respiratory()
-
-    # zz
+    # 2024-12-14 add ME-CFS as outcome
+    icd_mecfs, mecfs_index, df_mecfs = ICD_to_PASC_ME_CFS()
+    # 2024-12-14 add cvd to check death record with CVD dx
+    icd_cvddeath, cvddeath_index, dict_df_cvd = ICD_to_CVD_death()
+    zz
 
     # 7. Load CDC code mapping:
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
@@ -1885,6 +1985,6 @@ if __name__ == '__main__':
     # ssrisnrimed_code = build_ssri_snri_drug_map()
 
     # 19 add more mental categories 2024-09-05
-    icd_mental, mental_index, list_df_menta = ICD_to_mental()
+    # icd_mental, mental_index, list_df_menta = ICD_to_mental()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
