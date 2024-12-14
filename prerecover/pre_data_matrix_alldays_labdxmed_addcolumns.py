@@ -1777,6 +1777,8 @@ def build_feature_matrix(args):
 
             # add CVD death condition, 2024-12-14
             # option 1, CVD outcome post-acute (use this one for consistency, implict implies CVD diagnosis close to death)
+            # only check post-acute associated dx and death.
+            # not store a dimension for acute death assocaited dx, need to extract from stored all time dimension
             # option 2, CVD outcome acute + postacute
             outcome_cvddeath_flag[i, :], outcome_cvddeath_t2e[i, :], outcome_cvddeath_baseline[i, :], outcome_cvddeath_t2eall_1row = \
                 _encoding_outcome_dx_withalldaysoveralltime(dx, icd_cvddeath, cvddeath_encoding, index_date, default_t2e)
