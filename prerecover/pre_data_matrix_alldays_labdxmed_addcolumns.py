@@ -164,6 +164,15 @@ def _load_mapping():
     icd_mental = utils.load(r'../data/mapping/icd_mental_mapping.pkl')
     mental_encoding = utils.load(r'../data/mapping/mental_index_mapping.pkl')
 
+    # add mecfs covs 2024-12-14
+    icd_mecfs = utils.load(r'../data/mapping/icd_mecfs_mapping.pkl')
+    mecfs_encoding = utils.load(r'../data/mapping/mecfs_index_mapping.pkl')
+
+    # add cvd death covs 2024-12-14
+    icd_cvddeath = utils.load(r'../data/mapping/icd_cvddeath_mapping.pkl')
+    cvddeath_encoding = utils.load(r'../data/mapping/cvddeath_index_mapping.pkl')
+
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
@@ -172,7 +181,8 @@ def _load_mapping():
             icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk, fips_ziplist,
             icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
             icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med,
-            icd_mental, mental_encoding)
+            icd_mental, mental_encoding,
+            icd_mecfs, mecfs_encoding, icd_cvddeath, cvddeath_encoding,)
 
 
 def _encoding_age(age):
@@ -1466,7 +1476,7 @@ def build_feature_matrix(args):
      zip_ruca, icd_cci, cci_encoding, covid_med_update,
      icd_addedPASC, addedPASC_encoding, icd_brainfog, brainfog_encoding, pax_contra, pax_risk,
      _, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med,
-     icd_mental, mental_encoding) = _load_mapping()  # no load fips_ziplist
+     icd_mental, mental_encoding, icd_mecfs, mecfs_encoding, icd_cvddeath, cvddeath_encoding,) = _load_mapping()  # no load fips_ziplist
 
 
     # step 2: load cohorts pickle data
@@ -1489,9 +1499,11 @@ def build_feature_matrix(args):
         # v3 on 2024-7-28 adding other mental drugs
         # v4-with mental on 2024-09-06, add more mental covs, and update bupropion, only store time at followup
         # v5-with mental on 2024-09-06, add more mental covs, and update bupropion, store time over all time
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v5-withmental.csv'.format(
+        # output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v5-withmental.csv'.format(
+        #     args.dataset, args.cohorts, args.dataset)
+        # v6-withmental and mecfs and cvd on 2024-12-14, include all v5 portion
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v6-withmentalCFSCVD.csv'.format(
             args.dataset, args.cohorts, args.dataset)
-
         # output_med_info = r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(
         #     args.dataset, args.cohorts, args.dataset)
         #
@@ -1581,6 +1593,8 @@ def build_feature_matrix(args):
                     ['dxCFR-base@' + x for x in CFR_encoding.keys()] + \
                     ['dxCFR-t2eall@' + x for x in CFR_encoding.keys()])
 
+
+
             addPaxRisk_array = np.zeros((n, 3), dtype='int16')  #
             addPaxRisk_column_names = [
                 'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
@@ -1644,9 +1658,31 @@ def build_feature_matrix(args):
                                              ['mental-base@' + x for x in mental_encoding.keys()] + \
                                              ['mental-t2eall@' + x for x in mental_encoding.keys()]
 
+            # 2024-12-14 add ME/CFS 1-dim outcome
+            outcome_mecfs_flag = np.zeros((n, 1), dtype='int16')
+            outcome_mecfs_t2e = np.zeros((n, 1), dtype='int16')
+            outcome_mecfs_baseline = np.zeros((n, 1), dtype='int16')
+            outcome_mecfs_t2eall = []
+            outcome_mecfs_column_names = (
+                    ['dxMECFS-out@' + x for x in mecfs_encoding.keys()] + \
+                    ['dxMECFS-t2e@' + x for x in mecfs_encoding.keys()] + \
+                    ['dxMECFS-base@' + x for x in mecfs_encoding.keys()] + \
+                    ['dxMECFS-t2eall@' + x for x in mecfs_encoding.keys()])
+
+            # 2024-12-14 cvd for death attribution
+            outcome_cvddeath_flag = np.zeros((n, 1), dtype='int16')
+            outcome_cvddeath_t2e = np.zeros((n, 1), dtype='int16')
+            outcome_cvddeath_baseline = np.zeros((n, 1), dtype='int16')
+            outcome_cvddeath_t2eall = []
+            outcome_cvddeath_column_names = (
+                    ['dxCVDdeath-out@' + x for x in cvddeath_encoding.keys()] + \
+                    ['dxCVDdeath-t2e@' + x for x in cvddeath_encoding.keys()] + \
+                    ['dxCVDdeath-base@' + x for x in cvddeath_encoding.keys()] + \
+                    ['dxCVDdeath-t2eall@' + x for x in cvddeath_encoding.keys()])
+
             column_names = (['patid', 'site', 'covid', ] + outcome_CFR_column_names + addPaxRisk_column_names +
                             outcome_U099_column_names + outcome_hospitalization_column_names + ssritreat_column_names +
-                            outcome_mental_column_names)
+                            outcome_mental_column_names + outcome_mecfs_column_names + outcome_cvddeath_column_names)
 
             # if args.positive_only:
             #     if not flag:
@@ -1734,6 +1770,18 @@ def build_feature_matrix(args):
                 _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date, default_t2e)
             outcome_mental_t2eall.append(outcome_mental_t2eall_1row)
 
+            # add ME/CFS condition, 2024-12-14
+            outcome_mecfs_flag[i, :], outcome_mecfs_t2e[i, :], outcome_mecfs_baseline[i, :], outcome_mecfs_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_mecfs, mecfs_encoding, index_date, default_t2e)
+            outcome_mecfs_t2eall.append(outcome_mecfs_t2eall_1row)
+
+            # add CVD death condition, 2024-12-14
+            # option 1, CVD outcome post-acute (use this one for consistency, implict implies CVD diagnosis close to death)
+            # option 2, CVD outcome acute + postacute
+            outcome_cvddeath_flag[i, :], outcome_cvddeath_t2e[i, :], outcome_cvddeath_baseline[i, :], outcome_cvddeath_t2eall_1row = \
+                _encoding_outcome_dx_withalldays(dx, icd_cvddeath, cvddeath_encoding, index_date, default_t2e)
+            outcome_cvddeath_t2eall.append(outcome_mecfs_t2eall_1row)
+
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
@@ -1759,6 +1807,14 @@ def build_feature_matrix(args):
                                     outcome_mental_t2e,
                                     outcome_mental_baseline,
                                     np.asarray(outcome_mental_t2eall),
+                                    outcome_mecfs_flag,
+                                    outcome_mecfs_t2e,
+                                    outcome_mecfs_baseline,
+                                    np.asarray(outcome_mecfs_t2eall),
+                                    outcome_cvddeath_flag,
+                                    outcome_cvddeath_t2e,
+                                    outcome_cvddeath_baseline,
+                                    np.asarray(outcome_cvddeath_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)
@@ -1785,7 +1841,7 @@ def build_feature_matrix(args):
                               x.startswith('dxbrainfog-base@') or
                               x.startswith('covidmed-base@') or
                               x.startswith('smm-base@') or
-                              x.startswith('dxdxCFR-base@')
+                              x.startswith('dxCFR-base@')
                               )]
             df_bool.loc[:, selected_cols] = (df_bool.loc[:, selected_cols].astype('int') >= 1).astype('int')
 
