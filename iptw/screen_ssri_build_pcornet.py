@@ -967,7 +967,10 @@ if __name__ == "__main__":
             #     site, site)
 
             # 2024-9-6 add mental covs, weillbutrin --> bupropion, v5 with all time over all period, base+acute+fup
-            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v5-withmental.csv'.format(
+            # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v5-withmental.csv'.format(
+            #     site, site)
+            # 2024-12-14 add ME/CFS and CVD death
+            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v6-withmentalCFSCVD.csv'.format(
                 site, site)
             print('add columns from:', data_file_add)
             df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
@@ -1002,12 +1005,16 @@ if __name__ == "__main__":
 
         print('covid+: df.shape:', df.shape)
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental.csv'
+        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD.csv'
+
         # if args.cohorttype == 'lab-dx':
         #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
         print('dump to', out_data_file)
         # df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v3.csv')
-        df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v5-withmental.csv')
+        # df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v5-withmental.csv')
+        df_ssri.to_csv('recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRIOnly-v6-withmentalCFSCVD.csv')
+
         df.to_csv(out_data_file)
         print('dump done!')
     else:
