@@ -1772,15 +1772,15 @@ def build_feature_matrix(args):
 
             # add ME/CFS condition, 2024-12-14
             outcome_mecfs_flag[i, :], outcome_mecfs_t2e[i, :], outcome_mecfs_baseline[i, :], outcome_mecfs_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_mecfs, mecfs_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mecfs, mecfs_encoding, index_date, default_t2e)
             outcome_mecfs_t2eall.append(outcome_mecfs_t2eall_1row)
 
             # add CVD death condition, 2024-12-14
             # option 1, CVD outcome post-acute (use this one for consistency, implict implies CVD diagnosis close to death)
             # option 2, CVD outcome acute + postacute
             outcome_cvddeath_flag[i, :], outcome_cvddeath_t2e[i, :], outcome_cvddeath_baseline[i, :], outcome_cvddeath_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_cvddeath, cvddeath_encoding, index_date, default_t2e)
-            outcome_cvddeath_t2eall.append(outcome_mecfs_t2eall_1row)
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_cvddeath, cvddeath_encoding, index_date, default_t2e)
+            outcome_cvddeath_t2eall.append(outcome_cvddeath_t2eall_1row)
 
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
