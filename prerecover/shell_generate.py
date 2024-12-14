@@ -255,7 +255,7 @@ def shell_lab_dx_med_4covid_addcolumnes():
 
     print('site_list:', len(site_list), site_list)
 
-    with open(r'shell_all_addCFRV4.ps1', 'wt') as f:
+    with open(r'shell_all_addCFS_CVD_V6.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
 #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-addPaxRisk.txt
@@ -264,7 +264,9 @@ def shell_lab_dx_med_4covid_addcolumnes():
 # """.replace('nyu', site)
 #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
 # """.replace('nyu', site)
-            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v5withmental.txt
+#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v5withmental.txt
+# """.replace('nyu', site)
+            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v6withmentalCFSCVD.txt
 """.replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
@@ -278,7 +280,7 @@ def shell_lab_dx_med_4covid_addcolumnes():
     print('len(site_list):', len(site_list), 'divide:', divide,
           'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
           'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
-    utils.split_shell_file_bydelta(r"shell_all_addCFRV4.ps1", delta=ndelta, skip_first=0)
+    utils.split_shell_file_bydelta(r"shell_all_addCFS_CVD_V6.ps1", delta=ndelta, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     # not using this, change to pre_covid_records.py
