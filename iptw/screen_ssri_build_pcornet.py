@@ -1022,6 +1022,7 @@ if __name__ == "__main__":
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD.csv'
         #
         # # if args.cohorttype == 'lab-dx':
         # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
@@ -1041,11 +1042,13 @@ if __name__ == "__main__":
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats.csv'
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats.csv'
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD-addPaxFeats.csv'
         #
         # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
         # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
         # print('df_before_treatsep.shape:', df_before_treatsep.shape)
         # df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
+        # print('dump', out_data_file.replace('.csv', '-addGeneralEC.csv'), ' done!')
         #
         # zz
         #
@@ -1056,6 +1059,7 @@ if __name__ == "__main__":
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC.csv'
         # in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5.5-withmental-addPaxFeats-addGeneralEC.csv'
         # 2024/9/19, 5.5 version, smi still old, just post acute exposure. update smi to v6
+        in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD-addPaxFeats-addGeneralEC.csv'
 
         df = pd.read_csv(in_mediate_file,
                          dtype={'patid': str, 'site': str, 'zip': str},
