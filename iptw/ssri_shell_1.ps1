@@ -42,6 +42,9 @@ python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity
 python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 25to35 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-25to35-mentalcov.txt
 
 
+python screen_ssri_iptw_pcornetV2.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v2/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
+
+
 #
 #'fluvoxamine-base180withmental-acutevsnot',
 #'fluvoxamine-base180-acutevsnot',
