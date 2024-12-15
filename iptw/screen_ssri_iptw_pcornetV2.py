@@ -38,7 +38,7 @@ def parse_args():
                                                '18to25', '25to35', '35to50', '50to65',
                                                'less65', 'above65',
                                                'less65omicronbroad', 'above65omicronbroad',
-
+                                                'less50', 'above50',
                                                '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
@@ -67,6 +67,7 @@ def parse_args():
                                                'RUCA1@1', 'RUCA1@2', 'RUCA1@3', 'RUCA1@4', 'RUCA1@5',
                                                'RUCA1@6', 'RUCA1@7', 'RUCA1@8', 'RUCA1@9', 'RUCA1@10',
                                                'RUCA1@99', 'ZIPMissing',
+                                               'depression', 'anxiety', 'SMI', 'nonSMI',
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
@@ -285,7 +286,13 @@ def select_subpopulation(df, severity):
     elif severity == 'above65':
         print('Considering above65 cohorts')
         df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
-
+    elif severity == 'less50':
+        print('Considering less50 cohorts')
+        # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
+        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1), :].copy()
+    elif severity == 'above50':
+        print('Considering above50 cohorts')
+        df = df.loc[(df['age@50-64'] == 1) | (df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
     elif severity == 'less65omicronbroad':
         print('Considering less65omicronbroad cohorts')
         # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
@@ -374,7 +381,6 @@ def select_subpopulation(df, severity):
         print('Considering patients in Delta wave, June-1-2021 to Nov.-30-2021')
         df = df.loc[(df['index date'] >= datetime.datetime(2021, 6, 1, 0, 0)) & (
                 df['index date'] < datetime.datetime(2021, 12, 1, 0, 0)), :].copy()
-
     elif severity == 'omicron':
         print('Considering patients in omicron wave, December-1-2021 to March.-30-2022')
         df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) & (
@@ -459,6 +465,19 @@ def select_subpopulation(df, severity):
         print('before selection', len(df))
         df = df.loc[(df[severity] == 1), :].copy()
         print('after selecting RUCA', severity, len(df))
+
+    elif severity == 'depression':
+        print('Considering base depression cohorts')
+        df = df.loc[(df['mental-base@Depressive Disorders'] >= 1), :].copy()
+    elif severity == 'anxiety':
+        print('Considering base anxiety cohorts')
+        df = df.loc[(df['mental-base@Anxiety Disorders'] >= 1), :].copy()
+    elif severity == 'SMI':
+        print('Considering base SMI cohorts')
+        df = df.loc[(df['mental-base@SMI'] >= 1), :].copy()
+    elif severity == 'nonSMI':
+        print('Considering base nonSMI cohorts')
+        df = df.loc[(df['mental-base@non-SMI'] >= 1), :].copy()
     else:
         print('Considering ALL cohorts')
 
