@@ -34,7 +34,8 @@ def parse_args():
 
     args = parser.parse_args()
 
-    args.preg_delivery_file = r'../data/recover/output/{}/patient_pregnant_{}.pkl'.format(args.dataset)
+    args.preg_delivery_file = r'../data/recover/output/{}/patient_pregnant_{}.pkl'.format(args.dataset,
+                                                                                          args.dataset)
     # load covid identified by lab + dx + med
     args.covid_lab_file = r'../data/recover/output/{}/patient_covid_{}_{}.pkl'.format(args.dataset,
                                                                                       args.cohorttype,
@@ -60,15 +61,15 @@ def parse_args():
     # changed 2022-04-08 V2, add vital information in V2
     # args.output_file_covid = r'../data/V15_COVID19/output/{}/cohorts_covid_4manuNegNoCovid_{}.pkl'.format(
     # args.dataset, args.dataset)
-    args.output_file_covid = r'../data/recover/output/{}/cohorts_covid_posnegpreg-negInpos_{}{}.pkl.gz'.format(
+    args.output_file_covid = r'../data/recover/output/{}/cohorts_preg_roughcal_{}{}.pkl.gz'.format(
         args.dataset,
         args.dataset,
-        '' if args.cohorttype == 'lab-dx-med-preg' else '_' + args.cohorttype)
+        '' if args.cohorttype == 'lab-dx-med-preg' else '_' + args.cohorttype)  #
     # args.output_file_covid2 = r'../data/recover/output/{}/cohorts_covid_posOnly18base_{}{}.pkl'.format(
     #     args.dataset,
     #     args.dataset,
     #     '' if args.cohorttype == 'lab-dx-med-preg' else '_' + args.cohorttype)
-    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_covid_posnegpreg-negInpos_{}{}_info.csv'.format(
+    args.output_file_cohortinfo = r'../data/recover/output/{}/cohorts_preg_roughcal_{}{}_info.csv'.format(
         args.dataset,
         args.dataset,
         '' if args.cohorttype == 'lab-dx-med-preg' else '_' + args.cohorttype)
@@ -697,7 +698,8 @@ def integrate_data_and_apply_eligibility(args):
     id_dx[patid].append ((dx_date,    dx,       'Pregnant', age, enc_id, enc_type, 'preg-px'))
     id_dx[patid].append ((dx_date,    dx,       'Pregnant', age, enc_id, enc_type, 'preg-encdrg'))
     """
-    for i, (pid, row) in enumerate(id_lab.items()):
+    # for i, (pid, row) in enumerate(id_lab.items()):
+    for i, (pid, row) in enumerate(id_pregnant.items()):
         # v_lables = [x[2].upper() for x in row]
         # how to deal with pregnant information?
         # group-1: positive,
@@ -708,62 +710,66 @@ def integrate_data_and_apply_eligibility(args):
         # 2024-7-22, add the second dimension pregnant
         if 'PREGNANT' in v_lables:
             n_preg += 1
+            position = 0  # sorted before, choose the first one
+            indexrecord = row[position]
+            # 'PREGNANT' (dx_date, dx/pro/enc, 'Pregnant', age, enc_id, enc_type, 'preg-dx')
+            id_indexrecord[pid] = [None, 'PREGNANT'] + list(indexrecord)
 
-        if v_lables.count('PREGNANT') == len(v_lables):
-            # only have pregnant related records, no covid related records
-            n_preg_wo_covidrecs += 1
-            # position = 0  # use first pregnant related event as index
-            # indexrecord = row[position]
-            # id_indexrecord[pid] = [None, True] + list(indexrecord)
-        else:
-            # have any covid related records
-            if 'POSITIVE' in v_lables:
-                # if has any covid positive record, then positive
-                n_pos += 1
-                position = v_lables.index('POSITIVE')  # first positive
-                indexrecord = row[position]
-                # id_indexrecord[pid] = [True, 'PREGNANT' in v_lables] + list(indexrecord)
-
-                # # 2024-7-23 add positive patients with negative portions --> discard here, use another file
-                if 'NEGATIVE' in v_lables:
-                    neg_start = v_lables.index('NEGATIVE')  # first negative
-                    if neg_start < position:
-                        neg_indexrecord = row[neg_start]
-                        id_indexrecord[pid] = [False, indexrecord] + list(neg_indexrecord)
-
-            else:  # ( no pos, only negative/NI/preg)
-                if 'NI' not in v_lables:  # ni not in <---> all negative or pregnant (cannot be all pregnant)
-                    # and ((v_lables.count('NEGATIVE') + v_lables.count('PREGNANT')) == len(v_lables)):  # can be empty [], then true for this. potential bug
-                    # if all covid records are negative
-                    n_neg += 1
-                    # ### position = 0  # if all negative, selected first
-                    # position = v_lables.index('NEGATIVE')  # first negative among negative/pregnant
-                    # indexrecord = row[position]
-                    # # if not args.positive_only:
-                    # id_indexrecord[pid] = [False, 'PREGNANT' in v_lables] + list(indexrecord)
-
-                elif ('NI' in v_lables) and ('PREGNANT' in v_lables):  # have NI or negative   and preg
-                    n_preg_in_NI += 1
-                    # position = v_lables.index('NI')  # first negative
-                    # if 'NEGATIVE' in v_lables:
-                    #     pos2 = v_lables.index('NEGATIVE')
-                    #     if pos2 <= position:
-                    #         position = pos2
-                    # indexrecord = row[position]  # earliest NI or negative event
-                    # id_indexrecord[pid] = [None, True] + list(indexrecord)
-
-                else:  # ('NI' in v_lables) and ('PREGNANT' not in v_lables) # have NI or negative and no preg, discard
-                    # no pos, no pregnant, only NI or with Negative
-                    # ignore NI, because may leak presume positive to negative
-                    # check number first
-                    n_with_ni_nopreg += 1
-                    # position = v_lables.index('NI')  # first negative
-                    # if 'NEGATIVE' in v_lables:
-                    #     pos2 = v_lables.index('NEGATIVE')
-                    #     if pos2 <= position:
-                    #         position = pos2
-                    # indexrecord = row[position]  # earliest NI or negative event
-                    # id_indexrecord[pid] = [np.nan, False] + list(indexrecord)
+        # if v_lables.count('PREGNANT') == len(v_lables):
+        #     # only have pregnant related records, no covid related records
+        #     n_preg_wo_covidrecs += 1
+        #     # position = 0  # use first pregnant related event as index
+        #     # indexrecord = row[position]
+        #     # id_indexrecord[pid] = [None, True] + list(indexrecord)
+        # else:
+        #     # have any covid related records
+        #     if 'POSITIVE' in v_lables:
+        #         # if has any covid positive record, then positive
+        #         n_pos += 1
+        #         position = v_lables.index('POSITIVE')  # first positive
+        #         indexrecord = row[position]
+        #         # id_indexrecord[pid] = [True, 'PREGNANT' in v_lables] + list(indexrecord)
+        #
+        #         # # 2024-7-23 add positive patients with negative portions --> discard here, use another file
+        #         if 'NEGATIVE' in v_lables:
+        #             neg_start = v_lables.index('NEGATIVE')  # first negative
+        #             if neg_start < position:
+        #                 neg_indexrecord = row[neg_start]
+        #                 id_indexrecord[pid] = [False, indexrecord] + list(neg_indexrecord)
+        #
+        #     else:  # ( no pos, only negative/NI/preg)
+        #         if 'NI' not in v_lables:  # ni not in <---> all negative or pregnant (cannot be all pregnant)
+        #             # and ((v_lables.count('NEGATIVE') + v_lables.count('PREGNANT')) == len(v_lables)):  # can be empty [], then true for this. potential bug
+        #             # if all covid records are negative
+        #             n_neg += 1
+        #             # ### position = 0  # if all negative, selected first
+        #             # position = v_lables.index('NEGATIVE')  # first negative among negative/pregnant
+        #             # indexrecord = row[position]
+        #             # # if not args.positive_only:
+        #             # id_indexrecord[pid] = [False, 'PREGNANT' in v_lables] + list(indexrecord)
+        #
+        #         elif ('NI' in v_lables) and ('PREGNANT' in v_lables):  # have NI or negative   and preg
+        #             n_preg_in_NI += 1
+        #             # position = v_lables.index('NI')  # first negative
+        #             # if 'NEGATIVE' in v_lables:
+        #             #     pos2 = v_lables.index('NEGATIVE')
+        #             #     if pos2 <= position:
+        #             #         position = pos2
+        #             # indexrecord = row[position]  # earliest NI or negative event
+        #             # id_indexrecord[pid] = [None, True] + list(indexrecord)
+        #
+        #         else:  # ('NI' in v_lables) and ('PREGNANT' not in v_lables) # have NI or negative and no preg, discard
+        #             # no pos, no pregnant, only NI or with Negative
+        #             # ignore NI, because may leak presume positive to negative
+        #             # check number first
+        #             n_with_ni_nopreg += 1
+        #             # position = v_lables.index('NI')  # first negative
+        #             # if 'NEGATIVE' in v_lables:
+        #             #     pos2 = v_lables.index('NEGATIVE')
+        #             #     if pos2 <= position:
+        #             #         position = pos2
+        #             # indexrecord = row[position]  # earliest NI or negative event
+        #             # id_indexrecord[pid] = [np.nan, False] + list(indexrecord)
 
             # Notes:
             # 1. For all preg w/o covid records, or preg with NI, label as None, bool(None): False, pd.isna(None):True
@@ -774,6 +780,7 @@ def integrate_data_and_apply_eligibility(args):
 
     print('Step1: Initial Included cohorts from\nlen(id_lab):', len(id_lab))
     print('Not using NI due to potential positive leaking, thus Total included:\n',
+          'len(id_pregnant)', len(id_pregnant),
           'len(id_lab):', len(id_lab),
           'len(id_indexrecord):', len(id_indexrecord),
           'n_preg:', n_preg,
@@ -784,7 +791,7 @@ def integrate_data_and_apply_eligibility(args):
           'n_with_ni_nopreg', n_with_ni_nopreg)
     # Can calculate more statistics
 
-    info = {'before N': len(id_lab), 'before N Pos': n_pos, 'before N Neg': n_neg, 'exclude N': n_with_ni_nopreg,
+    info = {'before N': len(id_pregnant), 'before N Pos': n_pos, 'before N Neg': n_neg, 'exclude N': n_with_ni_nopreg,
             'exclude N Pos': np.nan, 'exclude N Neg': np.nan, 'after N': len(id_indexrecord), 'after N Pos': n_pos,
             'after N Neg': n_neg, 'ec': 'exclude NI PCR'}
     cohort_info.append(info)
@@ -793,6 +800,7 @@ def integrate_data_and_apply_eligibility(args):
         data = {}
         for pid, row in _id_indexrecord.items():
             # (True/False, lab_date, lab_code, result_label, age, enc-id)
+            pregnant = id_pregnant[pid]
             lab = id_lab[pid]
             demo = id_demo.get(pid, [])
             dx = id_dx[pid]
@@ -804,47 +812,18 @@ def integrate_data_and_apply_eligibility(args):
             death = id_death.get(pid, [])
             vital = id_vital.get(pid, [])
             lab_select = id_lab_select.get(pid, [])
-            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death, vital, lab_select]
+            data[pid] = [row, demo, dx, med, lab, enc, procedure, obsgen, immun, death, vital, lab_select, pregnant] # add pregnant record at the end
         print('building data done, len(id_indexrecord):', len(id_indexrecord), 'len(data) ', len(data))
         return data
 
     print('OF NOTE: the 2nd element of index record is a tuple!!!\n'
           ' id_indexrecord[pid] = [False, indexrecord] + list(neg_indexrecord)')
-    # 2023-11-8
-    # Step 1.5 (original 5): Applying EC. No COVID-associated diagnosis in the Negative Cohorts, any records in any time,
-    # Part of step1, excluding potentially unconfirmed Covid from negative, preventing  Leaking
-    # when using lab+dx+med, similar to lab NI, excluding not confirmed cases from negative group.
-    # if only focusing confirmed positive cases, no influences
-    # 2024-7-23
-    # NOT use for extracting negative portion in positive patients!!!
-    # id_indexrecord, info = _eligibility_negative_no_covid_dx(id_indexrecord, id_dx, covid_codes_set)
-    # cohort_info.append(info)
 
-    # Step 2: Applying EC. exclude index age < INDEX_AGE_MINIMUM
-    # goal: adult population is our targeted population
-    # 2023-2-2 change age to 18
-    id_indexrecord, info = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM_18)
-    cohort_info.append(info)
 
-    # Step 3: Applying EC. Any diagnosis in the baseline period
-    # goal: baseline information, and access to healthcare
-    id_indexrecord, info = _eligibility_baseline_any_dx(id_indexrecord, id_dx, _is_in_baseline)
+    # id_indexrecord, info = _eligibility_age(id_indexrecord, age_minimum_criterion=INDEX_AGE_MINIMUM_18)
+    id_indexrecord, info = _eligibility_age(id_indexrecord, age_minimum_criterion=14)
     cohort_info.append(info)
     data = _local_build_data(id_indexrecord)
-
-    # additional step 4, choose only covid positive, and store both cohorts
-    id_indexrecord, info = _eligibility_covid_positive_only(id_indexrecord)
-    cohort_info.append(info)
-    # data2 = _local_build_data(id_indexrecord)
-
-    ## Not using this 2023-11-8. Intent is to estimate incidence rather than screening signals!
-    ## Move this variable into matrix building process, potential sensitivity analysis
-    # # Step 4: Applying EC. Any diagnosis in the follow-up period
-    # # goal: alive beyond acute phase, and have information for screening PASC,
-    # # and capture baseline PASC-like diagnosis for  Non-Covid patients
-    # # Our cohort 1 for screening PASC
-    # id_indexrecord, info = _eligibility_followup_any_dx(id_indexrecord, id_dx, _is_in_followup)
-    # cohort_info.append(info)
 
     # dump cohort selection process
     cohort_info = pd.DataFrame(cohort_info)
@@ -855,32 +834,7 @@ def integrate_data_and_apply_eligibility(args):
     # # utils.dump(data2, args.output_file_covid2, chunk=4)
 
     utils.dump_compressed(data, args.output_file_covid)
-
-    # dump final selected
-    # data = _local_build_data(id_indexrecord)
-    # utils.dump(data, args.output_file_covid, chunk=4)
-
-    # # Notes for other potential cohorts:
-    # #  Sensitivity 1: Applying EC. No (initial, or screened) PASC diagnoses in the baseline  --> healthy population
-    # # Goal: screen PASC without baseline PASC
-    # # Move to matrix part to build cohorts dynamically with a better flexibility
-    # # print('Adult PASC incidence cohorts:')
-    # # id_indexrecord = _eligibility_baseline_no_pasc(id_indexrecord, id_dx, pasc_codes_set, _is_in_baseline)
-    # # data = _local_build_data(id_indexrecord)
-    # # utils.dump(data, args.output_file_pasc_incidence)
-
-    # # Sensitivity 2: for separating recruiting window and observation window,
-    # # also move to matrix part for a better flexibility
-
-    # # Sensitivity 3: for excluding covid diagnosis in follow-up for control
-    # # also move to matrix part for a better flexibility
-
-    # # Sensitivity 4:
-    # If using Dx to define Covid, we need to change initial inclusion list and rerun all the codes
-
-    # # Sensitivity 5:
-    # If using Flu or other viral codes to define control, we need to change initial inclusion list
-    # and rerun all the codes
+    # utils.dump(data, args.output_file_covid)
 
     # __step : save data structure for later encoding. save last cohort
     _last_cohort_raw_data = []  # No need to return this
@@ -899,7 +853,7 @@ if __name__ == '__main__':
 
     start_time = time.time()
     args = parse_args()
-    id_pregnant = utils.load(args.preg_delivery_file)
-    zz
+    # id_pregnant = utils.load(args.preg_delivery_file)
+    # zz
     data, cohort_info, raw_data = integrate_data_and_apply_eligibility(args)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
