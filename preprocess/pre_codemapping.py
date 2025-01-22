@@ -1900,6 +1900,26 @@ def build_ssri_snri_drug_map():
     return med_code
 
 
+def build_pregnant_drugs_grt():
+    dict_df_all = pd.read_excel(r'../data/mapping/preg_drug_of_interest.xlsx', sheet_name=None, dtype=str)  # read all sheets
+    med_code = {}
+    for ith, (key, df_all) in enumerate(dict_df_all.items()):
+        print('drug:', key, 'index:', ith, '#code:', len(df_all), df_all[['codetype']].value_counts())
+        code_dict = {}
+        for index, row in df_all.iterrows():
+            code = row['code'].strip()
+            type = row['codetype']
+            name = row['name']
+            drug_group = row['drug group']
+            code_dict[code] = [code, type, name, drug_group]
+
+        med_code[key] = code_dict
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/pregnant_drug_grt.pkl')
+    return med_code, dict_df_all
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -1936,10 +1956,10 @@ if __name__ == '__main__':
     # icd_brainfog, brainfog_index, dict_df_brainfog = ICD_to_PASC_brainfog()
     # icd_cfr, cfr_index, dict_df_cfr = ICD_to_PASC_cognitive_fatigue_respiratory()
     # 2024-12-14 add ME-CFS as outcome
-    icd_mecfs, mecfs_index, df_mecfs = ICD_to_PASC_ME_CFS()
+    # icd_mecfs, mecfs_index, df_mecfs = ICD_to_PASC_ME_CFS()
     # 2024-12-14 add cvd to check death record with CVD dx
-    icd_cvddeath, cvddeath_index, dict_df_cvd = ICD_to_CVD_death()
-    zz
+    # icd_cvddeath, cvddeath_index, dict_df_cvd = ICD_to_CVD_death()
+    # zz
 
     # 7. Load CDC code mapping:
     # df_all, tailor_comorbidity, vent_dict = load_cdc_mapping()
@@ -1987,4 +2007,7 @@ if __name__ == '__main__':
     # 19 add more mental categories 2024-09-05
     # icd_mental, mental_index, list_df_menta = ICD_to_mental()
 
+
+    # 20 add pregnant related drug of interested, 2025-1-22
+    med_code, dict_df_all = build_pregnant_drugs_grt()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
