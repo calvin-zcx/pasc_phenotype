@@ -26,7 +26,6 @@ print = functools.partial(print, flush=True)
 from iptw.PSModels import ml
 from iptw.evaluation import *
 
-
 def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['covid_posneg18base', 'covid_posOnly18base',

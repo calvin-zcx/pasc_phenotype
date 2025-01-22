@@ -1059,13 +1059,13 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full'):
         groupvar="group",  # column containing group labels
         group_order=df_result['group'].unique(),
         xlabel="Hazard Ratio",  # x-label title
-        xticks=[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
+        xticks=[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
         # sort=False, #True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
-        logscale=False, #True, #False, #True,
+        logscale= False, #True, #False, #True, #False, #True, #False, #True,
         # Additional kwargs for customizations
         **{
             # 'fontfamily': 'sans-serif',  # 'sans-serif'
@@ -1363,111 +1363,155 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff(show='full'):
     return df_result
 
 
-def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full', ):
+def plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full', ):
     subgroup_list = [
         'all',
         'female', 'male',
         'white', 'black',
-        'less65', 'above65',
-        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
-        'PaxRisk:Chronic liver disease',
-        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
-        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
-        'PaxRisk:Disabilities',
-        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
-        'PaxRisk:HIV infection',
-        'PaxRisk:immune',
-        'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity', 'pregnant',  # 'PaxRisk:Pregnancy',
-        'PaxRisk:Sickle cell disease or thalassemia',
-        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
-        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
-        'pax1stwave',
-        'pax2ndwave',
-        'RUCA1@1',
-        'RUCA1@2',
-        'RUCA1@3',
-        'RUCA1@4',
-        'RUCA1@5',
-        'RUCA1@6',
-        'RUCA1@7',
-        'RUCA1@8',
-        'RUCA1@9',
-        'RUCA1@10',
-        'norisk',  # 'pregnant',
-        'VA',
+        'less50', 'above50',
+        # 'beforeomicron',
+        # 'omicronbroad',
+        'anxiety',
+        'depression',
+        'SMI',
+        'nonSMI',
+        #
+        # 'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease',
+        # 'PaxRisk:Chronic liver disease',
+        # 'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+        # 'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes',
+        # 'PaxRisk:Disabilities',
+        # 'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+        # 'PaxRisk:HIV infection',
+        # 'PaxRisk:immune',
+        # 'PaxRisk:Mental health conditions',
+        # 'PaxRisk:Overweight and obesity', 'pregnant',  # 'PaxRisk:Pregnancy',
+        # 'PaxRisk:Sickle cell disease or thalassemia',
+        # 'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+        # 'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        # 'pax1stwave',
+        # 'pax2ndwave',
+        # 'RUCA1@1',
+        # 'RUCA1@2',
+        # 'RUCA1@3',
+        # 'RUCA1@4',
+        # 'RUCA1@5',
+        # 'RUCA1@6',
+        # 'RUCA1@7',
+        # 'RUCA1@8',
+        # 'RUCA1@9',
+        # 'RUCA1@10',
+        # 'norisk',  # 'pregnant',
+        # 'VA',
         # 'CFR'
     ]
 
     subgroup_info_map = {
-        'all': ['all', 'Overall'],
-        'norisk': ['Not at Risk', 'Without Indication'],
-        # 'pregnant': ['Pregnant', 'Without Indication'],
-        'pregnant': ['Pregnant', 'With Risk Factor'],
-        'VA': ['VA-like cohort', 'Sensitivity Analysis'],
-        'CFR': ['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
-        'female': ['Female', 'Sex'],
-        'male': ['Male', 'Sex'],
-        'white': ['White', 'Race'],
-        'black': ['Black', 'Race'],
-        'less65': ['<65', 'Age'],
-        'above65': ['≥65', 'Age'],
-        'PaxRisk:Cancer': ['Cancer', 'With Risk Factor'],
-        'PaxRisk:Chronic kidney disease': ['Chronic Kidney Disease', 'With Risk Factor'],
-        'PaxRisk:Chronic liver disease': ['Chronic Liver Disease', 'With Risk Factor'],
-        'PaxRisk:Chronic lung disease': ['Chronic Lung Disease', 'With Risk Factor'],
-        'PaxRisk:Cystic fibrosis': ['Cystic Fibrosis', 'With Risk Factor'],
-        'PaxRisk:Dementia or other neurological conditions': ['Dementia or Neurological', 'With Risk Factor'],
-        'PaxRisk:Diabetes': ['Diabetes', 'With Risk Factor'],
-        'PaxRisk:Disabilities': ['Disabilities', 'With Risk Factor'],
-        'PaxRisk:Heart conditions': ['Heart Conditions', 'With Risk Factor'],
-        'PaxRisk:Hypertension': ['Hypertension', 'With Risk Factor'],
-        'PaxRisk:HIV infection': ['HIV', 'With Risk Factor'],
-        'PaxRisk:immune': ['Immune Dysfunction', 'With Risk Factor'],
-        'PaxRisk:Mental health conditions': ['Mental Health', 'With Risk Factor'],
-        'PaxRisk:Overweight and obesity': ['Overweight and Obesity', 'With Risk Factor'],  # 'PaxRisk:Pregnancy',
-        'PaxRisk:Sickle cell disease or thalassemia': ['Sickle Cell or Anemia', 'With Risk Factor'],
-        'PaxRisk:Smoking current': ['Smoker current or former', 'With Risk Factor'],
-        'PaxRisk:Stroke or cerebrovascular disease': ['Stroke or Cerebrovascular', 'With Risk Factor'],
-        'PaxRisk:Substance use disorders': ['Substance Use Disorders', 'With Risk Factor'],
-        'PaxRisk:Tuberculosis': ['Tuberculosis', 'With Risk Factor'],
-        'RUCA1@1': ['Metropolitan core', 'Rural-Urban Commuting'],
-        'RUCA1@2': ['Metropolitan high commuting', 'Rural-Urban Commuting'],
-        'RUCA1@3': ['Metropolitan low commuting', 'Rural-Urban Commuting'],
-        'RUCA1@4': ['Micropolitan core', 'Rural-Urban Commuting'],
-        'RUCA1@5': ['Micropolitan high commuting', 'Rural-Urban Commuting'],
-        'RUCA1@6': ['Micropolitan low commuting', 'Rural-Urban Commuting'],
-        'RUCA1@7': ['Small town core', 'Rural-Urban Commuting'],
-        'RUCA1@8': ['Small town high commuting', 'Rural-Urban Commuting'],
-        'RUCA1@9': ['Small town low commuting', 'Rural-Urban Commuting'],
-        'RUCA1@10': ['Rural areas', 'Rural-Urban Commuting'],
-        'pax1stwave': ['3/1/22 to 9/30/22', 'Infection Time'],
-        'pax2ndwave': ['10/1/22 to 2/1/23', 'Infection Time'],
+        'all': ['Overall', pasc_outcome], #['all', 'Overall'],
+        # 'norisk': ['Not at Risk', 'Without Indication'],
+        # # 'pregnant': ['Pregnant', 'Without Indication'],
+        # 'pregnant': ['Pregnant', 'With Risk Factor'],
+        # 'VA': ['VA-like cohort', 'Sensitivity Analysis'],
+        # 'CFR': ['Fatigue, Cognitive, Respiratory', 'Sensitivity Analysis'],
+
+        # 'female': ['Female', 'Sex'],
+        # 'male': ['Male', 'Sex'],
+        # 'white': ['White', 'Race'],
+        # 'black': ['Black', 'Race'],
+        # 'less50': ['<50', 'Age'],
+        # 'above50': ['≥50', 'Age'],
+        # 'beforeomicron': ['Before Omicron', 'Infection Time'],
+        # 'omicronbroad': ['Omicron and after', 'Infection Time'],
+        # 'anxiety': ['Anxiety', 'Co-existing conditions'],
+        # 'depression': ['Depression', 'Co-existing conditions'],
+        # 'SMI': ['SMI', 'Co-existing conditions'],
+        # 'nonSMI': ['non-SMI', 'Co-existing conditions'],
+
+        'female': ['Female', 'Subgroup'],
+        'male': ['Male', 'Subgroup'],
+        'white': ['White', 'Subgroup'],
+        'black': ['Black', 'Subgroup'],
+        'less50': ['<50', 'Subgroup'],
+        'above50': ['≥50', 'Subgroup'],
+        'beforeomicron': ['Before Omicron', 'Subgroup'],
+        'omicronbroad': ['Omicron and after', 'Subgroup'],
+        'anxiety': ['Anxiety', 'Subgroup'],
+        'depression': ['Depression', 'Subgroup'],
+        'SMI': ['SMI', 'Subgroup'],
+        'nonSMI': ['non-SMI', 'Subgroup'],
+
+        # 'PaxRisk:Cancer': ['Cancer', 'With Risk Factor'],
+        # 'PaxRisk:Chronic kidney disease': ['Chronic Kidney Disease', 'With Risk Factor'],
+        # 'PaxRisk:Chronic liver disease': ['Chronic Liver Disease', 'With Risk Factor'],
+        # 'PaxRisk:Chronic lung disease': ['Chronic Lung Disease', 'With Risk Factor'],
+        # 'PaxRisk:Cystic fibrosis': ['Cystic Fibrosis', 'With Risk Factor'],
+        # 'PaxRisk:Dementia or other neurological conditions': ['Dementia or Neurological', 'With Risk Factor'],
+        # 'PaxRisk:Diabetes': ['Diabetes', 'With Risk Factor'],
+        # 'PaxRisk:Disabilities': ['Disabilities', 'With Risk Factor'],
+        # 'PaxRisk:Heart conditions': ['Heart Conditions', 'With Risk Factor'],
+        # 'PaxRisk:Hypertension': ['Hypertension', 'With Risk Factor'],
+        # 'PaxRisk:HIV infection': ['HIV', 'With Risk Factor'],
+        # 'PaxRisk:immune': ['Immune Dysfunction', 'With Risk Factor'],
+        # 'PaxRisk:Mental health conditions': ['Mental Health', 'With Risk Factor'],
+        # 'PaxRisk:Overweight and obesity': ['Overweight and Obesity', 'With Risk Factor'],  # 'PaxRisk:Pregnancy',
+        # 'PaxRisk:Sickle cell disease or thalassemia': ['Sickle Cell or Anemia', 'With Risk Factor'],
+        # 'PaxRisk:Smoking current': ['Smoker current or former', 'With Risk Factor'],
+        # 'PaxRisk:Stroke or cerebrovascular disease': ['Stroke or Cerebrovascular', 'With Risk Factor'],
+        # 'PaxRisk:Substance use disorders': ['Substance Use Disorders', 'With Risk Factor'],
+        # 'PaxRisk:Tuberculosis': ['Tuberculosis', 'With Risk Factor'],
+        # 'RUCA1@1': ['Metropolitan core', 'Rural-Urban Commuting'],
+        # 'RUCA1@2': ['Metropolitan high commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@3': ['Metropolitan low commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@4': ['Micropolitan core', 'Rural-Urban Commuting'],
+        # 'RUCA1@5': ['Micropolitan high commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@6': ['Micropolitan low commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@7': ['Small town core', 'Rural-Urban Commuting'],
+        # 'RUCA1@8': ['Small town high commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@9': ['Small town low commuting', 'Rural-Urban Commuting'],
+        # 'RUCA1@10': ['Rural areas', 'Rural-Urban Commuting'],
+
     }
+    if pasc_outcome == 'any_pasc':
+        subgroup_info_map['all'] =  ['Overall', 'Any PASC']
+    if pasc_outcome == 'death_postacute':
+        subgroup_info_map['all'] =  ['Overall', 'All-cause mortality']
+    elif pasc_outcome == 'cvddeath_postacute':
+        subgroup_info_map['all'] = ['Overall', 'CVD mortality']
+    elif pasc_outcome == 'PASC-General':
+        subgroup_info_map['all'] = ['Overall', 'U099/B948']
+    elif pasc_outcome == 'ME/CFS':
+        subgroup_info_map['all'] = ['Overall', 'ME/CFS']
+    elif pasc_outcome == 'hospitalization_postacute':
+        subgroup_info_map['all'] = ['Overall', 'Hospitalization']
+    elif pasc_outcome == 'any_CFR':
+        subgroup_info_map['all'] = ['Overall', 'Any CFR']
+
+
     pasc_simname_organ = load_pasc_info()
 
-    output_dir = r'../data/recover/output/results/figure_subgroup/' + pasc_outcome + '/'
+    output_dir = r'../data/recover/output/results/SSRI_figure_subgroup_v2/' #+ pasc_outcome + '/'
 
     results_list = []
     for subgroup in subgroup_list:
-        indir = r'../data/recover/output/results/Paxlovid-atrisk-{}-pcornet-V3/'.format(
+        indir = r'../data/recover/output/results/SSRI-overall-{}-ssri-base180-acutevsnot-mentalcovV2/'.format(
             subgroup.replace(':', '_').replace('/', '-').replace(' ', '_')
         )
         info = subgroup_info_map[subgroup]
         subgroupname = info[0]
         grouplabel = info[1]
 
-        # subgroupname = subgroup.split(':')[-1]
-        if subgroup == 'norisk':
-            indir = r'../data/recover/output/results/Paxlovid-norisk-all-pcornet-V3/'
-            # subgroupname = 'No documented risk factors'
-        elif subgroup == 'pregnant':
-            indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
-            # subgroupname = 'Pregnant'
-        # elif subgroup == 'CFR':
+
+        # # subgroupname = subgroup.split(':')[-1]
+        # if subgroup == 'norisk':
+        #     indir = r'../data/recover/output/results/Paxlovid-norisk-all-pcornet-V3/'
+        #     # subgroupname = 'No documented risk factors'
+        # elif subgroup == 'pregnant':
+        #     indir = r'../data/recover/output/results/Paxlovid-pregnant-all-pcornet-V3/'
+        #     # subgroupname = 'Pregnant'
+        # # elif subgroup == 'CFR':
+        # #     indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
+        # elif subgroup == 'all':
         #     indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
-        elif subgroup == 'all':
-            indir = r'../data/recover/output/results/Paxlovid-atrisk-all-pcornet-V3/'
 
         print('read:', indir)
         # if subgroup == 'PaxRisk:Dementia or other neurological conditions':
@@ -1495,15 +1539,20 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
         row = df.loc[df['pasc'] == pasc_outcome, :].squeeze()
         name = pasc_simname_organ[pasc_outcome][0]  # 'Any PASC'
 
+        if subgroup == 'all':
+            N1 = row['case+']
+            N0 = row['ctrl-']
+            print('N1:', N1, 'N0:', N0)
+
         pasc = row['pasc']
         if row['case+'] < 500:
             print(subgroup, 'is very small (<500 in exposed), skip', row['case+'], row['ctrl-'])
-            continue
+            # continue
         # print(name, pasc)
         hr = row['hr-w']
         if (hr <= 0.001) or pd.isna(hr):
-            print('HR, ', hr, 'in subgroup', subgroup)
-            continue
+            print('HR is very small <0.001, ', hr, 'in subgroup', subgroup)
+            # continue
 
         if pd.notna(row['hr-w-CI']):
             ci = stringlist_2_list(row['hr-w-CI'])
@@ -1544,7 +1593,8 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
         cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
 
         result = [subgroupname, grouplabel, name, pasc,
-                  '{:.0f}'.format(row['case+']), '{:.0f}'.format(row['ctrl-']),
+                  '{:.0f} ({:.1f}%)'.format(row['case+'], row['case+']/N1*100),
+                  '{:.0f} ({:.1f}%)'.format(row['ctrl-'], row['ctrl-']/N0*100),
                   hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
                   '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
                   '({:.2f},{:.2f})'.format(ci[0], ci[1]),
@@ -1570,6 +1620,9 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
                                       'cif_diff-p-format', 'cif_diff-p-symbol'])
 
     df_result['-aHR'] = -1 * df_result['aHR']
+    df_result['name'] = df_result['name'] + '-' + df_result['subgroup']
+    df_result['pasc'] = df_result['pasc'] + '-' + df_result['subgroup']
+
     plt.rc('font', family='serif')
     # fig, ax = plt.subplots()
     if show == 'full':
@@ -1580,11 +1633,11 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
 
         right_annoteheaders = ["HR (95% CI)", "P-value",
                                'DIFF/100', 'P-Value',
-                               'Paxlovid N=', 'Ctrl N=',
+                               'SSRI N=', 'Ctrl N=',
                                ]
 
         leftannote = ['CIF1-str', 'CIF0-str']
-        left_annoteheaders = ['CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+        left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Ctrl']
 
     elif show == 'short':
         rightannote = ["aHR-str", 'p-val-sci',
@@ -1598,30 +1651,48 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
     elif show == 'full-nopval':
         rightannote = ["aHR-str",
                        'cif_diff-str',
-
                        ]
         right_annoteheaders = ["HR (95% CI)",
                                'DIFF/100',
-
                                ]
 
         leftannote = ['No. in 1', 'No. in 0', 'CIF1-str', 'CIF0-str']
-        left_annoteheaders = ['Paxlovid N=', 'Ctrl N=', 'CIF/100 in Paxlovid', 'CIF/100 in Ctrl']
+        left_annoteheaders = ['SSRI N=', 'Ctrl N=', 'CIF/100 in SSRI', 'CIF/100 in Ctrl']
 
     if pasc_outcome == 'death_postacute':
-        xticks = [0.05, 1, 4]
+        xticks = [0.1, 1, 10]
+        logscale = True
+        subgroup_info_map['all'] =  ['Overall', 'All-cause mortality']
+
+    elif pasc_outcome == 'cvddeath_postacute':
+        xticks = [0.1, 1, 10]
+        logscale = True
+        subgroup_info_map['all'] = ['Overall', 'CVD mortality']
     elif pasc_outcome == 'PASC-General':
-        xticks = [0.1, 1, 5]
+        xticks = [0.2, 1, 2.5]
+        logscale = False
+        subgroup_info_map['all'] = ['Overall', 'U099/B948']
+    elif pasc_outcome == 'ME/CFS':
+        xticks = [0.2, 1, 2.5]
+        logscale = False
     elif pasc_outcome == 'hospitalization_postacute':
-        xticks = [0.4, 1, 2]
+        xticks = [0.5, 1, 2.]
+        logscale = False
+        subgroup_info_map['all'] = ['Overall', 'Hospitalization']
     elif pasc_outcome == 'any_CFR':
-        xticks = [0.3, 1, 1.5]
+        xticks = [0.5, 1, 2.]
+        logscale = False
+        subgroup_info_map['all'] = ['Overall', 'Any CFR']
+
     else:
-        xticks = [0.6, 1, 1.5]
+        xticks = [0.5, 1, 2.]
+        logscale = False
+
+    # xticks = [0.5, 1, 2.]
 
     axs = fp.forestplot(
         df_result,  # the dataframe with results data
-        figsize=(5, 12),  # (7, 12), #(6, 10), # (4.5, 13)
+        figsize=(3.5, 10),  # (7, 12), #(6, 10), # (4.5, 13)
         estimate="aHR",  # col containing estimated effect size
         ll='aHR-lb',
         hl='aHR-ub',  # lower & higher limits of conf. int.
@@ -1630,12 +1701,10 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
         pval="p-val",  # column containing p-values to be formatted
         starpval=True,
         annote=leftannote,  # ['No. in 1', 'No. in 0', ],  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
-        # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
         annoteheaders=left_annoteheaders,  # ['No.Paxlovid', 'No.Ctrl', ],
         rightannote=rightannote,  # ["aHR-str", "aHR-CI-str", 'p-val-sci', 'CIF1-str', 'CIF0-str'],
         # p_format, columns to report on right of plot
         right_annoteheaders=right_annoteheaders,
-        # ["aHR", "95% CI", "P-value", 'CIF1', 'CIF0'],  # p_format, ^corresponding headers
         groupvar="grouplabel",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Hazard Ratio",  # x-label title
@@ -1645,7 +1714,7 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
         # sort=True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
-        # logscale=True,
+        logscale=logscale,
         # Additional kwargs for customizations
         **{
             "marker": "D",  # set maker symbol as diamond
@@ -1658,8 +1727,11 @@ def plot_forest_for_pax_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='fu
     )
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_subgroup-{}.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_subgroup-{}.pdf'.format(show), bbox_inches='tight', transparent=True)
+    def _clean_name(x):
+        return x.replace(':', '_').replace('/', '-').replace(' ', '_')
+
+    plt.savefig(output_dir + 'hr_subgroup-{}-{}-v2.png'.format(_clean_name(pasc_outcome), show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_subgroup-{}-{}-v2.pdf'.format(_clean_name(pasc_outcome), show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -2183,6 +2255,8 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
 
     # # 2024-12-15 plot subgroup, then try to summarize them
+    # 2025-1-10
+    # <50, xticks=[0.1, 1, 10], log = True
     # indir = r'../data/recover/output/results/SSRI-overall-less50-ssri-base180-acutevsnot-mentalcovV2/'
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
     # indir = r'../data/recover/output/results/SSRI-overall-above50-ssri-base180-acutevsnot-mentalcovV2/'
@@ -2193,10 +2267,46 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
     
     # the following errors in some brain fog conditions. debug later
-    indir = r'../data/recover/output/results/SSRI-overall-depression-ssri-base180-acutevsnot-mentalcovV2/'
+    # indir = r'../data/recover/output/results/SSRI-overall-depression-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    # indir = r'../data/recover/output/results/SSRI-overall-anxiety-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    indir = r'../data/recover/output/results/SSRI-overall-omicronbroad-ssri-base180-acutevsnot-mentalcovV2/'
     df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
-    indir = r'../data/recover/output/results/SSRI-overall-anxiety-ssri-base180-acutevsnot-mentalcovV2/'
+    indir = r'../data/recover/output/results/SSRI-overall-beforeomicron-ssri-base180-acutevsnot-mentalcovV2/'
     df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    zz
+
+    # 2025-1-11
+    # indir = r'../data/recover/output/results/SSRI-overall-male-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    # indir = r'../data/recover/output/results/SSRI-overall-female-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    # indir = r'../data/recover/output/results/SSRI-overall-white-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+    # indir = r'../data/recover/output/results/SSRI-overall-black-ssri-base180-acutevsnot-mentalcovV2/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
+
+    # 2025-1-11
+    # # #plot subgroup analysis for different pasc outcomes (secondary, death, etc)
+    # pasc_outcome = 'death_postacute'
+    # pasc_outcome = 'hospitalization_postacute'
+    # pasc_outcome = 'PASC-General'
+    # pasc_outcome = 'any_CFR'
+    pasc_outcome = 'any_pasc'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'death_postacute'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'cvddeath_postacute'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'any_CFR'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'hospitalization_postacute'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'PASC-General'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
+    pasc_outcome = 'ME/CFS'
+    df_result = plot_forest_for_SSRI_subgroup_lib2_cifdiff_pascoutcome(pasc_outcome, show='full-nopval')
 
     # zz
     # # 2024-11-17

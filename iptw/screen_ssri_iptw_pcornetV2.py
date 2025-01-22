@@ -127,7 +127,7 @@ def parse_args():
                                  'ssriVSbupropion-acute0-15-clean',
                                  'ssri-base-180-0-cleanv2',
 
-                                 ], default='base180-0')
+                                 ], default='ssri-base180-acutevsnot') # 'base180-0'
 
     # parser.add_argument('--cohorttype',
     #                     choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],

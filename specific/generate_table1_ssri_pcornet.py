@@ -1053,49 +1053,265 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     return df, df_out
 
 
-def table1_less_4_print(cohort='all', subgroup='all'):
+def table1_less_4_print(exptype='all', subgroup='all'):
     # %% Step 1. Load  Data
-    if cohort == 'all':
-        fname1 = [
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv',
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-220301-230201.csv',
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
-                  ]
+    start_time = time.time()
 
-        fname2 = [
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv',
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-220301-230201.csv',
-            r'../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
-                  ]
-        flag_cols = ['atRiskNoPreg', 'noRisk', 'Pregnant']
-        print('fname1:', fname1)
-        print('fname2:', fname2)
-        out_file = r'./paxlovid_output/Table-recover29Nov27_covid_pos_220301-230201-ALL-4analyse-simplified.xlsx'
-        output_columns = ['All', 'COVID Positive Paxlovid treated', 'COVID Positive no treatment', 'SMD']
-    else:
-        raise ValueError
+    np.random.seed(0)
+    random.seed(0)
+    negative_ratio = 5
 
-    # df1 = pd.read_csv(fname1, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
-    # df2 = pd.read_csv(fname2, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob'])
+    # add matched cohorts later
+    # in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v2-addPaxFeats-addGeneralEC-withexposure.csv'
+    # in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC-withexposure.csv'
+    in_file = '../iptw/recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD-addPaxFeats-addGeneralEC-withexposure.csv'
 
-    df1 = read_csv_files(fname1, flag_cols)
-    df2 = read_csv_files(fname2, flag_cols)
-    print('treated df1.shape', df1.shape, 'control df2.shape', df2.shape, )
+    print('in read: ', in_file)
+    df = pd.read_csv(in_file,
+                     dtype={'patid': str, 'site': str, 'zip': str},
+                     parse_dates=['index date', 'dob',
+                                  'flag_delivery_date',
+                                  'flag_pregnancy_start_date',
+                                  'flag_pregnancy_end_date'
+                                  ])
+    print('df.shape:', df.shape)
 
-    if subgroup == 'anyfollow':
-        df1 = df1.loc[(df1['followupanydx'] == 1)].copy()
-        df2 = df2.loc[(df2['followupanydx'] == 1)].copy()
-        print('select subgroup with anyfollowup')
-        print('treated df1.shape', df1.shape, 'control df2.shape', df2.shape, )
+    if exptype == 'ssri-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180-0'
+        ctrl_label = 'Nouser'
+    elif exptype == 'ssri-base-180-0-clean':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
 
-    # df_pos = add_col(df1)
-    # df_neg = add_col(df2)
-    # df_pos = add_any_pasc(df_pos)
-    # df_neg = add_any_pasc(df_neg)
+    elif exptype == 'ssri-base-180-0-cleanv2':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['snri-treat--180-0-flag'] == 0)
+                     & (df['other-treat--180-0-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] == 0) & (df['snri-treat--180-0-flag'] == 0)
+                     & (df['other-treat--180-0-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
 
-    df_pos = df1
-    df_neg = df2
-    df = pd.concat([df_pos, df_neg], ignore_index=True)
+    elif exptype == 'ssri-base180-acutevsnot':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-with-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif exptype == 'ssri-base180withmental-acutevsnot':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-180withmental-with-acute15'
+        ctrl_label = 'SSRI-180withmental-no-acute15'
+
+    # elif exptype == 'ssri-base-120-0':
+    #     df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SSRI-120-0'
+    #     ctrl_label = 'Nouser'
+    # elif exptype == 'ssri-acute0-7':
+    #     df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SSRI-0-7'
+    #     ctrl_label = 'Nouser'
+    elif exptype == 'ssri-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SSRI-0-15'
+        ctrl_label = 'Nouser'
+
+    elif exptype == 'ssri-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'Nouser-clean'
+
+    elif exptype == 'snri-base-180-0':
+        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-180-0'
+        ctrl_label = 'Nouser'
+
+    elif exptype == 'snri-base-180-0-clean':
+        df1 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['ssri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+    # elif exptype == 'snri-base-120-0':
+    #     df1 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SNRI-120-0'
+    #     ctrl_label = 'Nouser'
+    # elif exptype == 'snri-acute0-7':
+    #     df1 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+    #             df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+    #     case_label = 'SNRI-0-7'
+    #     ctrl_label = 'Nouser'
+    elif exptype == 'snri-acute0-15':
+        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-0-15'
+        ctrl_label = 'Nouser'
+
+    elif exptype == 'snri-acute0-15-clean':
+        df1 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['ssri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0)
+                     & (df['other-treat--180-180-flag'] == 0) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        case_label = 'SNRI-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+
+    elif exptype == 'ssriVSsnri-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0'
+        ctrl_label = 'SNRI-180-0'
+
+    elif exptype == 'ssriVSsnri-base-180-0-clean':
+
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'SNRI-180-0-clean'
+
+    # elif exptype == 'ssriVSsnri-base-120-0':
+    #     df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['snri-treat--180-180-flag'] == 0), :]
+    #     df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['ssri-treat--180-180-flag'] == 0), :]
+    #     case_label = 'SSRI-120-0'
+    #     ctrl_label = 'SNRI-120-0'
+    # elif exptype == 'ssriVSsnri-acute0-7':
+    #     df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['snri-treat--180-180-flag'] == 0), :]
+    #     df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+    #                 df['ssri-treat--180-180-flag'] == 0), :]
+    #     case_label = 'SSRI-0-7'
+    #     ctrl_label = 'SNRI-0-7'
+    elif exptype == 'ssriVSsnri-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15'
+        ctrl_label = 'SNRI-0-15'
+
+    elif exptype == 'ssriVSsnri-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['snri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'SNRI-0-15-clean'
+
+    elif exptype == 'ssriVSbupropion-base-180-0':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0'
+        ctrl_label = 'bupropion-180-0'
+
+    elif exptype == 'ssriVSbupropion-base-180-0-clean':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-180-0-clean'
+        ctrl_label = 'bupropion-180-0-clean'
+
+    elif exptype == 'ssriVSbupropion-acute0-15':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180@bupropion'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15'
+        ctrl_label = 'bupropion-0-15'
+
+    elif exptype == 'ssriVSbupropion-acute0-15-clean':
+        df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['other-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (
+                df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        case_label = 'SSRI-0-15-clean'
+        ctrl_label = 'bupropion-0-15-clean'
+
+    elif exptype == 'bupropion-base-180-0':
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-180-0'
+        ctrl_label = 'Nouser'
+
+    elif exptype == 'bupropion-base-180-0-clean':
+        df1 = df.loc[(df['other-treat--180-0@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'bupropion-180-0-clean'
+        ctrl_label = 'Nouser-clean'
+
+
+    elif exptype == 'bupropion-acute0-15':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
+        case_label = 'bupropion-0-15'
+        ctrl_label = 'Nouser'
+
+    elif exptype == 'bupropion-acute0-15-clean':
+        df1 = df.loc[(df['other-treat-0-15@bupropion'] >= 1) & (df['SSRI-Indication-dsmAndExlix-flag'] > 0) &
+                     (df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0), :]
+        df0 = df.loc[(df['ssri-treat--180-180-flag'] == 0) & (df['snri-treat--180-180-flag'] == 0) & (
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180-flag'] == 0), :]
+        case_label = 'bupropion-0-15-clean'
+        ctrl_label = 'Nouser-clean'
+
+    print('exposre strategy, exptype:', exptype)
+    print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
+
+    n1 = len(df1)
+
+    print('n1', n1, 'n0', len(df0))
+    df0 = df0.sample(n=min(len(df0), int(negative_ratio * n1)), replace=False, random_state=0)
+    print('after sample, n0', len(df0), 'with ratio:', negative_ratio, negative_ratio * n1)
+    df1['treated'] = 1
+    df1['SSRI'] = 1
+    df0['treated'] = 0
+    df0['SSRI'] = 0
+
+    df = pd.concat([df1, df0], ignore_index=True)
+    df = add_col(df)
+
+    df_pos = df.loc[df['treated'] == 1, :]
+    df_neg = df.loc[df['treated'] == 0, :]
+
+    out_file = r'./ssri_output/Table-4-ssri-manuscript-{}.xlsx'.format(exptype)
+    output_columns = ['All', case_label, ctrl_label, 'SMD']
 
     print('treated df_pos.shape', df_pos.shape,
           'control df_neg.shape', df_neg.shape,
@@ -1327,13 +1543,13 @@ def table1_less_4_print(cohort='all', subgroup='all'):
     records.append([])
 
     # part 1
-    # col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
-    #              '03/21-06/21', '07/21-10/21', '11/21-02/22',
-    #              '03/22-06/22', '07/22-10/22', '11/22-02/23',
-    #              '03/23-06/23', '07/23-10/23', '11/23-02/24', ]
-    col_names = [
+    col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
+                 '03/21-06/21', '07/21-10/21', '11/21-02/22',
                  '03/22-06/22', '07/22-10/22', '11/22-02/23',
-                 ]
+                 '03/23-06/23', '07/23-10/23', '11/23-02/24', ]
+    # col_names = [
+    #              '03/22-06/22', '07/22-10/22', '11/22-02/23',
+    #              ]
     row_names.extend(col_names)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
@@ -1380,7 +1596,22 @@ def table1_less_4_print(cohort='all', subgroup='all'):
                   'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
                   'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
                   'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
-                  'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis'] + ['atRiskNoPreg', 'noRisk', 'Pregnant'])
+                  'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis'] +
+                 ["DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
+        'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
+        'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
+        'mental-base@Depressive Disorders',
+        'mental-base@Bipolar and Related Disorders',
+        'mental-base@Anxiety Disorders',
+        'mental-base@Obsessive-Compulsive and Related Disorders',
+        'mental-base@Post-traumatic stress disorder',
+        'mental-base@Bulimia nervosa',
+        'mental-base@Binge eating disorder',
+        'mental-base@premature ejaculation',
+        'mental-base@Autism spectrum disorder',
+        'mental-base@Premenstrual dysphoric disorder',
+        'mental-base@SMI',
+        'mental-base@non-SMI',])
 
     col_names_out = (['Cancer', 'Chronic kidney disease', 'Chronic liver disease',
                       'Chronic lung disease', 'Cystic fibrosis',
@@ -1391,7 +1622,22 @@ def table1_less_4_print(cohort='all', subgroup='all'):
                       'Overweight and obesity', 'Pregnancy',
                       'Sickle cell disease or thalassemia',
                       'Smoking current or former', 'Stroke or cerebrovascular disease',
-                      'Substance use disorders', 'Tuberculosis', ] +  ['atRiskNoPreg', 'noRisk', 'Pregnant']
+                      'Substance use disorders', 'Tuberculosis', ] +
+                     ["Coagulopathy", "Peripheral vascular disorders ", "Seizure/Epilepsy", "Weight Loss",
+                        'Obstructive sleep apnea', 'Epstein-Barr and Infectious Mononucleosis (Mono)', 'Herpes Zoster',
+                        'Schizophrenia Spectrum and Other Psychotic Disorders',
+                        'Depressive Disorders',
+                        'Bipolar and Related Disorders',
+                        'Anxiety Disorders',
+                        'Obsessive-Compulsive and Related Disorders',
+                        'Post-traumatic stress disorder',
+                        'Bulimia nervosa',
+                        'Binge eating disorder',
+                        'premature ejaculation',
+                        'Autism spectrum disorder',
+                        'Premenstrual dysphoric disorder',
+                        'SMI',
+                        'non-SMI',]
                      )
 
 
@@ -1448,7 +1694,14 @@ if __name__ == '__main__':
     # table1_more_4_analyse(exptype='ssri-base-180-0-cleanv2', cohort='all') #
 
     # table1_more_4_analyse(exptype='ssri-base180-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
-    table1_more_4_analyse(exptype='ssri-base180withmental-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
+
+
+    # table1_more_4_analyse(exptype='ssri-base180withmental-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
+
+
+    # 2025-1-10 Table 1 for SSRI
+    table1_less_4_print(exptype='ssri-base180-acutevsnot', subgroup='all') # 'ssri-base180-acutevsnot'
+
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
     # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
