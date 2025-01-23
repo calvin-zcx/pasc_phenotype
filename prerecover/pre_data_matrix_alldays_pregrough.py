@@ -1439,7 +1439,7 @@ def build_feature_matrix(args):
         input_file = r'../data/recover/output/{}/cohorts_preg_roughcal_{}.pkl.gz'.format(site, site)
 
         #
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_preg_roughcal_{}-nbaseout-alldays-preg_{}.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_preg_roughcal_{}-nbaseout-alldays-preg_{}-V2.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         output_med_info = r'../data/recover/output/{}/info_medication_preg_roughcal_{}_{}.csv'.format(
@@ -1505,6 +1505,7 @@ def build_feature_matrix(args):
             zip_list = []  # newly add 2022-04-08
             dob_list = []  # newly add 2023-2-9
             age_list = []
+            race_list = [] # newly add 2025-1-23
             adi_list = []
             ruca_list = []
             utilization_count_array = np.zeros((n, 4), dtype='int16')
@@ -1785,7 +1786,7 @@ def build_feature_matrix(args):
             ##
             column_names = ['patid', 'site', 'covid', 'preg_or_tup', 'index date', 'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup', 'followupanydx'] + death_column_names + \
-                           ['zip', 'dob', 'age', 'adi', 'RUCA1'] + utilization_count_names + [
+                           ['zip', 'dob', 'age', 'race', 'adi', 'RUCA1'] + utilization_count_names + [
                                'bmi'] + yearmonth_column_names + \
                            age_column_names + age_preg_column_names + \
                            gender_column_names + race_column_names + hispanic_column_names + \
@@ -1843,6 +1844,7 @@ def build_feature_matrix(args):
             zip_list.append(zipcode)
             dob_list.append(birth_date)
             age_list.append(index_age)
+            race_list.append(race)  # 2025-1-23
             adi_list.append(nation_adi)
 
             # 2023-11-13, ruca_array computed here but added after adi array later
@@ -1978,6 +1980,7 @@ def build_feature_matrix(args):
                                     np.asarray(zip_list).reshape(-1, 1),
                                     np.asarray(dob_list).reshape(-1, 1),
                                     np.asarray(age_list).reshape(-1, 1),
+                                    np.asarray(race_list).reshape(-1, 1),
                                     np.asarray(adi_list).reshape(-1, 1),
                                     np.asarray(ruca_list).reshape(-1, 1),
                                     utilization_count_array,
