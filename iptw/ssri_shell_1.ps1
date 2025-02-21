@@ -36,13 +36,15 @@
 #python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 1stwave 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-1stwave-mentalcov.txt
 #python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity delta 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-delta-mentalcov.txt
 
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity less65omicronbroad 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-less65omicronbroad-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity less65 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-less65-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 18to25 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-18to25-mentalcov.txt
-python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 25to35 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-25to35-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity less65omicronbroad 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-less65omicronbroad-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity less65 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-less65-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 18to25 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-18to25-mentalcov.txt
+#python screen_ssri_iptw_pcornet.py  --exptype ssri-base180-acutevsnot --severity 25to35 2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-25to35-mentalcov.txt
 
 
-python screen_ssri_iptw_pcornetV2.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v2/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
+#python screen_ssri_iptw_pcornetV2.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v2/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
+
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
 
 
 #
