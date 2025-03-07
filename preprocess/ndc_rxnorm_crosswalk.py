@@ -880,7 +880,29 @@ if __name__ == '__main__':
     # other antidepressants 2024-09-05
     # drugname = 'wellbutrin'
     drugname = 'bupropion'  # wellbutrin is the brand name of Bupropion, use which to search? use bupropion, superset
-    df = generate_drug_list_by_name(drugname=drugname)
-    _drop_dup()
+
+    drugname = 'Captopril'
+    drugname = 'captopril'
+
+    # LDN
+    drugname = 'naltrexone'
+
+    # CNS
+    drugname = 'amphetamine'
+    drugname = 'dexmethylphenidate'
+    drugname = 'dextroamphetamine'
+    # df = generate_drug_list_by_name(drugname=drugname)
+
+    # in total 19, not add combination drug name here, should be covered by its ingredient drug
+    drug_list = [
+        'amphetamine', 'armodafinil', 'atomoxetine', 'benzphetamine', 'caffeine',
+        'dextroamphetamine', 'dexmethylphenidate', 'diethylpropion', 'lisdexamfetamine', 'methamphetamine',
+        'methylphenidate', 'modafinil', 'phendimetrazine', 'phentermine', 'fenfluramine',
+        'oxybate', 'pitolisant', 'solriamfetol ', 'doxapram',
+    ]
+    print('len(drug_list)', len(drug_list), drug_list)
+    for drugname in drug_list:
+        df = generate_drug_list_by_name(drugname=drugname)
+    # _drop_dup()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

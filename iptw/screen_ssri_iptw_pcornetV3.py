@@ -100,7 +100,19 @@ def parse_args():
                                  'ssri-post30-nobasemental',
 
                                  'ssri-base180-acutevsnot',
+                                 'ssri-base180-acutevsnot-nosnriother', # sensitivity 2025-2-21
                                  'ssri-base180withmental-acutevsnot',
+
+                                 # individual
+                                 'ssri-base180-S1Racutevsnot',
+                                 'ssri-base180-S1RacutevsNonS1R',
+                                 'ssri-base180-fluvoxamineacutevsnot',
+                                 'ssri-base180-fluoxetineacutevsnot',
+                                 'ssri-base180-escitalopramacutevsnot',
+                                 'ssri-base180-citalopramacutevsnot',
+                                 'ssri-base180-sertralineacutevsnot',
+                                 'ssri-base180-paroxetineacutevsnot',
+                                 'ssri-base180-vilazodoneacutevsnot',
 
                                  'snri-base-180-0',
                                  'snri-base-120-0',
@@ -564,6 +576,21 @@ if __name__ == "__main__":
     print('exposre strategy, args.exptype:', args.exptype)
     print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
 
+    print('********************************************')
+    print('get information for each SSRI drug')
+    ssri_names = ['fluvoxamine', 'fluoxetine', 'escitalopram', 'citalopram', 'sertraline', 'paroxetine',
+                  'vilazodone']
+    _cnt = []
+    for drugname in ssri_names:
+        df1_tmp = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@' + drugname] >= 1)
+        ), :]
+        print(drugname, len(df1_tmp))
+        _cnt.append(len(df1_tmp))
+    print('sum:', np.sum(_cnt))
+    print('********************************************')
+
+
     # 2024-09-07 replace 'PaxRisk:Mental health conditions' with 'SSRI-Indication-dsmAndExlix-flag'
     # control group, not using snri criteria? --> add -clean group
     if args.exptype == 'ssri-base-180-0':
@@ -592,6 +619,93 @@ if __name__ == "__main__":
         df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1), :]
         df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
         case_label = 'SSRI-180-with-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-acutevsnot-nosnriother':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1) &
+                     (df['snri-treat--15-15-flag'] == 0) &
+                     (df['other-treat--15-15-flag'] == 0) , :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0) &
+                     (df['snri-treat--15-15-flag'] == 0) &
+                     (df['other-treat--15-15-flag'] == 0), :]
+        case_label = 'SSRI-180-withacut15nosnrioth'
+        ctrl_label = 'SSRI-180-noacut15nosnrioth'
+
+
+
+    elif args.exptype == 'ssri-base180-S1Racutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+            (df['ssri-treat-0-15@fluvoxamine'] >= 1) |
+            (df['ssri-treat-0-15@fluoxetine'] >= 1) |
+            (df['ssri-treat-0-15@escitalopram'] >= 1)
+        ), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-S1R-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-S1RacutevsNonS1R':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@fluvoxamine'] >= 1) |
+                (df['ssri-treat-0-15@fluoxetine'] >= 1) |
+                (df['ssri-treat-0-15@escitalopram'] >= 1)
+        ), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@citalopram'] >= 1) |
+                (df['ssri-treat-0-15@sertraline'] >= 1) |
+                (df['ssri-treat-0-15@paroxetine'] >= 1) |
+                (df['ssri-treat-0-15@vilazodone'] >= 1)
+        ), :]
+        case_label = 'SSRI-180-S1R-acute15'
+        ctrl_label = 'SSRI-180-NonS1R-acute15'
+
+    elif args.exptype == 'ssri-base180-fluvoxamineacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@fluvoxamine'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-fluvoxamine-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-fluoxetineacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@fluoxetine'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-fluoxetine-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-escitalopramacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@escitalopram'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-escitalopram-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-citalopramacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@citalopram'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-citalopram-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-sertralineacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@sertraline'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-sertraline-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-paroxetineacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@paroxetine'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-paroxetine-acute15'
+        ctrl_label = 'SSRI-180-no-acute15'
+
+    elif args.exptype == 'ssri-base180-vilazodoneacutevsnot':
+        # use this one for individual analysis, more consistent with primary analysis
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15@vilazodone'] >= 1), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-vilazodone-acute15'
         ctrl_label = 'SSRI-180-no-acute15'
 
     elif args.exptype == 'ssri-base180withmental-acutevsnot':
@@ -1013,6 +1127,10 @@ if __name__ == "__main__":
                 df['SSRI-Indication-dsmAndExlix-flag'] > 0) & (df['other-treat--180-180-flag'] == 0), :]
         case_label = 'bupropion-0-15-clean'
         ctrl_label = 'Nouser-clean'
+
+    print('args.exptype:', args.exptype)
+    print('len(df1):', len(df1), case_label)
+    print('len(df0):', len(df0), ctrl_label)
 
     n1 = len(df1)
     print('n1', n1, 'n0', len(df0))

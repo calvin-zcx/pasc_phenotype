@@ -44,7 +44,20 @@
 
 #python screen_ssri_iptw_pcornetV2.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v2/screen_ssri_iptw_pcornet-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
 
-python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
+#python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-acutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-acutevsnot-all-CFSCVDDeath.txt
+#python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-acutevsnot-nosnriother --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-acutevsnot-nosnriother-all-CFSCVDDeath.txt
+
+#python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-fluvoxamineacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-fluvoxamineacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-fluoxetineacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-fluoxetineacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-escitalopramacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-escitalopramacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-citalopramacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-citalopramacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-sertralineacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-sertralineacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-paroxetineacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-paroxetineacutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-vilazodoneacutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-vilazodoneacutevsnot-all-CFSCVDDeath.txt
+
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-S1Racutevsnot --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-S1Racutevsnot-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-S1RacutevsNonS1R --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-S1RacutevsNonS1R-all-CFSCVDDeath.txt
+
 
 
 #
