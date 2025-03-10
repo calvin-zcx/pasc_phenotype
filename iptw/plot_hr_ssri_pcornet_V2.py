@@ -1091,7 +1091,7 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full'):
     print('Done')
     return df_result
 
-def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full'):
+def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='SSRI', ctrlname='Non-SSRI', show='full'):
     # 2025-02-21 with any brain fog, revise control name,
     output_dir = indir + r'figure/'
 
@@ -1298,7 +1298,264 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full'):
                                ]
 
         leftannote = ['CIF1-str', 'CIF0-str']
+        # left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Non-SSRI']
+        left_annoteheaders = ['CIF/100 in {}'.format(drugname), 'CIF/100 in {}'.format(ctrlname)]
+
+    # fig, ax = plt.subplots()
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(4, 12),
+        estimate="aHR",  # col containing estimated effect size
+        ll='aHR-lb',
+        hl='aHR-ub',  # lower & higher limits of conf. int.
+        varlabel="name",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        annoteheaders=left_annoteheaders,  # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        rightannote=rightannote,
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,  # p_format, ^corresponding headers
+        groupvar="group",  # column containing group labels
+        group_order=df_result['group'].unique(),
+        xlabel="Hazard Ratio",  # x-label title
+        xticks=[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
+        color_alt_rows=True,
+        # flush=True,
+        # sort=False, #True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        logscale= False, #True, #False, #True, #False, #True, #False, #True,
+        # Additional kwargs for customizations
+        **{
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 12,  # adjust x-ticker fontsize
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+        },
+    )
+
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
+
+def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3_individualSSRI(indir, drugname, ctrlname='Non-SSRI', show='full'):
+    # 2025-02-21 with any brain fog, revise control name,
+    output_dir = r'../data/recover/output/results/SSRI_individual_fig/' #+ r'figure/'
+
+    if 'SSRI-overall-anxiety-ssri-base180-acutevsnot-mentalcovV3' in indir:
+        df = pd.read_csv(indir + 'causal_effects_specific-snapshot-50.csv')
+    elif 'SSRI-overall-depression-ssri-base180-acutevsnot-mentalcovV3' in indir:
+        df = pd.read_csv(indir + 'causal_effects_specific-snapshot-50.csv')
+    else:
+        df = pd.read_csv(indir + 'causal_effects_specific.csv')
+
+    df.drop_duplicates(subset=['pasc'], keep='last', inplace=True, )
+
+    pasc_simname_organ = load_pasc_info()
+
+    df.insert(df.columns.get_loc('pasc') + 1, 'Organ Domain', '')
+    df.insert(df.columns.get_loc('pasc') + 1, 'PASC Name Simple', '')
+
+    for key, row in df.iterrows():
+        pasc = row['pasc']
+        if pasc in pasc_simname_organ:
+            df.loc[key, 'PASC Name Simple'] = pasc_simname_organ[pasc][0]
+            df.loc[key, 'Organ Domain'] = pasc_simname_organ[pasc][1]
+
+    # df_select = df.sort_values(by='hr-w', ascending=True)
+    df_select = df
+    # df_select = df_select.loc[df_select['selected'] == 1, :]  #
+    print('df_select.shape:', df_select.shape)
+
+    organ_list = df_select['Organ Domain'].unique()
+    print(organ_list)
+    organ_list = [
+        'Any PASC',
+        'Death',
+        'Hospitalization',
+        'Diseases of the Nervous System',
+        'Diseases of the Skin and Subcutaneous Tissue',
+        'Diseases of the Respiratory System',
+        'Diseases of the Circulatory System',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism',
+        'Endocrine, Nutritional and Metabolic Diseases',
+        'Diseases of the Digestive System',
+        'Diseases of the Genitourinary System',
+        'Diseases of the Musculoskeletal System and Connective Tissue',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General',
+        # 'General-add',
+        'Any CFR',
+        'cognitive-fatigue-respiratory',
+        'Any Brain Fog',
+        'brainfog',
+
+    ]
+
+    organ_mapname = {
+        'Any PASC': 'Overall in Postacute',
+        'Death': 'Overall in Postacute',
+        'Hospitalization': 'Overall in Postacute',
+        'Diseases of the Nervous System': 'Neurologic',
+        'Diseases of the Skin and Subcutaneous Tissue': 'Skin',
+        'Diseases of the Respiratory System': 'Pulmonary',
+        'Diseases of the Circulatory System': 'Circulatory',
+        'Diseases of the Blood and Blood Forming Organs and Certain Disorders Involving the Immune Mechanism': 'Blood',
+        'Endocrine, Nutritional and Metabolic Diseases': 'Metabolic',
+        'Diseases of the Digestive System': 'Digestive',
+        'Diseases of the Genitourinary System': 'Genitourinary',
+        'Diseases of the Musculoskeletal System and Connective Tissue': 'Musculoskeletal',
+        # 'Certain Infectious and Parasitic Diseases',
+        'General': 'General',
+        # 'General-add',
+        'Any CFR': 'CFR',
+        'cognitive-fatigue-respiratory': 'CFR Individuals',
+        'Any Brain Fog': 'Brain Fog',
+        'brainfog' :'Brain Fog Individuals',
+
+    }
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+
+    organ_n = np.zeros(len(organ_list))
+    results_list = []
+    for i, organ in enumerate(organ_list):
+        print(i + 1, 'organ', organ)
+        for key, row in df_select.iterrows():
+            name = row['PASC Name Simple'].strip('*')
+            # if len(name.split()) >= 5:
+            #     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+            if name == 'Dyspnea':
+                name = 'Shortness of breath'
+            elif name == 'Death Overall':
+                continue
+            elif name == 'Abnormal heartbeat':
+                name = 'Dysrhythmia'
+            elif name == 'Diabetes mellitus':
+                name = 'Diabetes'
+            elif name == 'Dysautonomia-Orthostatic':
+                name = 'POTS'
+
+            pasc = row['pasc']
+            domain = row['Organ Domain']
+            print(name, pasc, domain)
+
+            if pasc == 'Headache' and domain == 'brainfog':
+                print('headache already captured in neurologic domain, skip here in brainfog')
+                continue
+
+            hr = row['hr-w']
+            if pd.notna(row['hr-w-CI']):
+                ci = stringlist_2_list(row['hr-w-CI'])
+            else:
+                ci = [np.nan, np.nan]
+            p = row['hr-w-p']
+            # # p_format =
+            # if p <= 0.001:
+            #     sigsym = '$^{***}$'
+            #     p_format = '{:.1e}'.format(p)
+            # elif p <= 0.01:
+            #     sigsym = '$^{**}$'
+            #     p_format = '{:.3f}'.format(p)
+            # elif p <= 0.05:
+            #     sigsym = '$^{*}$'
+            #     p_format = '{:.3f}'.format(p)
+            # else:
+            #     sigsym = '$^{ns}$'
+            #     p_format = '{:.3f}'.format(p)
+            # p_format += sigsym
+
+            ahr_pformat, ahr_psym = pformat_symbol(p)
+
+
+            cif1 = stringlist_2_list(row['cif_1_w'])[-1] * 100
+            cif1_ci = [stringlist_2_list(row['cif_1_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_1_w_CIUpper'])[-1] * 100]
+
+            # use nabs for ncum_ci_negative
+            cif0 = stringlist_2_list(row['cif_0_w'])[-1] * 100
+            cif0_ci = [stringlist_2_list(row['cif_0_w_CILower'])[-1] * 100,
+                       stringlist_2_list(row['cif_0_w_CIUpper'])[-1] * 100]
+
+            cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+            cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+                           stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+            cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+            cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+            result = [name, pasc, organ_mapname[organ],
+                      hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                      '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                      '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                      cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                      cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                      ahr_pformat + ahr_psym, ahr_psym,
+                      cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                      '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                      '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                      cif_diff_pformat + cif_diff_psym, cif_diff_psym
+                      ]
+
+            if domain == organ:
+                results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['name', 'pasc', 'group',
+                                      'aHR', 'aHR-str', 'p-val', 'aHR-lb', 'aHR-ub',
+                                      'aHR-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      'cif_diff-p-format', 'cif_diff-p-symbol'])
+    # df_result['-aHR'] = -1 * df_result['aHR']
+
+    # df_result = df_result.loc[~df_result['aHR'].isna()]
+    df_result = df_result.loc[(1e-5 < df_result['aHR']) & (df_result['aHR'] < 100)].reset_index()
+    df_result.loc[df_result['pasc']==r'Headache; including migraine', r'name'] = r'Headache '
+
+    plt.rc('font', family='serif')
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
         left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Non-SSRI']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["aHR-str",
+                       'cif_diff-str',
+                       ]
+        right_annoteheaders = ["HR (95% CI)",
+                               'DIFF/100 (95% CI)',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in {}'.format(drugname), 'CIF/100 in {}'.format(ctrlname)]
 
     # fig, ax = plt.subplots()
     axs = fp.forestplot(
@@ -1340,8 +1597,8 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full'):
 
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + '{}-hr_moretabs-{}-nosort-{}.png'.format(drugname, show, drugname), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + '{}-hr_moretabs-{}-nosort-{}.pdf'.format(drugname, show, drugname), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -2905,8 +3162,29 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full-nopval')
     # indir = r'../data/recover/output/results/SSRI-overall-omicronbroad-ssri-base180-acutevsnot-mentalcovV3/'
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-fluvoxamineacutevsnot-mentalcovV3/'
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-sertralineacutevsnot-mentalcovV3/'
 
-    df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full-nopval')
+    # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1Racutevsnot-mentalcovV3/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full-nopval')
+    #
+    # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1RacutevsNonS1R-mentalcovV3/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists', ctrlname='Non-S1R agonists', show='full-nopval')
+
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1RacutevsNonS1RNoCita-mentalcovV3/'
+    df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists',
+                                                                      ctrlname='Non-S1R agonists', show='full-nopval')
+
+    # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1RNoEscacutevsNonS1R-mentalcovV3/'
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists',
+    #                                                                   ctrlname='Non-S1R agonists', show='full-nopval')
+
+    zz
+    for drug in ['fluvoxamine', 'fluoxetine', 'escitalopram',
+                 'citalopram', 'sertraline', 'paroxetine', 'vilazodone']:
+        indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-{}acutevsnot-mentalcovV3/'.format(drug)
+        print(indir)
+        df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3_individualSSRI(indir, drugname=drug, show='full-nopval')
+
     zz
 
     # # 2024-12-15 plot subgroup, then try to summarize them

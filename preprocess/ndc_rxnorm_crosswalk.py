@@ -776,6 +776,21 @@ def _drop_dup():
     df_rx_nodup.to_excel('../prerecover/output/bupropion-wellbutrin-combined-ndc-rxnom-merged.xlsx'.format(drugname), )
     print('Dump ', drugname, 'done! len(df_rx_nodup)', len(df_rx_nodup))
 
+def _combine_CNS_drugs():
+    drug_list = [ 'modafinil', 'pitolisant', 'solriamfetol',
+        'amphetamine', 'armodafinil', 'atomoxetine', 'benzphetamine', 'caffeine',
+        'dextroamphetamine', 'dexmethylphenidate', 'diethylpropion', 'lisdexamfetamine', 'methamphetamine',
+        'methylphenidate',  'phendimetrazine', 'phentermine', 'fenfluramine',
+        'oxybate',  'doxapram',
+    ]
+
+    with pd.ExcelWriter('../prerecover/output/CNS_stimulants_code_list.xlsx') as writer:
+        for drug in tqdm(drug_list):
+            df = pd.read_excel('../prerecover/output/{}-ndc-rxnom-merged.xlsx'.format(drug),
+                               sheet_name='Sheet1', dtype=str, index_col=0)
+            df.to_excel(writer, sheet_name=drug) #, index=False)
+
+    print('done')
 
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
@@ -898,11 +913,13 @@ if __name__ == '__main__':
         'amphetamine', 'armodafinil', 'atomoxetine', 'benzphetamine', 'caffeine',
         'dextroamphetamine', 'dexmethylphenidate', 'diethylpropion', 'lisdexamfetamine', 'methamphetamine',
         'methylphenidate', 'modafinil', 'phendimetrazine', 'phentermine', 'fenfluramine',
-        'oxybate', 'pitolisant', 'solriamfetol ', 'doxapram',
+        'oxybate', 'pitolisant', 'solriamfetol', 'doxapram',
     ]
     print('len(drug_list)', len(drug_list), drug_list)
-    for drugname in drug_list:
-        df = generate_drug_list_by_name(drugname=drugname)
+    # for drugname in drug_list:
+    #     df = generate_drug_list_by_name(drugname=drugname)
+
+    _combine_CNS_drugs()
     # _drop_dup()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

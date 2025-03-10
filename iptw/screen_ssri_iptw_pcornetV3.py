@@ -106,6 +106,10 @@ def parse_args():
                                  # individual
                                  'ssri-base180-S1Racutevsnot',
                                  'ssri-base180-S1RacutevsNonS1R',
+                                 'ssri-base180-S1RacutevsNonS1RNoCita',
+                                 'ssri-base180-S1RNoEscacutevsNonS1R',
+
+
                                  'ssri-base180-fluvoxamineacutevsnot',
                                  'ssri-base180-fluoxetineacutevsnot',
                                  'ssri-base180-escitalopramacutevsnot',
@@ -655,6 +659,37 @@ if __name__ == "__main__":
                 (df['ssri-treat-0-15@sertraline'] >= 1) |
                 (df['ssri-treat-0-15@paroxetine'] >= 1) |
                 (df['ssri-treat-0-15@vilazodone'] >= 1)
+        ), :]
+        case_label = 'SSRI-180-S1R-acute15'
+        ctrl_label = 'SSRI-180-NonS1R-acute15'
+
+
+    elif args.exptype == 'ssri-base180-S1RacutevsNonS1RNoCita':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@fluvoxamine'] >= 1) |
+                (df['ssri-treat-0-15@fluoxetine'] >= 1) |
+                (df['ssri-treat-0-15@escitalopram'] >= 1) |
+                (df['ssri-treat-0-15@citalopram'] >= 1)
+        ), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@sertraline'] >= 1) |
+                (df['ssri-treat-0-15@paroxetine'] >= 1) |
+                (df['ssri-treat-0-15@vilazodone'] >= 1)
+        ), :]
+        case_label = 'SSRI-180-S1R-acute15'
+        ctrl_label = 'SSRI-180-NonS1R-NoCitaacute15'
+
+    elif args.exptype == 'ssri-base180-S1RNoEscacutevsNonS1R':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@fluvoxamine'] >= 1) |
+                (df['ssri-treat-0-15@fluoxetine'] >= 1)
+        ), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (
+                (df['ssri-treat-0-15@citalopram'] >= 1) |
+                (df['ssri-treat-0-15@sertraline'] >= 1) |
+                (df['ssri-treat-0-15@paroxetine'] >= 1) |
+                (df['ssri-treat-0-15@vilazodone'] >= 1) |
+                (df['ssri-treat-0-15@escitalopram'] >= 1)
         ), :]
         case_label = 'SSRI-180-S1R-acute15'
         ctrl_label = 'SSRI-180-NonS1R-acute15'
