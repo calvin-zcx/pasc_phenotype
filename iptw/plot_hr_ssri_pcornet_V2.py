@@ -1320,7 +1320,7 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='SSRI'
         groupvar="group",  # column containing group labels
         group_order=df_result['group'].unique(),
         xlabel="Hazard Ratio",  # x-label title
-        xticks=[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
+        xticks=[0.5, 1, 2.],  #[0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
         # sort=False, #True,  # sort estimates in ascending order
@@ -3171,8 +3171,11 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists', ctrlname='Non-S1R agonists', show='full-nopval')
 
     indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1RacutevsNonS1RNoCita-mentalcovV3/'
-    df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists',
-                                                                      ctrlname='Non-S1R agonists', show='full-nopval')
+    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists',
+    #                                                                   ctrlname='Non-S1R agonists', show='full-nopval')
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acuteS1R2vsnoSSRI-mentalcovV3/'
+    df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='fluvoxamine/fluoxetine',
+                                                                      ctrlname='Non-SSRI', show='full-nopval')
 
     # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-S1RNoEscacutevsNonS1R-mentalcovV3/'
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='S1R agonists',

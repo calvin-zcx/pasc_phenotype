@@ -103,6 +103,7 @@ def parse_args():
                                  'ssri-base180-acutevsnot-nosnriother', # sensitivity 2025-2-21
                                  'ssri-base180withmental-acutevsnot',
 
+                                 'ssri-base180-acuteS1R2vsnoSSRI',
                                  # individual
                                  'ssri-base180-S1Racutevsnot',
                                  'ssri-base180-S1RacutevsNonS1R',
@@ -636,6 +637,13 @@ if __name__ == "__main__":
         ctrl_label = 'SSRI-180-noacut15nosnrioth'
 
 
+    elif args.exptype == 'ssri-base180-acuteS1R2vsnoSSRI':
+        df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) &  (
+            (df['ssri-treat-0-15@fluvoxamine'] >= 1) |
+            (df['ssri-treat-0-15@fluoxetine'] >= 1)), :]
+        df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0), :]
+        case_label = 'SSRI-180-with-acuteS1R2'
+        ctrl_label = 'SSRI-180-no-acute15'
 
     elif args.exptype == 'ssri-base180-S1Racutevsnot':
         # use this one for individual analysis, more consistent with primary analysis

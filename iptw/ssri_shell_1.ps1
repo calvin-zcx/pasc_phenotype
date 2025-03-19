@@ -60,8 +60,10 @@ python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-S1RacutevsNonS1R --
 
 python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-S1RacutevsNonS1RNoCita --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-S1RacutevsNonS1RNoCita-all-CFSCVDDeath.txt
 python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-S1RNoEscacutevsNonS1R --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-S1RNoEscacutevsNonS1R-all-CFSCVDDeath.txt
+python screen_ssri_iptw_pcornetV3.py  --exptype ssri-base180-acuteS1R2vsnoSSRI --severity all 2>&1 | tee  log_ssri_v3/screen_ssri_iptw_pcornetV3-ssri-base180-acuteS1R2vsnoSSRI-all-CFSCVDDeath.txt
 
 'ssri-base180-S1RNoEscacutevsNonS1R'
+'ssri-base180-acuteS1R2vsnoSSRI'
 #
 #'fluvoxamine-base180withmental-acutevsnot',
 #'fluvoxamine-base180-acutevsnot',

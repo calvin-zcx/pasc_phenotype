@@ -906,8 +906,10 @@ if __name__ == '__main__':
     drugname = 'amphetamine'
     drugname = 'dexmethylphenidate'
     drugname = 'dextroamphetamine'
-    # df = generate_drug_list_by_name(drugname=drugname)
+    drugname = 'Depade'
+    df = generate_drug_list_by_name(drugname=drugname)
 
+    zz
     # in total 19, not add combination drug name here, should be covered by its ingredient drug
     drug_list = [
         'amphetamine', 'armodafinil', 'atomoxetine', 'benzphetamine', 'caffeine',
