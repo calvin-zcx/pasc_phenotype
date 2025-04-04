@@ -85,7 +85,7 @@ if __name__ == '__main__':
     table_list = ['condition', 'covid_elements', 'death', 'death_cause', 'demographic', 'diagnosis', 'dispensing',
                   'encounter', 'enrollment', 'harvest', 'hash_token', 'immunization', 'lab_history', 'lab_result_cm',
                   'lds_address_history', 'med_admin', 'obs_clin', 'obs_gen', 'pcornet_trial', 'prescribing', 'pro_cm',
-                  'procedures', 'provider', 'vital', 'geocoded_2010', 'geocoded_2020', 'geocoded_2020', ]
+                  'procedures', 'provider', 'vital', 'geocoded_2010', 'geocoded', 'geocoded_2020', ]
     # no date colum: death_cause, 'harvest', 'hash_token', 'lab_history','provider',
     table_dict = {'condition': 'report_date', 'covid_elements': 'admit_date', 'death': 'death_date',
                   'demographic': 'birth_date',
@@ -96,7 +96,7 @@ if __name__ == '__main__':
                   'med_admin': 'medadmin_start_date', 'obs_clin': 'obsclin_start_date', 'obs_gen': 'obsgen_start_date',
                   'pcornet_trial': 'trial_enroll_date', 'prescribing': 'rx_order_date', 'pro_cm': 'pro_time',
                   'procedures': 'admit_date', 'vital': 'measure_date',
-                  'geocoded_2010': 'patid', 'geocoded_2020': 'patid', 'provider': 'providerid'}
+                  'geocoded_2010': 'patid', 'geocoded': 'patid', 'geocoded_2020': 'patid', 'provider': 'providerid'}
     results = []
     error_msg = []
     # site_list = ['temple', 'usf']
@@ -136,8 +136,11 @@ if __name__ == '__main__':
     pd_results = pd.concat(results, ignore_index=True)
     df_combined = pd.merge(pd_results, df_site, left_on='site', right_on='Schema name',
                            how='left')  # df_site.loc[df_site['selected'] == 1]
-    df_combined.to_csv('output/db_info/dev_s11_pcornet_all_table_date-{}.csv'.format(date_time))
+    # df_combined.to_csv('output/db_info/dev_s11_pcornet_all_table_date-{}.csv'.format(date_time))
+    df_combined.to_csv('output/db_info/dev_s12_pcornet_all_table_date-{}.csv'.format(date_time))
 
     pd_error = pd.DataFrame(error_msg)
-    pd_error.to_csv('output/db_info/dev_s11_pcornet_all_table_date_ErrorMsg-{}.csv'.format(date_time))
+    # pd_error.to_csv('output/db_info/dev_s11_pcornet_all_table_date_ErrorMsg-{}.csv'.format(date_time))
+    pd_error.to_csv('output/db_info/dev_s12_pcornet_all_table_date_ErrorMsg-{}.csv'.format(date_time))
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
