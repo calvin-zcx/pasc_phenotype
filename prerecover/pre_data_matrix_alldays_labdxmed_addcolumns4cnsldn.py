@@ -1809,7 +1809,7 @@ def build_feature_matrix(args):
             # 2025-4-8  capture CNS and LDN for exploration
             cnsldntreat_flag[i, :], cnsldntreat_t2e[i, :], cnsldntreat_t2eall_1row = \
                 _encoding_covidtreat(med, cnsldn_names, cnsldn_med, index_date, default_t2e)
-            cnsldntreat_t2eall.append(ssritreat_t2eall_1row)
+            cnsldntreat_t2eall.append(cnsldntreat_t2eall_1row)
 
             # add CNSLDN covariates condition, 2025-4-8
             outcome_covCNSLDN_flag[i, :], outcome_covCNSLDN_t2e[i, :], outcome_covCNSLDN_baseline[i, :], outcome_covCNSLDN_t2eall_1row = \
