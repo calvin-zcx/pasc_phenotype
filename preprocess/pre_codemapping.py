@@ -1873,6 +1873,53 @@ def ICD_to_mental():
     return icd_mental, mental_index, [df_dsm, df_elix]
 
 
+def ICD_to_CNS_LDN_covs():
+    # 2025-4-8
+    start_time = time.time()
+    dict_df_cci = pd.read_excel(r'../data/mapping/LDN_CNS_Covariates_PASC.xlsx', dtype=str, sheet_name=None)
+    print('len(dict_df_cci)', len(dict_df_cci))
+
+    # warning: there are potnetial overlapping issue. If one icd code contribute two categories.
+    # not a problem if no overlap
+    icd_cci = {}
+    cci_index = {}
+
+    for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
+        print(ith, key, len(df_cci))
+        if key == 'notes':
+            break
+        print('key of cov:', key, 'index:', ith, '#code:', len(df_cci))
+        if key == 'MECFS':
+            df_cci = df_cci.loc[df_cci['include']=='yes', :]
+            print('key of cov:', key, 'index:', ith, '#code:', len(df_cci))
+
+        cci_index[key] = [ith, len(df_cci)]
+        for index, row in df_cci.iterrows():
+            icd = row['ICD-10-CM Code'].strip().upper().replace('.', '')
+            name = row['ICD-10-CM Code Description']
+            type = 'icd10' # all ICD10 for the current ones, not code type columns. row['code type']
+            ccsr_category_des =  row['CCSR CATEGORY 1 DESCRIPTION']
+            # cci = row['Category']
+            # order = row['CCI order']
+            order = ith
+            icd_cci[icd] = [key, type, name, ccsr_category_des]
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/icd_covCNS-LDN_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cci_index):', len(cci_index))
+    output_file = r'../data/mapping/covCNS-LDN_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cci_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci, cci_index, dict_df_cci
+
+
 def build_ssri_snri_drug_map():
     med_code = {}
     fname_dict = {'ssri_drug_list.xlsx': 'ssri',
@@ -1899,6 +1946,28 @@ def build_ssri_snri_drug_map():
     utils.dump(med_code, r'../data/mapping/ssri_snri_drugs_mapping.pkl')
     return med_code
 
+
+def build_cns_naltrxone_drug_map():
+    med_code = {}
+
+    df_all = pd.read_excel(r'../data/mapping/CNS_stimulants_and_Naltrexone_code_list_25April7.xlsx', sheet_name=None, dtype=str)
+    print('len(df_all)', len(df_all))
+    for ith, (key, df) in enumerate(df_all.items()):
+        print('drug:', key, 'index:', ith, '#code:', len(df)) #, df[['code']].value_counts())
+        code_dict = {}
+        for index, row in df.iterrows():
+            code = row['code'].strip()
+            type = row['code type']
+            name = row['name']
+            drug_ingcat = row['drug']
+
+            code_dict[code] = [code, type, name, drug_ingcat, key]
+
+        med_code[key] = code_dict
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/cns_ldn_drugs_mapping.pkl')
+    return med_code
 
 def build_pregnant_drugs_grt():
     dict_df_all = pd.read_excel(r'../data/mapping/preg_drug_of_interest.xlsx', sheet_name=None, dtype=str)  # read all sheets
@@ -2009,5 +2078,11 @@ if __name__ == '__main__':
 
 
     # 20 add pregnant related drug of interested, 2025-1-22
-    med_code, dict_df_all = build_pregnant_drugs_grt()
+    #med_code, dict_df_all = build_pregnant_drugs_grt()
+
+    # 21 CNS and Naltrxone/LDN related drugs, 2025-04-08
+    med_code = build_cns_naltrxone_drug_map()
+
+    # 22 add more CNS LDN related covs, 2025-04-08
+    icd_covCNSLDN, covCNSLDN_index, list_df_covCNSLDN = ICD_to_CNS_LDN_covs()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -767,6 +767,66 @@ def generate_drug_list_by_name(drugname='fluvoxamine'):
     return df_merge
 
 
+def _drop_dup_adderall():
+    df1 = pd.read_excel('../prerecover/output/adderall-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+    df2 = pd.read_excel('../prerecover/output/mydayis-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+    df3 = pd.read_excel('../prerecover/output/dextroamphetamine-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+    df4 = pd.read_excel('../prerecover/output/amphetamine-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+
+    df_rx = pd.concat([df1, df2, df3, df4], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_excel('../prerecover/output/adderall_combo-ndc-rxnom-merged.xlsx', )
+    print('Dump ', 'adderall_combo', 'done! len(df_rx_nodup)', len(df_rx_nodup))
+    return  df_rx_nodup
+
+def _drop_dup_azstarys():
+    df1 = pd.read_excel('../prerecover/output/azstarys-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+    df2 = pd.read_excel('../prerecover/output/dexmethylphenidate-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
+
+    df_rx = pd.concat([df1, df2], ignore_index=True, sort=False)
+    df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
+    df_rx_nodup.to_excel('../prerecover/output/azstarys_combo-ndc-rxnom-merged.xlsx'.format(drugname), )
+    print('Dump ', drugname, 'done! len(df_rx_nodup)', len(df_rx_nodup))
+    return df_rx_nodup
+
+
+def _exclude_combo_adderall():
+    infile = '../prerecover/output/amphetamine-ndc-rxnom-merged.xlsx'
+    infile = '../prerecover/output/dextroamphetamine-ndc-rxnom-merged.xlsx'
+    df1 = pd.read_excel(infile, sheet_name='Sheet1', dtype=str)
+    df2 = pd.read_excel('../prerecover/output/ADHD/adderall_combo-ndc-rxnom-merged_clean.xlsx', sheet_name='Sheet1', dtype=str)
+    com_set = set(df2['code'])
+    df1['selected'] = 1
+    for index, row in tqdm(df1.iterrows(), total=len(df1)):
+        code = row['code']
+        if code in com_set:
+            df1.loc[index, 'selected'] = 0
+
+    df1.to_excel(infile.replace('.xlsx', '_excludeCombo.xlsx'), )
+    print('Dump ', infile, 'exclude combo done! len(df1)', len(df1), "sum(df1['selected']==1)", sum(df1['selected']==1))
+
+    # after this, for amphetamine code list, further exclude dextroamphetamine
+    return df1
+
+def _exclude_combo_azstarys():
+
+    infile = '../prerecover/output/dexmethylphenidate-ndc-rxnom-merged.xlsx'
+    df1 = pd.read_excel(infile, sheet_name='Sheet1', dtype=str)
+    df2 = pd.read_excel('../prerecover/output/ADHD/azstarys_combo-ndc-rxnom-merged_clean.xlsx', sheet_name='Sheet1', dtype=str)
+    com_set = set(df2['code'])
+    df1['selected'] = 1
+    for index, row in tqdm(df1.iterrows(), total=len(df1)):
+        code = row['code']
+        if code in com_set:
+            df1.loc[index, 'selected'] = 0
+
+    df1.to_excel(infile.replace('.xlsx', '_excludeCombo.xlsx'), )
+    print('Dump ', infile, 'exclude combo done! len(df1)', len(df1), "sum(df1['selected']==1)", sum(df1['selected']==1))
+
+    # after this, for amphetamine code list, further exclude dextroamphetamine
+    return df1
+
+
 def _drop_dup():
     df1 = pd.read_excel('../prerecover/output/bupropion-ndc-rxnom-merged-edited.xlsx', sheet_name='Sheet1', dtype=str)
     df2 = pd.read_excel('../prerecover/output/wellbutrin-ndc-rxnom-merged.xlsx', sheet_name='Sheet1', dtype=str)
@@ -775,6 +835,7 @@ def _drop_dup():
     df_rx_nodup = df_rx.drop_duplicates(['code', 'code type', "name", "synonym", "tty"])
     df_rx_nodup.to_excel('../prerecover/output/bupropion-wellbutrin-combined-ndc-rxnom-merged.xlsx'.format(drugname), )
     print('Dump ', drugname, 'done! len(df_rx_nodup)', len(df_rx_nodup))
+    return df_rx_nodup
 
 def _combine_CNS_drugs():
     drug_list = [ 'modafinil', 'pitolisant', 'solriamfetol',
@@ -907,6 +968,22 @@ if __name__ == '__main__':
     drugname = 'dexmethylphenidate'
     drugname = 'dextroamphetamine'
     drugname = 'Depade'
+    drugname = 'adderall'
+    drugname = 'mydayis'
+
+    drugname = 'wakix'
+    drugname = 'didrex'
+    drugname = 'regimex'
+
+    drugname = 'azstarys'
+    drugname = 'guanfacine'
+    #df = _drop_dup_adderall()
+    # df = _exclude_combo()
+
+    # df = _drop_dup_azstarys()
+    # _exclude_combo_azstarys()
+    # zz
+    # zz
     df = generate_drug_list_by_name(drugname=drugname)
 
     zz
