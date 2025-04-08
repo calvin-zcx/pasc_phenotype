@@ -1672,9 +1672,9 @@ def build_feature_matrix(args):
             cnsldntreat_t2e = np.zeros((n, 27), dtype='int16')  # date of earliest prescriptions
             cnsldntreat_t2eall = []
             cnsldntreat_column_names = (
-                    ['treat-flag@' + x for x in cnsldn_names] +
-                    ['treat-t2e@' + x for x in cnsldn_names] +
-                    ['treat-t2eall@' + x for x in cnsldn_names])
+                    ['cnsldn-flag@' + x for x in cnsldn_names] +
+                    ['cnsldn-t2e@' + x for x in cnsldn_names] +
+                    ['cnsldn-t2eall@' + x for x in cnsldn_names])
 
             # 2025-4-8 add CNS and LDN related COVs, reuse outcome functions
             # currently there are 5 dim covs, will add later
@@ -1858,7 +1858,6 @@ def build_feature_matrix(args):
                                     ssritreat_flag,
                                     ssritreat_t2e,
                                     np.asarray(ssritreat_t2eall),
-
                                     cnsldntreat_flag,
                                     cnsldntreat_t2e,
                                     np.asarray(cnsldntreat_t2eall),
@@ -1866,7 +1865,6 @@ def build_feature_matrix(args):
                                     outcome_covCNSLDN_t2e,
                                     outcome_covCNSLDN_baseline,
                                     np.asarray(outcome_covCNSLDN_t2eall),
-
                                     outcome_mental_flag,
                                     outcome_mental_t2e,
                                     outcome_mental_baseline,
