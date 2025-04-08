@@ -51,13 +51,20 @@ if __name__ == '__main__':
     start_time = time.time()
     pd.set_option('display.max_colwidth', None)
 
-    df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+    # df_site = pd.read_excel('RECOVER Adult Site schemas_edit.xlsx')
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit2025.xlsx')
 
     site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
     # ['duke', 'intermountain', 'missouri', 'iowa', 'northwestern', 'ochin', 'osu', 'wakeforest',  'musc']
-    site_list = site_list.to_list() + ['northwestern', 'wakeforest',
+    # site_list = site_list.to_list() + ['northwestern', 'wakeforest',
+    #                                    'chop', 'nemours', 'nationwide', 'seattle', 'colorado', 'lurie',
+    #                                    'cchmc', 'national', 'indiana', 'stanford', ]  # these two sites with label 0
+    site_list = site_list.to_list() + [
                                        'chop', 'nemours', 'nationwide', 'seattle', 'colorado', 'lurie',
-                                       'cchmc', 'national', 'indiana', 'stanford', ]  # these two sites with label 0
+                                       'cchmc', 'national', 'indiana',
+                                        'usf', 'miami', 'musc'  # not for S11, S12, add northwestern, wakeforest, stanford to selected
+
+    ]  # these two sites with label 0
     # Intermountain does not have covid data? From dmi
     #  Indiana is the site that is not present.
     print('len(site_list):', len(site_list), site_list)
