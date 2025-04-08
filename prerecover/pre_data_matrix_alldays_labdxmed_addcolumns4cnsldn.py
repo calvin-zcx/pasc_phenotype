@@ -1660,7 +1660,7 @@ def build_feature_matrix(args):
                     ['treat-t2eall@' + x for x in ssritreat_names])
 
 
-            # 2025-04-08 add CNS and LDN drug
+            # 2025-04-08 add CNS and LDN drug and guanfacine
             cnsldn_names = [
                 'naltrexone', 'LDN_name', 'adderall_combo', 'lisdexamfetamine', 'methylphenidate',
                 'amphetamine', 'amphetamine_nocombo', 'dextroamphetamine', 'dextroamphetamine_nocombo', 'modafinil',
@@ -1680,7 +1680,7 @@ def build_feature_matrix(args):
             # currently there are 5 dim covs, will add later
             outcome_covCNSLDN_flag = np.zeros((n, 5), dtype='int16')
             outcome_covCNSLDN_t2e = np.zeros((n, 5), dtype='int16')
-            outcome_covCNSLDN_baseline = np.zeros((n, 1), dtype='int16')
+            outcome_covCNSLDN_baseline = np.zeros((n, 5), dtype='int16')
             outcome_covCNSLDN_t2eall = []
             outcome_covCNSLDN_column_names = (
                     ['dxcovCNSLDN-out@' + x for x in covCNSLDN_encoding.keys()] + \

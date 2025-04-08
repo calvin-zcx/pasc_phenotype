@@ -38,7 +38,7 @@ def parse_args():
                                                '18to25', '25to35', '35to50', '50to65',
                                                'less65', 'above65',
                                                'less65omicronbroad', 'above65omicronbroad',
-                                                'less50', 'above50',
+                                               'less50', 'above50',
                                                '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
@@ -100,7 +100,7 @@ def parse_args():
                                  'ssri-post30-nobasemental',
 
                                  'ssri-base180-acutevsnot',
-                                 'ssri-base180-acutevsnot-nosnriother', # sensitivity 2025-2-21
+                                 'ssri-base180-acutevsnot-nosnriother',  # sensitivity 2025-2-21
                                  'ssri-base180withmental-acutevsnot',
 
                                  'ssri-base180-acuteS1R2vsnoSSRI',
@@ -109,7 +109,6 @@ def parse_args():
                                  'ssri-base180-S1RacutevsNonS1R',
                                  'ssri-base180-S1RacutevsNonS1RNoCita',
                                  'ssri-base180-S1RNoEscacutevsNonS1R',
-
 
                                  'ssri-base180-fluvoxamineacutevsnot',
                                  'ssri-base180-fluoxetineacutevsnot',
@@ -144,7 +143,7 @@ def parse_args():
                                  'ssriVSbupropion-acute0-15-clean',
                                  'ssri-base-180-0-cleanv2',
 
-                                 ], default='ssri-base180-acutevsnot') # 'base180-0'
+                                 ], default='ssri-base180-acutevsnot')  # 'base180-0'
 
     # parser.add_argument('--cohorttype',
     #                     choices=['atrisk', 'norisk', 'atrisklabdx', 'norisklabdx'],
@@ -305,7 +304,8 @@ def select_subpopulation(df, severity):
     elif severity == 'less65':
         print('Considering less65 cohorts')
         # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
-        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1), :].copy()
+        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1),
+             :].copy()
     elif severity == 'above65':
         print('Considering above65 cohorts')
         df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
@@ -315,16 +315,19 @@ def select_subpopulation(df, severity):
         df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1), :].copy()
     elif severity == 'above50':
         print('Considering above50 cohorts')
-        df = df.loc[(df['age@50-64'] == 1) | (df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+        df = df.loc[
+             (df['age@50-64'] == 1) | (df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1),
+             :].copy()
     elif severity == 'less65omicronbroad':
         print('Considering less65omicronbroad cohorts')
         # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
-        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
-             ((df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+                    ((df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1)),
+             :].copy()
     elif severity == 'above65omicronbroad':
         print('Considering above65omicronbroad cohorts')
-        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
-             ((df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+                    ((df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1)), :].copy()
 
     elif severity == '20to40':
         print('Considering 20to40 cohorts')
@@ -660,7 +663,6 @@ if __name__ == "__main__":
                                  & (df['death t2e'] >= 31) & (df['death t2e'] < 180)).astype('int')
     df['cvd death t2e postacute'] = df['death t2e all']
 
-
     df['hospitalization-acute-flag'] = (df['hospitalization-acute-flag'] >= 1).astype('int')
     df['hospitalization-acute-t2e'] = df['hospitalization-acute-t2e'].clip(upper=31)
     df['hospitalization-postacute-flag'] = (df['hospitalization-postacute-flag'] >= 1).astype('int')
@@ -729,7 +731,6 @@ if __name__ == "__main__":
 
     # move brainfog_list_any and '_brainfog_flag'  below
 
-
     df['any_pasc_flag'] = 0
     df['any_pasc_type'] = np.nan
     df['any_pasc_t2e'] = 180  # np.nan
@@ -750,14 +751,13 @@ if __name__ == "__main__":
     df['any_brainfog_t2e'] = 180  # np.nan
     df['any_brainfog_txt'] = ''
     df['any_brainfog_baseline'] = 0  # placeholder for screening, no special meaning, null column
-    brainfog_list_any = ['Neurodegenerative', 'Memory-Attention', #'Headache',
+    brainfog_list_any = ['Neurodegenerative', 'Memory-Attention',  # 'Headache',
                          'Sleep Disorder', 'Psych', 'Dysautonomia-Orthostatic', 'Stroke']
     for p in brainfog_list_any:
         df[p + '_brainfog_flag'] = 0
 
     print('brainfog_list_any:', brainfog_list_any)
     print('len(brainfog_list_any):', len(brainfog_list_any), 'len(brainfog_list)', len(brainfog_list))
-
 
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         # for any 1 pasc
@@ -843,7 +843,8 @@ if __name__ == "__main__":
             df.loc[index, 'any_brainfog_txt'] = brainfog_1_text
         else:
             df.loc[index, 'any_brainfog_flag'] = 0
-            df.loc[index, 'any_brainfog_t2e'] = rows[['dxbrainfog-t2e@' + p for p in brainfog_list_any]].max()  # censoring time
+            df.loc[index, 'any_brainfog_t2e'] = rows[
+                ['dxbrainfog-t2e@' + p for p in brainfog_list_any]].max()  # censoring time
 
     # End of defining ANY *** conditions
     # Load index information
@@ -872,7 +873,6 @@ if __name__ == "__main__":
     pasc_flag = df['any_pasc_flag'].astype('int')
     pasc_t2e = df['any_pasc_t2e'].astype('float')
 
-
     print('Severity cohorts:', args.severity,
           # 'df1.shape:', df1.shape,
           # 'df2.shape:', df2.shape,
@@ -881,6 +881,37 @@ if __name__ == "__main__":
 
     df.to_csv(r'../data/recover/output/pregnancy_output/pregnant_yr4.csv')
     print('Cohort build Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
+    pasc_flag = df['any_pasc_flag'].astype('int')
+    pasc_t2e_label = 'any_pasc_t2e'
+
+    pasc_flag = df['any_CFR_flag'].astype('int')
+    pasc_t2e_label = 'any_CFR_t2e'
+
+    pasc_flag = df['any_brainfog_flag'].astype('int')
+    pasc_t2e_label = 'any_brainfog_t2e'
+
+    pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
+    pasc_t2e =  'dxMECFS-t2e@ME/CFS'
+
+    pasc_flag = (df['dx-out@' + 'PASC-General'].copy() >= 1).astype('int')
+    pasc_t2e = 'dx-t2e@' + 'PASC-General'
+
+    df1 = df.loc[((pasc_flag > 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
+    print("((pasc_flag > 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1) len(df1)", len(df1))
+    pasc_time = df1[pasc_t2e_label].apply(lambda x: datetime.timedelta(x))
+    delivery_time = df1['flag_delivery_date'] - df1['index date']
+    time_order_flag_1 = pasc_time < delivery_time
+    df1 = df1.loc[time_order_flag_1, :]
+    print("df1.loc[time_order_flag_1, :] len(df1)", len(df1))
+
+    df0 = df.loc[((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
+    print("((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1) len(df0)", len(df0))
+    time_order_flag_0 = \
+        (df0['index date'] + datetime.timedelta(days=30) <= df0['flag_pregnancy_start_date']) & \
+        (df0['index date'] + datetime.timedelta(days=30) <= df0['flag_delivery_date'])
+    df0 = df0.loc[time_order_flag_0, :]
+    print("df0.loc[time_order_flag_0, :] len(df0)", len(df0))
 
     zz
     col_names = pd.Series(df.columns)
@@ -972,8 +1003,6 @@ if __name__ == "__main__":
           'df_label.shape:', df_label.shape,
           'df_covs.shape:', df_covs.shape)
     print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-
-
 
     causal_results = []
     results_columns_name = []
