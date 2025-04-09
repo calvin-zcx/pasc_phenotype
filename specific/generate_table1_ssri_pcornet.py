@@ -81,10 +81,10 @@ def add_any_pasc(df):
 
     # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
     pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    _exclude_list = ['Pressure ulcer of skin', 'Fluid and electrolyte disorders' ]
+    _exclude_list = ['Pressure ulcer of skin', 'Fluid and electrolyte disorders']
     pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
 
-    pasc_add = ['smell and taste',]
+    pasc_add = ['smell and taste', ]
     print('len(pasc_list)', len(pasc_list), 'len(pasc_add)', len(pasc_add))
 
     for p in pasc_list:
@@ -132,10 +132,11 @@ def add_any_pasc(df):
     return df
 
 
-def read_csv_files(filelist, flag_cols, dtype={'patid': str, 'site': str, 'zip': str}, parse_dates=['index date', 'dob']):
+def read_csv_files(filelist, flag_cols, dtype={'patid': str, 'site': str, 'zip': str},
+                   parse_dates=['index date', 'dob']):
     result = []
     assert len(flag_cols) == len(flag_cols)
-    for f, col in zip(filelist,flag_cols):
+    for f, col in zip(filelist, flag_cols):
         print('Read f:', f)
         _df = pd.read_csv(f, dtype=dtype, parse_dates=parse_dates)
         for c in flag_cols:
@@ -200,30 +201,30 @@ def _old_selection(df, exptype):
         ctrl_label = 'Nouser'
     elif exptype == 'ssriVSsnri-base-180-0':
         df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
+                df['snri-treat--180-180-flag'] == 0), :]
         df0 = df.loc[(df['snri-treat--180-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-180-0'
         ctrl_label = 'SNRI-180-0'
     elif exptype == 'ssriVSsnri-base-120-0':
         df1 = df.loc[(df['ssri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
+                df['snri-treat--180-180-flag'] == 0), :]
         df0 = df.loc[(df['snri-treat--120-0-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-120-0'
         ctrl_label = 'SNRI-120-0'
     elif exptype == 'ssriVSsnri-acute0-7':
         df1 = df.loc[(df['ssri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
+                df['snri-treat--180-180-flag'] == 0), :]
         df0 = df.loc[(df['snri-treat-0-7-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-7'
         ctrl_label = 'SNRI-0-7'
     elif exptype == 'ssriVSsnri-acute0-15':
         df1 = df.loc[(df['ssri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['snri-treat--180-180-flag'] == 0), :]
+                df['snri-treat--180-180-flag'] == 0), :]
         df0 = df.loc[(df['snri-treat-0-15-flag'] >= 1) & (df['PaxRisk:Mental health conditions'] > 0) & (
-                    df['ssri-treat--180-180-flag'] == 0), :]
+                df['ssri-treat--180-180-flag'] == 0), :]
         case_label = 'SSRI-0-15'
         ctrl_label = 'SNRI-0-15'
     elif exptype == 'ssriVSbupropion-base-180-0':
@@ -253,6 +254,7 @@ def _old_selection(df, exptype):
                 df['PaxRisk:Mental health conditions'] > 0) & (df['other-treat--180-180@bupropion'] == 0), :]
         case_label = 'bupropion-0-15'
         ctrl_label = 'Nouser'
+
 
 def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     # %% Step 1. Load  Data
@@ -309,9 +311,9 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
 
     elif exptype == 'ssri-base180withmental-acutevsnot':
         df1 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] >= 1) & (
-                    df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         df0 = df.loc[(df['ssri-treat--180-0-flag'] >= 1) & (df['ssri-treat-0-15-flag'] == 0) & (
-                    df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
+                df['SSRI-Indication-dsmAndExlix-flag'] > 0), :]
         case_label = 'SSRI-180withmental-with-acute15'
         ctrl_label = 'SSRI-180withmental-no-acute15'
 
@@ -497,7 +499,6 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     print('exposre strategy, exptype:', exptype)
     print('check exposure strategy, n1, negative ratio, n0, if match on mental health, no-user definition')
 
-    
     # treadcol = 'ssri-treat-0-15-flag'
     # print('exposre strategy', treadcol)
     # appendix = '120-0-allmental' #'0-15-allmental'
@@ -531,7 +532,7 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     df = pd.concat([df1, df0], ignore_index=True)
     df = add_col(df)
 
-    df_pos = df.loc[df['treated'] == 1,:]
+    df_pos = df.loc[df['treated'] == 1, :]
     df_neg = df.loc[df['treated'] == 0, :]
 
     out_file = r'./ssri_output/Table-recover29Nov27_covid_pos_{}-mentalCov.xlsx'.format(exptype)
@@ -600,7 +601,7 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
     records.append([])
     # col_names = ['outpatient', 'inpatient', 'icu', 'inpatienticu',
     #              'hospitalized', 'ventilation', 'criticalcare', ]
-    col_names = ['outpatient',  ]
+    col_names = ['outpatient', ]
     row_names.extend(col_names)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
@@ -905,8 +906,8 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                      'CCI:Metastatic Carcinoma',
                      'CCI:AIDS/HIV',
                  ] + [
-                'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
-                ] + [
+                     'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+                 ] + [
                      'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
                      'mental-base@Depressive Disorders',
                      'mental-base@Bipolar and Related Disorders',
@@ -1002,9 +1003,9 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                          'CCI:Metastatic Carcinoma',
                          'CCI:AIDS/HIV',
                      ] + [
-                'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
-                ]+
-                 [
+                         'addPaxRisk:Drug Abuse', 'addPaxRisk:Obesity', 'addPaxRisk:tuberculosis',
+                     ] +
+                     [
                          'Schizophrenia Spectrum and Other Psychotic Disorders',
                          'Depressive Disorders',
                          'Bipolar and Related Disorders',
@@ -1023,7 +1024,6 @@ def table1_more_4_analyse(exptype, cohort='all', subgroup='all'):
                          'SSRI-Indication-dsmAndExlix-flag'
                      ]
                      )
-
 
     row_names.extend(col_names_out)
     records.extend(
@@ -1372,7 +1372,6 @@ def table1_less_4_print(exptype='all', subgroup='all'):
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
          for c in sex_col])
 
-
     # age
     row_names.append('Median age (IQR) — yr')
     records.append([
@@ -1527,11 +1526,11 @@ def table1_less_4_print(exptype='all', subgroup='all'):
 
     # Vaccine:
     col_names = ['Fully vaccinated - Pre-index',
-                 #'Fully vaccinated - Post-index',
+                 # 'Fully vaccinated - Post-index',
                  'Partially vaccinated - Pre-index',
-                 #'Partially vaccinated - Post-index',
+                 # 'Partially vaccinated - Post-index',
                  'No evidence - Pre-index',
-                 #'No evidence - Post-index',
+                 # 'No evidence - Post-index',
                  ]
     row_names.extend(col_names)
     records.extend(
@@ -1598,20 +1597,21 @@ def table1_less_4_print(exptype='all', subgroup='all'):
                   'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
                   'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis'] +
                  ["DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
-        'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
-        'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
-        'mental-base@Depressive Disorders',
-        'mental-base@Bipolar and Related Disorders',
-        'mental-base@Anxiety Disorders',
-        'mental-base@Obsessive-Compulsive and Related Disorders',
-        'mental-base@Post-traumatic stress disorder',
-        'mental-base@Bulimia nervosa',
-        'mental-base@Binge eating disorder',
-        'mental-base@premature ejaculation',
-        'mental-base@Autism spectrum disorder',
-        'mental-base@Premenstrual dysphoric disorder',
-        'mental-base@SMI',
-        'mental-base@non-SMI',])
+                  'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)',
+                  'DX: Herpes Zoster',
+                  'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
+                  'mental-base@Depressive Disorders',
+                  'mental-base@Bipolar and Related Disorders',
+                  'mental-base@Anxiety Disorders',
+                  'mental-base@Obsessive-Compulsive and Related Disorders',
+                  'mental-base@Post-traumatic stress disorder',
+                  'mental-base@Bulimia nervosa',
+                  'mental-base@Binge eating disorder',
+                  'mental-base@premature ejaculation',
+                  'mental-base@Autism spectrum disorder',
+                  'mental-base@Premenstrual dysphoric disorder',
+                  'mental-base@SMI',
+                  'mental-base@non-SMI', ])
 
     col_names_out = (['Cancer', 'Chronic kidney disease', 'Chronic liver disease',
                       'Chronic lung disease', 'Cystic fibrosis',
@@ -1624,23 +1624,21 @@ def table1_less_4_print(exptype='all', subgroup='all'):
                       'Smoking current or former', 'Stroke or cerebrovascular disease',
                       'Substance use disorders', 'Tuberculosis', ] +
                      ["Coagulopathy", "Peripheral vascular disorders ", "Seizure/Epilepsy", "Weight Loss",
-                        'Obstructive sleep apnea', 'Epstein-Barr and Infectious Mononucleosis (Mono)', 'Herpes Zoster',
-                        'Schizophrenia Spectrum and Other Psychotic Disorders',
-                        'Depressive Disorders',
-                        'Bipolar and Related Disorders',
-                        'Anxiety Disorders',
-                        'Obsessive-Compulsive and Related Disorders',
-                        'Post-traumatic stress disorder',
-                        'Bulimia nervosa',
-                        'Binge eating disorder',
-                        'premature ejaculation',
-                        'Autism spectrum disorder',
-                        'Premenstrual dysphoric disorder',
-                        'SMI',
-                        'non-SMI',]
+                      'Obstructive sleep apnea', 'Epstein-Barr and Infectious Mononucleosis (Mono)', 'Herpes Zoster',
+                      'Schizophrenia Spectrum and Other Psychotic Disorders',
+                      'Depressive Disorders',
+                      'Bipolar and Related Disorders',
+                      'Anxiety Disorders',
+                      'Obsessive-Compulsive and Related Disorders',
+                      'Post-traumatic stress disorder',
+                      'Bulimia nervosa',
+                      'Binge eating disorder',
+                      'premature ejaculation',
+                      'Autism spectrum disorder',
+                      'Premenstrual dysphoric disorder',
+                      'SMI',
+                      'non-SMI', ]
                      )
-
-
 
     row_names.extend(col_names_out)
     records.extend(
@@ -1684,7 +1682,6 @@ if __name__ == '__main__':
     # table1_more_4_analyse(exptype='ssri-base-180-0-clean', cohort='all') #
     # table1_more_4_analyse(exptype='snri-base-180-0-clean', cohort='all') #
 
-
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0-clean', cohort='all')  #
     # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15-clean', cohort='all')  #
     # table1_more_4_analyse(exptype='bupropion-base-180-0-clean', cohort='all')  #
@@ -1695,13 +1692,10 @@ if __name__ == '__main__':
 
     # table1_more_4_analyse(exptype='ssri-base180-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
 
-
     # table1_more_4_analyse(exptype='ssri-base180withmental-acutevsnot', cohort='all') # 'ssri-base180-acutevsnot'
 
-
     # 2025-1-10 Table 1 for SSRI
-    table1_less_4_print(exptype='ssri-base180-acutevsnot', subgroup='all') # 'ssri-base180-acutevsnot'
-
+    table1_less_4_print(exptype='ssri-base180-acutevsnot', subgroup='all')  # 'ssri-base180-acutevsnot'
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
     # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
