@@ -181,13 +181,13 @@ def shell_lab_dx_med_4covid():
 
     print('site_list:', len(site_list), site_list)
 
-#     with open(r'shell_all_202311.ps1', 'wt') as f:
-#         for i, site in enumerate(site_list):
-#             site = site.strip()
-#             cmdstr = """python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
-# """.replace('nyu', site)
-#             f.write(cmdstr)
-#             print(i, site, 'done')
+    #     with open(r'shell_all_202311.ps1', 'wt') as f:
+    #         for i, site in enumerate(site_list):
+    #             site = site.strip()
+    #             cmdstr = """python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
+    # """.replace('nyu', site)
+    #             f.write(cmdstr)
+    #             print(i, site, 'done')
 
     with open(r'shell_all_202402.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
@@ -199,7 +199,7 @@ def shell_lab_dx_med_4covid():
 
     # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
     # of shells
-    divide = 6 #9
+    divide = 6  # 9
     npersite = cmdstr.count('\n')
     siteperdivide = int(np.ceil(len(site_list) / divide))
     ndelta = npersite * siteperdivide
@@ -258,14 +258,14 @@ def shell_lab_dx_med_4covid_addcolumnes():
     with open(r'shell_all_addCFS_CVD_V6.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
-#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-addPaxRisk.txt
-# """.replace('nyu', site)
-#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-negctrl.txt
-# """.replace('nyu', site)
-#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
-# """.replace('nyu', site)
-#             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v5withmental.txt
-# """.replace('nyu', site)
+            #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-addPaxRisk.txt
+            # """.replace('nyu', site)
+            #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-negctrl.txt
+            # """.replace('nyu', site)
+            #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v3.txt
+            # """.replace('nyu', site)
+            #             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v5withmental.txt
+            # """.replace('nyu', site)
             cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumns.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log_addcol\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base_addCFR-PaxRisk-acuteU099-hospita-SSRI-v6withmentalCFSCVD.txt
 """.replace('nyu', site)
             f.write(cmdstr)
@@ -485,7 +485,6 @@ python pre_med_4covid.py --dataset nyu_pcornet_all 2>&1 | tee  log_pcornet_all\p
     utils.split_shell_file_bydelta(r"shell_pcornet_all_202403.ps1", delta=ndelta, skip_first=0)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-
     """
     #python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
 #python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
@@ -504,6 +503,7 @@ python pre_med_4covid.py --dataset nyu_pcornet_all 2>&1 | tee  log_pcornet_all\p
 python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_nyu.txt
 #python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
     """
+
 
 def shell_lab_dx_med_4covid_202407():
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
@@ -584,19 +584,95 @@ python pre_cohort_labdxmed.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed_
     """
 
 
+def shell_lab_dx_med_4covid_2025():
+    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit2025.xlsx')
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('site_list:', len(site_list), site_list)
+
+    site_list = [x + '_pcornet_all' for x in site_list]
+
+    # 'columbia_pcornet_all', 'duke_pcornet_all', 'emory_pcornet_all', 'intermountain_pcornet_all',
+    # 'iowa_pcornet_all',
+    # 'lsu_pcornet_all', 'mcw_pcornet_all', 'michigan_pcornet_all', 'missouri_pcornet_all', 'montefiore_pcornet_all',
+    # 'mshs_pcornet_all', 'wcm_pcornet_all', 'nch_pcornet_all', 'nebraska_pcornet_all', 'northwestern_pcornet_all',
+    # 'nyu_pcornet_all', 'ochsner_pcornet_all', 'osu_pcornet_all', 'pitt_pcornet_all', 'psu_pcornet_all',
+    # 'temple_pcornet_all', 'ufh_pcornet_all', 'utah_pcornet_all', 'utsw_pcornet_all',
+    # 'vumc_pcornet_all', 'wakeforest_pcornet_all', ]
+    print('len(site_list)', len(site_list), site_list)
+
+    with open(r'shell_all_2025Q2.ps1', 'wt') as f:
+        for i, site in enumerate(site_list):
+            site = site.strip()
+            cmdstr = """python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
+python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
+python pre_med_4covid.py --dataset nyu 2>&1 | tee  log\pre_med_4covid_nyu.txt
+python pre_med_4LDN.py --dataset nyu 2>&1 | tee  log\pre_med_4LDN_nyu.txt
+python pre_dx_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_dx_4pregnant_nyu.txt
+python pre_procedure_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_procedure_4pregnant_nyu.txt
+python pre_encounter_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_encounter_4pregnant_nyu.txt
+python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+""".replace('nyu', site)
+            f.write(cmdstr)
+            print(i, site, 'done')
+
+    # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
+    # of shells
+    divide = 5  # 9
+    npersite = cmdstr.count('\n')
+    siteperdivide = int(np.ceil(len(site_list) / divide))
+    ndelta = npersite * siteperdivide
+    print('len(site_list):', len(site_list), 'divide:', divide,
+          'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
+          'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
+
+    utils.split_shell_file_bydelta(r"shell_all_2025Q2.ps1", delta=ndelta, skip_first=0)
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
+    # not using this, change to pre_covid_records.py
+    """#python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
+    # python pre_dx_4covid.py --dataset nyu 2>&1 | tee  log\pre_dx_4covid_nyu.txt
+    # python pre_med_4covid.py --dataset nyu 2>&1 | tee  log\pre_med_4covid_nyu.txt
+    # python pre_dx_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_dx_4pregnant_nyu.txt
+    # python pre_procedure_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_procedure_4pregnant_nyu.txt
+    # python pre_encounter_4pregnant.py --dataset nyu 2>&1 | tee  log\pre_encounter_4pregnant_nyu.txt
+    # python pre_demo.py --dataset nyu 2>&1 | tee  log\pre_demo_nyu.txt
+    # python pre_covid_records.py --dataset nyu 2>&1 | tee  log\pre_covid_records_nyu.txt
+    # python pre_diagnosis.py --dataset nyu 2>&1 | tee  log/pre_diagnosis_nyu.txt
+    # python pre_medication.py --dataset nyu 2>&1 | tee  log/pre_medication_nyu.txt
+    # python pre_encounter.py --dataset nyu 2>&1 | tee  log/pre_encounter_nyu.txt
+    # python pre_procedure.py --dataset nyu 2>&1 | tee  log/pre_procedure_nyu.txt
+    # python pre_immun.py --dataset nyu 2>&1 | tee  log/pre_immun_nyu.txt
+    # python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
+    # python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
+    # python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
+    python pre_cohort_labdxmedpreg.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmedpreg_nyu.txt
+    python pre_cohort_labdxmedpreg_negInpos.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmedpreg_negInpos_nyu.txt
+    # python pre_data_matrix_alldays_labdxmed.py --cohorts covid_posOnly18base --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_nyu-covid_posOnly18base.txt
+    """
+
+
 if __name__ == '__main__':
     start_time = time.time()
 
     # shell_lab_dx_med_4covid()
     # shell_lab_dx_med_4covid_aux()
 
-    #shell_lab_dx_med_4covid_addcolumnes()
-    # 2025-04-08
-    shell_lab_dx_med_4covid_addcolumnes4CNSLDN()
+    # shell_lab_dx_med_4covid_addcolumnes()
     # shell_iptw_subgroup()
     # shell_build_lab_dx_4covid_sensitivity()
     # shell_lab_dx_med_4covidAndPregnant()
 
     # shell_lab_dx_med_4covid_202407()
+
+    # 2025-04-08
+
+    # 20250408
+    # shell_lab_dx_med_4covid_addcolumnes4CNSLDN()
+
+    # 2025-04-10
+    shell_lab_dx_med_4covid_2025()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

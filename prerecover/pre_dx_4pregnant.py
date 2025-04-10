@@ -156,12 +156,17 @@ if __name__ == '__main__':
     df_exclude = pd.read_excel(r'../data/mapping/RECOVER Preg CP_Technical Details_v3_11.8.22.xlsx',
                                sheet_name='Exclusion',
                                dtype=str)
+    dfZ3A = pd.read_excel(r'../data/mapping/RECOVER Preg CP_Technical Details_v3_11.8.22.xlsx',
+                          sheet_name='GestationalAge',
+                          dtype=str)
+    # dfZ3A['CodeType'] = 'ICD-10-CM'
 
     df_preg = pd.concat([df_include, df_exclude, ], ignore_index=True, sort=False)
     print(df_preg['CodeType'].value_counts())
 
     df_preg_dx = df_preg.loc[df_preg['CodeType'] == 'ICD-10-CM', 'Code']
-    code_set = set(df_preg_dx.to_list())
+    code_set = set(df_preg_dx.to_list() + list(dfZ3A['Code']))
+
     print('Selected all pregnant/delivery related ICD-10-CM diagnosis codes, both inclusion and exclusion: ')
     print('len(code_set):', len(code_set))
     print('code_set:', code_set)
