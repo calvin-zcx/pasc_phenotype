@@ -158,7 +158,7 @@ def read_procedure(input_file, output_file='', selected_patients={}):
     if output_file:
         print('Dump id_px to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
-        utils.dump(id_px, output_file)
+        utils.dump_compressed(id_px, output_file) # revised in 2025 Q2
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_px, dfs
@@ -281,7 +281,7 @@ def read_obs_gen(input_file, output_file='', selected_patients={}):
     if output_file:
         print('Dump id_px to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
-        utils.dump(id_px, output_file)
+        utils.dump_compressed(id_px, output_file) # revised in 2025 Q2
 
     if dfs:
         dfs = pd.concat(dfs)

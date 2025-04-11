@@ -196,7 +196,8 @@ def read_prescribing(input_file, output_file='', selected_patients={}):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_med, open(output_file, 'wb'))
+        # pickle.dump(id_med, open(output_file, 'wb'))
+        utils.dump_compressed(id_med, output_file)  # use compreseed dump 2025 Q2, file name, not file handle
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -361,7 +362,8 @@ def read_med_admin(input_file, output_file='', selected_patients={}):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_med, open(output_file, 'wb'))
+        # pickle.dump(id_med, open(output_file, 'wb'))
+        utils.dump_compressed(id_med, output_file) # use compreseed dum in 2025 Q2, finename rather than file handle
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -522,7 +524,8 @@ def read_dispensing(input_file, output_file='', selected_patients={}):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_med, open(output_file, 'wb'))
+        # pickle.dump(id_med, open(output_file, 'wb'))
+        utils.dump_compressed(id_med, output_file)  # use compreseed dump 2025 Q2, file name, not file handle
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -559,7 +562,8 @@ def combine_2_id_med(id_med1, id_med2, output_file=''):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_med, open(output_file, 'wb'))
+        # pickle.dump(id_med, open(output_file, 'wb'))
+        utils.dump_compressed(id_med, output_file)  # use compreseed dump 2025 Q2, file name, not file handle
         print('dump done to {}'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

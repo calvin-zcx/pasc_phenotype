@@ -158,7 +158,7 @@ def read_vital(input_file, output_file='', selected_patients={}):
     if output_file:
         print('Dump id_vital to {}'.format(output_file))
         utils.check_and_mkdir(output_file)
-        utils.dump(id_vital, output_file)
+        utils.dump_compressed(id_vital, output_file)
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     return id_vital, dfs

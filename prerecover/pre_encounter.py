@@ -151,7 +151,8 @@ def read_encounter(input_file, output_file='', selected_patients={}):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_enc, open(output_file, 'wb'))
+        # pickle.dump(id_enc, open(output_file, 'wb'))
+        utils.dump_compressed(id_enc, output_file)  # use compreseed dump 2025 Q2, file name, not file handle
         # dfs.to_csv(output_file.replace('.pkl', '') + '.csv')
         print('dump done to {}'.format(output_file))
 

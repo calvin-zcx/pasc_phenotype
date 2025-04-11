@@ -192,7 +192,7 @@ def read_lab_result(args, code_set, selected_patients={}):
 
     print('Dump id_lab to {}'.format(args.output_pkl_file))
     utils.check_and_mkdir(args.output_pkl_file)
-    utils.dump(id_lab, args.output_pkl_file)
+    utils.dump_compressed(id_lab, args.output_pkl_file)
 
     connection.close()
     print('Total Time used after dump files:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
