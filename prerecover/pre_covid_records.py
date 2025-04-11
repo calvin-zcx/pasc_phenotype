@@ -34,13 +34,13 @@ def parse_args():
 
     args.demo_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
-    args.output_file_lab = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_labdx = r'../data/recover/output/{}/patient_covid_lab-dx_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_labdxmed = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl'.format(
+    args.output_file_lab = r'../data/recover/output/{}/patient_covid_lab_{}.pkl.gz'.format(args.dataset, args.dataset)
+    args.output_file_labdx = r'../data/recover/output/{}/patient_covid_lab-dx_{}.pkl.gz'.format(args.dataset, args.dataset)
+    args.output_file_labdxmed = r'../data/recover/output/{}/patient_covid_lab-dx-med_{}.pkl.gz'.format(
         args.dataset, args.dataset)
 
-    args.output_file_pregnant = r'../data/recover/output/{}/patient_pregnant_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file_labdxmedpreg = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(
+    args.output_file_pregnant = r'../data/recover/output/{}/patient_pregnant_{}.pkl.gz'.format(args.dataset, args.dataset)
+    args.output_file_labdxmedpreg = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl.gz'.format(
         args.dataset, args.dataset)
 
     print('args:', args)

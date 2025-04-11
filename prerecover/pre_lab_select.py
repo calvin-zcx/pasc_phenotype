@@ -28,11 +28,11 @@ def parse_args():
     # parser.add_argument('--debug', action='store_true')
 
     args = parser.parse_args()
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(args.dataset,
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl.gz'.format(args.dataset,
                                                                                                  args.dataset)
     args.input_file = r'{}.lab_result_cm'.format(args.dataset)
     args.output_csv_file = r'../data/recover/output/{}/lab_result_select_{}.csv'.format(args.dataset, args.dataset)
-    args.output_pkl_file = r'../data/recover/output/{}/lab_result_select_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_pkl_file = r'../data/recover/output/{}/lab_result_select_{}.pkl.gz'.format(args.dataset, args.dataset)
 
     print('args:', args)
 
@@ -221,9 +221,12 @@ if __name__ == '__main__':
           'where eGFR: ', len(code_set2))
 
     # step 2: select targeted patient list
-    with open(args.patient_list_file, 'rb') as f:
-        selected_patients = pickle.load(f)
-        print('len(selected_patients):', len(selected_patients))
+    # with open(args.patient_list_file, 'rb') as f:
+    #     selected_patients = pickle.load(f)
+    #     print('len(selected_patients):', len(selected_patients))
+
+    selected_patients = utils.load(args.patient_list_file)
+    print('len(selected_patients):', len(selected_patients))
 
     # step 3: extract lab result
     id_lab, dfs_covid_ckd_all = read_lab_result(args, code_set, selected_patients=selected_patients)

@@ -19,7 +19,7 @@ def parse_args():
     args = parser.parse_args()
 
     args.input_file = r'{}.death'.format(args.dataset)
-    args.output_file = r'../data/recover/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output/{}/death_{}.pkl.gz'.format(args.dataset, args.dataset)
 
     print('args:', args)
     return args

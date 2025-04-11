@@ -22,10 +22,10 @@ def parse_args():
 
     args.input_file = r'{}.diagnosis'.format(args.dataset)
     # use all selected patients by lab-dx-med-preg, selected covid-CP specific cohorts later in pre_cohort_**.py
-    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl'.format(
+    args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab-dx-med-preg_{}.pkl.gz'.format(
         args.dataset, args.dataset)
     #  args.patient_list_file = r'../data/recover/output/{}/patient_covid_lab_{}.pkl'.format(args.dataset, args.dataset)
-    args.output_file = r'../data/recover/output/{}/diagnosis_{}.pkl'.format(args.dataset, args.dataset)
+    args.output_file = r'../data/recover/output/{}/diagnosis_{}.pkl.gz'.format(args.dataset, args.dataset)
     print('args:', args)
     return args
 
@@ -175,9 +175,12 @@ if __name__ == '__main__':
     start_time = time.time()
     args = parse_args()
     print('Selected site:', args.dataset)
-    with open(args.patient_list_file, 'rb') as f:
-        selected_patients = pickle.load(f)
-        print('len(selected_patients):', len(selected_patients))
+    # with open(args.patient_list_file, 'rb') as f:
+    #     selected_patients = pickle.load(f)
+    #     print('len(selected_patients):', len(selected_patients))
+
+    selected_patients = utils.load(args.patient_list_file)
+    print('len(selected_patients):', len(selected_patients))
 
     id_dx, df = read_diagnosis(args.input_file, args.output_file, selected_patients)
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
