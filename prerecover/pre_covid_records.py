@@ -976,7 +976,8 @@ def combine_2_id_records(id_rec1, id_rec2, output_file=''):
 
     if output_file:
         utils.check_and_mkdir(output_file)
-        pickle.dump(id_data, open(output_file, 'wb'))
+        # pickle.dump(id_data, open(output_file, 'wb'))
+        utils.dump_compressed(id_data, output_file)
         print('Dump done to {}!'.format(output_file))
 
     print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
