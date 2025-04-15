@@ -963,35 +963,50 @@ def table1_less_4_print(exptype='all'):
     # to define exposure strategies below:
     if exptype == 'adderall_combo-base-180-0':
         df1 = df.loc[(df['cnsldn-treat--180-0@adderall_combo'] >= 1), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'adderall -180 to 0'
+        ctrl_label = 'ADHD/Narcolepsy'
+    if exptype == 'guanfacine-base-180-0':
+        df1 = df.loc[(df['cnsldn-treat--180-0@guanfacine'] >= 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
+        case_label = 'guanfacine -180 to 0'
         ctrl_label = 'ADHD/Narcolepsy'
     elif exptype == 'CNS-ADHD-base-180-0':
         df1 = df.loc[(df['cnsldn-treat--180-0@adderall_combo'] >= 1) |
                      (df['cnsldn-treat--180-0@lisdexamfetamine'] >= 1) |
                      (df['cnsldn-treat--180-0@methylphenidate'] >= 1), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD -180 to 0'
         ctrl_label = 'ADHD/Narcolepsy'
     elif exptype == 'CNS-ADHD-base-365-0':
         df1 = df.loc[(df['cnsldn-treat--365-0@adderall_combo'] >= 1) |
                      (df['cnsldn-treat--365-0@lisdexamfetamine'] >= 1) |
                      (df['cnsldn-treat--365-0@methylphenidate'] >= 1), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD -365 to 0'
         ctrl_label = 'ADHD/Narcolepsy'
+    elif exptype == 'CNS-ADHD-base-365-0-ctrlNoADHD':
+        df1 = df.loc[(df['cnsldn-treat--365-0@adderall_combo'] >= 1) |
+                     (df['cnsldn-treat--365-0@lisdexamfetamine'] >= 1) |
+                     (df['cnsldn-treat--365-0@methylphenidate'] >= 1), :]
+        df0 = df.loc[((df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1)) &
+                     ((df['cnsldn-treat--1095-0@adderall_combo'] == 0) &
+                      (df['cnsldn-treat--1095-0@lisdexamfetamine'] == 0) &
+                      (df['cnsldn-treat--1095-0@methylphenidate'] == 0)), :]
+        case_label = 'CNS-ADHD -365 to 0'
+        ctrl_label = 'ADHD/Narcolepsy w/o ADHD drug'
     elif exptype == 'CNS-ADHD-acute-0-30':
         df1 = df.loc[(df['cnsldn-treat-0-30@adderall_combo'] >= 1) |
                      (df['cnsldn-treat-0-30@lisdexamfetamine'] >= 1) |
                      (df['cnsldn-treat-0-30@methylphenidate'] >= 1), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD 0 to 30'
         ctrl_label = 'ADHD/Narcolepsy'
     elif exptype == 'CNS-ADHD-post-30-180':
         df1 = df.loc[(df['cnsldn-treat-30-180@adderall_combo'] >= 1) |
                      (df['cnsldn-treat-30-180@lisdexamfetamine'] >= 1) |
                      (df['cnsldn-treat-30-180@methylphenidate'] >= 1), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD 30 to 180'
         ctrl_label = 'ADHD/Narcolepsy'
     elif exptype == 'CNS-ADHD-acuteIncident-0-30':
@@ -1001,7 +1016,7 @@ def table1_less_4_print(exptype='all'):
                      ((df['cnsldn-treat--1095-0@adderall_combo'] == 0) &
                       (df['cnsldn-treat--1095-0@lisdexamfetamine'] == 0) &
                       (df['cnsldn-treat--1095-0@methylphenidate'] == 0)), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD 0 to 30 Incident'
         ctrl_label = 'ADHD/Narcolepsy'
     elif exptype == 'CNS-ADHD-postIncident-30-180':
@@ -1012,7 +1027,7 @@ def table1_less_4_print(exptype='all'):
                       (df['cnsldn-treat--1095-0@lisdexamfetamine'] == 0) &
                       (df['cnsldn-treat--1095-0@methylphenidate'] == 0)
                       ), :]
-        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] == 1) | (df['dxcovCNSLDN-base@Narcolepsy'] == 1), :]
+        df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD 30 to 180 Incident'
         ctrl_label = 'ADHD/Narcolepsy'
     print('exposre strategy, exptype:', exptype)
@@ -1385,10 +1400,12 @@ if __name__ == '__main__':
     # table1_less_4_print(exptype='adderall_combo-base-180-0')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-base-180-0')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-base-365-0')  # 'ssri-base180-acutevsnot'
+    # table1_less_4_print(exptype='CNS-ADHD-base-365-0-ctrlNoADHD')
+    table1_less_4_print(exptype='guanfacine-base-180-0')
     # table1_less_4_print(exptype='CNS-ADHD-acute-0-30')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-post-30-180')  # 'ssri-base180-acutevsnot'
-    table1_less_4_print(exptype='CNS-ADHD-acuteIncident-0-30')  # 'ssri-base180-acutevsnot'
-    table1_less_4_print(exptype='CNS-ADHD-postIncident-30-180')  # 'ssri-base180-acutevsnot'
+    # table1_less_4_print(exptype='CNS-ADHD-acuteIncident-0-30')  # 'ssri-base180-acutevsnot'
+    # table1_less_4_print(exptype='CNS-ADHD-postIncident-30-180')  # 'ssri-base180-acutevsnot'
 
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
