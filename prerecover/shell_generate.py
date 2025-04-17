@@ -603,7 +603,8 @@ def shell_lab_dx_med_4covid_2025():
     # 'vumc_pcornet_all', 'wakeforest_pcornet_all', ]
     print('len(site_list)', len(site_list), site_list)
 
-    with open(r'shell_all_2025Q2Afterdemo.ps1', 'wt') as f:
+    # with open(r'shell_all_2025Q2Afterdemo.ps1', 'wt') as f:
+    with open(r'shell_all_2025Q2CohortandAfter.ps1', 'wt') as f:
         for i, site in enumerate(site_list):
             site = site.strip()
             cmdstr = """#python pre_lab_4covid.py --dataset nyu 2>&1 | tee  log\pre_lab_4covid_nyu.txt
@@ -625,6 +626,9 @@ python pre_vital.py --dataset nyu 2>&1 | tee  log/pre_vital_nyu.txt
 python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
 # python pre_cohort_labdxmedpreg.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmedpreg_nyu.txt
 """.replace('nyu', site)
+
+            cmdstr = """python pre_cohort_labdxmed25Q2.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed25Q2_nyu.txt
+""".replace('nyu', site)
             f.write(cmdstr)
             print(i, site, 'done')
 
@@ -638,7 +642,9 @@ python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
           'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
           'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
 
-    utils.split_shell_file_bydelta(r"shell_all_2025Q2Afterdemo.ps1", delta=ndelta, skip_first=0)
+    # utils.split_shell_file_bydelta(r"shell_all_2025Q2Afterdemo.ps1", delta=ndelta, skip_first=0)
+    utils.split_shell_file_bydelta(r"shell_all_2025Q2CohortandAfter.ps1", delta=ndelta, skip_first=0)
+
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
     # python pre_covid_lab.py --dataset nyu 2>&1 | tee  log\pre_covid_lab_nyu.txt
     # not using this, change to pre_covid_records.py
