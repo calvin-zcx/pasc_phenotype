@@ -250,7 +250,7 @@ def add_col(df):
     df['SSRI-Indication-dsm-cnt'] = df[mental_cov].sum(axis=1)
     df['SSRI-Indication-dsm-flag'] = (df['SSRI-Indication-dsm-cnt'] > 0).astype('int')
 
-    df['SSRI-Indication-dsmAndExlix-cnt'] = df[mental_cov + ['mental-base@SMI', 'mental-base@non-SMI',]].sum(axis=1)
+    df['SSRI-Indication-dsmAndExlix-cnt'] = df[mental_cov + ['mental-base@SMI', 'mental-base@non-SMI', ]].sum(axis=1)
     df['SSRI-Indication-dsmAndExlix-flag'] = (df['SSRI-Indication-dsmAndExlix-cnt'] > 0).astype('int')
 
     # ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
@@ -1113,7 +1113,6 @@ if __name__ == "__main__":
             df['snri-treat-30-180@' + x] = 0
             df['snri-treat--1095-30@' + x] = 0
 
-
         for x in other_names:
             df['other-treat-0-30@' + x] = 0
             df['other-treat--30-30@' + x] = 0
@@ -1150,6 +1149,11 @@ if __name__ == "__main__":
             df['cnsldn-treat--120-0@' + x] = 0
             df['cnsldn-treat--180-0@' + x] = 0
 
+            df['cnsldn-treat--180-30@' + x] = 0
+            df['cnsldn-treat--180-30-npres@' + x] = 0
+            df['cnsldn-treat--180-30-npres2weeksApart@' + x] = 0
+            df['cnsldn-treat--180-30-npres30daysApart@' + x] = 0
+
             df['cnsldn-treat--120-120@' + x] = 0
             df['cnsldn-treat--180-180@' + x] = 0
 
@@ -1165,6 +1169,14 @@ if __name__ == "__main__":
             return t2eall
 
 
+        def _t2eall_to_int_list_dedup(t2eall):
+            t2eall = t2eall.strip(';').split(';')
+            t2eall = set(map(int, t2eall))
+            t2eall = sorted(t2eall)
+
+            return t2eall
+
+
         for index, row in tqdm(df.iterrows(), total=len(df)):
             # 'index date', 'flag_delivery_date', 'flag_pregnancy_start_date', 'flag_pregnancy_end_date'
             index_date = pd.to_datetime(row['index date'])
@@ -1173,6 +1185,7 @@ if __name__ == "__main__":
                 t2eall = row['treat-t2eall@' + x]
                 if pd.notna(t2eall):
                     t2eall = _t2eall_to_int_list(t2eall)
+                    t2eall = _t2eall_to_int_list_dedup(t2eall)
                     for t2e in t2eall:
                         if 0 <= t2e <= 30:
                             df.loc[index, 'ssri-treat-0-30@' + x] = 1
@@ -1305,7 +1318,10 @@ if __name__ == "__main__":
             for x in cnsldn_names:
                 t2eall = row['cnsldn-t2eall@' + x]
                 if pd.notna(t2eall):
-                    t2eall = _t2eall_to_int_list(t2eall)
+                    # t2eall = _t2eall_to_int_list(t2eall)
+                    t2eall = _t2eall_to_int_list_dedup(t2eall)
+
+                    _last_day = None
                     for t2e in t2eall:
                         if 0 <= t2e <= 30:
                             df.loc[index, 'cnsldn-treat-0-30@' + x] = 1
@@ -1345,6 +1361,20 @@ if __name__ == "__main__":
                             df.loc[index, 'cnsldn-treat-30-180@' + x] = 1
                         if -1095 <= t2e < 30:
                             df.loc[index, 'cnsldn-treat--1095-30@' + x] = 1
+
+                        if -180 <= t2e < 30:
+                            df.loc[index, 'cnsldn-treat--180-30@' + x] = 1
+                            df.loc[index, 'cnsldn-treat--180-30-npres@' + x] += 1
+                            if pd.notna(_last_day):
+                                _tdiff = t2e - _last_day
+                                if _tdiff >= 13:  # 2 weeks
+                                    df.loc[index, 'cnsldn-treat--180-30-npres2weeksApart@' + x] += 1
+                                if _tdiff >= 29:  # 1 month
+                                    df.loc[index, 'cnsldn-treat--180-30-npres30daysApart@' + x] += 1
+
+                        _last_day = t2e
+                    # count day with apart time constrains
+
         ##
         df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat-0-30-flag'] = (df['ssri-treat-0-30-cnt'] > 0).astype('int')
@@ -1526,26 +1556,26 @@ if __name__ == "__main__":
         print('other-treat--1095-30-flag', df['other-treat--1095-30-flag'].sum())
 
         for x in cnsldn_names:
-            print('cnsldn-treat-0-30@'+x, df['cnsldn-treat-0-30@' + x].sum())
-            print('cnsldn-treat--30-30@'+x, df['cnsldn-treat--30-30@'+x].sum())
-            print('cnsldn-treat-0-15@'+x, df['cnsldn-treat-0-15@'+x].sum())
-            print('cnsldn-treat-0-5@'+x, df['cnsldn-treat-0-5@'+x].sum())
-            print('cnsldn-treat-0-7@'+x, df['cnsldn-treat-0-7@'+x].sum())
-            print('cnsldn-treat--15-15@'+x, df['cnsldn-treat--15-15@'+x].sum())
+            print('cnsldn-treat-0-30@' + x, df['cnsldn-treat-0-30@' + x].sum())
+            print('cnsldn-treat--30-30@' + x, df['cnsldn-treat--30-30@' + x].sum())
+            print('cnsldn-treat-0-15@' + x, df['cnsldn-treat-0-15@' + x].sum())
+            print('cnsldn-treat-0-5@' + x, df['cnsldn-treat-0-5@' + x].sum())
+            print('cnsldn-treat-0-7@' + x, df['cnsldn-treat-0-7@' + x].sum())
+            print('cnsldn-treat--15-15@' + x, df['cnsldn-treat--15-15@' + x].sum())
 
-            print('cnsldn-treat--30-0@'+x, df['cnsldn-treat--30-0@'+x].sum())
-            print('cnsldn-treat--60-0@'+x, df['cnsldn-treat--60-0@'+x].sum())
-            print('cnsldn-treat--90-0@'+x, df['cnsldn-treat--90-0@'+x].sum())
-            print('cnsldn-treat--120-0@'+x, df['cnsldn-treat--120-0@'+x].sum())
-            print('cnsldn-treat--180-0@'+x, df['cnsldn-treat--180-0@'+x].sum())
+            print('cnsldn-treat--30-0@' + x, df['cnsldn-treat--30-0@' + x].sum())
+            print('cnsldn-treat--60-0@' + x, df['cnsldn-treat--60-0@' + x].sum())
+            print('cnsldn-treat--90-0@' + x, df['cnsldn-treat--90-0@' + x].sum())
+            print('cnsldn-treat--120-0@' + x, df['cnsldn-treat--120-0@' + x].sum())
+            print('cnsldn-treat--180-0@' + x, df['cnsldn-treat--180-0@' + x].sum())
 
-            print('cnsldn-treat--120-120@'+x, df['cnsldn-treat--120-120@'+x].sum())
-            print('cnsldn-treat--180-180@'+x, df['cnsldn-treat--180-180@'+x].sum())
+            print('cnsldn-treat--120-120@' + x, df['cnsldn-treat--120-120@' + x].sum())
+            print('cnsldn-treat--180-180@' + x, df['cnsldn-treat--180-180@' + x].sum())
 
-            print('cnsldn-treat--365-0@'+x, df['cnsldn-treat--365-0@'+x].sum())
-            print('cnsldn-treat--1095-0@'+x, df['cnsldn-treat--1095-0@'+x].sum())
-            print('cnsldn-treat-30-180@'+x, df['cnsldn-treat-30-180@'+x].sum())
-            print('cnsldn-treat--1095-30@'+x, df['cnsldn-treat--1095-30@'+x].sum())
+            print('cnsldn-treat--365-0@' + x, df['cnsldn-treat--365-0@' + x].sum())
+            print('cnsldn-treat--1095-0@' + x, df['cnsldn-treat--1095-0@' + x].sum())
+            print('cnsldn-treat-30-180@' + x, df['cnsldn-treat-30-180@' + x].sum())
+            print('cnsldn-treat--1095-30@' + x, df['cnsldn-treat--1095-30@' + x].sum())
 
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
