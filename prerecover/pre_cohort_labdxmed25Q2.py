@@ -46,7 +46,7 @@ def parse_args():
     args.obsgen_file = r'../data/recover/output/{}/obs_gen_{}.pkl.gz'.format(args.dataset, args.dataset)
     args.immun_file = r'../data/recover/output/{}/immunization_{}.pkl.gz'.format(args.dataset, args.dataset)
     # added 2022-02-20
-    args.death_file = r'../data/recover/output/{}/death_{}.pkl.gz'.format(args.dataset, args.dataset)
+    args.death_file = r'../data/recover/output/{}/death_{}.pkl'.format(args.dataset, args.dataset)
     # added 2022-04-08
     args.vital_file = r'../data/recover/output/{}/vital_{}.pkl.gz'.format(args.dataset, args.dataset)
     # added 2023-11-8

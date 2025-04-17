@@ -629,6 +629,10 @@ python pre_lab_select.py --dataset nyu 2>&1 | tee  log/pre_lab_select_nyu.txt
 
             cmdstr = """python pre_cohort_labdxmed25Q2.py --dataset nyu 2>&1 | tee  log/pre_cohort_labdxmed25Q2_nyu.txt
 """.replace('nyu', site)
+
+            # cmdstr = """python pre_death.py --dataset nyu 2>&1 | tee  log/pre_death_nyu.txt
+# """.replace('nyu', site)
+
             f.write(cmdstr)
             print(i, site, 'done')
 
