@@ -1030,6 +1030,68 @@ def table1_less_4_print(exptype='all'):
         df0 = df.loc[(df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1), :]
         case_label = 'CNS-ADHD 30 to 180 Incident'
         ctrl_label = 'ADHD/Narcolepsy'
+    elif exptype == 'CNS-ADHD-180-30-atleast1VS0ADHD':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres@adderall_combo'] >= 1) |
+                     (df['cnsldn-treat--180-30-npres@lisdexamfetamine'] >= 1) |
+                     (df['cnsldn-treat--180-30-npres@methylphenidate'] >= 1), :]
+        df0 = df.loc[((df['cnsldn-treat--180-30-npres@adderall_combo'] == 0) &
+                      (df['cnsldn-treat--180-30-npres@lisdexamfetamine'] == 0) &
+                      (df['cnsldn-treat--180-30-npres@methylphenidate'] == 0))
+                     & ((df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1)), :]
+        case_label = 'CNS-ADHD >=1 -180 to 30'
+        ctrl_label = 'ADHD/Narcolepsy w/o ADHD drugs'
+    elif exptype == 'CNS-ADHD-180-30-atleast1VS0ADHD-noGuanfacine':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres@adderall_combo'] >= 1) |
+                     (df['cnsldn-treat--180-30-npres@lisdexamfetamine'] >= 1) |
+                     (df['cnsldn-treat--180-30-npres@methylphenidate'] >= 1), :]
+        df0 = df.loc[((df['cnsldn-treat--180-30-npres@adderall_combo'] == 0) &
+                      (df['cnsldn-treat--180-30-npres@lisdexamfetamine'] == 0) &
+                      (df['cnsldn-treat--180-30-npres@methylphenidate'] == 0) &
+                      (df['cnsldn-treat--180-30-npres@guanfacine'] == 0))
+                     & ((df['dxcovCNSLDN-base@ADHD'] >= 1) | (df['dxcovCNSLDN-base@Narcolepsy'] >= 1)), :]
+        case_label = 'CNS-ADHD >=1 -180 to 30'
+        ctrl_label = 'ADHD/Narcolepsy w/o ADHD drugs w/o guanfacine'
+    elif exptype == 'CNS-ADHD-180-30-1VS2twoweeksapart':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres2weeksApart@adderall_combo'] == 1) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@lisdexamfetamine'] == 1) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@methylphenidate'] == 1), :]
+
+        df0 = df.loc[(df['cnsldn-treat--180-30-npres2weeksApart@adderall_combo'] == 2) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@lisdexamfetamine'] == 2) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@methylphenidate'] == 2), :]
+        case_label = 'CNS-ADHD 1 (2 weeks part) -180 to 30'
+        ctrl_label = 'CNS-ADHD 2 (2 weeks part) -180 to 30'
+    elif exptype == 'CNS-ADHD-180-30-1VS3andabovetwoweeksapart':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres2weeksApart@adderall_combo'] == 1) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@lisdexamfetamine'] == 1) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@methylphenidate'] == 1), :]
+
+        df0 = df.loc[(df['cnsldn-treat--180-30-npres2weeksApart@adderall_combo'] >= 3) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@lisdexamfetamine'] >= 3) |
+                     (df['cnsldn-treat--180-30-npres2weeksApart@methylphenidate'] >= 3), :]
+        case_label = 'CNS-ADHD 1 (2 weeks part) -180 to 30'
+        ctrl_label = 'CNS-ADHD >=3 (2 weeks part) -180 to 30'
+    elif exptype == 'CNS-ADHD-180-30-1VS2Onemonthapart':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres30daysApart@adderall_combo'] == 1) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@lisdexamfetamine'] == 1) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@methylphenidate'] == 1), :]
+
+        df0 = df.loc[(df['cnsldn-treat--180-30-npres30daysApart@adderall_combo'] == 2) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@lisdexamfetamine'] == 2) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@methylphenidate'] == 2), :]
+        case_label = 'CNS-ADHD 1 (1 month part) -180 to 30'
+        ctrl_label = 'CNS-ADHD 2 (1 month part) -180 to 30'
+    elif exptype == 'CNS-ADHD-180-30-1VS3andaboveOnemonthapart':
+        df1 = df.loc[(df['cnsldn-treat--180-30-npres30daysApart@adderall_combo'] == 1) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@lisdexamfetamine'] == 1) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@methylphenidate'] == 1), :]
+
+        df0 = df.loc[(df['cnsldn-treat--180-30-npres30daysApart@adderall_combo'] >= 3) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@lisdexamfetamine'] >= 3) |
+                     (df['cnsldn-treat--180-30-npres30daysApart@methylphenidate'] >= 3), :]
+        case_label = 'CNS-ADHD 1 (1 month part) -180 to 30'
+        ctrl_label = 'CNS-ADHD >=3 (1 month part) -180 to 30'
+
     print('exposre strategy, exptype:', exptype)
 
     n1 = len(df1)
@@ -1401,12 +1463,21 @@ if __name__ == '__main__':
     # table1_less_4_print(exptype='CNS-ADHD-base-180-0')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-base-365-0')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-base-365-0-ctrlNoADHD')
-    table1_less_4_print(exptype='guanfacine-base-180-0')
+    # table1_less_4_print(exptype='guanfacine-base-180-0')
     # table1_less_4_print(exptype='CNS-ADHD-acute-0-30')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-post-30-180')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-acuteIncident-0-30')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-postIncident-30-180')  # 'ssri-base180-acutevsnot'
 
+    # 2025-4-18
+    # table1_less_4_print(exptype='CNS-ADHD-180-30-atleast1VS0ADHD')
+    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS2twoweeksapart')
+    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS3andabovetwoweeksapart')
+
+    table1_less_4_print(exptype='CNS-ADHD-180-30-atleast1VS0ADHD-noGuanfacine')
+
+    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS2Onemonthapart')
+    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS3andaboveOnemonthapart')
 
     # table1_more_4_analyse(exptype='ssriVSsnri-base-180-0', cohort='all')
     # table1_more_4_analyse(exptype='ssriVSsnri-acute0-15', cohort='all')
