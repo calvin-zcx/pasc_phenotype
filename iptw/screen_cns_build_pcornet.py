@@ -894,7 +894,7 @@ if __name__ == "__main__":
     # print('save_model_filename', args.save_model_filename)
     # zz
     # %% Step 1. Build or Load  Data
-    print('In screen_ssri_build_pcornet ...')
+    print('In screen_cns_build_pcornet ...')
     if args.build_data:
         print('in build_data, aggregate each site and additional columns...')
         if args.site == 'all':
@@ -994,35 +994,36 @@ if __name__ == "__main__":
         print('dump done!')
     else:
 
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN.csv'
-
-        # if args.cohorttype == 'lab-dx':
-        #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
-
-        print('Load data covariates file:', out_data_file)
-        df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
-                         parse_dates=['index date', 'dob',
-                                      'flag_delivery_date',
-                                      'flag_pregnancy_start_date',
-                                      'flag_pregnancy_end_date'
-                                      ])
-        print('df.shape:', df.shape)
-
-        df = add_col(df)
-        print('add cols, then df.shape:', df.shape)
-        out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN-addPaxFeats.csv'
-
-        # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
-        df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
-        print('df_before_treatsep.shape:', df_before_treatsep.shape)
-        df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
-        print('dump', out_data_file.replace('.csv', '-addGeneralEC.csv'), ' done!')
-
-        zz
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN.csv'
+        #
+        # # if args.cohorttype == 'lab-dx':
+        # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
+        #
+        # print('Load data covariates file:', out_data_file)
+        # df = pd.read_csv(out_data_file, dtype={'patid': str, 'site': str, 'zip': str},
+        #                  parse_dates=['index date', 'dob',
+        #                               'flag_delivery_date',
+        #                               'flag_pregnancy_start_date',
+        #                               'flag_pregnancy_end_date'
+        #                               ])
+        # print('df.shape:', df.shape)
+        #
+        # df = add_col(df)
+        # print('add cols, then df.shape:', df.shape)
+        # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN-addPaxFeats.csv'
+        #
+        # # df_pos_risk, df_pos_norisk, df_pos_preg, df_ctrl_risk, df_ctrl_norisk, df_ctrl_preg = more_ec_for_cohort_selection_risk_norisk_pregnant(df)
+        # df_before_treatsep = more_ec_for_cohort_selection_4_ssri(df)
+        # print('df_before_treatsep.shape:', df_before_treatsep.shape)
+        # df_before_treatsep.to_csv(out_data_file.replace('.csv', '-addGeneralEC.csv'))
+        # print('dump', out_data_file.replace('.csv', '-addGeneralEC.csv'), ' done!')
+        #
+        # zz
         #
         # load after general EC and explore. Even general EC will be revised later
         in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN-addPaxFeats-addGeneralEC.csv'
 
+        print('read in file:', in_mediate_file)
         df = pd.read_csv(in_mediate_file,
                          dtype={'patid': str, 'site': str, 'zip': str},
                          parse_dates=['index date', 'dob',
@@ -1184,7 +1185,7 @@ if __name__ == "__main__":
             for x in ssri_names:
                 t2eall = row['treat-t2eall@' + x]
                 if pd.notna(t2eall):
-                    t2eall = _t2eall_to_int_list(t2eall)
+                    # t2eall = _t2eall_to_int_list(t2eall)
                     t2eall = _t2eall_to_int_list_dedup(t2eall)
                     for t2e in t2eall:
                         if 0 <= t2e <= 30:
