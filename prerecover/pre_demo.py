@@ -24,6 +24,10 @@ def parse_args():
     args.geocoded_file = r'{}.geocoded_2020'.format(args.dataset)
     args.output_file = r'../data/recover/output/{}/patient_demo_{}.pkl'.format(args.dataset, args.dataset)
 
+    if args.dataset == 'utsw_pcornet_all':
+        args.geocoded_file = r'{}.geocoded_all'.format(args.dataset)
+        print(args.dataset, args.geocoded_file)
+
     print('args:', args)
     return args
 
@@ -333,6 +337,12 @@ def read_address_and_geocoded(input_file_address, input_file_geo):
         zcol = 'GEOCODING_BLOCKGROUP_ID2020'
     elif 'fips_block_group_id_2020'.upper() in df_geo.columns:
         zcol = 'fips_block_group_id_2020'.upper()
+    elif 'census_block_group_id_2020'.upper() in df_geo.columns:
+        zcol = 'census_block_group_id_2020'.upper()
+    elif 'census_block_group_2020'.upper() in df_geo.columns:
+        zcol = 'census_block_group_2020'.upper()
+    elif 'census_block_id'.upper() in df_geo.columns:
+        zcol = 'census_block_id'.upper()
     else:
         zcol = ''
 
