@@ -593,6 +593,7 @@ def shell_lab_dx_med_4covid_2025():
     print('site_list:', len(site_list), site_list)
 
     site_list = [x + '_pcornet_all' for x in site_list]
+    print(site_list)
 
     # 'columbia_pcornet_all', 'duke_pcornet_all', 'emory_pcornet_all', 'intermountain_pcornet_all',
     # 'iowa_pcornet_all',
@@ -785,7 +786,7 @@ if __name__ == '__main__':
     # shell_lab_dx_med_4covid_addcolumnes4CNSLDN()
 
     # 2025-04-10
-    # shell_lab_dx_med_4covid_2025()
+    shell_lab_dx_med_4covid_2025()
     shell_lab_dx_med_4covid_2025_fix()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
