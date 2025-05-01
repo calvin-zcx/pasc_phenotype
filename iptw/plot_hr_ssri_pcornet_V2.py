@@ -1138,8 +1138,8 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='SSRI'
         # 'Certain Infectious and Parasitic Diseases',
         'General',
         # 'General-add',
-        'Any CFR',
-        'cognitive-fatigue-respiratory',
+        # 'Any CFR',
+        # 'cognitive-fatigue-respiratory',
         'Any Brain Fog',
         'brainfog',
 
@@ -1341,8 +1341,8 @@ def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, drugname='SSRI'
 
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-noCFR.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-noCFR.pdf'.format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -3154,8 +3154,10 @@ if __name__ == '__main__':
     # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-mentalcovV2/'
     # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_parimary_v2(indir, show='full-nopval')
     ## 2025-02-21 Primary, with any brain fog
-    # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-mentalcovV3/'
-    # df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full-nopval')
+    indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-mentalcovV3/'
+    df_result = plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3(indir, show='full-nopval')
+
+    zz
     #
     # 2025-2-21 sensitivity, but the same figure as primary
     # indir = r'../data/recover/output/results/SSRI-overall-all-ssri-base180-acutevsnot-nosnriother-mentalcovV3/'
