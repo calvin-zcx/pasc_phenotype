@@ -915,14 +915,15 @@ def table1_less_4_print(exptype='all'):
     random.seed(0)
 
     in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN-addPaxFeats-addGeneralEC-withexposure.csv'
+    in_file = 'recover25Q2_covid_pos_addPaxFeats-withexposure.csv'
 
     print('in read: ', in_file)
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
-                                  'flag_delivery_date',
-                                  'flag_pregnancy_start_date',
-                                  'flag_pregnancy_end_date'
+                                  # 'flag_delivery_date',
+                                  # 'flag_pregnancy_start_date',
+                                  # 'flag_pregnancy_end_date'
                                   ])
     print('df.shape:', df.shape)
     """
@@ -1106,7 +1107,7 @@ def table1_less_4_print(exptype='all'):
     df_pos = df.loc[df['treated'] == 1, :]
     df_neg = df.loc[df['treated'] == 0, :]
 
-    out_file = r'./cns_output/Table-4-cns-adhd-{}.xlsx'.format(exptype)
+    out_file = r'./cns_output/Table-cns-adhd-{}-25Q2.xlsx'.format(exptype)
     output_columns = ['All', case_label, ctrl_label, 'SMD']
 
     print('treated df_pos.shape', df_pos.shape,
@@ -1341,7 +1342,9 @@ def table1_less_4_print(exptype='all'):
     col_names = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
                  '03/22-06/22', '07/22-10/22', '11/22-02/23',
-                 '03/23-06/23', '07/23-10/23', '11/23-02/24', ]
+                 '03/23-06/23', '07/23-10/23', '11/23-02/24',
+                 '03/24-06/24', '07/24-10/24', '11/24-02/25',
+    ]
     # col_names = [
     #              '03/22-06/22', '07/22-10/22', '11/22-02/23',
     #              ]
@@ -1362,7 +1365,8 @@ def table1_less_4_print(exptype='all'):
              'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
              'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
              'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-             'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
+             'PaxRisk:Overweight and obesity', #'PaxRisk:Pregnancy',
+             'PaxRisk:Sickle cell disease or thalassemia',
              'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
              'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis'] +
             ["DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
@@ -1396,7 +1400,7 @@ def table1_less_4_print(exptype='all'):
                                                            'Heart conditions', 'Hypertension', 'HIV infection',
                                                            'Immunocompromised condition or weakened immune system',
                                                            'Mental health conditions',
-                                                           'Overweight and obesity', 'Pregnancy',
+                                                           'Overweight and obesity', #'Pregnancy',
                                                            'Sickle cell disease or thalassemia',
                                                            'Smoking current or former',
                                                            'Stroke or cerebrovascular disease',
@@ -1466,14 +1470,13 @@ if __name__ == '__main__':
     # table1_less_4_print(exptype='guanfacine-base-180-0')
     # table1_less_4_print(exptype='CNS-ADHD-acute-0-30')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-post-30-180')  # 'ssri-base180-acutevsnot'
-    # table1_less_4_print(exptype='CNS-ADHD-acuteIncident-0-30')  # 'ssri-base180-acutevsnot'
+    table1_less_4_print(exptype='CNS-ADHD-acuteIncident-0-30')  # 'ssri-base180-acutevsnot'
     # table1_less_4_print(exptype='CNS-ADHD-postIncident-30-180')  # 'ssri-base180-acutevsnot'
 
     # 2025-4-18
-    # table1_less_4_print(exptype='CNS-ADHD-180-30-atleast1VS0ADHD')
-    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS2twoweeksapart')
-    # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS3andabovetwoweeksapart')
-
+    table1_less_4_print(exptype='CNS-ADHD-180-30-atleast1VS0ADHD')
+    table1_less_4_print(exptype='CNS-ADHD-180-30-1VS2twoweeksapart')
+    table1_less_4_print(exptype='CNS-ADHD-180-30-1VS3andabovetwoweeksapart')
     table1_less_4_print(exptype='CNS-ADHD-180-30-atleast1VS0ADHD-noGuanfacine')
 
     # table1_less_4_print(exptype='CNS-ADHD-180-30-1VS2Onemonthapart')

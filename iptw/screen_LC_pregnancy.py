@@ -916,6 +916,8 @@ if __name__ == "__main__":
     delivery_time = df1['flag_pregnancy_start_date'] - df1['index date']
 
     time_order_flag_1 = pasc_time < delivery_time
+
+    time_order_flag_1 = (df1['index date'] + datetime.timedelta(days=180) <= df1['flag_pregnancy_start_date'])
     df1 = df1.loc[time_order_flag_1, :]
     print("df1.loc[time_order_flag_1, :] len(df1)", len(df1))
     print("(df1['preterm birth<37']==1).sum(), mean():", (df1['preterm birth<37'] == 1).sum(),
@@ -925,7 +927,7 @@ if __name__ == "__main__":
 
     df0 = df.loc[((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
     print("((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1) len(df0)", len(df0))
-    time_order_flag_0 = (df0['index date'] + datetime.timedelta(days=30) <= df0['flag_pregnancy_start_date']) #& \
+    time_order_flag_0 = (df0['index date'] + datetime.timedelta(days=180) <= df0['flag_pregnancy_start_date']) #& \
     #    (df0['index date'] + datetime.timedelta(days=30) <= df0['flag_delivery_date'])
     df0 = df0.loc[time_order_flag_0, :]
     print("df0.loc[time_order_flag_0, :] len(df0)", len(df0))

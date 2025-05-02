@@ -258,11 +258,11 @@ def _encoding_race(race):
     # Other (American Indian or Alaska Native, Native Hawaiian or Other Pacific Islander, Multiple Race, Other)5
     # Missing (No Information, Refuse to Answer, Unknown, Missing)4
     encoding = np.zeros((1, 5), dtype='int')
-    if race == '02':
+    if race == '02': # Asian
         encoding[0, 0] = 1
-    elif race == '03':
+    elif race == '03': # 'Black or African American'
         encoding[0, 1] = 1
-    elif race == '05':
+    elif race == '05': # 'White'
         encoding[0, 2] = 1
     elif race == '01' or race == '04' or race == '06' or race == 'OT':
         encoding[0, 3] = 1
