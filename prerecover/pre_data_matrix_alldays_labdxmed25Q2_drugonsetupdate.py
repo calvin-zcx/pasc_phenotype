@@ -1578,7 +1578,7 @@ def build_feature_matrix(args):
 
             # transform Timestamp to datetime.date when using sql and csv mixture types
             index_date = index_date.date()
-            # index_date_drug = index_date_drug
+            index_date_drug = index_date_drug.date()
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx_raw, icd9_icd10, icd_ccsr)
 
