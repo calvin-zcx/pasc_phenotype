@@ -1531,11 +1531,11 @@ def build_feature_matrix(args):
     #     sites = ['NYU', 'MONTE', 'COL', 'MSHS', 'WCM']
     # else:
     #     sites = [args.dataset, ]
-    sites = [args.dataset, ]
+    # sites = [args.dataset, ]
     med_count = {}
     dx_count = {}
 
-    print('Try to load: ', sites)
+    # print('Try to load: ', sites)
     header = True
     mode = "w"
     previous_site = None
