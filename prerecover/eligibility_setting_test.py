@@ -44,7 +44,6 @@ SMOKE_RIGHT = 7
 BASELINE_PREGNANCY_LEFT = -365
 BASELINE_PREGNANCY_RIGHT = 0
 
-
 print('Adopted Eligibility Setting:')
 print("...INDEX_AGE_MINIMUM:", INDEX_AGE_MINIMUM)
 
@@ -87,6 +86,20 @@ def _is_in_baseline(event_time, index_time):
     # handling error, e.g. pd.to_datetime('2022-01-01', errors='coerce'), pd.to_datetime('1700-01-01', errors='coerce')
     try:
         return BASELINE_LEFT <= (event_time - index_time).days <= BASELINE_RIGHT
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
+
+
+def _is_in_baseline1year(event_time, index_time):
+    # baseline: -18 months to -7 days prior to the index date
+    # 2022-01-27 updates: align with CDC query and our morning discussion
+    # However, in CDC excel, they use 570 = 19*30 days for 18 months? we use 540 = 18*30days.
+    # [-3 years, -7]
+    # handling error, e.g. pd.to_datetime('2022-01-01', errors='coerce'), pd.to_datetime('1700-01-01', errors='coerce')
+    try:
+        return -365 <= (event_time - index_time).days < 0
     except Exception as e:
         print('[ERROR:]', e, file=sys.stderr)
         print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
@@ -197,4 +210,3 @@ def _is_in_pregnancy_comorbidity_period(event_time, index_time):
         print('[ERROR:]', e, file=sys.stderr)
         print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
         return False
-
