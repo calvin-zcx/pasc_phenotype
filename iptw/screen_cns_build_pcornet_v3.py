@@ -1106,6 +1106,9 @@ if __name__ == "__main__":
             df['ssri-treat-30-180@' + x] = 0
             df['ssri-treat--1095-30@' + x] = 0
 
+            # df['ssri-treat--60-30@' + x] = 0
+            # df['ssri-treat--60-0@' + x] = 0
+
         for x in snri_names:
             df['snri-treat-0-30@' + x] = 0
             df['snri-treat--30-30@' + x] = 0
