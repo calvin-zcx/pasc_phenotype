@@ -1939,7 +1939,8 @@ def build_feature_matrix(args):
                     ['dxCVDdeath-t2eall@' + x for x in cvddeath_encoding.keys()])
 
             #
-            column_names = ['patid', 'site', 'covid', 'index date', 'hospitalized',
+            column_names = ['patid', 'site', 'covid', 'index date', 'index_date_drug', 'index_date_drug_days', 'treated',
+                            'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup', 'followupanydx'] + death_column_names + \
                            ['zip', 'dob', 'age', 'adi', 'RUCA1'] + utilization_count_names + [
                                'bmi'] + yearmonth_column_names + \
@@ -1971,6 +1972,8 @@ def build_feature_matrix(args):
 
             covid_list.append(flag)
             indexdate_list.append(index_date)
+
+            indexdate_list.extend([index_date, index_date_drug, index_date_drug_days, treated])
 
             inpatient_flag = _encoding_inpatient(dx_raw, index_date)
             hospitalized_list.append(inpatient_flag)
@@ -2348,12 +2351,12 @@ def build_feature_matrix(args):
                 if i_med not in _med_set_base:
                     _update_counter_v2(med_count, i_med, flag, is_incident=True)
 
-        print('Done! Dump data bool matrix for query12 to {}'.format(output_file_query12_bool))
-        print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    print('Done! Dump data bool matrix for query12 to {}'.format(output_file_query12_bool))
+    print('Encoding done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-        # print('df_data.shape:', df_data.shape)
-        # del id_data
-        print('Done site:', site)
+    # print('df_data.shape:', df_data.shape)
+    # del id_data
+    print('Done site:', site)
         # end iterate sites
 
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
