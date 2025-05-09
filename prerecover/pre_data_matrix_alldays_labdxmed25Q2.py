@@ -293,12 +293,13 @@ def _encoding_yearmonth(index_date):
     "November 2021", "December 2021", "January 2022", "February 2022", "March 2022",
     "April 2022", "May 2022", "June 2022", "July 2022", "August 2022",
     "September 2022", "October 2022", "November 2022", "December 2022", "January 2023",
-    "February 2023", --> 2023-12 --> 2024-12]
+    "February 2023", --> 2023-12 --> 2024-12 --> 2025/3]
     :param index_date:
     :return:
     """
     # encoding = np.zeros((1, 46), dtype='int')
-    encoding = np.zeros((1, 58), dtype='int')
+    # encoding = np.zeros((1, 58), dtype='int')
+    encoding = np.zeros((1, 61), dtype='int')
 
     year = index_date.year
     month = index_date.month
@@ -1586,7 +1587,7 @@ def build_feature_matrix(args):
             utilization_count_array = np.zeros((n, 4), dtype='int16')
             utilization_count_names = ['inpatient no.', 'outpatient no.', 'emergency visits no.', 'other visits no.']
             bmi_list = []
-            yearmonth_array = np.zeros((n, 58), dtype='int16')  # 46
+            yearmonth_array = np.zeros((n, 61), dtype='int16')  # 46
             yearmonth_column_names = [
                 "YM: March 2020", "YM: April 2020", "YM: May 2020", "YM: June 2020", "YM: July 2020",
                 "YM: August 2020", "YM: September 2020", "YM: October 2020", "YM: November 2020", "YM: December 2020",
@@ -1603,6 +1604,7 @@ def build_feature_matrix(args):
                 "YM: January 2024", "YM: February 2024", "YM: March 2024", "YM: April 2024", "YM: May 2024",
                 "YM: June 2024", "YM: July 2024", "YM: August 2024", "YM: September 2024", "YM: October 2024",
                 "YM: November 2024", "YM: December 2024",
+                "YM: January 2025", "YM: February 2025", "YM: March 2025",
             ]
             #
             age_array = np.zeros((n, 6), dtype='int16')
@@ -1874,9 +1876,10 @@ def build_feature_matrix(args):
 
             # 2025-4-8 add CNS and LDN related COVs, reuse outcome functions
             # currently there are 5 dim covs, will add later
-            outcome_covCNSLDN_flag = np.zeros((n, 5), dtype='int16')
-            outcome_covCNSLDN_t2e = np.zeros((n, 5), dtype='int16')
-            outcome_covCNSLDN_baseline = np.zeros((n, 5), dtype='int16')
+            # 2025-05-09 add traumatic brain injury TBI and TBI related symptoms
+            outcome_covCNSLDN_flag = np.zeros((n, 7), dtype='int16')
+            outcome_covCNSLDN_t2e = np.zeros((n, 7), dtype='int16')
+            outcome_covCNSLDN_baseline = np.zeros((n, 7), dtype='int16')
             outcome_covCNSLDN_t2eall = []
             outcome_covCNSLDN_column_names = (
                     ['dxcovCNSLDN-out@' + x for x in covCNSLDN_encoding.keys()] + \
