@@ -1554,7 +1554,7 @@ def build_feature_matrix(args):
             index_date_drug = index_date_covid + datetime.timedelta(days=index_date_drug_days)
 
         if site != previous_site:
-            print('previous_site:', previous_site, 'site:', site)
+            print('\nprevious_site:', previous_site, 'In new site:', site)
             print('Loading: ', site)
             previous_site = site
             input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl.gz'.format(site, args.cohorts, site)
@@ -1975,7 +1975,7 @@ def build_feature_matrix(args):
 
             covid_list.append(flag)
             # indexdate_list.append(index_date)
-            indexdate_list.extend([index_date, index_date_drug, index_date_drug_days, treated])
+            indexdate_list.append([index_date, index_date_drug, index_date_drug_days, treated])
 
             inpatient_flag = _encoding_inpatient(dx_raw, index_date)
             hospitalized_list.append(inpatient_flag)
@@ -2160,7 +2160,7 @@ def build_feature_matrix(args):
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
                                     np.array(covid_list).reshape(-1, 1).astype(int),
-                                    np.asarray(indexdate_list).reshape(-1, 1),
+                                    np.asarray(indexdate_list), #.reshape(-1, 1),
                                     np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
                                     np.array(ventilation_list).reshape(-1, 1).astype(int),
                                     np.array(criticalcare_list).reshape(-1, 1).astype(int),
