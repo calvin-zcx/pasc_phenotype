@@ -562,10 +562,9 @@ if __name__ == "__main__":
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    # add matched cohorts later
-    # in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v3-addPaxFeats-addGeneralEC-withexposure.csv'
-    # in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v5-withmental-addPaxFeats-addGeneralEC-withexposure.csv'
-    in_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD-addPaxFeats-addGeneralEC-withexposure.csv'
+
+    in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
+    in_file          = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3-drugonsetupdate.csv'
 
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
@@ -574,7 +573,16 @@ if __name__ == "__main__":
                                   'flag_pregnancy_start_date',
                                   'flag_pregnancy_end_date'
                                   ])
+
+    df_infectt0 = pd.read_csv(in_file_infectt0,
+                     dtype={'patid': str, 'site': str, 'zip': str},
+                     parse_dates=['index date', 'dob',
+                                  'flag_delivery_date',
+                                  'flag_pregnancy_start_date',
+                                  'flag_pregnancy_end_date'
+                                  ])
     print('df.shape:', df.shape)
+    print('df_infectt0.shape:', df_infectt0.shape)
 
     # define treated and untreated here
 
