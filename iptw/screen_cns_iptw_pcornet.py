@@ -866,8 +866,9 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
 
 if __name__ == "__main__":
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD  2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-primary.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype overall   2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-primary.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype overall --negative_ratio 5  2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist-sample5.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 10 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample10-primary.txt
 
 
     start_time = time.time()
@@ -1472,10 +1473,11 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/CNS-{}-{}-{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
+            args.negative_ratio,
             i, _clean_name_(pasc))
 
         utils.check_and_mkdir(out_file_balance)
@@ -1483,25 +1485,28 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/CNS-{}-{}-{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
+                args.negative_ratio,
                 i, _clean_name_(pasc)))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/CNS-{}-{}-{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
+                args.negative_ratio,
                 i, _clean_name_(pasc)))
         try:
-            figout = r'../data/recover/output/results/CNS-{}-{}-{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
+                args.negative_ratio,
                 i, _clean_name_(pasc))
             print('Dump ', figout)
 
@@ -1522,10 +1527,11 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/CNS-{}-{}-{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
+                args.negative_ratio,
                 i, _clean_name_(pasc)),
             title=pasc,
             legends={'case': case_label, 'control': ctrl_label})
@@ -1576,20 +1582,22 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/CNS-{}-{}-{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
+                        args.negative_ratio,
                         i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/CNS-{}-{}-{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     args.exptype,  # '-select' if args.selectpasc else '',
+                    args.negative_ratio,
                 ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -1597,9 +1605,10 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/CNS-{}-{}-{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
+            args.negative_ratio,
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
