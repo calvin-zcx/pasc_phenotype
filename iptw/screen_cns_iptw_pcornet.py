@@ -866,16 +866,9 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
 
 if __name__ == "__main__":
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-all-V2.txt
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype atrisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-atrisk-anyfollowupdx-V2.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD  2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-primary.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype overall   2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist.txt
 
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity all 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-all-V2.txt
-    # python screen_paxlovid_iptw_pcornet.py  --cohorttype norisk --severity anyfollowupdx 2>&1 | tee  log_recover/screen_paxlovid_iptw_pcornet-norisk-anyfollowupdx-V2.txt
-
-    # python screen_ssri_iptw_pcornet.py  --exptype ssri-base-180-0  2>&1 | tee  log_ssri/screen_ssri_iptw_pcornet-ssri-base-180-0.txt
-
-    #
-    # v3: 2025-02-20 add any brain fog, then support  snri related sensitivity analyses, and subgroup (add hispanic, non-his)
 
     start_time = time.time()
     args = parse_args()
