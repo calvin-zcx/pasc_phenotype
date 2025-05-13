@@ -1282,6 +1282,9 @@ if __name__ == "__main__":
         'dxcovCNSLDN-base@TBI-associated Symptoms'
     ]
 
+    if args.cohorttype == 'overall':
+        covs_columns += ['ADHD_before_drug_onset', ]
+
     # if 'bupropion' not in args.exptype:
     #     covs_columns += ['other-treat--1095-0-flag', ]
 
