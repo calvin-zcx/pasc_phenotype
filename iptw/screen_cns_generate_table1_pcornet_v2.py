@@ -1198,7 +1198,7 @@ def table1_less_4_print(exptype='all'):
     print('treated df_pos.shape', df_pos.shape,
           'control df_neg.shape', df_neg.shape,
           'combined df.shape', df.shape, )
-    return df, df
+    # return df, df
     def _n_str(n):
         return '{:,}'.format(n)
 
