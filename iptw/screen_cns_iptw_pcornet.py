@@ -782,14 +782,18 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
     df = df.loc[(df['outpatient'] == 1), :]
     print('After selecting no hospitalized, len(df)', len(df),
           'exclude not outpatient in df_ec_start', (df_ec_start['outpatient'] != 1).sum())
+    print('treated:', (df['treated'] == 1).sum(), 'untreated:', (df['treated'] == 0).sum())
 
     def ec_no_U099_baseline(_df):
         print('before ec_no_U099_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         n0 = len(_df)
         _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
         n1 = len(_df)
         print('after ec_no_U099_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
         # print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
         return _df
@@ -797,33 +801,42 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
     # ADHD_before_drug_onset
     def ec_ADHD_baseline(_df):
         print('before ec_ADHD_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         n0 = len(_df)
         _df = _df.loc[(_df['ADHD_before_drug_onset'] == 1)]
         n1 = len(_df)
         print('after ec_ADHD_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
         # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
         return _df
 
     def ec_no_pregnant_baseline(_df):
         print('before ec_no_pregnant_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         n0 = len(_df)
         _df = _df.loc[(_df['PaxRisk:Pregnancy'] == 0)]
         n1 = len(_df)
         print('after ec_no_pregnant_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
         # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
         return _df
 
     def ec_no_HIV_baseline(_df):
         print('before ec_no_HIV_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         n0 = len(_df)
         _df = _df.loc[(_df['PaxRisk:HIV infection'] == 0)]
         n1 = len(_df)
         print('after ec_no_HIV_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
         # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
         return _df
@@ -855,11 +868,15 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
     def ec_no_severe_conditions_4_pax(_df):
         print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         n0 = len(_df)
         _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
         print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
         n1 = len(_df)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
         # print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
         return _df
 
@@ -954,6 +971,8 @@ if __name__ == "__main__":
 
     df = add_col(df)
     print('After add_col df.shape:', df.shape)
+
+    print('treated:', (df['treated'] == 1).sum(), 'untreated:', (df['treated'] == 0).sum())
 
     # more selection:
     print('Before more_ec_for_cohort_selection_new_order , len(df)', len(df))
@@ -1301,9 +1320,9 @@ if __name__ == "__main__":
         'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
         'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
         'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
-        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', #'PaxRisk:HIV infection',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',  # 'PaxRisk:HIV infection',
         'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity', #'PaxRisk:Pregnancy',
+        'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
         'PaxRisk:Sickle cell disease or thalassemia',
         'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
         'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
@@ -1318,7 +1337,7 @@ if __name__ == "__main__":
         'mental-base@Post-traumatic stress disorder',
         'mental-base@Bulimia nervosa',
         'mental-base@Binge eating disorder',
-        #'mental-base@premature ejaculation',
+        # 'mental-base@premature ejaculation',
         'mental-base@Autism spectrum disorder',
         'mental-base@Premenstrual dysphoric disorder',
         'mental-base@SMI',
@@ -1336,12 +1355,10 @@ if __name__ == "__main__":
         covs_columns = [
             'Female', 'Male', 'Other/Missing',
             'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',  # 'age@65+', # # expand 65
-            '65-<75 years', '75-<85 years', '85+ years',]
-
+            '65-<75 years', '75-<85 years', '85+ years', ]
 
     if args.cohorttype == 'overall':
         covs_columns += ['ADHD_before_drug_onset', ]
-
 
     print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
