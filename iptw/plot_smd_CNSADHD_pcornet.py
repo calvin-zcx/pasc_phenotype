@@ -48,6 +48,8 @@ def label_map(x):
         'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
         'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
         '03/22-06/22', '07/22-10/22', '11/22-02/23',
+        '03/23-06/23', '07/23-10/23', '11/23-02/24',
+        '03/24-06/24', '07/24-10/24',
         # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
         'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
         'inpatient visits >=5',
@@ -61,9 +63,12 @@ def label_map(x):
         'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
         'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
         'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
-        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',
+        # 'PaxRisk:HIV infection',
         'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Overweight and obesity',
+        # 'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia',
         'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
         'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
         'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
@@ -77,7 +82,7 @@ def label_map(x):
         'mental-base@Post-traumatic stress disorder',
         'mental-base@Bulimia nervosa',
         'mental-base@Binge eating disorder',
-        'mental-base@premature ejaculation',
+        # 'mental-base@premature ejaculation',
         'mental-base@Autism spectrum disorder',
         'mental-base@Premenstrual dysphoric disorder',
         'mental-base@SMI',
@@ -123,6 +128,11 @@ def label_map(x):
         '03/22-06/22': 'Infect time:03/22-06/22',
         '07/22-10/22': 'Infect time:07/22-10/22',
         '11/22-02/23': 'Infect time:11/22-02/23',
+        '03/23-06/23':'Infect time:03/23-06/23',
+        '07/23-10/23':'Infect time:07/23-10/23',
+        '11/23-02/24': 'Infect time:11/23-02/24',
+        '03/24-06/24': 'Infect time:03/24-06/24',
+        '07/24-10/24':'Infect time:07/24-10/24',
         'inpatient visits 0': 'Hist.IP:0',
         'inpatient visits 1-2': 'Hist.IP:1-2',
         'inpatient visits 3-4': 'Hist.IP:3-4',
@@ -210,7 +220,7 @@ if __name__ == '__main__':
     df = pd.read_csv(indir + '1-any_pasc-evaluation_balance.csv')
     df = df.iloc[::-1]
 
-    fig, axes = plt.subplots(figsize=(20, 30))
+    fig, axes = plt.subplots(figsize=(20, 33))
     ind = np.arange(len(df))
 
     width = 0.3

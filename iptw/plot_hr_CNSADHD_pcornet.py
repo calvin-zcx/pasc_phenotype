@@ -2879,6 +2879,7 @@ if __name__ == '__main__':
     # indir = r'../data/recover/output/results/CNS-overall-all-adhdCNS-inci-0-30/'
 
     indir = r'../data/recover/output/results/CNS-baseADHD-all-adhdCNS-inci-0-30s5/'
+    indir = r'../data/recover/output/results/CNS-baseADHD-all-adhdCNS-inci-0-30s5-adjustless/'
     indir = r'../data/recover/output/results/CNS-baseADHD-all-adhdCNS-inci-0-30s10/'
     indir = r'../data/recover/output/results/CNS-overall-all-adhdCNS-inci-0-30s5/'
 
