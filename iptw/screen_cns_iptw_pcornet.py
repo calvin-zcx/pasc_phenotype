@@ -75,6 +75,7 @@ def parse_args():
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
     parser.add_argument('--dump', action='store_true')
+    parser.add_argument('--adjustless', action='store_true')
 
     parser.add_argument('--exptype',
                         choices=['adhdCNS-inci-0-30',
@@ -805,6 +806,28 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
         # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
         return _df
 
+    def ec_no_pregnant_baseline(_df):
+        print('before ec_no_pregnant_baseline, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxRisk:Pregnancy'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_pregnant_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        return _df
+
+    def ec_no_HIV_baseline(_df):
+        print('before ec_no_HIV_baseline, _df.shape', _df.shape)
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxRisk:HIV infection'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_HIV_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        return _df
+
     def ec_no_other_covid_treatment(_df):
         print('before ec_no_other_covid_treatment, _df.shape', _df.shape)
         n0 = len(_df)
@@ -860,6 +883,9 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
     df = ec_no_U099_baseline(df)
     df = ec_no_severe_conditions_4_pax(df)
+    df = ec_no_pregnant_baseline(df)
+    df = ec_no_HIV_baseline(df)
+
     if cohorttype == 'baseADHD':
         print('default: require baseline ADHD diagnosis:')
         df = ec_ADHD_baseline(df)
@@ -872,9 +898,10 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
 
 if __name__ == "__main__":
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-primary.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype overall --negative_ratio 5  2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist-sample5.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 10 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample10-primary.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-primary.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 --adjustless 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-adjustless.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype overall --negative_ratio 5  --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist-sample5.txt
+    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 10 --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample10-primary.txt
 
     start_time = time.time()
     args = parse_args()
@@ -1000,7 +1027,7 @@ if __name__ == "__main__":
             args.negative_ratio,
         ), index=False)
         print('dump cohort done for table')
-        zz
+        # zz
 
     # data clean for <0 error death records, and add censoring to the death time to event columns
 
@@ -1225,6 +1252,8 @@ if __name__ == "__main__":
                   '03/21-06/21', '07/21-10/21', '11/21-02/22',
                   '03/22-06/22', '07/22-10/22', '11/22-02/23',
                   '03/23-06/23', '07/23-10/23', '11/23-02/24',
+                  '03/24-06/24', '07/24-10/24',
+
                   ]]  # 'Unnamed: 0',
 
     df_label = (df['treated'] >= 1).astype('int')
@@ -1257,6 +1286,8 @@ if __name__ == "__main__":
         'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
         'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
         '03/22-06/22', '07/22-10/22', '11/22-02/23',
+        '03/23-06/23', '07/23-10/23', '11/23-02/24',
+        '03/24-06/24', '07/24-10/24',
         # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
         'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
         'inpatient visits >=5',
@@ -1270,9 +1301,10 @@ if __name__ == "__main__":
         'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
         'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
         'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
-        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', #'PaxRisk:HIV infection',
         'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Overweight and obesity', #'PaxRisk:Pregnancy',
+        'PaxRisk:Sickle cell disease or thalassemia',
         'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
         'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
         'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
@@ -1286,7 +1318,7 @@ if __name__ == "__main__":
         'mental-base@Post-traumatic stress disorder',
         'mental-base@Bulimia nervosa',
         'mental-base@Binge eating disorder',
-        'mental-base@premature ejaculation',
+        #'mental-base@premature ejaculation',
         'mental-base@Autism spectrum disorder',
         'mental-base@Premenstrual dysphoric disorder',
         'mental-base@SMI',
@@ -1300,11 +1332,16 @@ if __name__ == "__main__":
         'dxcovCNSLDN-base@TBI-associated Symptoms'
     ]
 
+    if args.adjustless:
+        covs_columns = [
+            'Female', 'Male', 'Other/Missing',
+            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',  # 'age@65+', # # expand 65
+            '65-<75 years', '75-<85 years', '85+ years',]
+
+
     if args.cohorttype == 'overall':
         covs_columns += ['ADHD_before_drug_onset', ]
 
-    # if 'bupropion' not in args.exptype:
-    #     covs_columns += ['other-treat--1095-0-flag', ]
 
     print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
@@ -1494,11 +1531,11 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
-            args.negative_ratio,
+            args.negative_ratio, '-adjustless' if args.adjustless else '',
             i, _clean_name_(pasc))
 
         utils.check_and_mkdir(out_file_balance)
@@ -1506,28 +1543,28 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/CNS-{}-{}-{}s{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
-                args.negative_ratio,
+                args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(pasc)))
 
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/CNS-{}-{}-{}s{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
-                args.negative_ratio,
+                args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(pasc)))
         try:
-            figout = r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
-                args.negative_ratio,
+                args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(pasc))
             print('Dump ', figout)
 
@@ -1548,11 +1585,11 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/CNS-{}-{}-{}s{}/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
-                args.negative_ratio,
+                args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(pasc)),
             title=pasc,
             legends={'case': case_label, 'control': ctrl_label})
@@ -1603,22 +1640,22 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
-                        args.negative_ratio,
+                        args.negative_ratio, '-adjustless' if args.adjustless else '',
                         i))
         except:
             print('Error in ', i, pasc)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     args.exptype,  # '-select' if args.selectpasc else '',
-                    args.negative_ratio,
+                    args.negative_ratio, '-adjustless' if args.adjustless else '',
                 ))
 
         print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -1626,10 +1663,10 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/CNS-{}-{}-{}s{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/CNS-{}-{}-{}s{}{}/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
-            args.negative_ratio,
+            args.negative_ratio, '-adjustless' if args.adjustless else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
