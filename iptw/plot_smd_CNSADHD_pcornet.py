@@ -212,6 +212,7 @@ if __name__ == '__main__':
     # pass
 
     indir = r'../data/recover/output/results/CNS-baseADHD-all-adhdCNS-inci-0-30s5/'
+    indir = r'../data/recover/output/results/CNS-baseADHD-all-adhdCNS-inci-0-30s5-adjustless/'
 
     output_dir = indir + r'figure/'
     print('indir', indir)
@@ -221,6 +222,8 @@ if __name__ == '__main__':
     df = df.iloc[::-1]
 
     fig, axes = plt.subplots(figsize=(20, 33))
+    # fig, axes = plt.subplots(figsize=(15, 20))
+
     ind = np.arange(len(df))
 
     width = 0.3
