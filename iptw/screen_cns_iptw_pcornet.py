@@ -38,7 +38,7 @@ def parse_args():
                                                '18to25', '25to35', '35to50', '50to65',
                                                'less65', 'above65',
                                                'less65omicronbroad', 'above65omicronbroad',
-                                                'less50', 'above50',
+                                               'less50', 'above50',
                                                '65to75', '75above', '20to40', '40to55', '55to65',
                                                'Anemia', 'Arrythmia', 'CKD', 'CPD-COPD', 'CAD',
                                                'T2D-Obesity', 'Hypertension', 'Mental-substance', 'Corticosteroids',
@@ -74,10 +74,11 @@ def parse_args():
     parser.add_argument('--negative_ratio', type=int, default=5)  # 5
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
+    parser.add_argument('--dump', action='store_true')
 
     parser.add_argument('--exptype',
                         choices=['adhdCNS-inci-0-30',
-                                 ], default='adhdCNS-inci-0-30') # 'base180-0'
+                                 ], default='adhdCNS-inci-0-30')  # 'base180-0'
 
     parser.add_argument('--cohorttype',
                         choices=['baseADHD',
@@ -472,6 +473,7 @@ def add_col(df):
     print('Finish add_col, df.shape', df.shape)
     return df
 
+
 def select_subpopulation(df, severity):
     if severity == 'inpatient':
         print('Considering inpatient/hospitalized cohorts but not ICU')
@@ -519,7 +521,8 @@ def select_subpopulation(df, severity):
     elif severity == 'less65':
         print('Considering less65 cohorts')
         # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
-        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1), :].copy()
+        df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1),
+             :].copy()
     elif severity == 'above65':
         print('Considering above65 cohorts')
         df = df.loc[(df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
@@ -529,16 +532,19 @@ def select_subpopulation(df, severity):
         df = df.loc[(df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1), :].copy()
     elif severity == 'above50':
         print('Considering above50 cohorts')
-        df = df.loc[(df['age@50-64'] == 1) | (df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1), :].copy()
+        df = df.loc[
+             (df['age@50-64'] == 1) | (df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1),
+             :].copy()
     elif severity == 'less65omicronbroad':
         print('Considering less65omicronbroad cohorts')
         # df = df.loc[(df['20-<40 years'] == 1) | (df['40-<55 years'] == 1) | (df['55-<65 years'] == 1), :].copy()
-        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
-             ((df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+                    ((df['age@18-24'] == 1) | (df['age@25-34'] == 1) | (df['age@35-49'] == 1) | (df['age@50-64'] == 1)),
+             :].copy()
     elif severity == 'above65omicronbroad':
         print('Considering above65omicronbroad cohorts')
-        df = df.loc[ (df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
-             ((df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1)), :].copy()
+        df = df.loc[(df['index date'] >= datetime.datetime(2021, 12, 1, 0, 0)) &
+                    ((df['65-<75 years'] == 1) | (df['75-<85 years'] == 1) | (df['85+ years'] == 1)), :].copy()
 
     elif severity == '20to40':
         print('Considering 20to40 cohorts')
@@ -784,7 +790,7 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
         print('after ec_no_U099_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
 
-        #print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
+        # print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
         return _df
 
     # ADHD_before_drug_onset
@@ -796,7 +802,7 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
         print('after ec_ADHD_baseline, _df.shape', _df.shape)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
 
-        #print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
         return _df
 
     def ec_no_other_covid_treatment(_df):
@@ -821,7 +827,7 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
                      'Any Monoclonal Antibody Treatment (Bamlanivimab, Bamlanivimab and Etesevimab, Casirivimab and Imdevimab, Sotrovimab, and unspecified monoclonal antibodies)'] > 0) |
                 (df_ec_start['PX: Convalescent Plasma'] > 0)).sum())
 
-        #print('exclude contraindication drugs in df_ec_start -14 - +14', (df_ec_start['pax_contra'] > 0).sum())
+        # print('exclude contraindication drugs in df_ec_start -14 - +14', (df_ec_start['pax_contra'] > 0).sum())
         return _df
 
     def ec_no_severe_conditions_4_pax(_df):
@@ -831,7 +837,7 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
         print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
         n1 = len(_df)
         print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
-        #print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
+        # print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
         return _df
 
     def ec_at_least_one_risk_4_pax(_df):
@@ -870,7 +876,6 @@ if __name__ == "__main__":
     # python screen_cns_iptw_pcornet.py  --cohorttype overall --negative_ratio 5  2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist-sample5.txt
     # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 10 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample10-primary.txt
 
-
     start_time = time.time()
     args = parse_args()
 
@@ -880,9 +885,8 @@ if __name__ == "__main__":
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-
     in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
-    in_file          = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3-drugonsetupdate.csv'
+    in_file = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3-drugonsetupdate.csv'
 
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
@@ -893,12 +897,12 @@ if __name__ == "__main__":
                                   ])
 
     df_infectt0 = pd.read_csv(in_file_infectt0,
-                     dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date', 'dob',
-                                  'flag_delivery_date',
-                                  'flag_pregnancy_start_date',
-                                  'flag_pregnancy_end_date'
-                                  ])
+                              dtype={'patid': str, 'site': str, 'zip': str},
+                              parse_dates=['index date', 'dob',
+                                           'flag_delivery_date',
+                                           'flag_pregnancy_start_date',
+                                           'flag_pregnancy_end_date'
+                                           ])
     print('df.shape:', df.shape)
     print('df_infectt0.shape:', df_infectt0.shape)
 
@@ -914,7 +918,10 @@ if __name__ == "__main__":
                    'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal',
                    'flag_delivery_type_Unspecified', 'flag_delivery_type_Other',
                    'flag_pregnancy_start_date', 'flag_pregnancy_gestational_age',
-                   'flag_pregnancy_end_date', 'flag_maternal_age', 'ADHD_before_drug_onset']
+                   'flag_pregnancy_end_date', 'flag_maternal_age', 'ADHD_before_drug_onset'] + [x for x in
+                                                                                                df_infectt0.columns if
+                                                                                                (x.startswith('cnsldn')
+                                                                                                 )]
     df = pd.merge(df, df_infectt0[select_cols], how='left', left_on='patid', right_on='patid', suffixes=('', '_z'), )
     print('After left merge, merged df.shape:', df.shape)
 
@@ -980,9 +987,20 @@ if __name__ == "__main__":
                       x.startswith('dxCFR-out@') or
                       x.startswith('mental-base@') or
                       x.startswith('dxMECFS-base@') or
-                      x.startswith('dxCVDdeath-base@')
+                      x.startswith('dxCVDdeath-base@') or
+                      x.startswith('dxcovCNSLDN-base')
                       )]
     df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
+
+    if args.dump:
+        df.to_csv(r'./cns_output/cohort-CNS-{}-{}-{}s{}.csv'.format(
+            args.cohorttype,
+            args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+            args.exptype,  # '-select' if args.selectpasc else '',
+            args.negative_ratio,
+        ), index=False)
+        print('dump cohort done for table')
+        zz
 
     # data clean for <0 error death records, and add censoring to the death time to event columns
 
@@ -1075,7 +1093,6 @@ if __name__ == "__main__":
 
     # move brainfog_list_any and '_brainfog_flag'  below
 
-
     df['any_pasc_flag'] = 0
     df['any_pasc_type'] = np.nan
     df['any_pasc_t2e'] = 180  # np.nan
@@ -1096,14 +1113,13 @@ if __name__ == "__main__":
     df['any_brainfog_t2e'] = 180  # np.nan
     df['any_brainfog_txt'] = ''
     df['any_brainfog_baseline'] = 0  # placeholder for screening, no special meaning, null column
-    brainfog_list_any = ['Neurodegenerative', 'Memory-Attention', #'Headache',
+    brainfog_list_any = ['Neurodegenerative', 'Memory-Attention',  # 'Headache',
                          'Sleep Disorder', 'Psych', 'Dysautonomia-Orthostatic', 'Stroke']
     for p in brainfog_list_any:
         df[p + '_brainfog_flag'] = 0
 
     print('brainfog_list_any:', brainfog_list_any)
     print('len(brainfog_list_any):', len(brainfog_list_any), 'len(brainfog_list)', len(brainfog_list))
-
 
     for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
         # for any 1 pasc
@@ -1189,7 +1205,8 @@ if __name__ == "__main__":
             df.loc[index, 'any_brainfog_txt'] = brainfog_1_text
         else:
             df.loc[index, 'any_brainfog_flag'] = 0
-            df.loc[index, 'any_brainfog_t2e'] = rows[['dxbrainfog-t2e@' + p for p in brainfog_list_any]].max()  # censoring time
+            df.loc[index, 'any_brainfog_t2e'] = rows[
+                ['dxbrainfog-t2e@' + p for p in brainfog_list_any]].max()  # censoring time
 
     # End of defining ANY *** conditions
     # pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
@@ -1222,6 +1239,7 @@ if __name__ == "__main__":
                                                 x.startswith('dxbrainfog') or
                                                 x.startswith('dxCFR') or
                                                 x.startswith('dxMECFS') or
+                                                x.startswith('PaxRisk:') or
                                                 x.startswith('dxcovCNSLDN-base@')
                                                 ]
 
@@ -1276,7 +1294,7 @@ if __name__ == "__main__":
         'dxcovCNSLDN-base@MECFS',
         'dxcovCNSLDN-base@Narcolepsy',
         'dxcovCNSLDN-base@Pain',
-        #'dxcovCNSLDN-base@ADHD',
+        # 'dxcovCNSLDN-base@ADHD',
         'dxcovCNSLDN-base@alcohol opioid other substance ',
         'dxcovCNSLDN-base@traumatic brain injury',
         'dxcovCNSLDN-base@TBI-associated Symptoms'
