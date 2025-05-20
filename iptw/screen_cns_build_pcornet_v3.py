@@ -883,7 +883,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 if __name__ == "__main__":
-    # python screen_dx_recover_pregnancy_cohort2.py --site all --severity pospreg-posnonpreg 2>&1 | tee  log_recover/screen_dx_recover_pregnancy_cohort2_all_pospreg-posnonpreg.txt
+    # python screen_cns_build_pcornet_v3.py --build_data 2>&1 | tee  log/screen_cns_build_pcornet_v3_withADHDctrl.txt
     start_time = time.time()
     args = parse_args()
 
@@ -967,15 +967,15 @@ if __name__ == "__main__":
 
             # add new columns
             # add new columns latest refresh already done
-            # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-preg_{}-addCFR-PaxRisk-U099-Hospital-SSRI-v7-CNSLDN.csv'.format(
-            #     site, site)
-            #
-            # print('add columns from:', data_file_add)
-            # df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
-            # df_ssri_list.append(df_add)
-            # print('df_add.shape:', df_add.shape)
-            # df = pd.merge(df, df_add, how='left', left_on='patid', right_on='patid', suffixes=('', '_y'), )
-            # print('After left merge, merged df.shape:', df.shape)
+            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q2_{}-addADHDctrl.csv'.format(
+                site, site)
+
+            print('add columns from:', data_file_add)
+            df_add = pd.read_csv(data_file_add, dtype={'patid': str, 'site': str})
+            df_ssri_list.append(df_add)
+            print('df_add.shape:', df_add.shape)
+            df = pd.merge(df, df_add, how='left', left_on='patid', right_on='patid', suffixes=('', '_y'), )
+            print('After left merge, merged df.shape:', df.shape)
 
             df_list.append(df)
             print('Done', ith, site)
@@ -995,7 +995,7 @@ if __name__ == "__main__":
         df = add_col(df)
 
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN.csv'
-        out_data_file = 'recover25Q2_covid_pos_addPaxFeats.csv'
+        out_data_file = 'recover25Q2_covid_pos_addPaxFeats-addADHDctrl.csv'
 
         # # if args.cohorttype == 'lab-dx':
         # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
@@ -1035,7 +1035,9 @@ if __name__ == "__main__":
         # load after general EC and explore. Even general EC will be revised later
         # in_mediate_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN-addPaxFeats-addGeneralEC.csv'
 
-        in_mediate_file = 'recover25Q2_covid_pos_addPaxFeats.csv'
+        # in_mediate_file = 'recover25Q2_covid_pos_addPaxFeats.csv'
+        in_mediate_file = 'recover25Q2_covid_pos_addPaxFeats-addADHDctrl.csv'
+
         # # print('read in file:', in_mediate_file)
         # df = pd.read_csv(in_mediate_file,
         #                  dtype={'patid': str, 'site': str, 'zip': str},
@@ -1083,6 +1085,8 @@ if __name__ == "__main__":
             'azstarys_combo', 'dexmethylphenidate', 'dexmethylphenidate_nocombo', 'diethylpropion', 'methamphetamine',
             'phendimetrazine', 'phentermine', 'caffeine', 'fenfluramine_delet', 'oxybate_delet',
             'doxapram_delet', 'guanfacine']
+
+        adhdctrl_names = ['viloxazine', 'atomoxetine', 'nortriptyline', 'bupropion']
 
         for x in ssri_names:
             df['ssri-treat-0-30@' + x] = 0
@@ -1184,6 +1188,38 @@ if __name__ == "__main__":
             df['cnsldn-treat--1095-0@' + x] = 0
             df['cnsldn-treat-30-180@' + x] = 0
             df['cnsldn-treat--1095-30@' + x] = 0
+
+        for x in adhdctrl_names:
+            df['adhdctrl-treat-0-30@' + x] = 0
+            df['adhdctrl-treat--30-30@' + x] = 0
+            df['adhdctrl-treat-0-15@' + x] = 0
+            df['adhdctrl-treat--15-15@' + x] = 0
+            df['adhdctrl-treat-0-5@' + x] = 0
+            df['adhdctrl-treat-0-7@' + x] = 0
+
+            df['adhdctrl-treat--30-0@' + x] = 0
+            df['adhdctrl-treat--60-0@' + x] = 0
+            df['adhdctrl-treat--90-0@' + x] = 0
+            df['adhdctrl-treat--120-0@' + x] = 0
+            df['adhdctrl-treat--180-0@' + x] = 0
+
+            df['adhdctrl-treat--60-30@' + x] = 0
+            df['adhdctrl-treat-0-90@' + x] = 0
+            df['adhdctrl-treat--365--60@' + x] = 0
+            df['adhdctrl-treat--1095--60@' + x] = 0
+
+            df['adhdctrl-treat--180-30@' + x] = 0
+            df['adhdctrl-treat--180-30-npres@' + x] = 0
+            df['adhdctrl-treat--180-30-npres2weeksApart@' + x] = 0
+            df['adhdctrl-treat--180-30-npres30daysApart@' + x] = 0
+
+            df['adhdctrl-treat--120-120@' + x] = 0
+            df['adhdctrl-treat--180-180@' + x] = 0
+
+            df['adhdctrl-treat--365-0@' + x] = 0
+            df['adhdctrl-treat--1095-0@' + x] = 0
+            df['adhdctrl-treat-30-180@' + x] = 0
+            df['adhdctrl-treat--1095-30@' + x] = 0
 
 
         def _t2eall_to_int_list(t2eall):
@@ -1407,6 +1443,74 @@ if __name__ == "__main__":
                         _last_day = t2e
                     # count day with apart time constrains
 
+            for x in adhdctrl_names:
+                t2eall = row['adhdctrl-t2eall@' + x]
+                if pd.notna(t2eall):
+                    # t2eall = _t2eall_to_int_list(t2eall)
+                    t2eall = _t2eall_to_int_list_dedup(t2eall)
+
+                    _last_day = None
+                    for t2e in t2eall:
+                        if 0 <= t2e < 30:
+                            df.loc[index, 'adhdctrl-treat-0-30@' + x] = 1
+                        if -30 <= t2e < 30:
+                            df.loc[index, 'adhdctrl-treat--30-30@' + x] = 1
+
+                        if 0 <= t2e < 15:
+                            df.loc[index, 'adhdctrl-treat-0-15@' + x] = 1
+                        if 0 <= t2e < 5:
+                            df.loc[index, 'adhdctrl-treat-0-5@' + x] = 1
+                        if 0 <= t2e < 7:
+                            df.loc[index, 'adhdctrl-treat-0-7@' + x] = 1
+                        if -15 <= t2e < 15:
+                            df.loc[index, 'adhdctrl-treat--15-15@' + x] = 1
+
+                        if -30 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--30-0@' + x] = 1
+                        if -60 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--60-0@' + x] = 1
+                        if -90 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--90-0@' + x] = 1
+                        if -120 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--120-0@' + x] = 1
+                        if -180 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--180-0@' + x] = 1
+
+                        if -60 <= t2e < 30:
+                            df.loc[index, 'adhdctrl-treat--60-30@' + x] = 1
+                        if 0 <= t2e < 90:
+                            df.loc[index, 'adhdctrl-treat-0-90@' + x] = 1
+                        if -365 <= t2e < -60:
+                            df.loc[index, 'adhdctrl-treat--365--60@' + x] = 1
+                        if -1095 <= t2e < -60:
+                            df.loc[index, 'adhdctrl-treat--1095--60@' + x] = 1
+
+                        if -120 <= t2e < 120:
+                            df.loc[index, 'adhdctrl-treat--120-120@' + x] = 1
+                        if -180 <= t2e < 180:
+                            df.loc[index, 'adhdctrl-treat--180-180@' + x] = 1
+
+                        if -365 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--365-0@' + x] = 1
+                        if -1095 <= t2e < 0:
+                            df.loc[index, 'adhdctrl-treat--1095-0@' + x] = 1
+                        if 30 <= t2e < 180:
+                            df.loc[index, 'adhdctrl-treat-30-180@' + x] = 1
+                        if -1095 <= t2e < 30:
+                            df.loc[index, 'adhdctrl-treat--1095-30@' + x] = 1
+
+                        if -180 <= t2e < 30:
+                            df.loc[index, 'adhdctrl-treat--180-30@' + x] = 1
+                            df.loc[index, 'adhdctrl-treat--180-30-npres@' + x] += 1
+                            if pd.notna(_last_day):
+                                _tdiff = t2e - _last_day
+                                if _tdiff >= 13:  # 2 weeks
+                                    df.loc[index, 'adhdctrl-treat--180-30-npres2weeksApart@' + x] += 1
+                                if _tdiff >= 29:  # 1 month
+                                    df.loc[index, 'adhdctrl-treat--180-30-npres30daysApart@' + x] += 1
+
+                        _last_day = t2e
+                    # count day with apart time constrains
         ##
         df['ssri-treat-0-30-cnt'] = df[['ssri-treat-0-30@' + x for x in ssri_names]].sum(axis=1)
         df['ssri-treat-0-30-flag'] = (df['ssri-treat-0-30-cnt'] > 0).astype('int')
@@ -1614,6 +1718,32 @@ if __name__ == "__main__":
             print('cnsldn-treat--365--60@' + x, df['cnsldn-treat--365--60@' + x].sum())
             print('cnsldn-treat--1095--60@' + x, df['cnsldn-treat--1095--60@' + x].sum())
 
+        for x in adhdctrl_names:
+            print('adhdctrl-treat-0-30@' + x, df['adhdctrl-treat-0-30@' + x].sum())
+            print('adhdctrl-treat--30-30@' + x, df['adhdctrl-treat--30-30@' + x].sum())
+            print('adhdctrl-treat-0-15@' + x, df['adhdctrl-treat-0-15@' + x].sum())
+            print('adhdctrl-treat-0-5@' + x, df['adhdctrl-treat-0-5@' + x].sum())
+            print('adhdctrl-treat-0-7@' + x, df['adhdctrl-treat-0-7@' + x].sum())
+            print('adhdctrl-treat--15-15@' + x, df['adhdctrl-treat--15-15@' + x].sum())
+
+            print('adhdctrl-treat--30-0@' + x, df['adhdctrl-treat--30-0@' + x].sum())
+            print('adhdctrl-treat--60-0@' + x, df['adhdctrl-treat--60-0@' + x].sum())
+            print('adhdctrl-treat--90-0@' + x, df['adhdctrl-treat--90-0@' + x].sum())
+            print('adhdctrl-treat--120-0@' + x, df['adhdctrl-treat--120-0@' + x].sum())
+            print('adhdctrl-treat--180-0@' + x, df['adhdctrl-treat--180-0@' + x].sum())
+
+            print('adhdctrl-treat--120-120@' + x, df['adhdctrl-treat--120-120@' + x].sum())
+            print('adhdctrl-treat--180-180@' + x, df['adhdctrl-treat--180-180@' + x].sum())
+
+            print('adhdctrl-treat--365-0@' + x, df['adhdctrl-treat--365-0@' + x].sum())
+            print('adhdctrl-treat--1095-0@' + x, df['adhdctrl-treat--1095-0@' + x].sum())
+            print('adhdctrl-treat-30-180@' + x, df['adhdctrl-treat-30-180@' + x].sum())
+            print('adhdctrl-treat--1095-30@' + x, df['adhdctrl-treat--1095-30@' + x].sum())
+
+            print('adhdctrl-treat--60-30@' + x, df['adhdctrl-treat--60-30@' + x].sum())
+            print('adhdctrl-treat-0-90@' + x, df['adhdctrl-treat-0-90@' + x].sum())
+            print('adhdctrl-treat--365--60@' + x, df['adhdctrl-treat--365--60@' + x].sum())
+            print('adhdctrl-treat--1095--60@' + x, df['adhdctrl-treat--1095--60@' + x].sum())
         df.to_csv(in_mediate_file.replace('.csv', '-withexposure.csv'))
 
 
