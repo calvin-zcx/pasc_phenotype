@@ -1673,8 +1673,8 @@ def build_feature_matrix(args):
 
             # 2025-5-20 ADHD ctrl drug
             adhdctrl_names = ['viloxazine', 'atomoxetine', 'nortriptyline', 'bupropion']
-            adhdctrl_flag = np.zeros((n, 13), dtype='int16')
-            adhdctrl_t2e = np.zeros((n, 13), dtype='int16')  # date of earliest prescriptions
+            adhdctrl_flag = np.zeros((n, 4), dtype='int16')
+            adhdctrl_t2e = np.zeros((n, 4), dtype='int16')  # date of earliest prescriptions
             adhdctrl_t2eall = []
             adhdctrl_column_names = (
                     [' adhdctrl-flag@' + x for x in adhdctrl_names] +
