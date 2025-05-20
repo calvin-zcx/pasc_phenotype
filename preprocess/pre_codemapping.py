@@ -1969,6 +1969,29 @@ def build_cns_naltrxone_drug_map():
     utils.dump(med_code, r'../data/mapping/cns_ldn_drugs_mapping.pkl')
     return med_code
 
+def build_ADHD_ctrl_drug_map():
+    med_code = {}
+
+    df_all = pd.read_excel(r'../data/mapping/ADHD_control_code_list.xlsx', sheet_name=None, dtype=str)
+    print('len(df_all)', len(df_all))
+    for ith, (key, df) in enumerate(df_all.items()):
+        print('drug:', key, 'index:', ith, '#code:', len(df)) #, df[['code']].value_counts())
+        code_dict = {}
+        for index, row in df.iterrows():
+            code = row['code'].strip()
+            type = row['code type']
+            name = row['name']
+            drug_ingcat = row['drug']
+
+            code_dict[code] = [code, type, name, drug_ingcat, key]
+
+        med_code[key] = code_dict
+
+    print('med_code done,  len(med_code):', len(med_code))
+    utils.dump(med_code, r'../data/mapping/ADHD_ctrl_drugs_mapping.pkl')
+    return med_code
+
+
 def build_pregnant_drugs_grt():
     dict_df_all = pd.read_excel(r'../data/mapping/preg_drug_of_interest.xlsx', sheet_name=None, dtype=str)  # read all sheets
     med_code = {}
@@ -2081,8 +2104,12 @@ if __name__ == '__main__':
     #med_code, dict_df_all = build_pregnant_drugs_grt()
 
     # 21 CNS and Naltrxone/LDN related drugs, 2025-04-08
-    med_code = build_cns_naltrxone_drug_map()
+    # med_code = build_cns_naltrxone_drug_map()
 
     # 22 add more CNS LDN related covs, 2025-04-08
-    icd_covCNSLDN, covCNSLDN_index, list_df_covCNSLDN = ICD_to_CNS_LDN_covs()
+    # icd_covCNSLDN, covCNSLDN_index, list_df_covCNSLDN = ICD_to_CNS_LDN_covs()
+
+    # 23 build ADHD ctrl drug, viloxazine, atomoxetine, nortriptyline, bupropion , 2025-5-20
+    # ['viloxazine', 'atomoxetine', 'nortriptyline', 'bupropion']
+    med_code = build_ADHD_ctrl_drug_map()
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

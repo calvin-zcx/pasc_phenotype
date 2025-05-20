@@ -977,6 +977,10 @@ if __name__ == '__main__':
 
     drugname = 'azstarys'
     drugname = 'guanfacine'
+
+    drugname = 'viloxazine'
+    drugname = 'nortriptyline'
+
     #df = _drop_dup_adderall()
     # df = _exclude_combo()
 
