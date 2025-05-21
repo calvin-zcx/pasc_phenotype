@@ -1038,14 +1038,14 @@ if __name__ == "__main__":
         # in_mediate_file = 'recover25Q2_covid_pos_addPaxFeats.csv'
         in_mediate_file = 'recover25Q2_covid_pos_addPaxFeats-addADHDctrl.csv'
 
-        # # print('read in file:', in_mediate_file)
-        # df = pd.read_csv(in_mediate_file,
-        #                  dtype={'patid': str, 'site': str, 'zip': str},
-        #                  parse_dates=['index date', 'dob',
-        #                               # 'flag_delivery_date',
-        #                               # 'flag_pregnancy_start_date',
-        #                               # 'flag_pregnancy_end_date'
-        #                               ])
+        # print('read in file:', in_mediate_file)
+        df = pd.read_csv(in_mediate_file,
+                         dtype={'patid': str, 'site': str, 'zip': str},
+                         parse_dates=['index date', 'dob',
+                                      'flag_delivery_date',
+                                      'flag_pregnancy_start_date',
+                                      'flag_pregnancy_end_date'
+                                      ], nrows=1000)
 
         print('df.shape:', df.shape)
         df['Paxlovid'] = (df['Paxlovid'] > 0).astype('int')

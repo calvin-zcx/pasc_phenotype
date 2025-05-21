@@ -1677,9 +1677,9 @@ def build_feature_matrix(args):
             adhdctrl_t2e = np.zeros((n, 4), dtype='int16')  # date of earliest prescriptions
             adhdctrl_t2eall = []
             adhdctrl_column_names = (
-                    [' adhdctrl-flag@' + x for x in adhdctrl_names] +
-                    [' adhdctrl-t2e@' + x for x in adhdctrl_names] +
-                    [' adhdctrl-t2eall@' + x for x in adhdctrl_names])
+                    ['adhdctrl-flag@' + x for x in adhdctrl_names] +
+                    ['adhdctrl-t2e@' + x for x in adhdctrl_names] +
+                    ['adhdctrl-t2eall@' + x for x in adhdctrl_names])
 
             column_names = (['patid', 'site', 'covid', ] + adhdctrl_column_names)
 
