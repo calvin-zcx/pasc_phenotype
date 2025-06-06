@@ -1004,7 +1004,7 @@ if __name__ == "__main__":
 
         df.to_csv(out_data_file)
         print('dump done!')
-    # else:
+    else:
 
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN.csv'
         #
@@ -1045,7 +1045,7 @@ if __name__ == "__main__":
                                       'flag_delivery_date',
                                       'flag_pregnancy_start_date',
                                       'flag_pregnancy_end_date'
-                                      ], nrows=1000)
+                                      ])
 
         print('df.shape:', df.shape)
         df['Paxlovid'] = (df['Paxlovid'] > 0).astype('int')
