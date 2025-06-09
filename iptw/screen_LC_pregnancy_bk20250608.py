@@ -905,59 +905,57 @@ if __name__ == "__main__":
                                   'flag_pregnancy_end_date'
                                   ])
     print(df.shape)
-    N = len(df)
-
-    print('Before selecting pregnant, len(df)\n', len(df))
-    n = len(df)
-    df = df.loc[((df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
-    print('After selecting pregnant, len(df),\n',
-          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+    # N = len(df)
+    
+    # print('Before selecting pregnant, len(df)\n', len(df))
+    # n = len(df)
+    # df = df.loc[((df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
+    # print('After selecting pregnant, len(df),\n',
+    #       '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+    #
 
     df = feature_process_pregnancy(df)
-
-    print('Before selecting pregnant after +180 days, len(df)\n', len(df))
-    n = len(df)
-    time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
-    df = df.loc[time_order_flag, :]
-    print('After selecting pregnant after +180 days, len(df),\n',
-          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
 
     pasc_flag = df['any_pasc_flag'].astype('int')
     pasc_t2e_label = 'any_pasc_t2e'
 
-    pasc_flag = df['any_CFR_flag'].astype('int')
-    pasc_t2e_label = 'any_CFR_t2e'
+    # pasc_flag = df['any_CFR_flag'].astype('int')
+    # pasc_t2e_label = 'any_CFR_t2e'
     # # # #
-    pasc_flag = df['any_brainfog_flag'].astype('int')
-    pasc_t2e_label = 'any_brainfog_t2e'
+    # pasc_flag = df['any_brainfog_flag'].astype('int')
+    # pasc_t2e_label = 'any_brainfog_t2e'
     # # #
-    pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
-    pasc_t2e =  'dxMECFS-t2e@ME/CFS'
+    # pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
+    # pasc_t2e =  'dxMECFS-t2e@ME/CFS'
     # # #
     # pasc_flag = (df['dx-out@' + 'PASC-General'].copy() >= 1).astype('int')
     # pasc_t2e = 'dx-t2e@' + 'PASC-General'
 
 
-    df1 = df.loc[(pasc_flag > 0), :]
-    print("((pasc_flag > 0) ) len(df1)", len(df1))
+    # might be wrong, should be
+    # df1 = df.loc[((pasc_flag > 0) & ((df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1))), :]
+    df1 = df.loc[((pasc_flag > 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
+    print("((pasc_flag > 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1) len(df1)", len(df1))
     pasc_time = df1[pasc_t2e_label].apply(lambda x: datetime.timedelta(x))
     # delivery_time = df1['flag_delivery_date'] - df1['index date']
-    # delivery_time = df1['flag_pregnancy_start_date'] - df1['index date']
-    # time_order_flag_1 = pasc_time < delivery_time
-    # time_order_flag_1 = (df1['index date'] + datetime.timedelta(days=180) <= df1['flag_pregnancy_start_date'])
-    # df1 = df1.loc[time_order_flag_1, :]
-    print("df1.loc[(pasc_flag > 0), :] len(df1)", len(df1))
+    delivery_time = df1['flag_pregnancy_start_date'] - df1['index date']
+
+    time_order_flag_1 = pasc_time < delivery_time
+
+    time_order_flag_1 = (df1['index date'] + datetime.timedelta(days=180) <= df1['flag_pregnancy_start_date'])
+    df1 = df1.loc[time_order_flag_1, :]
+    print("df1.loc[time_order_flag_1, :] len(df1)", len(df1))
     print("(df1['preterm birth<37']==1).sum(), mean():", (df1['preterm birth<37'] == 1).sum(),
           (df1['preterm birth<37'] == 1).mean(), '{:.2f}%'.format((df1['preterm birth<37'] == 1).mean() * 100))
     print("(df1['preterm birth<34']==1).sum(), mean():", (df1['preterm birth<34'] == 1).sum(),
           (df1['preterm birth<34'] == 1).mean(), '{:.2f}%'.format((df1['preterm birth<34'] == 1).mean() * 100))
 
-    df0 = df.loc[(pasc_flag == 0), :]
-    print("((pasc_flag == 0)  len(df0)", len(df0))
-    # time_order_flag_0 = (df0['index date'] + datetime.timedelta(days=180) <= df0['flag_pregnancy_start_date']) #& \
+    df0 = df.loc[((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
+    print("((pasc_flag == 0) & (df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1) len(df0)", len(df0))
+    time_order_flag_0 = (df0['index date'] + datetime.timedelta(days=180) <= df0['flag_pregnancy_start_date']) #& \
     #    (df0['index date'] + datetime.timedelta(days=30) <= df0['flag_delivery_date'])
-    # df0 = df0.loc[time_order_flag_0, :]
-    print("df0.loc[(pasc_flag == 0), :] len(df0)", len(df0))
+    df0 = df0.loc[time_order_flag_0, :]
+    print("df0.loc[time_order_flag_0, :] len(df0)", len(df0))
     print("(df0['preterm birth<37']==1).sum(), mean():", (df0['preterm birth<37'] == 1).sum(),
           (df0['preterm birth<37'] == 1).mean(), '{:.2f}%'.format((df0['preterm birth<37'] == 1).mean() * 100))
     print("(df0['preterm birth<34']==1).sum(), mean():", (df0['preterm birth<34'] == 1).sum(),
