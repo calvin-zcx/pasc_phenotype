@@ -897,6 +897,7 @@ if __name__ == "__main__":
     #                               'flag_pregnancy_start_date',
     #                               'flag_pregnancy_end_date'
     #                               ])
+    print('Loading:', r'../data/recover/output/pregnancy_output_y4/pregnant_yr4.csv')
     df = pd.read_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4.csv',
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -912,7 +913,7 @@ if __name__ == "__main__":
     df = df.loc[((df['flag_pregnancy'] == 1) | (df['flag_exclusion'] == 1)), :]
     print('After selecting pregnant, len(df),\n',
           '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
-
+    zz
     df = feature_process_pregnancy(df)
 
     print('Before selecting pregnant after +180 days, len(df)\n', len(df))
@@ -925,18 +926,17 @@ if __name__ == "__main__":
     pasc_flag = df['any_pasc_flag'].astype('int')
     pasc_t2e_label = 'any_pasc_t2e'
 
-    pasc_flag = df['any_CFR_flag'].astype('int')
-    pasc_t2e_label = 'any_CFR_t2e'
+    # pasc_flag = df['any_CFR_flag'].astype('int')
+    # pasc_t2e_label = 'any_CFR_t2e'
+    # # # # #
+    # pasc_flag = df['any_brainfog_flag'].astype('int')
+    # pasc_t2e_label = 'any_brainfog_t2e'
     # # # #
-    pasc_flag = df['any_brainfog_flag'].astype('int')
-    pasc_t2e_label = 'any_brainfog_t2e'
-    # # #
-    pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
-    pasc_t2e =  'dxMECFS-t2e@ME/CFS'
+    # pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
+    # pasc_t2e = 'dxMECFS-t2e@ME/CFS'
     # # #
     # pasc_flag = (df['dx-out@' + 'PASC-General'].copy() >= 1).astype('int')
     # pasc_t2e = 'dx-t2e@' + 'PASC-General'
-
 
     df1 = df.loc[(pasc_flag > 0), :]
     print("((pasc_flag > 0) ) len(df1)", len(df1))
@@ -963,6 +963,11 @@ if __name__ == "__main__":
     print("(df0['preterm birth<34']==1).sum(), mean():", (df0['preterm birth<34'] == 1).sum(),
           (df0['preterm birth<34'] == 1).mean(), '{:.2f}%'.format((df0['preterm birth<34'] == 1).mean() * 100))
     # 'preterm birth'
+
+    df1['exposed'] = 1
+    df0['exposed'] = 0
+    df10 = pd.concat([df1, df0], ignore_index=True)
+    df10.to_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4-{}.csv'.format(pasc_t2e_label) ) # pregnancy_output_y4
 
     zz
     col_names = pd.Series(df.columns)
