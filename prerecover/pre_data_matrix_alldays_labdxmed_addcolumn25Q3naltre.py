@@ -30,7 +30,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='preprocess demographics')
     parser.add_argument('--cohorts', choices=['covid_posneg18base', 'covid_posOnly18base'],
                         default='covid_posOnly18base', help='cohorts')
-    parser.add_argument('--dataset', default='wcm', help='site dataset')
+    parser.add_argument('--dataset', default='wcm_pcornet_all', help='site dataset')
     parser.add_argument('--debug', action='store_true')
     parser.add_argument('--positive_only', action='store_true')
     # parser.add_argument("--ndays", type=int, default=30)
@@ -965,6 +965,19 @@ def _encoding_followup_any_dx(index_date, dx):
     return False
 
 
+def _encoding_baseline1yr_any_dx_enc(index_date, dx, encounter):
+    if dx:
+        for r in dx:
+            if ecs._is_in_baseline1year7days(r[0], index_date):
+                return True
+    if encounter:
+        for r in encounter:
+            if ecs._is_in_baseline1year7days(r[0], index_date):
+                return True
+
+    return False
+
+
 def _encoding_death(death, index_date):
     # death flag, death time
     encoding = np.zeros((1, 2), dtype='int')
@@ -1139,6 +1152,53 @@ def _encoding_outcome_dx_withalldaysoveralltime(dx_list, icd_pasc, pasc_encoding
                     outcome_tlast[0, pos] = days
                 else:
                     outcome_flag[0, pos] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
+
+def _encoding_outcome_dx_withalldaysoveralltime_multimap(dx_list, icd_pasc_multimap, pasc_encoding, index_date, default_t2e):
+    # 2025-7-11, add _multimap function, add a loop over icd values, list of list
+    # 2022-02-18 initialize t2e:  last encounter, event, end of followup, whichever happens first
+    outcome_t2e = np.ones((1, len(pasc_encoding)), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_tlast = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_t2eall = [''] * len(pasc_encoding)
+
+    for records in dx_list:
+        # dx_date, icd = records[:2]
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+
+        flag, icdprefix = _prefix_in_set(icd, icd_pasc_multimap)
+
+        if flag:
+            days = (dx_date - index_date).days
+            for pasc_info in icd_pasc_multimap[icdprefix]:
+                # pasc_info = icd_pasc[icdprefix]
+                pasc = pasc_info[0]
+                rec = pasc_encoding[pasc]
+                pos = rec[0]
+
+                outcome_t2eall[pos] += '{};'.format(days)
+
+                if ecs._is_in_baseline(dx_date, index_date):
+                    outcome_baseline[0, pos] += 1
+
+                if ecs._is_in_followup(dx_date, index_date):
+                    # days = (dx_date - index_date).days
+                    # flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+                    if outcome_flag[0, pos] == 0:
+                        # only records the first event and time
+                        if days < outcome_t2e[0, pos]:
+                            outcome_t2e[0, pos] = days
+                        outcome_flag[0, pos] = 1
+                        outcome_tlast[0, pos] = days
+                    else:
+                        outcome_flag[0, pos] += 1
 
     # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
     # outcome_t2eall = np.array([outcome_t2eall])
@@ -1507,7 +1567,7 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl.gz'.format(site, args.cohorts, site)
 
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-25Q2_{}-addADHDctrl.csv'.format(
+        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-25Q3_{}-addNaltrexone.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         print('Load cohorts pickle data file:', input_file)
@@ -1538,6 +1598,11 @@ def build_feature_matrix(args):
             pid_list = []
             site_list = []
             covid_list = []
+
+            # 2025-7-11
+            # previous we require -3yrs to -7 day. add this -1yr to -7 day to apply more strict EC, subpopulation
+            baseline1yrencounter_list = []
+
             indexdate_list = []  # newly add 2022-02-20
             hospitalized_list = []
             ventilation_list = []
@@ -1690,7 +1755,33 @@ def build_feature_matrix(args):
                     ['adhdctrl-t2e@' + x for x in adhdctrl_names] +
                     ['adhdctrl-t2eall@' + x for x in adhdctrl_names])
 
-            column_names = (['patid', 'site', 'covid', ] + adhdctrl_column_names)
+            # 2025-7-11 add Naltrexone related covs,
+            outcome_covNaltrexone_flag = np.zeros((n, 10), dtype='int16')
+            outcome_covNaltrexone_t2e = np.zeros((n, 10), dtype='int16')
+            outcome_covNaltrexone_baseline = np.zeros((n, 10), dtype='int16')
+            outcome_covNaltrexone_t2eall = []
+            outcome_covNaltrexone_column_names = (
+                    ['dxcovNaltrexone-out@' + x for x in covNaltrexone_encoding.keys()] + \
+                    ['dxcovNaltrexone-t2e@' + x for x in covNaltrexone_encoding.keys()] + \
+                    ['dxcovNaltrexone-base@' + x for x in covNaltrexone_encoding.keys()] + \
+                    ['dxcovNaltrexone-t2eall@' + x for x in covNaltrexone_encoding.keys()])
+
+
+            # 2025-7-11 add Naltrexone related drug covs,
+            covNaltrexone_med_names = ['NSAIDs_combined', 'opioid drug']
+            covNaltrexone_med_flag = np.zeros((n, 2), dtype='int16')
+            covNaltrexone_med_t2e = np.zeros((n, 2), dtype='int16')  # date of earliest prescriptions
+            covNaltrexone_med_t2eall = []
+            covNaltrexone_med_column_names = (
+                    ['covNaltrexone_med-flag@' + x for x in covNaltrexone_med_names] +
+                    ['covNaltrexone_med-t2e@' + x for x in covNaltrexone_med_names] +
+                    ['covNaltrexone_med-t2eall@' + x for x in covNaltrexone_med_names])
+
+            column_names = (['patid', 'site', 'covid', 'baseline1yr_any_dx_enc'] + adhdctrl_column_names +
+                            outcome_covNaltrexone_column_names + covNaltrexone_med_column_names)
+
+
+
 
             # if args.positive_only:
             #     if not flag:
@@ -1706,6 +1797,11 @@ def build_feature_matrix(args):
             site_list.append(site)
 
             covid_list.append(flag)
+
+            # 2025-7-11
+            flag_baseline1yr_any_dx_enc = _encoding_baseline1yr_any_dx_enc(index_date, dx_raw, encounter)
+            baseline1yrencounter_list.append(flag_baseline1yr_any_dx_enc)
+
             indexdate_list.append(index_date)
 
             # inpatient_flag = _encoding_inpatient(dx_raw, index_date)
@@ -1801,10 +1897,23 @@ def build_feature_matrix(args):
                 _encoding_covidtreat(med, adhdctrl_names, adhd_ctrl_med, index_date, default_t2e)
             adhdctrl_t2eall.append(adhdctrl_t2eall_1row)
 
+            # # add icd_covNaltrexone_multimap , 2025-7-11
+            outcome_covNaltrexone_flag[i, :], outcome_covNaltrexone_t2e[i, :], outcome_covNaltrexone_baseline[i, :], \
+            outcome_covNaltrexone_t2eall_1row = \
+                _encoding_outcome_dx_withalldaysoveralltime_multimap(dx, icd_covNaltrexone_multimap,
+                                                                     covNaltrexone_encoding, index_date, default_t2e)
+            outcome_covNaltrexone_t2eall.append(outcome_covNaltrexone_t2eall_1row)
+
+            # # add cov Naltrexone medication covNaltrexone_med , 2025-7-11
+            covNaltrexone_med_flag[i, :], covNaltrexone_med_t2e[i, :], covNaltrexone_med_t2eall_1row = \
+                _encoding_covidtreat(med, covNaltrexone_med_names, covNaltrexone_med, index_date, default_t2e)
+            covNaltrexone_med_t2eall.append(covNaltrexone_med_t2eall_1row)
+
             #   step 4: build pandas, column, and dump
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
                                     np.array(covid_list).reshape(-1, 1).astype(int),
+                                    np.array(baseline1yrencounter_list).reshape(-1, 1).astype(int),
                                     # outcome_CFR_flag,
                                     # outcome_CFR_t2e,
                                     # outcome_CFR_baseline,
@@ -1837,6 +1946,13 @@ def build_feature_matrix(args):
                                     adhdctrl_flag,
                                     adhdctrl_t2e,
                                     np.asarray(adhdctrl_t2eall),
+                                    outcome_covNaltrexone_flag,
+                                    outcome_covNaltrexone_t2e,
+                                    outcome_covNaltrexone_baseline,
+                                    np.asarray(outcome_covNaltrexone_t2eall),
+                                    covNaltrexone_med_flag,
+                                    covNaltrexone_med_t2e,
+                                    np.asarray(covNaltrexone_med_t2eall),
                                     ))
 
             df_data = pd.DataFrame(data_array, columns=column_names)

@@ -810,6 +810,49 @@ def shell_lab_dx_med_4covid_addcolumnes25Q2():
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
+def shell_lab_dx_med_4covid_addcolumnes25Q3():
+    # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
+    start_time = time.time()
+
+    df_site = pd.read_excel('RECOVER Adult Site schemas_edit2025.xlsx')
+    site_list = df_site.loc[df_site['selected'] == 1, 'Schema name']
+    print('site_list:', len(site_list), site_list)
+
+    site_list = [x + '_pcornet_all' for x in site_list]
+
+    # 'columbia_pcornet_all', 'duke_pcornet_all', 'emory_pcornet_all', 'intermountain_pcornet_all',
+    # 'iowa_pcornet_all',
+    # 'lsu_pcornet_all', 'mcw_pcornet_all', 'michigan_pcornet_all', 'missouri_pcornet_all', 'montefiore_pcornet_all',
+    # 'mshs_pcornet_all', 'wcm_pcornet_all', 'nch_pcornet_all', 'nebraska_pcornet_all', 'northwestern_pcornet_all',
+    # 'nyu_pcornet_all', 'ochsner_pcornet_all', 'osu_pcornet_all', 'pitt_pcornet_all', 'psu_pcornet_all',
+    # 'temple_pcornet_all', 'ufh_pcornet_all', 'utah_pcornet_all', 'utsw_pcornet_all',
+    # 'vumc_pcornet_all', 'wakeforest_pcornet_all', ]
+    print('len(site_list)', len(site_list), site_list)
+
+    with open(r'shell_all_2025Q3AddCulum.ps1', 'wt') as f:
+        for i, site in enumerate(site_list):
+            site = site.strip()
+
+            cmdstr = """python pre_data_matrix_alldays_labdxmed_addcolumn25Q3naltre.py --dataset nyu 2>&1 | tee  log\pre_data_matrix_alldays_labdxmed_addcolumn25Q3naltrexone_nyu.txt
+""".replace('nyu', site)
+
+            f.write(cmdstr)
+            print(i, site, 'done')
+
+    # be cautious: pre_covid_records should be after pre_med_4covid finish. However, split might break the order
+    # of shells
+    divide = 4  # 9
+    npersite = cmdstr.count('\n')
+    siteperdivide = int(np.ceil(len(site_list) / divide))
+    ndelta = npersite * siteperdivide
+    print('len(site_list):', len(site_list), 'divide:', divide,
+          'cmds/site:', npersite, 'total cmds:', len(site_list) * npersite,
+          'siteperdivide:', siteperdivide, 'ndelta:', ndelta)
+
+    utils.split_shell_file_bydelta(r"shell_all_2025Q3AddCulum.ps1", delta=ndelta, skip_first=0)
+
+    print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -834,6 +877,10 @@ if __name__ == '__main__':
     # shell_lab_dx_med_4covid_2025_fix()
 
     # 2025-5-20 Add columns for ADHD ctrl
-    shell_lab_dx_med_4covid_addcolumnes25Q2()
+    # shell_lab_dx_med_4covid_addcolumnes25Q2()
+
+    # 2025-7-11 Add columns for natre
+    shell_lab_dx_med_4covid_addcolumnes25Q3()
+
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
