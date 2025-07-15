@@ -1877,6 +1877,7 @@ def build_feature_matrix(args):
             # 2025-4-8 add CNS and LDN related COVs, reuse outcome functions
             # currently there are 5 dim covs, will add later
             # 2025-05-09 add traumatic brain injury TBI and TBI related symptoms
+            # ['MECFS', 'Narcolepsy', 'Pain', 'ADHD', 'alcohol opioid other substance ', 'traumatic brain injury', 'TBI-associated Symptoms']
             outcome_covCNSLDN_flag = np.zeros((n, 7), dtype='int16')
             outcome_covCNSLDN_t2e = np.zeros((n, 7), dtype='int16')
             outcome_covCNSLDN_baseline = np.zeros((n, 7), dtype='int16')
