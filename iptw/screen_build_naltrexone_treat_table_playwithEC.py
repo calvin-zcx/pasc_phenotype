@@ -50,12 +50,6 @@ def add_col(df):
         df['covNaltrexone_med-base@' + x] = 0  # -3yrs to 0
         df['covNaltrexone_med-basedrugonset@' + x] = 0  # target drug, acute Naltrexone time, no left limit
 
-    covNaltrexone_names = ['MECFS', 'Pain', 'substance use disorder ', 'opioid use disorder',
-                           'Opioid induced constipation', 'Obesity',
-                           'Crohn-Inflamm_Bowel', 'fibromyalgia', 'multiple sclerosis', 'POTS']
-    for x in covNaltrexone_names:
-        df['dxcovNaltrexone-basedrugonset@' + x] = 0  # target drug, acute Naltrexone time, no left limit
-
     for index, row in tqdm(df.iterrows(), total=len(df)):
         index_date = pd.to_datetime(row['index date'])
 
@@ -107,23 +101,6 @@ def add_col(df):
                     else:
                         if t2e <= 0:
                             df.loc[index, 'covNaltrexone_med-basedrugonset@' + x] = 1
-
-        # step 4: ['MECFS', 'Pain', 'substance use disorder ', 'opioid use disorder',
-        #  'Opioid induced constipation', 'Obesity', 'Crohn-Inflamm_Bowel', 'fibromyalgia',
-        #  'multiple sclerosis', 'POTS'], at target drug index t0
-        for x in covNaltrexone_names:
-            t2eall = row['dxcovNaltrexone-t2eall@' + x]
-            if pd.notna(t2eall):
-                t2eall = _t2eall_to_int_list_dedup(t2eall)
-
-                for t2e in t2eall:
-                    # just before drug index for treated, covid 0 for untreated, no left bound
-                    if (row['treated'] == 1) & (len(drug_onsetday_list) > 0):
-                        if t2e <= drug_onsetday_list[0]:
-                            df.loc[index, 'dxcovNaltrexone-basedrugonset@' + x] = 1
-                    else:
-                        if t2e <= 0:
-                            df.loc[index, 'dxcovNaltrexone-basedrugonset@' + x] = 1
 
         # end
     selected_cols = [x for x in df.columns if (
@@ -1015,14 +992,95 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     np.random.seed(0)
     random.seed(0)
 
-    in_file = 'recover25Q3_covid_pos_naltrexone-withexposure.csv'
+    # in_file = 'recover25Q3_covid_pos_naltrexone-withexposure.csv'
+    #
+    # print('in read: ', in_file)
+    # if debug:
+    #     nrows = 200000
+    # else:
+    #     nrows = None
+    # df = pd.read_csv(in_file,
+    #                  dtype={'patid': str, 'site': str, 'zip': str},
+    #                  parse_dates=['index date', 'dob',
+    #                               'flag_delivery_date',
+    #                               'flag_pregnancy_start_date',
+    #                               'flag_pregnancy_end_date'
+    #                               ],
+    #                  nrows=nrows,
+    #                  )
+    # print('df.shape:', df.shape)
+    # print('Read Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    #
+    # """
+    # Drug captures
+    #     cnsldn_names = [
+    #         'naltrexone', 'LDN_name',
+    #         'adderall_combo', 'lisdexamfetamine', 'methylphenidate',
+    #         'amphetamine', 'amphetamine_nocombo', 'dextroamphetamine', 'dextroamphetamine_nocombo', 'modafinil',
+    #         'pitolisant', 'solriamfetol', 'armodafinil', 'atomoxetine', 'benzphetamine',
+    #         'azstarys_combo', 'dexmethylphenidate', 'dexmethylphenidate_nocombo', 'diethylpropion', 'methamphetamine',
+    #         'phendimetrazine', 'phentermine', 'caffeine', 'fenfluramine_delet', 'oxybate_delet',
+    #         'doxapram_delet', 'guanfacine'
+    #         ]
+    # Drug in different time windows
+    #     for x in cnsldn_names:
+    #         print('cnsldn-treat-0-30@'+x, df['cnsldn-treat-0-30@' + x].sum())
+    #         print('cnsldn-treat--30-30@'+x, df['cnsldn-treat--30-30@'+x].sum())
+    #         print('cnsldn-treat-0-15@'+x, df['cnsldn-treat-0-15@'+x].sum())
+    #         print('cnsldn-treat-0-5@'+x, df['cnsldn-treat-0-5@'+x].sum())
+    #         print('cnsldn-treat-0-7@'+x, df['cnsldn-treat-0-7@'+x].sum())
+    #         print('cnsldn-treat--15-15@'+x, df['cnsldn-treat--15-15@'+x].sum())
+    #
+    #         print('cnsldn-treat--30-0@'+x, df['cnsldn-treat--30-0@'+x].sum())
+    #         print('cnsldn-treat--60-0@'+x, df['cnsldn-treat--60-0@'+x].sum())
+    #         print('cnsldn-treat--90-0@'+x, df['cnsldn-treat--90-0@'+x].sum())
+    #         print('cnsldn-treat--120-0@'+x, df['cnsldn-treat--120-0@'+x].sum())
+    #         print('cnsldn-treat--180-0@'+x, df['cnsldn-treat--180-0@'+x].sum())
+    #
+    #         print('cnsldn-treat--120-120@'+x, df['cnsldn-treat--120-120@'+x].sum())
+    #         print('cnsldn-treat--180-180@'+x, df['cnsldn-treat--180-180@'+x].sum())
+    #
+    #         print('cnsldn-treat--365-0@'+x, df['cnsldn-treat--365-0@'+x].sum())
+    #         print('cnsldn-treat--1095-0@'+x, df['cnsldn-treat--1095-0@'+x].sum())
+    #         print('cnsldn-treat-30-180@'+x, df['cnsldn-treat-30-180@'+x].sum())
+    #         print('cnsldn-treat--1095-30@'+x, df['cnsldn-treat--1095-30@'+x].sum())
+    #
+    # """
+    # # to define exposure strategies below:
+    # if exptype == 'naltrexone-acuteIncident-0-30':
+    #     df1 = df.loc[(df['cnsldn-treat-0-30@naltrexone'] >= 1) &
+    #                  (df['cnsldn-treat--1095-0@naltrexone'] == 0), :]
+    #
+    #     df0 = df.loc[(df['cnsldn-treat--1095-30@naltrexone'] == 0), :]
+    #
+    #     case_label = 'naltrexone 0 to 30 Incident'
+    #     ctrl_label = 'no naltrexone'
+    #
+    # else:
+    #     raise ValueError
+    #
+    # print('exposre strategy, exptype:', exptype)
+    #
+    # n1 = len(df1)
+    # n0 = len(df0)
+    # print('n1', n1, 'n0', n0)
+    # df1['treated'] = 1
+    # df0['treated'] = 0
+    #
+    # df = pd.concat([df1, df0], ignore_index=True)
+    # df = add_col(df)
+    #
+    # df_pos = df.loc[df['treated'] == 1, :]
+    # df_neg = df.loc[df['treated'] == 0, :]
 
-    print('in read: ', in_file)
+    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3.csv'.format(exptype)
+
+    print('in read: ', out_file_df)
     if debug:
         nrows = 200000
     else:
         nrows = None
-    df = pd.read_csv(in_file,
+    df = pd.read_csv(out_file_df,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
                                   'flag_delivery_date',
@@ -1034,70 +1092,162 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     print('df.shape:', df.shape)
     print('Read Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    """
-    Drug captures
-        cnsldn_names = [
-            'naltrexone', 'LDN_name', 
-            'adderall_combo', 'lisdexamfetamine', 'methylphenidate',
-            'amphetamine', 'amphetamine_nocombo', 'dextroamphetamine', 'dextroamphetamine_nocombo', 'modafinil',
-            'pitolisant', 'solriamfetol', 'armodafinil', 'atomoxetine', 'benzphetamine',
-            'azstarys_combo', 'dexmethylphenidate', 'dexmethylphenidate_nocombo', 'diethylpropion', 'methamphetamine',
-            'phendimetrazine', 'phentermine', 'caffeine', 'fenfluramine_delet', 'oxybate_delet',
-            'doxapram_delet', 'guanfacine'
-            ]
-    Drug in different time windows
-        for x in cnsldn_names:
-            print('cnsldn-treat-0-30@'+x, df['cnsldn-treat-0-30@' + x].sum())
-            print('cnsldn-treat--30-30@'+x, df['cnsldn-treat--30-30@'+x].sum())
-            print('cnsldn-treat-0-15@'+x, df['cnsldn-treat-0-15@'+x].sum())
-            print('cnsldn-treat-0-5@'+x, df['cnsldn-treat-0-5@'+x].sum())
-            print('cnsldn-treat-0-7@'+x, df['cnsldn-treat-0-7@'+x].sum())
-            print('cnsldn-treat--15-15@'+x, df['cnsldn-treat--15-15@'+x].sum())
+    def ec_anyenc_1yrbefore_baseline(_df):
+        print('before ec_anyenc_1yrbefore_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-            print('cnsldn-treat--30-0@'+x, df['cnsldn-treat--30-0@'+x].sum())
-            print('cnsldn-treat--60-0@'+x, df['cnsldn-treat--60-0@'+x].sum())
-            print('cnsldn-treat--90-0@'+x, df['cnsldn-treat--90-0@'+x].sum())
-            print('cnsldn-treat--120-0@'+x, df['cnsldn-treat--120-0@'+x].sum())
-            print('cnsldn-treat--180-0@'+x, df['cnsldn-treat--180-0@'+x].sum())
+        n0 = len(_df)
+        _df = _df.loc[(_df['baseline1yr_any_dx_enc'] == 1)]
+        n1 = len(_df)
+        print('after ec_anyenc_1yrbefore_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-            print('cnsldn-treat--120-120@'+x, df['cnsldn-treat--120-120@'+x].sum())
-            print('cnsldn-treat--180-180@'+x, df['cnsldn-treat--180-180@'+x].sum())
+        return _df
 
-            print('cnsldn-treat--365-0@'+x, df['cnsldn-treat--365-0@'+x].sum())
-            print('cnsldn-treat--1095-0@'+x, df['cnsldn-treat--1095-0@'+x].sum())
-            print('cnsldn-treat-30-180@'+x, df['cnsldn-treat-30-180@'+x].sum())
-            print('cnsldn-treat--1095-30@'+x, df['cnsldn-treat--1095-30@'+x].sum())
+    def ec_no_U099_baseline(_df):
+        print('before ec_no_U099_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-    """
-    # to define exposure strategies below:
-    if exptype == 'naltrexone-acuteIncident-0-30':
-        df1 = df.loc[(df['cnsldn-treat-0-30@naltrexone'] >= 1) &
-                     (df['cnsldn-treat--1095-0@naltrexone'] == 0), :]
+        n0 = len(_df)
+        _df = _df.loc[(_df['dx-base@PASC-General'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_U099_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-        df0 = df.loc[(df['cnsldn-treat--1095-30@naltrexone'] == 0), :]
+        # print('exclude baseline U099 in df_ec_start', (df_ec_start['dx-base@PASC-General'] > 0).sum())
+        return _df
 
-        case_label = 'naltrexone 0 to 30 Incident'
-        ctrl_label = 'no naltrexone'
+    # pain_before_drug_onset
+    # potential revise pain to pain at drug onset
+    def ec_pain_baseline(_df):
+        print('before ec_pain_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-    else:
-        raise ValueError
+        n0 = len(_df)
+        _df = _df.loc[
+            (_df['dxcovNaltrexone-base@Pain'] == 1) | (_df['covNaltrexone_med-basedrugonset@NSAIDs_combined'] == 1)]
+        n1 = len(_df)
+        print('after ec_pain_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-    print('exposre strategy, exptype:', exptype)
+        return _df
 
-    n1 = len(df1)
-    n0 = len(df0)
-    print('n1', n1, 'n0', n0)
-    df1['treated'] = 1
-    df0['treated'] = 0
+    def ec_pain_obesity_OUD_withmed_baseline(_df):
+        print('before ec_pain_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
-    df = pd.concat([df1, df0], ignore_index=True)
-    df = add_col(df)
+        n0 = len(_df)
+        _df = _df.loc[
+            (_df['dxcovNaltrexone-base@Pain'] == 1) |
+            (_df['covNaltrexone_med-basedrugonset@NSAIDs_combined'] == 1) |
+            (_df['PaxRisk:Obesity'] == 1) |
+            (_df['dxcovNaltrexone-base@opioid use disorder'] == 1) |
+            (_df['PaxRisk:Obesity'] == 1) |
+            (_df['covNaltrexone_med-basedrugonset@opioid drug'] == 1)]
+        n1 = len(_df)
+        print('after ec_pain_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
+        return _df
+
+    def ec_pain_obesity_OUD_baseline(_df):
+        print('before ec_pain_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[
+            (_df['dxcovNaltrexone-base@Pain'] == 1) |
+            (_df['PaxRisk:Obesity'] == 1) |
+            (_df['dxcovNaltrexone-base@opioid use disorder'] == 1) |
+            (_df['PaxRisk:Obesity'] == 1)]
+        n1 = len(_df)
+        print('after ec_pain_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        return _df
+
+    def ec_no_cancer_baseline(_df):
+        print('before ec_no_cancer_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxRisk:Cancer'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_cancer_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        return _df
+
+    def ec_no_pregnant_baseline(_df):
+        print('before ec_no_pregnant_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxRisk:Pregnancy'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_pregnant_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        return _df
+
+    def ec_no_HIV_baseline(_df):
+        print('before ec_no_HIV_baseline, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxRisk:HIV infection'] == 0)]
+        n1 = len(_df)
+        print('after ec_no_HIV_baseline, _df.shape', _df.shape)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        # print('include baseline ADHD in df_ec_start', (df_ec_start['ADHD_before_drug_onset'] == 0).sum())
+        return _df
+
+    def ec_no_severe_conditions_4_pax(_df):
+        print('before ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[(_df['PaxExclude-Count'] == 0)]
+        print('after ec_no_severe_conditions_4_pax, _df.shape', _df.shape)
+        n1 = len(_df)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        # print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
+        return _df
+
+    df = ec_anyenc_1yrbefore_baseline(df)
+    df = ec_no_cancer_baseline(df)
+    df = ec_no_U099_baseline(df)
+    df = ec_no_severe_conditions_4_pax(df)
+    df = ec_no_pregnant_baseline(df)
+    df = ec_no_HIV_baseline(df)
+    # df = ec_pain_baseline(df)
+    # df = ec_pain_obesity_OUD_withmed_baseline(df)
+    df = ec_pain_obesity_OUD_baseline(df)
+
+    # out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-applyEC-withbasePain-paindxnotatonset.xlsx'.format(
+    #     exptype)
+    # out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-applyEC-withbasePain-pain-obes-OUD-med-dxnotatonset.xlsx'.format(
+    #     exptype)
+    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-applyEC-withbasePain-pain-obes-OUD-dxnotatonset.xlsx'.format(
+        exptype)
+
+    case_label = 'naltrexone 0 to 30 Incident'
+    ctrl_label = 'no naltrexone'
     df_pos = df.loc[df['treated'] == 1, :]
     df_neg = df.loc[df['treated'] == 0, :]
-
-    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset.csv'.format(exptype)
-    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset.xlsx'.format(exptype)
 
     output_columns = ['All', case_label, ctrl_label, 'SMD']
 
@@ -1105,9 +1255,9 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
           'control df_neg.shape', df_neg.shape,
           'combined df.shape', df.shape, )
 
-    print('Dump file for updating covs at drug index ', out_file_df)
-    df.to_csv(out_file_df, index=False)
-    print('Dump file done ', out_file_df)
+    # print('Dump file for updating covs at drug index ', out_file_df)
+    # df.to_csv(out_file_df, index=False)
+    # print('Dump file done ', out_file_df)
 
     # step 2: generate initial table!
     # return df, df
@@ -1382,15 +1532,6 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
              'covNaltrexone_med-base@NSAIDs_combined', 'covNaltrexone_med-base@opioid drug',
              'covNaltrexone_med-basedrugonset@NSAIDs_combined',
              'covNaltrexone_med-basedrugonset@opioid drug', ] +
-            ['dxcovNaltrexone-basedrugonset@MECFS', 'dxcovNaltrexone-basedrugonset@Pain',
-             'dxcovNaltrexone-basedrugonset@substance use disorder ',
-             'dxcovNaltrexone-basedrugonset@opioid use disorder',
-             'dxcovNaltrexone-basedrugonset@Opioid induced constipation',
-             'dxcovNaltrexone-basedrugonset@Obesity',
-             'dxcovNaltrexone-basedrugonset@Crohn-Inflamm_Bowel',
-             'dxcovNaltrexone-basedrugonset@fibromyalgia',
-             'dxcovNaltrexone-basedrugonset@multiple sclerosis',
-             'dxcovNaltrexone-basedrugonset@POTS'] +
             ['dxcovCNSLDN-base@ADHD', 'ADHD_before_drug_onset', 'dxcovCNSLDN-base@Narcolepsy', 'dxcovCNSLDN-base@MECFS',
              'dxcovCNSLDN-base@Pain',
              'dxcovCNSLDN-base@alcohol opioid other substance '] +
@@ -1431,24 +1572,20 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
                       'NSAIDs_combined@base', 'opioid drug@base',
                       'NSAIDs_combined@basedrugonset',
                       'opioid drug@basedrugonset'
-                      ] + ['MECFS@drugonset', 'Pain@drugonset', 'substance use disorder @drugonset',
-                           'opioid use disorder@drugonset', 'Opioid induced constipation@drugonset',
-                           'Obesity@drugonset', 'Crohn-Inflamm_Bowel@drugonset', 'fibromyalgia@drugonset',
-                           'multiple sclerosis@drugonset', 'POTS@drugonset']
-                     + ['ADHD', 'ADHD_before_drug_onset', 'Narcolepsy', 'MECFS', 'Pain',
-                        'alcohol opioid other substance'] + ['Cancer', 'Chronic kidney disease',
-                                                             'Chronic liver disease',
-                                                             'Chronic lung disease', 'Cystic fibrosis',
-                                                             'Dementia or other neurological conditions', 'Diabetes',
-                                                             'Disabilities',
-                                                             'Heart conditions', 'Hypertension', 'HIV infection',
-                                                             'Immunocompromised condition or weakened immune system',
-                                                             'Mental health conditions',
-                                                             'Overweight and obesity', 'Obesity', 'Pregnancy',
-                                                             'Sickle cell disease or thalassemia',
-                                                             'Smoking current or former',
-                                                             'Stroke or cerebrovascular disease',
-                                                             'Substance use disorders', 'Tuberculosis', ] +
+                      ] + ['ADHD', 'ADHD_before_drug_onset', 'Narcolepsy', 'MECFS', 'Pain',
+                           'alcohol opioid other substance'] + ['Cancer', 'Chronic kidney disease',
+                                                                'Chronic liver disease',
+                                                                'Chronic lung disease', 'Cystic fibrosis',
+                                                                'Dementia or other neurological conditions', 'Diabetes',
+                                                                'Disabilities',
+                                                                'Heart conditions', 'Hypertension', 'HIV infection',
+                                                                'Immunocompromised condition or weakened immune system',
+                                                                'Mental health conditions',
+                                                                'Overweight and obesity', 'Obesity', 'Pregnancy',
+                                                                'Sickle cell disease or thalassemia',
+                                                                'Smoking current or former',
+                                                                'Stroke or cerebrovascular disease',
+                                                                'Substance use disorders', 'Tuberculosis', ] +
                      ["Coagulopathy", "Peripheral vascular disorders ", "Seizure/Epilepsy", "Weight Loss",
                       'Obstructive sleep apnea', 'Epstein-Barr and Infectious Mononucleosis (Mono)', 'Herpes Zoster',
                       'Schizophrenia Spectrum and Other Psychotic Disorders',
