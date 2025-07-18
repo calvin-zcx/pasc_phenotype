@@ -2093,6 +2093,40 @@ def build_Naltrexone_drug_cov_map():
     return med_code
 
 
+def pregnancy_code_to_outcome_categories():
+    # 2025-7-18
+    start_time = time.time()
+    df_cci = pd.read_excel(r'../data/mapping/RECOVER Preg CP_outcome_06.23.26.xlsx',
+                                dtype=str,
+                                sheet_name='preg_outcome')
+    print('len(df_cci)', len(df_cci))
+
+    # warning: there are potnetial overlapping issue. If one icd code contribute two categories.
+    # not a problem if no overlap
+    icd_cci = {}
+    # cci_index = {}
+
+    for index, row in df_cci.iterrows():
+        icd = row['Code'].strip().upper().replace('.', '') # can be icd, cpt, icd pro, etc for pregnancy
+        type = row['CodeType']
+        name = row['Description']
+        tier = row['Tier']
+        cp_type = row['PregCP page'] # PregCP_Inclusion   PregCP_Exclusion
+        outcome_category =  row['outcome categories']
+
+        icd_cci[icd] = [outcome_category, type, name, tier, cp_type]
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/pregnancy_code_to_outcome_categories_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci,  df_cci
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -2196,9 +2230,12 @@ if __name__ == '__main__':
 
     # 24 add Naltrexone related covs, 2025-07-11
     # multiple mapping this time, different from all above
-    icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
+    # icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
 
     # 25 add Naltrexone related drugs, 2025-07-11
-    Naltrexone_drug_cov_code = build_Naltrexone_drug_cov_map()
+    # Naltrexone_drug_cov_code = build_Naltrexone_drug_cov_map()
+
+    # 26 pregnancy primary and secondary outcome categories 2025-7-18
+    code_pregoutcomecat, df_pregoutcomecat = pregnancy_code_to_outcome_categories()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
