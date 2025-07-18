@@ -2096,7 +2096,7 @@ def build_Naltrexone_drug_cov_map():
 def pregnancy_code_to_outcome_categories():
     # 2025-7-18
     start_time = time.time()
-    df_cci = pd.read_excel(r'../data/mapping/RECOVER Preg CP_outcome_06.23.26.xlsx',
+    df_cci = pd.read_excel(r'../data/mapping/RECOVER Preg CP_outcome_07.18.25.xlsx',
                                 dtype=str,
                                 sheet_name='preg_outcome')
     print('len(df_cci)', len(df_cci))
