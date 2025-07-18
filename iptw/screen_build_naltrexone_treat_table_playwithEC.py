@@ -1159,7 +1159,7 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     #     return _df
 
     def ec_pain_obesity_OUD_baseline(_df):
-        print('before ec_pain_baseline, _df.shape', _df.shape)
+        print('before ec_pain_obesity_OUD_baseline, _df.shape', _df.shape)
         print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
 
         n0 = len(_df)
