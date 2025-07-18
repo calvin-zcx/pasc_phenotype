@@ -2114,7 +2114,7 @@ def pregnancy_code_to_outcome_categories():
         cp_type = row['PregCP page'] # PregCP_Inclusion   PregCP_Exclusion
         outcome_category =  row['outcome categories']
 
-        icd_cci[icd] = [outcome_category, type, name, tier, cp_type]
+        icd_cci[icd] = [outcome_category, type, name, tier, cp_type, icd]
 
     print('len(icd_cci):', len(icd_cci))
     output_file = r'../data/mapping/pregnancy_code_to_outcome_categories_mapping.pkl'
