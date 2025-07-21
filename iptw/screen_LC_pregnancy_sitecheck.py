@@ -973,18 +973,18 @@ if __name__ == "__main__":
     # infile = r'../data/recover/output/pregnancy_CX_0501_2025/pregnancy_{}.csv'.format("wcm_pcornet_all")
     print('Loading:', infile)
     df = pd.read_csv(infile,
-                     dtype={'patid': str, 'site': str, 'zip': str, 'flag_delivery_code':str},
+                     dtype={'patid': str, 'site': str, 'zip': str, 'flag_delivery_code': str},
                      parse_dates=['index date', 'dob',
                                   'flag_delivery_date',
                                   'flag_pregnancy_start_date',
                                   'flag_pregnancy_end_date'
                                   ],
-                     # nrows=200000, # for debug
+                     # nrows=200000,  # for debug
                      )
     print(df.shape)
     N = len(df)
 
-    print('Loading:', infile,  'Done! Time used:',
+    print('Loading:', infile, 'Done! Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     print('Before selecting pregnant, len(df)\n', len(df))
@@ -1001,68 +1001,74 @@ if __name__ == "__main__":
     print('Before selecting pregnant after +180 days, len(df)\n', len(df))
     n = len(df)
     time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
-    df = df.loc[time_order_flag, :]
+    df_ec = df.loc[time_order_flag, :].copy()
     print('After selecting pregnant after +180 days, len(df),\n',
-          '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+          '{}\t{:.2f}%\t{:.2f}%'.format(len(df_ec), len(df_ec) / n * 100, len(df_ec) / N * 100))
 
-    pasc_flag = df['any_pasc_flag'].astype('int')
+    pasc_flag = df_ec['any_pasc_flag'].astype('int')
     pasc_t2e_label = 'any_pasc_t2e'
 
-    # pasc_flag = df['any_CFR_flag'].astype('int')
+    contrl_label = (df_ec['any_pasc_flag'] == 0) & (df_ec['any_CFR_flag'] == 0) & (df_ec['any_brainfog_flag'] == 0) & \
+                   (df_ec['dxMECFS-out@ME/CFS'] == 0) & (df_ec['dx-out@' + 'PASC-General'] == 0)
+
+    # pasc_flag = df_ec['any_CFR_flag'].astype('int')
     # pasc_t2e_label = 'any_CFR_t2e'
     # # # # #
-    # pasc_flag = df['any_brainfog_flag'].astype('int')
+    # pasc_flag = df_ec['any_brainfog_flag'].astype('int')
     # pasc_t2e_label = 'any_brainfog_t2e'
     # # # #
-    # pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
+    # pasc_flag = (df_ec['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
     # pasc_t2e = 'dxMECFS-t2e@ME/CFS'
     # # #
-    # pasc_flag = (df['dx-out@' + 'PASC-General'].copy() >= 1).astype('int')
+    # pasc_flag = (df_ec['dx-out@' + 'PASC-General'].copy() >= 1).astype('int')
     # pasc_t2e = 'dx-t2e@' + 'PASC-General'
 
-    contrl_label = (df['any_pasc_flag'] == 0) & (df['any_CFR_flag'] == 0) & (df['any_brainfog_flag'] == 0) & \
-                   (df['dxMECFS-out@ME/CFS'] == 0) & (df['dx-out@' + 'PASC-General'] == 0)
+    sites = [
+        'ochin_pcornet_all', 'northwestern_pcornet_all', 'intermountain_pcornet_all', 'mcw_pcornet_all',
+        'iowa_pcornet_all',
+        'missouri_pcornet_all', 'nebraska_pcornet_all', 'utah_pcornet_all', 'utsw_pcornet_all', 'wcm_pcornet_all',
+        'monte_pcornet_all', 'mshs_pcornet_all', 'columbia_pcornet_all', 'nyu_pcornet_all', 'ufh_pcornet_all',
+        'emory_pcornet_all', 'nch_pcornet_all', 'pitt_pcornet_all', 'osu_pcornet_all', 'psu_pcornet_all',
+        'temple_pcornet_all', 'michigan_pcornet_all', 'stanford_pcornet_all', 'ochsner_pcornet_all',
+        'ucsf_pcornet_all', 'lsu_pcornet_all', 'vumc_pcornet_all', 'duke_pcornet_all', 'wakeforest_pcornet_all']
 
-    df1 = df.loc[(pasc_flag > 0), :]
-    print("Exposed group: ((pasc_flag > 0) ) len(df1)", len(df1))
-    df0 = df.loc[(pasc_flag == 0), :]
-    print("Contrl group:  ((pasc_flag == 0)  len(df0)", len(df0))
-    df0 = df.loc[contrl_label, :]
-    print("V2-Contrl group, no all LC:  contrl_label  len(df0)", len(df0))
+    for site in sites:
+        df = df_ec.loc[df_ec['site'] == site]
 
-    pasc_time = df1[pasc_t2e_label].apply(lambda x: datetime.timedelta(x))
-    # delivery_time = df1['flag_delivery_date'] - df1['index date']
-    # delivery_time = df1['flag_pregnancy_start_date'] - df1['index date']
-    # time_order_flag_1 = pasc_time < delivery_time
-    # time_order_flag_1 = (df1['index date'] + datetime.timedelta(days=180) <= df1['flag_pregnancy_start_date'])
-    # df1 = df1.loc[time_order_flag_1, :]
+        df1 = df.loc[(pasc_flag > 0), :]
+        # print("Exposed group: ((pasc_flag > 0) ) len(df1)", len(df1))
+        df0 = df.loc[contrl_label, :]
+        # print("Contrl group:  ((pasc_flag == 0)  len(df0)", len(df0))
 
-    print("Exposed group: ((pasc_flag > 0) len(df1)", len(df1), 'VS',
-          "Contrl group: ((pasc_flag == 0)  len(df0)", len(df0))
+        pasc_time = df1[pasc_t2e_label].apply(lambda x: datetime.timedelta(x))
+        # delivery_time = df1['flag_delivery_date'] - df1['index date']
+        # delivery_time = df1['flag_pregnancy_start_date'] - df1['index date']
+        # time_order_flag_1 = pasc_time < delivery_time
+        # time_order_flag_1 = (df1['index date'] + datetime.timedelta(days=180) <= df1['flag_pregnancy_start_date'])
+        # df1 = df1.loc[time_order_flag_1, :]
 
-    print('***Preterm birth rate:')
-    for col in ['preterm birth<37', 'preterm birth<37Andlivebirth',
-                'preterm birth<34', 'preterm birth<34Andlivebirth', ]:
-        print(col, 'among all pregnant:', '\t',
-              'Exposed:', (df1[col] == 1).sum(), '{:.2f}%'.format((df1[col] == 1).mean() * 100), '\t',
-              'Control:', (df0[col] == 1).sum(), '{:.2f}%'.format((df0[col] == 1).mean() * 100), )
+        print(site, "\nExposed group: ((pasc_flag > 0) len(df1)", len(df1), 'VS',
+              "Contrl group: ((pasc_flag == 0)  len(df0)", len(df0))
 
-        print(col, 'among live birth:', '\t',
-              'Exposed:', (df1[col] == 1).sum(),
-              '{:.2f}%'.format((df1[col] == 1).sum() / (df1['preg_outcome-livebirth'] == 1).sum() * 100), '\t',
-              'Control:', (df0[col] == 1).sum(),
-              '{:.2f}%'.format((df0[col] == 1).sum() / (df0['preg_outcome-livebirth'] == 1).sum() * 100)
-              )
+        # print('***Preterm birth rate:')
+        for col in ['preterm birth<37Andlivebirth',
+                    'preterm birth<34Andlivebirth', ]:
+            print(col, 'among live birth:', '\t',
+                  'Exposed:', (df1[col] == 1).sum(),
+                  '{:.2f}%'.format((df1[col] == 1).sum() / (df1['preg_outcome-livebirth'] == 1).sum() * 100), '\t',
+                  'Control:', (df0[col] == 1).sum(),
+                  '{:.2f}%'.format((df0[col] == 1).sum() / (df0['preg_outcome-livebirth'] == 1).sum() * 100)
+                  )
 
-    print('***Other Outcomes among all pregnant:')
-    for col in ['preg_outcome-livebirth', 'preg_outcome-stillbirth',
-                'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
-                'preg_outcome-abortion', 'preg_outcome-abortion<20week',
-                'preg_outcome-other', ]:
-        print(col, '\t',
-              'Exposed:', (df1[col] == 1).sum(), '{:.2f}%'.format((df1[col] == 1).mean() * 100), '\t',
-              'Control:', (df0[col] == 1).sum(), '{:.2f}%'.format((df0[col] == 1).mean() * 100),
-              )
+        # print('***Other Outcomes among all pregnant:')
+        # for col in ['preg_outcome-livebirth', 'preg_outcome-stillbirth',
+        #             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
+        #             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
+        #             'preg_outcome-other', ]:
+        #     print(col, '\t',
+        #           'Exposed:', (df1[col] == 1).sum(), '{:.2f}%'.format((df1[col] == 1).mean() * 100), '\t',
+        #           'Control:', (df0[col] == 1).sum(), '{:.2f}%'.format((df0[col] == 1).mean() * 100),
+        #           )
 
     # df0 = df.loc[(pasc_flag == 0), :]
     # print("Contrl group: ((pasc_flag == 0)  len(df0)", len(df0))
@@ -1080,7 +1086,6 @@ if __name__ == "__main__":
     #             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
     #             'preg_outcome-other', ]:
     #     print(col, (df0[col] == 1).sum(), '{:.2f}%'.format((df0[col] == 1).mean() * 100))
-
 
     zz
 
