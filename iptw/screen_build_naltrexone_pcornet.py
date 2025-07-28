@@ -975,7 +975,9 @@ if __name__ == "__main__":
             # matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q3_wcm_pcornet_all-addNaltrexone.csv
             # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q2_{}-addADHDctrl.csv'.format(
             #     site, site)
-            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q3_{}-addNaltrexone.csv'.format(
+            # data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q3_{}-addNaltrexone.csv'.format(
+            #     site, site)
+            data_file_add = r'../data/recover/output/{}/matrix_cohorts_covid_posOnly18base-nbaseout-alldays-25Q3_{}-addNaltrexone-Painsub.csv'.format(
                 site, site)
 
             print('add columns from:', data_file_add)
@@ -1004,6 +1006,7 @@ if __name__ == "__main__":
 
         # out_data_file = 'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v7-CNSLDN.csv'
         out_data_file = 'recover25Q3_covid_pos_naltrexone.csv'
+        out_data_file = 'recover25Q3_covid_pos_naltrexone_Painsub.csv' #2025-07-28
 
         # # if args.cohorttype == 'lab-dx':
         # #     out_data_file = out_data_file.replace('.csv', '-lab-dx.csv')
