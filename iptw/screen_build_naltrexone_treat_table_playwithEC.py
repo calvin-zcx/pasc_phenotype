@@ -1081,6 +1081,7 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
         nrows = 200000
     else:
         nrows = None
+
     df = pd.read_csv(out_file_df,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
@@ -1235,7 +1236,22 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
         # print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
         return _df
 
+    def ec_timbe_before(_df):
+        print('before ec_timbe_before, _df.shape', _df.shape)
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        n0 = len(_df)
+        _df = _df.loc[(_df['index date'] <= datetime.datetime(2024, 12, 31, 0, 0))]
+        print('after ec_timbe_before, _df.shape', _df.shape)
+        n1 = len(_df)
+        print('n0:{}, n1:{}, n1-n0 change:{}'.format(n0, n1, n1 - n0))
+        print('treated:', (_df['treated'] == 1).sum(), 'untreated:', (_df['treated'] == 0).sum())
+
+        # print('exclude severe conditions in df_ec_start', (df_ec_start['PaxExclude-Count'] > 0).sum())
+        return _df
+
     df = ec_anyenc_1yrbefore_baseline(df)
+    df = ec_timbe_before(df)
     df = ec_no_cancer_baseline(df)
     df = ec_no_U099_baseline(df)
     df = ec_no_severe_conditions_4_pax(df)
@@ -1252,7 +1268,7 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     # out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-applyEC-withbasePain-pain-obes-OUD-dxnotatonset.xlsx'.format(
     #     exptype)
 
-    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-withbasePain.xlsx'.format(
+    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-withbasePain-v2-timebefore24end.xlsx'.format(
         exptype)
 
     case_label = 'naltrexone 0 to 30 Incident'
@@ -1543,6 +1559,15 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
              'covNaltrexone_med-base@NSAIDs_combined', 'covNaltrexone_med-base@opioid drug',
              'covNaltrexone_med-basedrugonset@NSAIDs_combined',
              'covNaltrexone_med-basedrugonset@opioid drug', ] +
+            ['dxcovNaltrexone-basedrugonset@MECFS', 'dxcovNaltrexone-basedrugonset@Pain',
+             'dxcovNaltrexone-basedrugonset@substance use disorder ',
+             'dxcovNaltrexone-basedrugonset@opioid use disorder',
+             'dxcovNaltrexone-basedrugonset@Opioid induced constipation',
+             'dxcovNaltrexone-basedrugonset@Obesity',
+             'dxcovNaltrexone-basedrugonset@Crohn-Inflamm_Bowel',
+             'dxcovNaltrexone-basedrugonset@fibromyalgia',
+             'dxcovNaltrexone-basedrugonset@multiple sclerosis',
+             'dxcovNaltrexone-basedrugonset@POTS'] +
             ['dxcovCNSLDN-base@ADHD', 'ADHD_before_drug_onset', 'dxcovCNSLDN-base@Narcolepsy', 'dxcovCNSLDN-base@MECFS',
              'dxcovCNSLDN-base@Pain',
              'dxcovCNSLDN-base@alcohol opioid other substance '] +
@@ -1583,7 +1608,11 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
                       'NSAIDs_combined@base', 'opioid drug@base',
                       'NSAIDs_combined@basedrugonset',
                       'opioid drug@basedrugonset'
-                      ] + ['ADHD', 'ADHD_before_drug_onset', 'Narcolepsy', 'MECFS', 'Pain',
+                      ] + ['MECFS@drugonset', 'Pain@drugonset', 'substance use disorder @drugonset',
+                           'opioid use disorder@drugonset', 'Opioid induced constipation@drugonset',
+                           'Obesity@drugonset', 'Crohn-Inflamm_Bowel@drugonset', 'fibromyalgia@drugonset',
+                           'multiple sclerosis@drugonset', 'POTS@drugonset']
+                     + ['ADHD', 'ADHD_before_drug_onset', 'Narcolepsy', 'MECFS', 'Pain',
                            'alcohol opioid other substance'] + ['Cancer', 'Chronic kidney disease',
                                                                 'Chronic liver disease',
                                                                 'Chronic lung disease', 'Cystic fibrosis',
