@@ -2015,7 +2015,9 @@ def build_pregnant_drugs_grt():
 def ICD_to_covNaltrexone_multiplemapping():
     # 2025-4-8
     start_time = time.time()
-    dict_df_cci = pd.read_excel(r'../data/mapping/Naltrexone_Covariates_PASC_Q3version-v4-edit.xlsx', dtype=str, sheet_name=None)
+    # dict_df_cci = pd.read_excel(r'../data/mapping/Naltrexone_Covariates_PASC_Q3version-v4-edit.xlsx', dtype=str, sheet_name=None)
+    dict_df_cci = pd.read_excel(r'../data/mapping/Naltrexone_Covariates_PASC_Q3version-v5-edit-painsub.xlsx',
+                               sheet_name=None, dtype=str)
     print('len(dict_df_cci)', len(dict_df_cci))
 
     # warning: there are potnetial overlapping issue. If one icd code contribute two categories.
@@ -2230,12 +2232,14 @@ if __name__ == '__main__':
 
     # 24 add Naltrexone related covs, 2025-07-11
     # multiple mapping this time, different from all above
-    # icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
+    # 2025-7-28 add pain subcategories
+
+    icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
 
     # 25 add Naltrexone related drugs, 2025-07-11
     # Naltrexone_drug_cov_code = build_Naltrexone_drug_cov_map()
 
     # 26 pregnancy primary and secondary outcome categories 2025-7-18
-    code_pregoutcomecat, df_pregoutcomecat = pregnancy_code_to_outcome_categories()
+    # code_pregoutcomecat, df_pregoutcomecat = pregnancy_code_to_outcome_categories()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
