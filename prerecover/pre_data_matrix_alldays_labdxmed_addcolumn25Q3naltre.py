@@ -1567,7 +1567,11 @@ def build_feature_matrix(args):
         print('Loading: ', site)
         input_file = r'../data/recover/output/{}/cohorts_{}_{}.pkl.gz'.format(site, args.cohorts, site)
 
-        output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-25Q3_{}-addNaltrexone.csv'.format(
+        # output_file_query12_bool = r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-25Q3_{}-addNaltrexone.csv'.format(
+        #     args.dataset, args.cohorts, args.dataset)
+        # 2025-7-28 add pain subcategories
+        output_file_query12_bool = \
+            r'../data/recover/output/{}/matrix_cohorts_{}-nbaseout-alldays-25Q3_{}-addNaltrexone-Painsub.csv'.format(
             args.dataset, args.cohorts, args.dataset)
 
         print('Load cohorts pickle data file:', input_file)
@@ -1756,9 +1760,10 @@ def build_feature_matrix(args):
                     ['adhdctrl-t2eall@' + x for x in adhdctrl_names])
 
             # 2025-7-11 add Naltrexone related covs,
-            outcome_covNaltrexone_flag = np.zeros((n, 10), dtype='int16')
-            outcome_covNaltrexone_t2e = np.zeros((n, 10), dtype='int16')
-            outcome_covNaltrexone_baseline = np.zeros((n, 10), dtype='int16')
+            # 7-28 add pain 3 subcats, dim 10--> 13
+            outcome_covNaltrexone_flag = np.zeros((n, 13), dtype='int16')
+            outcome_covNaltrexone_t2e = np.zeros((n, 13), dtype='int16')
+            outcome_covNaltrexone_baseline = np.zeros((n, 13), dtype='int16')
             outcome_covNaltrexone_t2eall = []
             outcome_covNaltrexone_column_names = (
                     ['dxcovNaltrexone-out@' + x for x in covNaltrexone_encoding.keys()] + \
