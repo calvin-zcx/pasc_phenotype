@@ -50,7 +50,8 @@ def add_col(df):
         df['covNaltrexone_med-base@' + x] = 0  # -3yrs to 0
         df['covNaltrexone_med-basedrugonset@' + x] = 0  # target drug, acute Naltrexone time, no left limit
 
-    covNaltrexone_names = ['MECFS', 'Pain', 'substance use disorder ', 'opioid use disorder',
+    covNaltrexone_names = ['MECFS', 'Pain', 'pain include', 'pain tbd', 'pain exclude',
+                           'substance use disorder ', 'opioid use disorder',
                            'Opioid induced constipation', 'Obesity',
                            'Crohn-Inflamm_Bowel', 'fibromyalgia', 'multiple sclerosis', 'POTS']
     for x in covNaltrexone_names:
@@ -1015,7 +1016,8 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     np.random.seed(0)
     random.seed(0)
 
-    in_file = 'recover25Q3_covid_pos_naltrexone-withexposure.csv'
+    # in_file = 'recover25Q3_covid_pos_naltrexone-withexposure.csv'
+    in_file = 'recover25Q3_covid_pos_naltrexone_Painsub-withexposure.csv'
 
     print('in read: ', in_file)
     if debug:
@@ -1096,8 +1098,8 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     df_pos = df.loc[df['treated'] == 1, :]
     df_neg = df.loc[df['treated'] == 0, :]
 
-    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset.csv'.format(exptype)
-    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset.xlsx'.format(exptype)
+    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-Painsub.csv'.format(exptype)
+    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-Painsub.xlsx'.format(exptype)
 
     output_columns = ['All', case_label, ctrl_label, 'SMD']
 
@@ -1374,7 +1376,9 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
 
     records.append([])
     col_names = (
-            ['dxcovNaltrexone-base@MECFS', 'dxcovNaltrexone-base@Pain', 'dxcovNaltrexone-base@substance use disorder ',
+            ['dxcovNaltrexone-base@MECFS', 'dxcovNaltrexone-base@Pain',
+             'dxcovNaltrexone-base@pain include', 'dxcovNaltrexone-base@pain tbd', 'dxcovNaltrexone-base@pain exclude',
+             'dxcovNaltrexone-base@substance use disorder ',
              'dxcovNaltrexone-base@opioid use disorder', 'dxcovNaltrexone-base@Opioid induced constipation',
              'dxcovNaltrexone-base@Obesity', 'dxcovNaltrexone-base@Crohn-Inflamm_Bowel',
              'dxcovNaltrexone-base@fibromyalgia', 'dxcovNaltrexone-base@multiple sclerosis',
@@ -1426,7 +1430,7 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
         'doxapram_delet', 'guanfacine']]
     )
 
-    col_names_out = (['MECFS', 'Pain', 'substance use disorder ', 'opioid use disorder', 'Opioid induced constipation',
+    col_names_out = (['MECFS', 'Pain', 'pain include', 'pain tbd', 'pain exclude', 'substance use disorder ', 'opioid use disorder', 'Opioid induced constipation',
                       'Obesity:just code', 'Crohn-Inflamm_Bowel', 'fibromyalgia', 'multiple sclerosis', 'POTS',
                       'NSAIDs_combined@base', 'opioid drug@base',
                       'NSAIDs_combined@basedrugonset',
