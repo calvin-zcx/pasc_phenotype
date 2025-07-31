@@ -49,7 +49,7 @@ def parse_args():
     # parser.add_argument('--negative_ratio', type=int, default=10)  # 5
     # parser.add_argument('--selectpasc', action='store_true')
 
-    parser.add_argument("--kmatch", type=int, default=10)
+    parser.add_argument("--kmatch", type=int, default=5)
     # parser.add_argument("--usedx", type=int, default=1)  # useacute
     # parser.add_argument("--useacute", type=int, default=1)
 
@@ -76,6 +76,17 @@ def _t2eall_to_int_list_dedup(t2eall):
     return t2eall
 
 
+def add_col_2(df):
+    print('add_col_2: add and revise some covs per the needs. in addition to prior screen_build_naltrexone file and add_col')
+    df['cci_quan:3+'] = 0
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        if row['score_cci_quan'] >= 3:
+            df.loc[index, 'cci_quan:3+'] = 1
+
+    print('add_col_2 done')
+    return df
+
 def add_col(df):
     print('add and revise some covs per the needs. in addition to prior screen_build_naltrexone file')
     drug_names = [
@@ -88,6 +99,8 @@ def add_col(df):
     df['index_date_drug_days'] = np.nan
     df['ADHD_before_drug_onset'] = 0
 
+    df['cci_quan:3+'] = 0
+
     covNaltrexone_med_names = ['NSAIDs_combined', 'opioid drug']
     for x in covNaltrexone_med_names:
         df['covNaltrexone_med-base@' + x] = 0  # -3yrs to 0
@@ -95,6 +108,9 @@ def add_col(df):
 
     for index, row in tqdm(df.iterrows(), total=len(df)):
         index_date = pd.to_datetime(row['index date'])
+
+        if row['score_cci_quan'] >= 3:
+            df.loc[index, 'cci_quan:3+'] = 1
 
         # step 1: drug onset day
         drug_onsetday_list = []
@@ -223,37 +239,36 @@ def build_matched_control(df_case, df_contrl, kmatch=10):  # , usedx=True, useac
 
     sex_col = ['Female', 'Male', ]
     age_col = ['age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',
-               '65-<75 years',
-               '75-<85 years', '85+ years', ]
+               'age@65+', ]  # '65-<75 years', '75-<85 years', '85+ years', ]
 
     race_eth_col = ['RE:Asian Non-Hispanic',
                     'RE:Black or African American Non-Hispanic',
                     'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
                     'RE:Other Non-Hispanic', 'RE:Unknown', ]
 
-    acute_col = ['outpatient', 'inpatient', 'icu']
+    acute_col = ['outpatient', 'inpatienticu']  # 'inpatient', 'icu'
 
-    period_col = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
-                  '03/21-06/21', '07/21-10/21', '11/21-02/22',
-                  '03/22-06/22', '07/22-10/22', '11/22-02/23',
-                  '03/23-06/23', '07/23-10/23', '11/23-02/24',
-                  '03/24-06/24', '07/24-10/24', ]
+    # period_col = ['03/20-06/20', '07/20-10/20', '11/20-02/21',
+    #               '03/21-06/21', '07/21-10/21', '11/21-02/22',
+    #               '03/22-06/22', '07/22-10/22', '11/22-02/23',
+    #               '03/23-06/23', '07/23-10/23', '11/23-02/24',
+    #               '03/24-06/24', '07/24-10/24', ]
 
     dx_col = [
-        'dxcovNaltrexone-base@pain include',
-        'dxcovNaltrexone-basedrugonset@opioid use disorder',
-        'dxcovNaltrexone-basedrugonset@Obesity',
+        # 'dxcovNaltrexone-base@pain include',
+        'dxcovNaltrexone-basedrugonset@substance use disorder ',
         'PaxRisk:Obesity',
-        'dxcovNaltrexone-basedrugonset@fibromyalgia',
+        # 'dxcovNaltrexone-basedrugonset@fibromyalgia',
         'PaxRisk:Chronic kidney disease',
         'PaxRisk:Chronic liver disease',
         'PaxRisk:Mental health conditions',
         'mental-base@Depressive Disorders',
         'mental-base@Anxiety Disorders',
-        'Smoking current or former',
+        'PaxRisk:Smoking current',
+        # df['PaxRisk:Smoking current'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
     ]
 
-    cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+    cci_score = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3+', ]  # 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
 
     # # cols_to_match = ['site', ] + age_col + period_col + acute_col + race_col + eth_col
     # cols_to_match = ['pcornet', ] + age_col + period_col  # + acute_col
@@ -263,7 +278,7 @@ def build_matched_control(df_case, df_contrl, kmatch=10):  # , usedx=True, useac
     # if usedx:
     #     cols_to_match += dx_col
 
-    cols_to_match = sex_col + age_col + race_eth_col + acute_col + period_col + dx_col + cci_score
+    cols_to_match = sex_col + age_col + race_eth_col + acute_col + dx_col + cci_score  # + period_col
 
     ctrl_list = exact_match_on(df_case.copy(), df_contrl.copy(), kmatch, cols_to_match, )
 
@@ -629,10 +644,12 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     # # df = ec_painIncludeAndTbd_obesity_OUD_baseline(df)
     # # df = ec_painIncludeAndTbd_baseline(df)
 
-    df_beforematch = ec_painIncludeOnly_baseline(df)
+    df = ec_painIncludeOnly_baseline(df)
+    df_beforematch = add_col_2(df)
 
-    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}.csv'.format(exptype, args.kmatch)
-    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}.xlsx'.format(
+    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v2.csv'.format(
+        exptype, args.kmatch)
+    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v2.xlsx'.format(
         exptype, args.kmatch)
 
     case_label = 'naltrexone 0 to 30 Incident'
@@ -1041,8 +1058,8 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     # row_names.append('CCI Score — no. (%)')
     # records.append([])
 
-    col_names = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
-    col_names_out = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+    col_names = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3+', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
+    col_names_out = ['cci_quan:0', 'cci_quan:1-2', 'cci_quan:3+', 'cci_quan:3-4', 'cci_quan:5-10', 'cci_quan:11+']
     row_names.extend(col_names_out)
     records.extend(
         [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
@@ -1060,6 +1077,13 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
 
 
 if __name__ == '__main__':
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 10 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k10-v2.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 5 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k5-v2.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 15 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k15-v2.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 3 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k3-v2.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 1 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k1-v2.txt
+
+    #  timeout /t 21600;
     start_time = time.time()
 
     # 2025-07-15
