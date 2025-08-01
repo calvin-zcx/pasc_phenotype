@@ -50,6 +50,8 @@ def parse_args():
     # parser.add_argument('--selectpasc', action='store_true')
 
     parser.add_argument("--kmatch", type=int, default=5)
+    parser.add_argument('--replace', action='store_true')
+
     # parser.add_argument("--usedx", type=int, default=1)  # useacute
     # parser.add_argument("--useacute", type=int, default=1)
 
@@ -195,9 +197,26 @@ def add_col(df):
     return df
 
 
-def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
+def exact_match_on(df_case_og, df_ctrl_og, kmatch, cols_to_match, replace=False, random_seed=0):
     print('Matched on columns, len(cols_to_match):', len(cols_to_match), cols_to_match)
-    print('len(case)', len(df_case), 'len(ctrl)', len(df_ctrl))
+    print('len(df_case_og)', len(df_case_og), 'len(df_ctrl_og)', len(df_ctrl_og), 'kmatch:', kmatch)
+    print('replace:', replace, 'random_seed:', random_seed)
+
+    df_case_og['exposure_label'] = 1
+    df_ctrl_og['exposure_label'] = 0
+
+    df_case_og['match_to'] = np.nan
+    df_ctrl_og['match_to'] = np.nan
+    df_case_og['match_to_k'] = 0
+    df_ctrl_og['match_to_k'] = 0
+    df_case_og['match_to_k_unique'] = 0
+    df_ctrl_og['match_to_k_unique'] = 0
+
+    if not replace:
+        df_case, df_ctrl = df_case_og.copy(), df_ctrl_og.copy()
+    else:
+        df_case, df_ctrl = df_case_og, df_ctrl_og
+
     ctrl_list = []
     n_no_match = 0
     n_fewer_match = 0
@@ -211,30 +230,54 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
         for c in cols_to_match[1:]:
             boolidx &= df_ctrl[c] == rows[c]
         sub_df = df_ctrl.loc[boolidx, :]
-        if len(sub_df) >= kmatch:
-            _add_index = sub_df.sample(n=kmatch, replace=False, random_state=random_seed).index
-        elif len(sub_df) > 0:
-            n_fewer_match += 1
-            _add_index = sub_df.sample(frac=1, replace=False, random_state=random_seed).index
-            print(len(sub_df), ' match for', index)
+
+        if not replace:
+            if len(sub_df) >= kmatch:
+                _add_index = sub_df.sample(n=kmatch, replace=False, random_state=random_seed).index
+            elif len(sub_df) > 0:
+                n_fewer_match += 1
+                _add_index = sub_df.sample(frac=1, replace=False, random_state=random_seed).index
+                print(len(sub_df), ' match for', index)
+            else:
+                _add_index = []
+                n_no_match += 1
+                print('No match for', index)
+
+            # df_ctrl.drop(_add_index, inplace=True)
+            if len(_add_index) > 0:
+                # df_ctrl = df_ctrl.loc[~df_ctrl.index.isin(_add_index)]
+                df_ctrl.drop(index=_add_index, inplace=True)
         else:
-            _add_index = []
-            n_no_match += 1
-            print('No match for', index)
+            if len(sub_df) > 0:
+                _add_index = sub_df.sample(n=kmatch, replace=True, random_state=random_seed).index
+            else:
+                _add_index = []
+                n_no_match += 1
+                print('No match for', index)
+
         ctrl_list.extend(_add_index)
-        # df_ctrl.drop(_add_index, inplace=True)
-        if len(_add_index) > 0:
-            # df_ctrl = df_ctrl.loc[~df_ctrl.index.isin(_add_index)]
-            df_ctrl.drop(index=_add_index, inplace=True)
+
+        df_case.loc[index, 'match_to'] = ';'.join(str(x) for x in _add_index)
+        df_case.loc[index, 'match_to_k'] = len(_add_index)
+        df_case.loc[index, 'match_to_k_unique'] = len(set(_add_index))
+
         if len(df_ctrl) == 0:
             break
 
+    print('len(ctrl_list)', len(ctrl_list))
+    # neg_selected = pd.Series(False, index=df_ctrl_og.index)
+    # neg_selected[ctrl_list] = True
+    #
+    # df_ctrl_matched = df_ctrl_og.loc[neg_selected, :]
+
+    df_ctrl_matched_v2 = df_ctrl_og.loc[ctrl_list]
     print('Done, total {}:{} no match, {} fewer match'.format(len(df_case), n_no_match, n_fewer_match))
-    return ctrl_list
+    return df_case.copy(), df_ctrl_matched_v2.copy()
 
 
-def build_matched_control(df_case, df_contrl, kmatch=10):  # , usedx=True, useacute=True
-    print('In build matched control, before match: len(case), len(ctrl), ratio:', len(df_case), len(df_contrl), kmatch)
+def build_matched_control(df_case, df_contrl, kmatch=10, replace=False):  # , usedx=True, useacute=True
+    print('In build matched control, before match: len(case), len(ctrl), ratio:, relace',
+          len(df_case), len(df_contrl), kmatch, replace)
     start_time = time.time()
 
     sex_col = ['Female', 'Male', ]
@@ -280,19 +323,21 @@ def build_matched_control(df_case, df_contrl, kmatch=10):  # , usedx=True, useac
 
     cols_to_match = sex_col + age_col + race_eth_col + acute_col + dx_col + cci_score  # + period_col
 
-    ctrl_list = exact_match_on(df_case.copy(), df_contrl.copy(), kmatch, cols_to_match, )
+    df_case, df_ctrl_matched = exact_match_on(df_case, df_contrl, kmatch, cols_to_match, replace=replace)
 
-    print('len(ctrl_list)', len(ctrl_list))
-    neg_selected = pd.Series(False, index=df_contrl.index)
-    neg_selected[ctrl_list] = True
-    df_ctrl_matched = df_contrl.loc[neg_selected, :]
+    # print('len(ctrl_list)', len(ctrl_list))
+    # neg_selected = pd.Series(False, index=df_contrl.index)
+    # neg_selected[ctrl_list] = True
+    # df_ctrl_matched = df_contrl.loc[neg_selected, :]
     print('len(df_case):', len(df_case),
           'len(df_contrl):', len(df_contrl),
-          'len(df_ctrl_matched):', len(df_ctrl_matched), )
+          'len(df_ctrl_matched):', len(df_ctrl_matched),
+          'kmatch:', kmatch,
+          'actual ratio:', len(df_ctrl_matched)/len(df_case))
 
     print('build_matched_control Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
-    return df_ctrl_matched.copy()
+    return df_case, df_ctrl_matched
 
 
 def ec_anyenc_1yrbefore_baseline(_df):
@@ -609,15 +654,15 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
 
     # out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3.csv'.format(exptype)
     # out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset.csv'.format(exptype)
-    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-Painsub.csv'.format(exptype)
+    in_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-Painsub.csv'.format(exptype)
 
-    print('in read: ', out_file_df)
+    print('in read: ', in_file_df)
     if debug:
-        nrows = 1000000
+        nrows = 200000
     else:
         nrows = None
 
-    df = pd.read_csv(out_file_df,
+    df = pd.read_csv(in_file_df,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
                                   'flag_delivery_date',
@@ -647,22 +692,24 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
     df = ec_painIncludeOnly_baseline(df)
     df_beforematch = add_col_2(df)
 
-    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v2.csv'.format(
-        exptype, args.kmatch)
-    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v2.xlsx'.format(
-        exptype, args.kmatch)
+    out_file_df = r'./naltrexone_output/Matrix-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v3{}.csv'.format(
+        exptype, args.kmatch, '-replace' if args.replace else '')
+    out_file = r'./naltrexone_output/Table-naltrexone-{}-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-{}-v3{}.xlsx'.format(
+        exptype, args.kmatch, '-replace' if args.replace else '')
 
+    print(out_file_df)
+    print(out_file)
     case_label = 'naltrexone 0 to 30 Incident'
     ctrl_label = 'no naltrexone'
-    df_pos = df_beforematch.loc[df_beforematch['treated'] == 1, :]
+    df_pos_beforematch = df_beforematch.loc[df_beforematch['treated'] == 1, :]
     df_neg_beforematch = df_beforematch.loc[df_beforematch['treated'] == 0, :]
 
-    df_neg = build_matched_control(df_pos, df_neg_beforematch, kmatch=args.kmatch)
+    df_pos, df_neg = build_matched_control(df_pos_beforematch, df_neg_beforematch, kmatch=args.kmatch, replace=args.replace)
     # utils.dump(df_neg_matched,
     #            r'./naltrexone_output/_selected_preg_cohort2-matched-k{}-useSelectdx{}-useacute{}V2.pkl'.format(
     #                args.kmatch, args.usedx, args.useacute))
 
-    df = pd.concat([df_pos, df_neg], ignore_index=True)
+    df = pd.concat([df_pos.reset_index(), df_neg.reset_index()], ignore_index= True)
     print('len(df)', len(df),
           'len(df_pos)', len(df_pos),
           'len(df_neg)', len(df_neg),
@@ -1077,13 +1124,16 @@ def build_exposure_group_and_table1_less_4_print(exptype='all', debug=False):
 
 
 if __name__ == '__main__':
-    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 10 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k10-v2.txt
-    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 5 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k5-v2.txt
-    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 15 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k15-v2.txt
-    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 3 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k3-v2.txt
-    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 1 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k1-v2.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --replace --kmatch 10 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k10-v3-replace.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --replace --kmatch 5 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k5-v3-replace.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --replace --kmatch 15 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k15-v3-replace.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --replace --kmatch 3 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k3-v3-replace.txt
+    # python screen_build_naltrexone_treat_table_playwithEC_match.py  --replace --kmatch 1 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k1-v3-replace.txt
 
     #  timeout /t 21600;
+    # timeout /t 28800; python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 1 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k1-v2.txt
+    # timeout /t 28800; python screen_build_naltrexone_treat_table_playwithEC_match.py  --kmatch 2 2>&1 | tee  log/screen_build_naltrexone_treat_table_playwithEC_match-k2-v2.txt
+
     start_time = time.time()
 
     # 2025-07-15
