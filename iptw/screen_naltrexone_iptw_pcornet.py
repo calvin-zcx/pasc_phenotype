@@ -71,7 +71,7 @@ def parse_args():
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=5)  # 5
+    parser.add_argument('--negative_ratio', type=int, default=100)  # 5
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
     parser.add_argument('--dump', action='store_true')
@@ -81,8 +81,8 @@ def parse_args():
                         choices=['nal-inc0-30',
                                  ], default='nal-inc0-30')  # 'base180-0'
 
-    parser.add_argument('--cohorttype',
-                        choices=['matchK10replace',
+    parser.add_argument('--cohorttype', #
+                        choices=['matchK10replace', 'matchK5replace', 'matchK15replace',
                                    ],
                         default='matchK10replace')
     args = parser.parse_args()
@@ -915,10 +915,8 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
 
 if __name__ == "__main__":
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-primary.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 5 --adjustless 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample5-adjustless.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype overall --negative_ratio 5  --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-overall-baselinewoADHDcanexist-sample5.txt
-    # python screen_cns_iptw_pcornet.py  --cohorttype baseADHD --negative_ratio 10 --dump 2>&1 | tee  log_recover/screen_cns_iptw_pcornet-baseADHD-sample10-primary.txt
+    # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK10replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK10replace.txt
+    # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK5replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK5replace.txt
 
     start_time = time.time()
     args = parse_args()
@@ -930,7 +928,15 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
-    in_file = r'./naltrexone_output/Matrix-naltrexone-naltrexone-acuteIncident-0-30-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-10-v3-replace.csv'
+    if args.cohorttype == 'matchK10replace':
+        in_file = r'./naltrexone_output/Matrix-naltrexone-naltrexone-acuteIncident-0-30-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-10-v3-replace.csv'
+        print('cohorttype: matchK10replace:', args.cohorttype, in_file)
+    elif args.cohorttype == 'matchK5replace':
+        in_file = r'./naltrexone_output/Matrix-naltrexone-naltrexone-acuteIncident-0-30-25Q3-naltrexCovAtDrugOnset-applyEC-PainIncludeOnly-kmatch-5-v3-replace.csv'
+        print('cohorttype: matchK10replace:', args.cohorttype, in_file)
+    else:
+        raise ValueError
+
     print('infile:', in_file)
     df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
@@ -1235,6 +1241,7 @@ if __name__ == "__main__":
         'RE:Black or African American Non-Hispanic',
         'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
         'RE:Other Non-Hispanic', 'RE:Unknown',
+        'outpatient', 'inpatienticu',
         'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
         'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
         '03/22-06/22', '07/22-10/22', '11/22-02/23',
@@ -1249,15 +1256,17 @@ if __name__ == "__main__":
         'emergency visits >=5',
         'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
         'BMI: >=30 obese ', 'BMI: missing',
-        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
+        # 'PaxRisk:Cancer',
+        'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
         'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
         'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
         'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',  # 'PaxRisk:HIV infection',
         'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-        'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
+        #'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
         'PaxRisk:Sickle cell disease or thalassemia',
         'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
-        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        #'PaxRisk:Substance use disorders',
+        'PaxRisk:Tuberculosis',
         'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
         "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
         'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
@@ -1273,13 +1282,14 @@ if __name__ == "__main__":
         'mental-base@Autism spectrum disorder',
         'mental-base@Premenstrual dysphoric disorder',
         'mental-base@SMI',
-        'mental-base@non-SMI',
+        #'mental-base@non-SMI',
         'dxcovNaltrexone-basedrugonset@MECFS',
-        'dxcovNaltrexone-basedrugonset@Pain',
+        # 'dxcovNaltrexone-basedrugonset@Pain',
         'dxcovNaltrexone-basedrugonset@substance use disorder ',
         'dxcovNaltrexone-basedrugonset@opioid use disorder',
         'dxcovNaltrexone-basedrugonset@Opioid induced constipation',
-        'dxcovNaltrexone-basedrugonset@Obesity',
+        # 'dxcovNaltrexone-basedrugonset@Obesity',
+        'PaxRisk:Obesity',
         'dxcovNaltrexone-basedrugonset@Crohn-Inflamm_Bowel',
         'dxcovNaltrexone-basedrugonset@fibromyalgia',
         'dxcovNaltrexone-basedrugonset@multiple sclerosis',
