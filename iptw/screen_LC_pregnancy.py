@@ -631,7 +631,7 @@ if __name__ == "__main__":
     print('random_seed: ', args.random_seed)
 
     # # load data here
-    # print('Step 1: load data')
+    print('Step 1: load data')
     # # in_file = r'../data/recover/output/pregnancy_output/pregnant_yr4.csv'
     # # in_file = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNet-SSRI-v6-withmentalCFSCVD.csv'
     # in_file = r'recover25Q2_covid_pos_addPaxFeats-withexposure.csv'
