@@ -128,6 +128,16 @@ def _is_in_followup(event_time, index_time):
         return False
 
 
+def _is_in_followup_pregnantoucome(event_time, index_time):
+    # follow-up: 1 year after pregnancy onset
+    try:
+        return 0 <= (event_time - index_time).days <= 365
+    except Exception as e:
+        print('[ERROR:]', e, file=sys.stderr)
+        print('event_time:', event_time, 'index_time:', index_time, file=sys.stderr)
+        return False
+
+
 def _is_in_acute(event_time, index_time):
     # acute phase: [0,30]
     try:

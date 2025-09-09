@@ -1304,7 +1304,7 @@ def _encoding_outcome_severe_maternal_morbidity_withalldays(dx_list, icd_smm, sm
 
         # build outcome
         # definition of t2e might be problem when
-        if ecs._is_in_followup(dx_date, index_date):
+        if ecs._is_in_followup_pregnantoucome(dx_date, index_date):
             days = (dx_date - index_date).days
             flag, icdprefix = _prefix_in_set(icd, icd_smm)
             if flag:  # if icd in icd_pasc:
@@ -1559,6 +1559,7 @@ def build_feature_matrix(args):
         index_date_delivery = row['flag_delivery_date']
         index_date_pregnant_end = row['flag_pregnancy_end_date']
 
+
         site = row['site']
         pid = row['patid']
 
@@ -1598,6 +1599,8 @@ def build_feature_matrix(args):
             index_date_pregnant_onset = index_date_pregnant_onset.date()
             index_date_delivery = index_date_delivery.date()
             index_date_pregnant_end = index_date_pregnant_end.date()
+
+            days_between_covid_pregnant_onset = (index_date_pregnant_onset - index_date_covid).days
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx_raw, icd9_icd10, icd_ccsr)
 
@@ -1960,7 +1963,7 @@ def build_feature_matrix(args):
 
             #
             column_names = ['patid', 'site', 'covid',
-                            'index date', 'index_date_drug', 'index_date_drug_days', 'treated',
+                            'index date', 'days_between_covid_pregnant_onset',
                             'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup', 'followupanydx'] + death_column_names + \
                            ['zip', 'dob', 'age', 'adi', 'RUCA1'] + utilization_count_names + [
@@ -1993,7 +1996,7 @@ def build_feature_matrix(args):
 
             covid_list.append(flag)
             # indexdate_list.append(index_date)
-            indexdate_list.append([index_date, index_date_drug, index_date_drug_days, treated])
+            indexdate_list.append([index_date, days_between_covid_pregnant_onset])
 
             inpatient_flag = _encoding_inpatient(dx_raw, index_date)
             hospitalized_list.append(inpatient_flag)
@@ -2041,17 +2044,17 @@ def build_feature_matrix(args):
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             #
             social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
-            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(encounter, index_date_drug) #index_date)
+            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(encounter, index_date_pregnant_onset) #index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             #
 
             # encoding bmi and smoking
-            bmi_array[i, :], smoking_array[i, :], bmi = _encoding_bmi_and_smoking(vital, index_date_drug) #index_date)
+            bmi_array[i, :], smoking_array[i, :], bmi = _encoding_bmi_and_smoking(vital, index_date_pregnant_onset) #index_date)
             bmi_list.append(bmi)
 
             # encoding query 2 information
-            dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date_drug, procedure) # index_date
-            med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date_drug) #index_date)
+            dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date_pregnant_onset, procedure) # index_date
+            med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date_pregnant_onset) #index_date)
 
             # encoding pasc information in both baseline and followup
             # time 2 event: censoring in the database (should be >= followup start time),
@@ -2063,24 +2066,24 @@ def build_feature_matrix(args):
             ])
 
             vaccine_array[i, :] = _encoding_vaccine_4risk(procedure, immun, vaccine_column_names, vaccine_codes,
-                                                          index_date_drug) #index_date)
+                                                          index_date_pregnant_onset) #index_date)
 
-            cci_array[i, :] = _encoding_cci_and_score(dx_raw, icd_cci, cci_encoding, index_date_drug) #index_date)
+            cci_array[i, :] = _encoding_cci_and_score(dx_raw, icd_cci, cci_encoding, index_date_pregnant_onset) #index_date)
 
-            obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding, index_date_drug) #index_date)
+            obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding, index_date_pregnant_onset) #index_date)
 
             # 2023-11-14 n3c messy 2 covs: 'pax_contra', 'pax_risk'
-            pax_n3ccov_array[i, :] = _encoding_pax_n3ccov(pax_contra, pax_risk, dx_raw, med, procedure, index_date_drug) #index_date)
+            pax_n3ccov_array[i, :] = _encoding_pax_n3ccov(pax_contra, pax_risk, dx_raw, med, procedure, index_date_pregnant_onset) #index_date)
 
             # 2023-11-13 updated capture of paxlovid and remdesivir
             covidtreat_flag[i, :], covidtreat_t2e[i, :], covidtreat_t2eall_1row = \
-                _encoding_covidtreat(med, covidtreat_names, covid_med_update, index_date_drug, default_t2e) # index_date
+                _encoding_covidtreat(med, covidtreat_names, covid_med_update, index_date_pregnant_onset, default_t2e) # index_date
             covidtreat_t2eall.append(covidtreat_t2eall_1row)
             #
 
             covidmed_array[i, :], \
             outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
-                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date_drug, default_t2e) # index_date
+                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date_pregnant_onset, default_t2e) # index_date
 
             # outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
             #     _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
@@ -2125,10 +2128,11 @@ def build_feature_matrix(args):
                 _encoding_outcome_hospitalization_withalldays(encounter, index_date, default_t2e)
             outcome_hospitalization_t2eall.append(outcome_hospitalization_t2eall_1row)
 
-            ##
+            ## _is_in_followup_pregnantoucome 1 year after pregnant onset
+            ## 2025-9-9
             outcome_smm_flag[i, :], outcome_smm_t2e[i, :], outcome_smm_baseline[i, :], outcome_smm_t2eall_1row = \
                 _encoding_outcome_severe_maternal_morbidity_withalldays(
-                    dx, icd_SMMpasc, SMMpasc_encoding, index_date, default_t2e, procedure)
+                    dx, icd_SMMpasc, SMMpasc_encoding, index_date_pregnant_onset, default_t2e, procedure)
             outcome_smm_t2eall.append(outcome_smm_t2eall_1row)
 
             ###
@@ -2146,7 +2150,7 @@ def build_feature_matrix(args):
             # add CNSLDN covariates condition, 2025-4-8
             outcome_covCNSLDN_flag[i, :], outcome_covCNSLDN_t2e[i, :], outcome_covCNSLDN_baseline[i,
                                                                        :], outcome_covCNSLDN_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_covCNSLDN, covCNSLDN_encoding, index_date_drug, #index_date,
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_covCNSLDN, covCNSLDN_encoding, index_date_pregnant_onset, #index_date,
                                                             default_t2e)
             outcome_covCNSLDN_t2eall.append(outcome_covCNSLDN_t2eall_1row)
 
@@ -2155,7 +2159,7 @@ def build_feature_matrix(args):
             # if want to store time all time, need revision
             outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i,
                                                                  :], outcome_mental_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date_drug, default_t2e) #index_date
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date_pregnant_onset, default_t2e) #index_date
             outcome_mental_t2eall.append(outcome_mental_t2eall_1row)
 
             # add ME/CFS condition, 2024-12-14
