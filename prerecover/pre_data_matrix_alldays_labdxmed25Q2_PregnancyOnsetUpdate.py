@@ -813,7 +813,7 @@ def _encoding_covidmed(med_list, pro_list, covidmed_column_names, covidmed_codes
                     if rxnorm in covidmed_codes[col_name]:
                         outcome_baseline[0, pos] += 1
 
-        if ecs._is_in_followup(med_date, index_date):
+        if ecs._is_in_followup_pregnantoucome(med_date, index_date):
             days = (med_date - index_date).days
             for pos, col_name in enumerate(covidmed_column_names):
                 if col_name in covidmed_codes:
@@ -1084,7 +1084,7 @@ def _encoding_outcome_dx_withalldays(dx_list, icd_pasc, pasc_encoding, index_dat
                 outcome_baseline[0, pos] += 1
 
         # build outcome
-        if ecs._is_in_followup(dx_date, index_date):
+        if ecs._is_in_followup_pregnantoucome(dx_date, index_date):
             days = (dx_date - index_date).days
             flag, icdprefix = _prefix_in_set(icd, icd_pasc)
             if flag:
@@ -1142,7 +1142,7 @@ def _encoding_outcome_dx_withalldaysoveralltime(dx_list, icd_pasc, pasc_encoding
             if ecs._is_in_baseline(dx_date, index_date):
                 outcome_baseline[0, pos] += 1
 
-            if ecs._is_in_followup(dx_date, index_date):
+            if ecs._is_in_followup_pregnantoucome(dx_date, index_date):
                 # days = (dx_date - index_date).days
                 # flag, icdprefix = _prefix_in_set(icd, icd_pasc)
                 if outcome_flag[0, pos] == 0:
@@ -1203,7 +1203,7 @@ def _encoding_outcome_U099_withalldays(dx_list, index_date, default_t2e):
                 else:
                     outcome_flag[0, 0] += 1
 
-            if ecs._is_in_followup(dx_date, index_date):
+            if ecs._is_in_followup_pregnantoucome(dx_date, index_date):
                 if outcome_flag[0, 1] == 0:
                     # only records the first event and time
                     if days < outcome_t2e[0, 1]:
@@ -1515,12 +1515,12 @@ def build_feature_matrix(args):
     #     'index_date_drug_days']
     # use return: days_since_covid_match_pool.sample().iloc[0]
 
-    output_file_query12_bool = infile_name.replace('.csv', '-updateCovOutcome.csv')
+    output_file_query12_bool = infile_name.replace('.csv', '-updateAtPregOnset.csv')
 
-    output_med_info = infile_name.replace('.csv', '-info_medication_cohorts-updateCovOutcome.csv')
+    output_med_info = infile_name.replace('.csv', '-info_medication_cohorts-updateAtPregOnset.csv')
     # r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(args.dataset, args.cohorts, args.dataset)
 
-    output_dx_info = infile_name.replace('.csv', '-info_dx_cohorts-updateCovOutcome.csv')
+    output_dx_info = infile_name.replace('.csv', '-info_dx_cohorts-updateAtPregOnset.csv')
     # r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(args.dataset, args.cohorts, args.dataset)
 
     #
@@ -1559,6 +1559,7 @@ def build_feature_matrix(args):
         index_date_delivery = row['flag_delivery_date']
         index_date_pregnant_end = row['flag_pregnancy_end_date']
 
+        index_date_dob = row['dob']
 
         site = row['site']
         pid = row['patid']
@@ -1599,8 +1600,9 @@ def build_feature_matrix(args):
             index_date_pregnant_onset = index_date_pregnant_onset.date()
             index_date_delivery = index_date_delivery.date()
             index_date_pregnant_end = index_date_pregnant_end.date()
-
+            index_date_dob = index_date_dob.date()
             days_between_covid_pregnant_onset = (index_date_pregnant_onset - index_date_covid).days
+            index_age_pregonset = (index_date_pregnant_onset - index_date_dob).days / 365
 
             dx = _dx_clean_and_translate_any_ICD9_to_ICD10(dx_raw, icd9_icd10, icd_ccsr)
 
@@ -1963,10 +1965,11 @@ def build_feature_matrix(args):
 
             #
             column_names = ['patid', 'site', 'covid',
-                            'index date', 'days_between_covid_pregnant_onset',
+                            'index date', 'index_date_pregnant_onset', 'index_date_delivery',
+                            'index_date_pregnant_end',  'days_between_covid_pregnant_onset',
                             'hospitalized',
                             'ventilation', 'criticalcare', 'maxfollowup', 'followupanydx'] + death_column_names + \
-                           ['zip', 'dob', 'age', 'adi', 'RUCA1'] + utilization_count_names + [
+                           ['zip', 'dob', 'age', 'age_pregonset', 'adi', 'RUCA1'] + utilization_count_names + [
                                'bmi'] + yearmonth_column_names + \
                            age_column_names + age_preg_column_names + \
                            gender_column_names + race_column_names + hispanic_column_names + \
@@ -1996,7 +1999,8 @@ def build_feature_matrix(args):
 
             covid_list.append(flag)
             # indexdate_list.append(index_date)
-            indexdate_list.append([index_date, days_between_covid_pregnant_onset])
+            indexdate_list.append([index_date, index_date_pregnant_onset, index_date_delivery,
+                                   index_date_pregnant_end, days_between_covid_pregnant_onset])
 
             inpatient_flag = _encoding_inpatient(dx_raw, index_date)
             hospitalized_list.append(inpatient_flag)
@@ -2007,10 +2011,10 @@ def build_feature_matrix(args):
             criticalcare_flag = _encoding_critical_care(procedure, index_date)
             criticalcare_list.append(criticalcare_flag)
 
-            maxfollowtime = _encoding_maxfollowtime(index_date, encounter, dx_raw, med)
+            maxfollowtime = _encoding_maxfollowtime(index_date_pregnant_onset, encounter, dx_raw, med)
             maxfollowtime_list.append(maxfollowtime)
 
-            flag_followup_any_dx = _encoding_followup_any_dx(index_date, dx_raw)
+            flag_followup_any_dx = _encoding_followup_any_dx(index_date_delivery, dx_raw)
             followupanydx_list.append(flag_followup_any_dx)
 
             # encode death
@@ -2020,12 +2024,13 @@ def build_feature_matrix(args):
             else:
                 deathdate_list.append(np.nan)
 
-            death_array[i, :] = _encoding_death(death, index_date)
+            death_array[i, :] = _encoding_death(death, index_date_pregnant_onset)
 
             # newly add 2022-04-08
             zip_list.append(zipcode)
             dob_list.append(birth_date)
-            age_list.append(index_age)
+            age_list.append([index_age, index_age_pregonset])
+
             adi_list.append(nation_adi)
 
             # 2023-11-13, ruca_array computed here but added after adi array later
@@ -2033,75 +2038,87 @@ def build_feature_matrix(args):
             ruca_list.append(ruca1)
             # utilization count, postponed to below
             # bmi_list, postponed to below
-            yearmonth_array[i, :] = _encoding_yearmonth(index_date)
+            yearmonth_array[i, :] = _encoding_yearmonth(index_date_pregnant_onset)
 
             # encoding query 1 information
             age_array[i, :] = _encoding_age(index_age)
-            age_preg_array[i, :] = _encoding_age_preg(index_age)  # 18-50, bin every 5 years
+            age_preg_array[i, :] = _encoding_age_preg(index_age_pregonset)  # 18-50, bin every 5 years
 
             gender_array[i] = _encoding_gender(gender)
             race_array[i, :] = _encoding_race(race)
             hispanic_array[i, :] = _encoding_hispanic(hispanic)
             #
             social_array[i, :] = _encoding_social(nation_adi, adi_value_default)
-            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(encounter, index_date_pregnant_onset) #index_date)
+            utilization_array[i, :], utilization_count_array[i, :] = _encoding_utilization(encounter,
+                                                                                           index_date_pregnant_onset)  # index_date)
             index_period_array[i, :] = _encoding_index_period(index_date)
             #
 
             # encoding bmi and smoking
-            bmi_array[i, :], smoking_array[i, :], bmi = _encoding_bmi_and_smoking(vital, index_date_pregnant_onset) #index_date)
+            bmi_array[i, :], smoking_array[i, :], bmi = _encoding_bmi_and_smoking(vital,
+                                                                                  index_date_pregnant_onset)  # index_date)
             bmi_list.append(bmi)
 
             # encoding query 2 information
-            dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date_pregnant_onset, procedure) # index_date
-            med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes, index_date_pregnant_onset) #index_date)
+            dx_array[i, :] = _encoding_dx(dx, dx_column_names, comorbidity_codes, index_date_pregnant_onset,
+                                          procedure)  # index_date
+            med_array[i, :] = _encoding_med(med, med_column_names, comorbidity_codes,
+                                            index_date_pregnant_onset)  # index_date)
 
             # encoding pasc information in both baseline and followup
             # time 2 event: censoring in the database (should be >= followup start time),
             # maximum follow-up, death-time, event, whichever comes first
-            default_t2e = np.min([
-                np.maximum(ecs.FOLLOWUP_LEFT, maxfollowtime),
-                np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
-                np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
-            ])
+            # default_t2e = np.min([
+            #     np.maximum(ecs.FOLLOWUP_LEFT, maxfollowtime),
+            #     np.maximum(ecs.FOLLOWUP_LEFT, ecs.FOLLOWUP_RIGHT),
+            #     np.maximum(ecs.FOLLOWUP_LEFT, death_array[i, 1])
+            # ])
+            # acertain outcome at 1 year after pregnancy_onset (index date)
+            default_t2e = 365
 
             vaccine_array[i, :] = _encoding_vaccine_4risk(procedure, immun, vaccine_column_names, vaccine_codes,
-                                                          index_date_pregnant_onset) #index_date)
+                                                          index_date_pregnant_onset)  # index_date)
 
-            cci_array[i, :] = _encoding_cci_and_score(dx_raw, icd_cci, cci_encoding, index_date_pregnant_onset) #index_date)
+            cci_array[i, :] = _encoding_cci_and_score(dx_raw, icd_cci, cci_encoding,
+                                                      index_date_pregnant_onset)  # index_date)
 
-            obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding, index_date_pregnant_onset) #index_date)
+            obcdx_array[i, :] = _encoding_dx_pregnancy(dx, icd_OBC, OBC_encoding,
+                                                       index_date_pregnant_onset)  # index_date)
 
             # 2023-11-14 n3c messy 2 covs: 'pax_contra', 'pax_risk'
-            pax_n3ccov_array[i, :] = _encoding_pax_n3ccov(pax_contra, pax_risk, dx_raw, med, procedure, index_date_pregnant_onset) #index_date)
+            pax_n3ccov_array[i, :] = _encoding_pax_n3ccov(pax_contra, pax_risk, dx_raw, med, procedure,
+                                                          index_date_pregnant_onset)  # index_date)
 
             # 2023-11-13 updated capture of paxlovid and remdesivir
             covidtreat_flag[i, :], covidtreat_t2e[i, :], covidtreat_t2eall_1row = \
-                _encoding_covidtreat(med, covidtreat_names, covid_med_update, index_date_pregnant_onset, default_t2e) # index_date
+                _encoding_covidtreat(med, covidtreat_names, covid_med_update, index_date_pregnant_onset,
+                                     default_t2e)  # index_date
             covidtreat_t2eall.append(covidtreat_t2eall_1row)
             #
 
             covidmed_array[i, :], \
             outcome_covidmed_flag[i, :], outcome_covidmed_t2e[i, :], outcome_covidmed_baseline[i, :] \
-                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date_pregnant_onset, default_t2e) # index_date
+                = _encoding_covidmed(med, procedure, covidmed_column_names, covidmed_codes, index_date_pregnant_onset,
+                                     default_t2e)  # index_date
 
             # outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :] = \
             #     _encoding_outcome_dx(dx, icd_pasc, pasc_encoding, index_date, default_t2e)
 
             outcome_flag[i, :], outcome_t2e[i, :], outcome_baseline[i, :], outcome_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_pasc, pasc_encoding, index_date, default_t2e) #still actertain pasc during 30-180
+                _encoding_outcome_dx_withalldays(dx, icd_pasc, pasc_encoding, index_date_pregnant_onset,
+                                                 default_t2e)  # still actertain pasc during 30-180
             outcome_t2eall.append(outcome_t2eall_1row)
             #
             # # added PASC, 2023-11-13
             outcome_addedPASC_flag[i, :], outcome_addedPASC_t2e[i, :], outcome_addedPASC_baseline[i,
                                                                        :], outcome_addedPASC_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_addedPASC, addedPASC_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldays(dx, icd_addedPASC, addedPASC_encoding, index_date_pregnant_onset , default_t2e)
             outcome_addedPASC_t2eall.append(outcome_addedPASC_t2eall_1row)
 
             # brain fog, 2023-11-13
             outcome_brainfog_flag[i, :], outcome_brainfog_t2e[i, :], outcome_brainfog_baseline[i,
                                                                      :], outcome_brainfog_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_brainfog, brainfog_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldays(dx, icd_brainfog, brainfog_encoding, index_date_pregnant_onset , default_t2e)
             outcome_brainfog_t2eall.append(outcome_brainfog_t2eall_1row)
 
             # med columns might be commented out for brevity. rereun when needed, 2023-11-13
@@ -2110,15 +2127,15 @@ def build_feature_matrix(args):
 
             # add Cognitive, Fatigue, Respiratory condiiotn, 2023-11-13
             outcome_CFR_flag[i, :], outcome_CFR_t2e[i, :], outcome_CFR_baseline[i, :], outcome_CFR_t2eall_1row = \
-                _encoding_outcome_dx_withalldays(dx, icd_CFR, CFR_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldays(dx, icd_CFR, CFR_encoding, index_date_pregnant_onset , default_t2e)
             outcome_CFR_t2eall.append(outcome_CFR_t2eall_1row)
 
-            addPaxRisk_array[i, :] = _encoding_addPaxRisk(dx_raw, icd_addedPaxRisk, addedPaxRisk_encoding, index_date)
+            addPaxRisk_array[i, :] = _encoding_addPaxRisk(dx_raw, icd_addedPaxRisk, addedPaxRisk_encoding, index_date_pregnant_onset )
 
             # acute U099, 2024-2-23
             (outcome_U099_flag[i, :], outcome_U099_t2e[i, :], outcome_U099_baseline[i, :], outcome_U099_t2eall_1row,
              outcome_U099_t2ecodeall_1row) = \
-                _encoding_outcome_U099_withalldays(dx, index_date, default_t2e)
+                _encoding_outcome_U099_withalldays(dx, index_date_pregnant_onset , default_t2e)
             outcome_U099_t2eall.append(outcome_U099_t2eall_1row)
             outcome_U099_t2ecodeall.append(outcome_U099_t2ecodeall_1row)
 
@@ -2138,19 +2155,20 @@ def build_feature_matrix(args):
             ###
             # 2024-4-3  capture ssri and snri for exploration
             ssritreat_flag[i, :], ssritreat_t2e[i, :], ssritreat_t2eall_1row = \
-                _encoding_covidtreat(med, ssritreat_names, ssri_med, index_date, default_t2e)
+                _encoding_covidtreat(med, ssritreat_names, ssri_med, index_date_pregnant_onset, default_t2e)
             ssritreat_t2eall.append(ssritreat_t2eall_1row)
             #
 
             # 2025-4-8  capture CNS and LDN for exploration
             cnsldntreat_flag[i, :], cnsldntreat_t2e[i, :], cnsldntreat_t2eall_1row = \
-                _encoding_covidtreat(med, cnsldn_names, cnsldn_med, index_date, default_t2e)
+                _encoding_covidtreat(med, cnsldn_names, cnsldn_med, index_date_pregnant_onset, default_t2e)
             cnsldntreat_t2eall.append(cnsldntreat_t2eall_1row)
 
             # add CNSLDN covariates condition, 2025-4-8
             outcome_covCNSLDN_flag[i, :], outcome_covCNSLDN_t2e[i, :], outcome_covCNSLDN_baseline[i,
                                                                        :], outcome_covCNSLDN_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_covCNSLDN, covCNSLDN_encoding, index_date_pregnant_onset, #index_date,
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_covCNSLDN, covCNSLDN_encoding,
+                                                            index_date_pregnant_onset,  # index_date,
                                                             default_t2e)
             outcome_covCNSLDN_t2eall.append(outcome_covCNSLDN_t2eall_1row)
 
@@ -2159,12 +2177,13 @@ def build_feature_matrix(args):
             # if want to store time all time, need revision
             outcome_mental_flag[i, :], outcome_mental_t2e[i, :], outcome_mental_baseline[i,
                                                                  :], outcome_mental_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date_pregnant_onset, default_t2e) #index_date
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mental, mental_encoding, index_date_pregnant_onset,
+                                                            default_t2e)  # index_date
             outcome_mental_t2eall.append(outcome_mental_t2eall_1row)
 
             # add ME/CFS condition, 2024-12-14
             outcome_mecfs_flag[i, :], outcome_mecfs_t2e[i, :], outcome_mecfs_baseline[i, :], outcome_mecfs_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mecfs, mecfs_encoding, index_date, default_t2e)
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_mecfs, mecfs_encoding, index_date_pregnant_onset, default_t2e)
             outcome_mecfs_t2eall.append(outcome_mecfs_t2eall_1row)
 
             # add CVD death condition, 2024-12-14
@@ -2174,7 +2193,7 @@ def build_feature_matrix(args):
             # option 2, CVD outcome acute + postacute
             outcome_cvddeath_flag[i, :], outcome_cvddeath_t2e[i, :], outcome_cvddeath_baseline[i,
                                                                      :], outcome_cvddeath_t2eall_1row = \
-                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_cvddeath, cvddeath_encoding, index_date,
+                _encoding_outcome_dx_withalldaysoveralltime(dx, icd_cvddeath, cvddeath_encoding, index_date_pregnant_onset,
                                                             default_t2e)
             outcome_cvddeath_t2eall.append(outcome_cvddeath_t2eall_1row)
 
@@ -2182,7 +2201,7 @@ def build_feature_matrix(args):
             data_array = np.hstack((np.asarray(pid_list).reshape(-1, 1),
                                     np.asarray(site_list).reshape(-1, 1),
                                     np.array(covid_list).reshape(-1, 1).astype(int),
-                                    np.asarray(indexdate_list), #.reshape(-1, 1),
+                                    np.asarray(indexdate_list),  # .reshape(-1, 1),
                                     np.asarray(hospitalized_list).reshape(-1, 1).astype(int),
                                     np.array(ventilation_list).reshape(-1, 1).astype(int),
                                     np.array(criticalcare_list).reshape(-1, 1).astype(int),
@@ -2192,7 +2211,7 @@ def build_feature_matrix(args):
                                     death_array,
                                     np.asarray(zip_list).reshape(-1, 1),
                                     np.asarray(dob_list).reshape(-1, 1),
-                                    np.asarray(age_list).reshape(-1, 1),
+                                    np.asarray(age_list), #.reshape(-1, 1),
                                     np.asarray(adi_list).reshape(-1, 1),
                                     np.asarray(ruca_list).reshape(-1, 1),
                                     utilization_count_array,
@@ -2381,7 +2400,7 @@ def build_feature_matrix(args):
     # print('df_data.shape:', df_data.shape)
     # del id_data
     print('Done site:', site)
-        # end iterate sites
+    # end iterate sites
 
     dx_count_df = pd.DataFrame.from_dict(dx_count, orient='index',
                                          columns=['total', 'no. in positive group', 'no. in negative group',
@@ -2410,6 +2429,7 @@ if __name__ == '__main__':
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuscript 2>&1 | tee  log/pre_data_manuscript.txt
     # python pre_data_manuscript.py --dataset ALL --cohorts covid_4manuNegNoCovid 2>&1 | tee  log/pre_data_manuscript_covid_4manuNegNoCovid.txt
     # python pre_data_manuscript_withAllDays.py --dataset ALL --cohorts covid_4manuNegNoCovidV2 2>&1 | tee  log/pre_data_manuscript_withAllDays_covid_4manuNegNoCovidV2.txt
+    # python pre_data_matrix_alldays_labdxmed25Q2_PregnancyOnsetUpdate.py  2>&1 | tee  log/pre_data_matrix_alldays_labdxmed25Q2_PregnancyOnsetUpdate.txt
 
     # enrich_med_rwd_info_4_neruo_and_pulmonary()
     #
