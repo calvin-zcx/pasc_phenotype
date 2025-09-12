@@ -20,6 +20,7 @@ from tqdm import tqdm
 import datetime
 import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
+import ast
 
 print = functools.partial(print, flush=True)
 
@@ -71,7 +72,7 @@ def parse_args():
                                                ],
                         default='all')
     parser.add_argument("--random_seed", type=int, default=0)
-    parser.add_argument('--negative_ratio', type=int, default=100)  # 5
+    parser.add_argument('--negative_ratio', type=int, default=99)  # 5
     parser.add_argument('--selectpasc', action='store_true')
     parser.add_argument('--build_data', action='store_true')
     parser.add_argument('--dump', action='store_true')
@@ -142,18 +143,37 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
 
+def _decode_list_date_code(lstr):
+    result = ast.literal_eval(lstr)
+
+    return result
 
 def feature_process_pregnancy(df):
     print('feature_process_additional, df.shape', df.shape)
     start_time = time.time()
 
-    df['gestational age at delivery'] = np.nan
-    df['gestational age of infection'] = np.nan
-    df['preterm birth'] = np.nan
+    code_pregoutcomecat = utils.load(r'../data/mapping/pregnancy_code_to_outcome_categories_mapping.pkl')
+
+    df['gestational age at delivery'] = np.nan  # week, used for determine other outcome
+    df['gestational age of infection'] = np.nan  # week
+
+    df['preterm birth<37'] = 0
+    df['preterm birth<37Andlivebirth'] = 0
+    df['preterm birth<34'] = 0
+    df['preterm birth<34Andlivebirth'] = 0
 
     df['infection at trimester1'] = 0
     df['infection at trimester2'] = 0
     df['infection at trimester3'] = 0
+
+    # 2025-7-18 will revise later per ob comments
+    df['preg_outcome-livebirth'] = 0
+    df['preg_outcome-stillbirth'] = 0
+    df['preg_outcome-miscarriage'] = 0
+    df['preg_outcome-abortion'] = 0
+    df['preg_outcome-other'] = 0
+    df['preg_outcome-miscarriage<20week'] = 0
+    df['preg_outcome-abortion<20week'] = 0
 
     # ['flag_delivery_type_Spontaneous', 'flag_delivery_type_Cesarean',
     # 'flag_delivery_type_Operative', 'flag_delivery_type_Vaginal', 'flag_delivery_type_other-unsepc',]
@@ -169,20 +189,72 @@ def feature_process_pregnancy(df):
         index_date = row['index date']
         del_date = row['flag_delivery_date']
         preg_date = row['flag_pregnancy_start_date']
+
+        flag_maternal_age = row['flag_maternal_age']  # age at pre or delivery, there is another age at infection
+
+        delivery_code = row['flag_delivery_code']
+        exclude_dx = row['flag_exclusion_dx_detail']
+        exclude_px = row['flag_exclusion_px_detail']
+
+        if pd.notna(delivery_code):
+            if isinstance(delivery_code, float):
+                print(delivery_code)
+                print(row.iloc[:5])
+
+            delivery_code = delivery_code.strip().upper().replace('.', '')
+            if delivery_code in code_pregoutcomecat:
+                out_info = code_pregoutcomecat[delivery_code]
+                col = 'preg_outcome-' + out_info[0]
+                df.loc[index, col] = 1
+
+        if pd.notna(exclude_dx):
+            exclude_dx = _decode_list_date_code(exclude_dx)
+            for _tup in exclude_dx:
+                _day, _code = _tup
+                _code = _code.strip().upper().replace('.', '')
+                if _code in code_pregoutcomecat:
+                    out_info = code_pregoutcomecat[_code]
+                    col = 'preg_outcome-' + out_info[0]
+                    df.loc[index, col] = 1
+
+        if pd.notna(exclude_px):
+            exclude_px = _decode_list_date_code(exclude_px)
+            for _tup in exclude_px:
+                _day, _code = _tup
+                _code = _code.strip().upper().replace('.', '')
+                if _code in code_pregoutcomecat:
+                    out_info = code_pregoutcomecat[_code]
+                    col = 'preg_outcome-' + out_info[0]
+                    df.loc[index, col] = 1
+
         if pd.notna(del_date) and pd.notna(preg_date):
             gesage = (del_date - preg_date).days / 7
             df.loc[index, 'gestational age at delivery'] = gesage
-            df.loc[index, 'preterm birth'] = int(gesage < 37)
+            df.loc[index, 'preterm birth<37'] = int(gesage < 37)
+            df.loc[index, 'preterm birth<34'] = int(gesage < 34)
+
+            if df.loc[index, 'preg_outcome-livebirth'] == 1:
+                df.loc[index, 'preterm birth<37Andlivebirth'] = int(gesage < 37)
+                df.loc[index, 'preterm birth<34Andlivebirth'] = int(gesage < 34)
+
+            if gesage < 20:
+                if df.loc[index, 'preg_outcome-miscarriage'] == 1:
+                    df.loc[index, 'preg_outcome-miscarriage<20week'] = 1
+
+                if df.loc[index, 'preg_outcome-abortion'] == 1:
+                    df.loc[index, 'preg_outcome-abortion<20week'] = 1
 
         if pd.notna(index_date) and pd.notna(preg_date):
             infectage = (index_date - preg_date).days / 7
             df.loc[index, 'gestational age of infection'] = infectage
-            if infectage <= 13:
-                df.loc[index, 'infection at trimester1'] = 1
-            elif infectage <= 27:
-                df.loc[index, 'infection at trimester2'] = 1
-            elif infectage > 27:
-                df.loc[index, 'infection at trimester3'] = 1
+            if preg_date <= index_date <= del_date:
+                # add this to more accurate capture following, though with infection during pregnancy EC, results are same
+                if infectage <= 13:
+                    df.loc[index, 'infection at trimester1'] = 1
+                elif infectage <= 27:
+                    df.loc[index, 'infection at trimester2'] = 1
+                elif infectage > 27:
+                    df.loc[index, 'infection at trimester3'] = 1
 
     print('feature_process_additional Done! Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
@@ -1004,10 +1076,15 @@ if __name__ == "__main__":
     df = pd.merge(df, df_og, how='left', left_on=['patid', 'site'], right_on=['patid', 'site'], suffixes=('', '_og'), )
     print('After left merge, merged df.shape:', df.shape)
 
-    print('before add_col: ing')
+    print('Additional feature preprocessing for adjust and outcomes...')
+    print('...Part1:  add_col: ing')
     df = add_col(df)
-    print('after add_col done')
+    print('... add_col done!')
 
+    # deal with pregnancy related cov and outcomes
+    print('...Part2:  feature_process_pregnancy: ing')
+    df = feature_process_pregnancy(df)
+    print('... feature_process_pregnancy done!')
 
     ## to do
     ## 1. cov, outcome, and expsoure columns
@@ -1075,9 +1152,10 @@ if __name__ == "__main__":
         args.cohorttype, args.severity, args.exptype)
     df.to_csv(out_file_for_table, index=False)
     print('Dump {} done!'.format(out_file_for_table))
+    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     # Step-2: Select Cov columns
-
+    # zz
     ### 2025-09-11
     ### remove death and pasc label portion here, already labeled in step 1. refer to code in other iptw file
     ### data clean for <0 error death records, and add censoring to the death time to event columns
@@ -1085,7 +1163,7 @@ if __name__ == "__main__":
     ### pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
 
     col_names = pd.Series(df.columns)
-    df_info = df[['patid', 'site', 'index date', 'treated',
+    df_info = df[['patid', 'site', 'index date', 'exposed',
                   'hospitalized',
                   'ventilation', 'criticalcare', 'maxfollowup', 'death', 'death t2e',
                   '03/20-06/20', '07/20-10/20', '11/20-02/21',
@@ -1197,11 +1275,7 @@ if __name__ == "__main__":
     # if args.cohorttype == 'overall':
     #     covs_columns += ['ADHD_before_drug_onset', ]
 
-    # Step-3, Setup outcomes of interest
-
-    print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
-
     df_covs = df.loc[:, covs_columns].astype('float')
     print('df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
 
@@ -1210,158 +1284,106 @@ if __name__ == "__main__":
           'df_info.shape:', df_info.shape,
           'df_label.shape:', df_label.shape,
           'df_covs.shape:', df_covs.shape)
-    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
+    # Step-3, Setup outcomes of interest
     # Load index information
-    with open(r'../data/mapping/icd_pasc_mapping.pkl', 'rb') as f:
-        icd_pasc = pickle.load(f)
-        print('Load ICD-10 to PASC mapping done! len(icd_pasc):', len(icd_pasc))
-        record_example = next(iter(icd_pasc.items()))
-        print('e.g.:', record_example)
+    # with open(r'../data/mapping/icd_pasc_mapping.pkl', 'rb') as f:
+    #     icd_pasc = pickle.load(f)
+    #     print('Load ICD-10 to PASC mapping done! len(icd_pasc):', len(icd_pasc))
+    #     record_example = next(iter(icd_pasc.items()))
+    #     print('e.g.:', record_example)
+    #
+    # with open(r'../data/mapping/pasc_index_mapping.pkl', 'rb') as f:
+    #     pasc_encoding = pickle.load(f)
+    #     print('Load PASC to encoding mapping done! len(pasc_encoding):', len(pasc_encoding))
+    #     record_example = next(iter(pasc_encoding.items()))
+    #     print('e.g.:', record_example)
 
-    with open(r'../data/mapping/pasc_index_mapping.pkl', 'rb') as f:
-        pasc_encoding = pickle.load(f)
-        print('Load PASC to encoding mapping done! len(pasc_encoding):', len(pasc_encoding))
-        record_example = next(iter(pasc_encoding.items()))
-        print('e.g.:', record_example)
+    # selected_screen_list = (['any_pasc', 'PASC-General', 'ME/CFS',
+    #                          'death', 'death_acute', 'death_postacute', 'cvddeath_postacute',
+    #                          'any_CFR', 'any_brainfog',
+    #                          'hospitalization_acute', 'hospitalization_postacute'] +
+    #                         CFR_list +
+    #                         pasc_list +
+    #                         addedPASC_list +
+    #                         brainfog_list)
 
-    selected_screen_list = (['any_pasc', 'PASC-General', 'ME/CFS',
-                             'death', 'death_acute', 'death_postacute', 'cvddeath_postacute',
-                             'any_CFR', 'any_brainfog',
-                             'hospitalization_acute', 'hospitalization_postacute'] +
-                            CFR_list +
-                            pasc_list +
-                            addedPASC_list +
-                            brainfog_list)
+    # icd_OBC = utils.load(r'../data/mapping/icd_OBComorbidity_mapping.pkl')
+    # OBC_encoding = utils.load(r'../data/mapping/OBComorbidity_index_mapping.pkl')
+    # OBC_outcome_list = list(OBC_encoding.keys())
 
+    icd_SMMpasc = utils.load(r'../data/mapping/icd_SMMpasc_mapping.pkl')
+    SMMpasc_encoding = utils.load(r'../data/mapping/SMMpasc_index_mapping.pkl')
+
+    # outcome_smm_column_names = ['smm-out@' + x for x in SMMpasc_encoding.keys()] + \
+    #                            ['smm-t2e@' + x for x in SMMpasc_encoding.keys()] + \
+    #                            ['smm-base@' + x for x in SMMpasc_encoding.keys()] + \
+    #                            ['smm-t2eall@' + x for x in SMMpasc_encoding.keys()]
+    # ['smm-out@smm:Acute myocardial infarction', 'smm-out@smm:Aneurysm', 'smm-out@smm:Acute renal failure',
+    # 'smm-out@smm:Adult respiratory distress syndrome', 'smm-out@smm:Amniotic fluid embolism',
+    # 'smm-out@smm:Cardiac arrest/ventricular fibrillation', 'smm-out@smm:Conversion of cardiac rhythm',
+    # 'smm-out@smm:Disseminated intravascular coagulation', 'smm-out@smm:Eclampsia',
+    # 'smm-out@smm:Heart failure/arrest during surgery or procedure',
+    # 'smm-out@smm:Puerperal cerebrovascular disorders', 'smm-out@smm:Pulmonary edema / Acute heart failure',
+    # 'smm-out@smm:Severe anesthesia complications', 'smm-out@smm:Sepsis', 'smm-out@smm:Shock',
+    # 'smm-out@smm:Sickle cell disease with crisis', 'smm-out@smm:Air and thrombotic embolism',
+    # 'smm-out@smm:Blood products transfusion', 'smm-out@smm:Hysterectomy', 'smm-out@smm:Temporary tracheostomy',
+    # 'smm-out@smm:Ventilation']
+    SMM_outcome_list = ['smm-out@' + x for x in SMMpasc_encoding.keys()]
+    df['SMM-overall-Any'] = (df[SMM_outcome_list].sum(axis=1) > 0).astype('int')
+
+    selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<34Andlivebirth',
+                            'preg_outcome-livebirth', 'preg_outcome-stillbirth',
+                            'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
+                            'preg_outcome-abortion', 'preg_outcome-abortion<20week',
+                            'preg_outcome-other', 'SMM-overall-Any'
+                            ] + SMM_outcome_list
+
+    # Step-4, Adjusted analysis and dump results
     causal_results = []
     results_columns_name = []
-    for i, pasc in tqdm(enumerate(selected_screen_list, start=1), total=len(selected_screen_list)):
 
-        print('\n In screening:', i, pasc)
-        # if i < 17:
-        #     continue
-        if pasc == 'any_pasc':
-            pasc_flag = df['any_pasc_flag'].astype('int')
-            pasc_t2e = df['any_pasc_t2e'].astype('float')
-            pasc_baseline = df['any_pasc_baseline']
-        elif pasc == 'death':
-            pasc_flag = df['death'].astype('int')
-            pasc_t2e = df['death t2e all'].astype('float')
-            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
-        elif pasc == 'death_acute':
-            pasc_flag = df['death acute'].astype('int')
-            pasc_t2e = df['death t2e acute'].astype('float')
-            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
-        elif pasc == 'death_postacute':
-            pasc_flag = df['death postacute'].astype('int')
-            pasc_t2e = df['death t2e postacute'].astype('float')
-            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
-        elif pasc == 'cvddeath_postacute':
-            pasc_flag = df['cvd death postacute'].astype('int')
-            pasc_t2e = df['cvd death t2e postacute'].astype('float')
-            pasc_baseline = (df['death'].isna()).astype('int')  # all 0, no death in baseline
-        elif pasc == 'hospitalization_acute':
-            pasc_flag = df['hospitalization-acute-flag'].astype('int')
-            pasc_t2e = df['hospitalization-acute-t2e'].astype('float')
-            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
-        elif pasc == 'hospitalization_postacute':
-            pasc_flag = df['hospitalization-postacute-flag'].astype('int')
-            pasc_t2e = df['hospitalization-postacute-t2e'].astype('float')
-            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
-        elif pasc in pasc_list:
-            pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dx-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dx-base@' + pasc]
-        elif pasc in addedPASC_list:
-            pasc_flag = (df['dxadd-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxadd-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxadd-base@' + pasc]
-        elif pasc == 'ME/CFS':
-            pasc_flag = (df['dxMECFS-out@ME/CFS'].copy() >= 1).astype('int')
-            pasc_t2e = df['dxMECFS-t2e@ME/CFS'].astype('float')
-            pasc_baseline = df['dxMECFS-base@ME/CFS']
+    # save the original df for later use
+    df_og = df.copy()
 
-        elif pasc in brainfog_list:
-            pasc_flag = (df['dxbrainfog-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxbrainfog-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxbrainfog-base@' + pasc]
-        elif pasc == 'any_brainfog':
-            pasc_flag = df['any_brainfog_flag'].astype('int')
-            pasc_t2e = df['any_brainfog_t2e'].astype('float')
-            pasc_baseline = df['any_brainfog_baseline']
-        elif pasc == 'any_CFR':
-            pasc_flag = df['any_CFR_flag'].astype('int')
-            pasc_t2e = df['any_CFR_t2e'].astype('float')
-            pasc_baseline = df['any_CFR_baseline']
-        elif pasc in CFR_list:
-            pasc_flag = (df['dxCFR-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxCFR-base@' + pasc]
+    for i, outcome_of_interest in tqdm(enumerate(selected_screen_list, start=1), total=len(selected_screen_list)):
+        """
+        # outcome setup for pregnant outcome: exposure, cov, and outcome
+        # Binary during 1 year after pregnancy onset
+        # perterm birth is defined among live birth
+        # others can be evaluated among all
+        """
+        print('\n In screening:', i, outcome_of_interest)
 
-        # considering competing risks of death, and (all, acute, post-acute) death as outcomes
-        if pasc == 'death':
-            print('considering pasc death over all time, not set competing risk')
-        elif pasc == 'death_acute':
-            print('considering pasc death in acute phase, not set competing risk')
-        elif pasc == 'death_postacute':
-            print('considering pasc death in POST acute phase, set acute death as censored')
-            pasc_flag.loc[df['death acute'] == 1] = 0
-        elif pasc == 'cvddeath_postacute':
-            print('considering pasc death in POST acute phase, set acute death as censored')
-            pasc_flag.loc[df['death acute'] == 1] = 0
+        if ((outcome_of_interest == 'preterm birth<37Andlivebirth') or
+                (outcome_of_interest == 'preterm birth<34Andlivebirth')):
+            # select live birth cohort only for calculating
+            # select outcome flag
+            df = df_og.loc[df_og['preg_outcome-livebirth'] == 1]
         else:
-            # general conditions
-            print('considering general pasc in POST acute phase, set any death as competing risk')
-            death_flag = df['death']
-            death_t2e = df['death t2e']
-            # if there is a death event, pasc from 30-180, post acute death censored event time
-            # acute death < 30, censored at 30 days
-            pasc_flag.loc[(death_t2e <= pasc_t2e)] = 2
+            df = df_og
 
-            print('#death:', (death_t2e == pasc_t2e).sum(), ' #death in covid+:',
-                  df_label[(death_t2e == pasc_t2e)].sum(),
-                  'ratio of death in covid+:', df_label[(death_t2e == pasc_t2e)].mean())
 
-        # Select population free of outcome at baseline
-        idx = (pasc_baseline < 1)
-        covid_label = df_label[idx]  # actually current is the treatment label
-        n_covid_pos = covid_label.sum()
-        n_covid_neg = (covid_label == 0).sum()
-        print('n case:', n_covid_pos, 'n control:', n_covid_neg, )
+        outcome_of_interest_flag = (df[outcome_of_interest]>= 1).astype('int') # outcome label, binary
+        exposure_label = (df['exposed'] >= 1).astype('int') # exposure label, binary
+        covs_array = df.loc[:, covs_columns].astype('float')
 
-        # Sample all negative
-        # sampled_neg_index = covid_label[(covid_label == 0)].sample(n=int(args.negative_ratio * n_covid_pos),
-        #                                                                replace=False,
-        #                                                                random_state=args.random_seed).index
-        sampled_neg_index = covid_label[(covid_label == 0)].sample(frac=1,
-                                                                   replace=False,
-                                                                   random_state=args.random_seed).index
 
-        pos_neg_selected = pd.Series(False, index=pasc_baseline.index)
-        pos_neg_selected[sampled_neg_index] = True
-        pos_neg_selected[covid_label[covid_label == 1].index] = True
-        #
-        # pat_info = df_info.loc[pos_neg_selected, :]
-        covid_label = df_label[pos_neg_selected]
-        covs_array = df_covs.loc[pos_neg_selected, :]
-        pasc_flag = pasc_flag[pos_neg_selected]
-        pasc_t2e = pasc_t2e[pos_neg_selected]
-        print('pasc_t2e.describe():', pasc_t2e.describe())
+        print('Overall patients: {} ({:.2f}%)'.format(len(df), 1.*100),
+              'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag.sum(),
+                                                    outcome_of_interest_flag.sum()/len(df) * 100))
+        print('Exposed patients: {} ({:.2f}%)'.format((exposure_label == 1).sum(), (exposure_label == 1).mean() * 100),
+              'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag[(exposure_label == 1)].sum(),
+                                                   outcome_of_interest_flag[(exposure_label == 1)].sum() / (
+                                                           exposure_label == 1).sum()* 100))
+        print('Control patients: {} ({:.2f}%)'.format((exposure_label == 0).sum(), (exposure_label == 0).mean()*100),
+              'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag[(exposure_label == 0)].sum(),
+                                                   outcome_of_interest_flag[(exposure_label == 0)].sum() / (
+                                                           exposure_label == 0).sum() * 100))
 
-        # all the post-acute events and t2e are from 30/31 - 180, this is just for data clean
-        # pasc_t2e[pasc_t2e <= 30] = 30
-
-        print('pasc_flag.value_counts():\n', pasc_flag.value_counts())
-        print(i, pasc, '-- Selected cohorts {}/{} ({:.2f}%), Paxlovid pos:neg = {}:{} sample ratio -/+={}, '
-                       'Overall pasc events pos:neg:death '
-                       '= {}:{}:{}'.format(
-            pos_neg_selected.sum(), len(df), pos_neg_selected.sum() / len(df) * 100,
-            covid_label.sum(), (covid_label == 0).sum(), args.negative_ratio,
-            (pasc_flag == 1).sum(), (pasc_flag == 0).sum(), (pasc_flag == 2).sum()))
-
+        # zz
         # model = ml.PropensityEstimator(learner='LR', random_seed=args.random_seed).cross_validation_fit(covs_array,
-        #                                                                                                 covid_label,
+        #                                                                                                 exposure_label,
         #                                                                                                 verbose=0)
         # , paras_grid = {
         #     'penalty': 'l2',
@@ -1374,12 +1396,12 @@ if __name__ == "__main__":
             'C': 10 ** np.arange(-1.5, 1., 0.25),  # 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
             'random_state': [args.random_seed], }, add_none_penalty=False).cross_validation_fit(
-            covs_array, covid_label, verbose=0)
+            covs_array, exposure_label, verbose=0)
 
         ps = model.predict_ps(covs_array)
         model.report_stats()
-        iptw = model.predict_inverse_weight(covs_array, covid_label, stabilized=True, clip=True)
-        smd, smd_weighted, before, after = model.predict_smd(covs_array, covid_label, abs=False, verbose=True)
+        iptw = model.predict_inverse_weight(covs_array, exposure_label, stabilized=True, clip=True)
+        smd, smd_weighted, before, after = model.predict_smd(covs_array, exposure_label, abs=False, verbose=True)
         # plt.scatter(range(len(smd)), smd)
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
@@ -1387,41 +1409,41 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
             args.negative_ratio, '-adjustless' if args.adjustless else '',
-            i, _clean_name_(pasc))
+            i, _clean_name_(outcome_of_interest))
 
         utils.check_and_mkdir(out_file_balance)
         model.results.to_csv(out_file_balance)  # args.save_model_filename +
 
-        df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
+        df_summary = summary_covariate(covs_array, exposure_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
-                i, _clean_name_(pasc)))
+                i, _clean_name_(outcome_of_interest)))
 
-        dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': covid_label})
+        dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': exposure_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                args.exptype,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
-                i, _clean_name_(pasc)))
+                i, _clean_name_(outcome_of_interest)))
         try:
-            figout = r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                args.exptype,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
-                i, _clean_name_(pasc))
+                i, _clean_name_(outcome_of_interest))
             print('Dump ', figout)
 
             ax = plt.subplot(111)
@@ -1431,7 +1453,7 @@ if __name__ == "__main__":
             )
             plt.tight_layout()
             # plt.show()
-            plt.title(pasc, fontsize=12)
+            plt.title(outcome_of_interest, fontsize=12)
             plt.savefig(figout)
             plt.close()
         except Exception as e:
@@ -1440,25 +1462,25 @@ if __name__ == "__main__":
             plt.close()
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
-            covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/{}-{}-km.png'.format(
+            exposure_label, iptw, outcome_of_interest_flag, outcome_of_interest_t2e,
+            fig_outfile=r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                args.exptype,  # '-select' if args.selectpasc else '',
+                args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
-                i, _clean_name_(pasc)),
-            title=pasc,
+                i, _clean_name_(outcome_of_interest)),
+            title=outcome_of_interest,
             legends={'case': case_label, 'control': ctrl_label})
 
         try:
             # change 2022-03-20 considering competing risk 2
             # change 2024-02-29 add CI for CIF difference and KM difference
-            _results = [i, pasc,
-                        covid_label.sum(), (covid_label == 0).sum(),
-                        (pasc_flag[covid_label == 1] == 1).sum(), (pasc_flag[covid_label == 0] == 1).sum(),
-                        (pasc_flag[covid_label == 1] == 1).mean(), (pasc_flag[covid_label == 0] == 1).mean(),
-                        (pasc_flag[covid_label == 1] == 2).sum(), (pasc_flag[covid_label == 0] == 2).sum(),
-                        (pasc_flag[covid_label == 1] == 2).mean(), (pasc_flag[covid_label == 0] == 2).mean(),
+            _results = [i, outcome_of_interest,
+                        exposure_label.sum(), (exposure_label == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(), (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(), (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(), (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(), (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),
                         (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value,
@@ -1477,8 +1499,8 @@ if __name__ == "__main__":
                         cox_w[4], model.best_hyper_paras]
             causal_results.append(_results)
             results_columns_name = [
-                'i', 'pasc', 'case+', 'ctrl-',
-                'no. pasc in +', 'no. pasc in -', 'mean pasc in +', 'mean pasc in -',
+                'i', 'outcome_of_interest', 'case+', 'ctrl-',
+                'no. outcome_of_interest in +', 'no. outcome_of_interest in -', 'mean outcome_of_interest in +', 'mean outcome_of_interest in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
@@ -1496,33 +1518,33 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
                         args.negative_ratio, '-adjustless' if args.adjustless else '',
                         i))
         except:
-            print('Error in ', i, pasc)
+            print('Error in ', i, outcome_of_interest)
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                    args.exptype,  # '-select' if args.selectpasc else '',
+                    args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                     args.negative_ratio, '-adjustless' if args.adjustless else '',
                 ))
 
-        print('done one pasc, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+        print('done one outcome_of_interest, time:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/naltrexone-{}-{}-{}s{}{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-            args.exptype,  # '-select' if args.selectpasc else '',
+            args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
             args.negative_ratio, '-adjustless' if args.adjustless else '',
         ))
     print('Done! Total Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
