@@ -449,7 +449,7 @@ def add_col(df):
             df.loc[index, 'cci_quan:11+'] = 1
 
         if row['score_cci_quan'] >= 3:
-            df.loc[index, 'cci_quan:3+'] = 1 
+            df.loc[index, 'cci_quan:3+'] = 1
 
         if row['Asian'] and ((row['Hispanic: Yes'] == 0) or (row['Hispanic: No'] == 1)):
             df.loc[index, 'RE:Asian Non-Hispanic'] = 1
@@ -1076,8 +1076,8 @@ if __name__ == "__main__":
     df.to_csv(out_file_for_table, index=False)
     print('Dump {} done!'.format(out_file_for_table))
 
-    # Step-2: Select Cov and Outcome columns
-    zz
+    # Step-2: Select Cov columns
+
     ### 2025-09-11
     ### remove death and pasc label portion here, already labeled in step 1. refer to code in other iptw file
     ### data clean for <0 error death records, and add censoring to the death time to event columns
@@ -1112,7 +1112,7 @@ if __name__ == "__main__":
     #
     # df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    covs_columns = [ 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+    covs_columns = ([ 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
                      'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years',
                      'RE:Asian Non-Hispanic',
                      'RE:Black or African American Non-Hispanic',
@@ -1120,79 +1120,84 @@ if __name__ == "__main__":
                      'RE:Other Non-Hispanic', 'RE:Unknown',
                      'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
                      'BMI: >=30 obese ', 'BMI: missing',
-                     "Type 1 or 2 Diabetes Diagnosis", "autoimmune/immune suppression", "Severe Obesity", ]
+                     ] +
+                    [
+                        'PaxRisk:Cancer',
+                        'PaxRisk:Chronic kidney disease',
+                        'PaxRisk:Chronic liver disease',
+                        'PaxRisk:Chronic lung disease',
+                        #'PaxRisk:Cystic fibrosis',
+                        #'PaxRisk:Dementia or other neurological conditions',
+                        'PaxRisk:Diabetes',
+                        #'PaxRisk:Disabilities',
+                        'PaxRisk:Heart conditions',
+                        'PaxRisk:Hypertension',
+                        'PaxRisk:HIV infection',
+                        'PaxRisk:Immunocompromised condition or weakened immune system',
+                        #'PaxRisk:Mental health conditions', # use obc mental part
+                        #'PaxRisk:Overweight and obesity',
+                        'PaxRisk:Obesity',
+                        #'PaxRisk:Pregnancy',
+                        'PaxRisk:Sickle cell disease or thalassemia',
+                        'PaxRisk:Smoking current',
+                        'PaxRisk:Stroke or cerebrovascular disease',
+                        'PaxRisk:Substance use disorders', # use this one, more than obc: substance one
+                        'PaxRisk:Tuberculosis'] +
+                    [
+                        #'obc:Placenta accreta spectrum',
+                        'obc:Pulmonary hypertension',
+                        'obc:Chronic renal disease',
+                        'obc:Cardiac disease, preexisting',
+                        # 'obc:HIV/AIDS',
+                        # 'obc:Preeclampsia with severe features',
+                        # 'obc:Placental abruption',
+                        'obc:Bleeding disorder, preexisting',
+                        'obc:Anemia, preexisting',
+                        # 'obc:Twin/multiple pregnancy',
+                        'obc:Preterm birth (< 37 weeks)',
+                        #'obc:Placenta previa, complete or partial',
+                        'obc:Neuromuscular disease',
+                        'obc:Asthma, acute or moderate/severe',
+                        'obc:Preeclampsia without severe features or gestational hypertension',
+                        #'obc:Connective tissue or autoimmune disease',
+                        'obc:Uterine fibroids',
+                        #'obc:Substance use disorder',
+                        'obc:Gastrointestinal disease',
+                        'obc:Chronic hypertension',
+                        'obc:Major mental health disorder',
+                        #'obc:Preexisting diabetes mellitus',
+                        'obc:Thyrotoxicosis',
+                        'obc:Previous cesarean birth',
+                        # 'obc:Gestational diabetes mellitus',
+                        # 'obc:Delivery BMI\xa0>\xa040'
+                    ])
 
-    # if args.cohorttype in ['overall']:
-    covs_columns = [
-        'Female', 'Male', 'Other/Missing',
-        'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64', 'age@65+',
-        'RE:Asian Non-Hispanic',
-        'RE:Black or African American Non-Hispanic',
-        'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
-        'RE:Other Non-Hispanic', 'RE:Unknown',
-        'outpatient', 'inpatienticu',
-        'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
-        'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
-        '03/22-06/22', '07/22-10/22', '11/22-02/23',
-        '03/23-06/23', '07/23-10/23', '11/23-02/24',
-        '03/24-06/24', '07/24-10/24',
-        # 'quart:01/22-03/22', 'quart:04/22-06/22', 'quart:07/22-09/22', 'quart:10/22-1/23',
-        'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
-        'inpatient visits >=5',
-        'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
-        'outpatient visits >=5',
-        'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
-        'emergency visits >=5',
-        'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
-        'BMI: >=30 obese ', 'BMI: missing',
-        # 'PaxRisk:Cancer',
-        'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
-        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
-        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
-        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension',  # 'PaxRisk:HIV infection',
-        'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
-        #'PaxRisk:Overweight and obesity',  # 'PaxRisk:Pregnancy',
-        'PaxRisk:Sickle cell disease or thalassemia',
-        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
-        #'PaxRisk:Substance use disorders',
-        'PaxRisk:Tuberculosis',
-        'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
-        "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
-        'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
-        'mental-base@Schizophrenia Spectrum and Other Psychotic Disorders',
-        'mental-base@Depressive Disorders',
-        'mental-base@Bipolar and Related Disorders',
-        'mental-base@Anxiety Disorders',
-        'mental-base@Obsessive-Compulsive and Related Disorders',
-        'mental-base@Post-traumatic stress disorder',
-        'mental-base@Bulimia nervosa',
-        'mental-base@Binge eating disorder',
-        # 'mental-base@premature ejaculation',
-        'mental-base@Autism spectrum disorder',
-        'mental-base@Premenstrual dysphoric disorder',
-        'mental-base@SMI',
-        #'mental-base@non-SMI',
-        'dxcovNaltrexone-basedrugonset@MECFS',
-        # 'dxcovNaltrexone-basedrugonset@Pain',
-        'dxcovNaltrexone-basedrugonset@substance use disorder ',
-        'dxcovNaltrexone-basedrugonset@opioid use disorder',
-        'dxcovNaltrexone-basedrugonset@Opioid induced constipation',
-        # 'dxcovNaltrexone-basedrugonset@Obesity',
-        'PaxRisk:Obesity',
-        'dxcovNaltrexone-basedrugonset@Crohn-Inflamm_Bowel',
-        'dxcovNaltrexone-basedrugonset@fibromyalgia',
-        'dxcovNaltrexone-basedrugonset@multiple sclerosis',
-        'dxcovNaltrexone-basedrugonset@POTS'
-    ]
 
     if args.adjustless:
         covs_columns = [
-            'Female', 'Male', 'Other/Missing',
-            'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',  # 'age@65+', # # expand 65
-            '65-<75 years', '75-<85 years', '85+ years', ]
+            'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+            'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years',
+            'RE:Asian Non-Hispanic',
+            'RE:Black or African American Non-Hispanic',
+            'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
+            'RE:Other Non-Hispanic', 'RE:Unknown',
+            'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+            'BMI: >=30 obese ', 'BMI: missing',
+            'PaxRisk:Obesity',
+            'PaxRisk:Chronic kidney disease',
+            'PaxRisk:Hypertension',
+            'PaxRisk:Immunocompromised condition or weakened immune system',
+            'PaxRisk:Smoking current',
+            'PaxRisk:Substance use disorders'
+        ]
+
+    print('len(covs_columns):', len(covs_columns), covs_columns)
+    print('Still lack time between infect and preg onset, setup later')
     #
     # if args.cohorttype == 'overall':
     #     covs_columns += ['ADHD_before_drug_onset', ]
+
+    # Step-3, Setup outcomes of interest
 
     print('cohorttype:', args.cohorttype)
     print('len(covs_columns):', len(covs_columns), covs_columns)
