@@ -21,6 +21,8 @@ import datetime
 import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
 import ast
+from scipy.stats.contingency import odds_ratio
+import statsmodels.api as sm
 
 print = functools.partial(print, flush=True)
 
@@ -78,10 +80,9 @@ def parse_args():
     parser.add_argument('--dump', action='store_true')
     parser.add_argument('--adjustless', action='store_true')
 
-
-    parser.add_argument('--cohorttype', #
+    parser.add_argument('--cohorttype',  #
                         choices=['pregafter30', 'pregafter180',
-                                   ],
+                                 ],
                         default='pregafter180')
     parser.add_argument('--exptype',
                         choices=['anypasc', 'anyCFR', 'mecfs', 'brainfog', 'U099',
@@ -143,10 +144,12 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
 
+
 def _decode_list_date_code(lstr):
     result = ast.literal_eval(lstr)
 
     return result
+
 
 def feature_process_pregnancy(df):
     print('feature_process_additional, df.shape', df.shape)
@@ -278,7 +281,6 @@ def add_col(df):
             ((df["DX: Diabetes Type 1"] >= 1).astype('int') + (df["DX: Diabetes Type 2"] >= 1).astype('int')) >= 1
     ).astype('int')
 
-
     df['PaxRisk:Cancer'] = (
             ((df["DX: Cancer"] >= 1).astype('int') +
              (df['CCI:Cancer'] >= 1).astype('int') +
@@ -384,7 +386,8 @@ def add_col(df):
 
     df['PaxRisk:Smoking current'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
     df['PaxRisk:Smoking-Tobacco'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
-    df['PaxRisk:Smoking-Tobacco-Disorder'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)| (df['dx-base@Tobacco-related disorders'] >= 1)).astype('int')
+    df['PaxRisk:Smoking-Tobacco-Disorder'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1) | (
+                df['dx-base@Tobacco-related disorders'] >= 1)).astype('int')
 
     # cell transplant, --> autoimmu category?
 
@@ -874,7 +877,7 @@ def exact_match_on(df_case, df_ctrl, kmatch, cols_to_match, random_seed=0):
 
 
 def _clean_name_(s, maxlen=50):
-    s = s.replace(':', '-').replace('/', '-').replace('@', '-')
+    s = s.replace(':', '-').replace('/', '-').replace('@', '-').replace('<', 'Less')
     s_trunc = (s[:maxlen] + '..') if len(s) > maxlen else s
     return s_trunc
 
@@ -1044,115 +1047,125 @@ if __name__ == "__main__":
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
+    # # **************
+    # # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
+    # in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
+    # in_file_og = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days.csv'
+    #
+    # print('infile update at pregnant onset:', in_file)
+    # print('infile at covid infection:', in_file_og)
+    # print('cohorttype:', )
+    #
+    # df = pd.read_csv(in_file,
+    #                  dtype={'patid': str, 'site': str, 'zip': str},
+    #                  parse_dates=['index date', 'dob',
+    #                               'index_date_pregnant_onset',
+    #                               'index_date_delivery',
+    #                               'index_date_pregnant_end'
+    #                               ])
+    #
+    # df_og = pd.read_csv(in_file_og,
+    #                     dtype={'patid': str, 'site': str, 'zip': str},
+    #                     parse_dates=['index date', 'dob',
+    #                                  'flag_delivery_date',
+    #                                  'flag_pregnancy_start_date',
+    #                                  'flag_pregnancy_end_date'
+    #                                  ])
+    #
+    # print('df.shape:', df.shape)
+    # print('df_og.shape:', df_og.shape)
+    #
+    # df = pd.merge(df, df_og, how='left', left_on=['patid', 'site'], right_on=['patid', 'site'], suffixes=('', '_og'), )
+    # print('After left merge, merged df.shape:', df.shape)
+    #
+    # print('Additional feature preprocessing for adjust and outcomes...')
+    # print('...Part1:  add_col: ing')
+    # df = add_col(df)
+    # print('... add_col done!')
+    #
+    # # deal with pregnancy related cov and outcomes
+    # print('...Part2:  feature_process_pregnancy: ing')
+    # df = feature_process_pregnancy(df)
+    # print('... feature_process_pregnancy done!')
+    #
+    # ## to do
+    # ## 1. cov, outcome, and expsoure columns
+    # ## 2. double check, simple table,
+    # ## 3. adjust analysis and print results
+    # ## 4. print final table on cov, outcome, etc.
+    #
+    # # df.to_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset-mergeOG.csv')
+    #
+    # print('Before selecting cohortype, ', args.cohorttype, len(df))
+    # N = len(df)
+    #
+    # ## Step-1: Build exposed groups
+    # # pregnancy onset after covid infection selection, primary 180, use this for other sensitivity analysis
+    # if args.cohorttype == 'pregafter30':
+    #     pass
+    # elif args.cohorttype == 'pregafter180':
+    #     n = len(df)
+    #     time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
+    #     df = df.loc[time_order_flag, :]
+    #     print('After selecting pregnant >= +180 days, len(df),\n',
+    #           '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+    # else:
+    #     raise ValueError
+    #
+    # # label target exposure of interest
+    # if args.exptype == 'anypasc':
+    #     pasc_flag = df['any_pasc_flag'].astype('int')
+    #     pasc_t2e_label = 'any_pasc_t2e'
+    # else:
+    #     raise ValueError
+    #
+    # contrl_label = (df['any_pasc_flag'] == 0) & (df['any_CFR_flag'] == 0) & (df['any_brainfog_flag'] == 0) & \
+    #                (df['dxMECFS-out@ME/CFS'] == 0) & (df['dx-out@' + 'PASC-General'] == 0)
+    #
+    # df_pos = df.loc[(pasc_flag > 0), :]
+    # df_pos['exposed'] = 1
+    # print("Exposed group: ((pasc_flag > 0) ) len(df_pos)", len(df_pos))
+    #
+    # df_neg = df.loc[contrl_label, :]
+    # df_neg['exposed'] = 0
+    # print("V2-Contrl group, no all LC:  contrl_label  len(df_neg)", len(df_neg))
+    #
+    # df = pd.concat([df_pos.reset_index(), df_neg.reset_index()], ignore_index=True)
+    # print('After selected exposed groul, len(df)', len(df),
+    #       'exposed group:', len(df_pos),
+    #       'contrl group:', len(df_neg))
+    #
+    # print('After selecting cohortype, ', len(df))
+    # case_label = 'Exposed'
+    # ctrl_label = 'Ctrl'
+    #
+    # print('Before select_subpopulation, len(df)', args.cohorttype, len(df))
+    # df = select_subpopulation(df, args.severity)
+    # print('After select_subpopulation, len(df)', len(df))
+    #
+    # print('After building exposure groups:\n',
+    #       'args.cohorttype:', args.cohorttype, 'args.exptype:', args.exptype, 'args.severity', args.severity,
+    #       'len(df)', len(df), 'df.shape', df.shape,
+    #       'exposed group:', (df['exposed'] == 1).sum(), 'contrl group:', (df['exposed'] == 0).sum())
+    # print('%: {}/{}\t{:.2f}%'.format(len(df), N, len(df) / N * 100))
+    #
+    # out_file_for_table = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-{}-{}-{}.csv'.format(
+    #     args.cohorttype, args.severity, args.exptype)
+    # df.to_csv(out_file_for_table, index=False)
+    # print('Dump {} done!'.format(out_file_for_table))
+    # print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    # # **************
 
-
-    in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
-    in_file_og = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days.csv'
-
-    print('infile update at pregnant onset:', in_file)
-    print('infile at covid infection:', in_file_og)
-    print('cohorttype:',  )
-
-    df = pd.read_csv(in_file,
-                     dtype={'patid': str, 'site': str, 'zip': str},
-                     parse_dates=['index date', 'dob',
-                                  'index_date_pregnant_onset',
-                                  'index_date_delivery',
-                                  'index_date_pregnant_end'
-                                  ])
-
-    df_og = pd.read_csv(in_file_og,
+    print('Read dump file for debug:')
+    df = pd.read_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-pregafter180-all-anypasc.csv',
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
                                   'flag_delivery_date',
                                   'flag_pregnancy_start_date',
                                   'flag_pregnancy_end_date'
-                                  ])
-
+                                  ],
+                     )
     print('df.shape:', df.shape)
-    print('df_og.shape:', df_og.shape)
-
-    df = pd.merge(df, df_og, how='left', left_on=['patid', 'site'], right_on=['patid', 'site'], suffixes=('', '_og'), )
-    print('After left merge, merged df.shape:', df.shape)
-
-    print('Additional feature preprocessing for adjust and outcomes...')
-    print('...Part1:  add_col: ing')
-    df = add_col(df)
-    print('... add_col done!')
-
-    # deal with pregnancy related cov and outcomes
-    print('...Part2:  feature_process_pregnancy: ing')
-    df = feature_process_pregnancy(df)
-    print('... feature_process_pregnancy done!')
-
-    ## to do
-    ## 1. cov, outcome, and expsoure columns
-    ## 2. double check, simple table,
-    ## 3. adjust analysis and print results
-    ## 4. print final table on cov, outcome, etc.
-
-    # df.to_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset-mergeOG.csv')
-
-    print('Before selecting cohortype, ', args.cohorttype, len(df))
-    N = len(df)
-
-    ## Step-1: Build exposed groups
-    # pregnancy onset after covid infection selection, primary 180, use this for other sensitivity analysis
-    if args.cohorttype == 'pregafter30':
-        pass
-    elif args.cohorttype == 'pregafter180':
-        n = len(df)
-        time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
-        df = df.loc[time_order_flag, :]
-        print('After selecting pregnant >= +180 days, len(df),\n',
-              '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
-    else:
-        raise ValueError
-
-    # label target exposure of interest
-    if args.exptype == 'anypasc':
-        pasc_flag = df['any_pasc_flag'].astype('int')
-        pasc_t2e_label = 'any_pasc_t2e'
-    else:
-        raise ValueError
-
-    contrl_label = (df['any_pasc_flag'] == 0) & (df['any_CFR_flag'] == 0) & (df['any_brainfog_flag'] == 0) & \
-                   (df['dxMECFS-out@ME/CFS'] == 0) & (df['dx-out@' + 'PASC-General'] == 0)
-
-    df_pos = df.loc[(pasc_flag > 0), :]
-    df_pos['exposed'] = 1
-    print("Exposed group: ((pasc_flag > 0) ) len(df_pos)", len(df_pos))
-
-    df_neg = df.loc[contrl_label, :]
-    df_neg['exposed'] = 0
-    print("V2-Contrl group, no all LC:  contrl_label  len(df_neg)", len(df_neg))
-
-    df = pd.concat([df_pos.reset_index(), df_neg.reset_index()], ignore_index= True)
-    print('After selected exposed groul, len(df)', len(df),
-          'exposed group:', len(df_pos),
-          'contrl group:', len(df_neg))
-
-
-    print('After selecting cohortype, ', len(df))
-    case_label = 'Exposed'
-    ctrl_label = 'Ctrl'
-
-    print('Before select_subpopulation, len(df)', args.cohorttype, len(df))
-    df = select_subpopulation(df, args.severity)
-    print('After select_subpopulation, len(df)', len(df))
-
-    print('After building exposure groups:\n',
-          'args.cohorttype:', args.cohorttype, 'args.exptype:', args.exptype, 'args.severity', args.severity,
-          'len(df)', len(df), 'df.shape', df.shape,
-          'exposed group:', (df['exposed']==1).sum(), 'contrl group:', (df['exposed']==0).sum())
-    print('%: {}/{}\t{:.2f}%'.format(len(df), N, len(df) / N * 100))
-
-    out_file_for_table = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-{}-{}-{}.csv'.format(
-        args.cohorttype, args.severity, args.exptype)
-    df.to_csv(out_file_for_table, index=False)
-    print('Dump {} done!'.format(out_file_for_table))
-    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
 
     # Step-2: Select Cov columns
     # zz
@@ -1190,7 +1203,7 @@ if __name__ == "__main__":
     #
     # df_outcome = df.loc[:, df_outcome_cols]  # .astype('float')
 
-    covs_columns = ([ 'pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
+    covs_columns = (['pregage:18-<25 years', 'pregage:25-<30 years', 'pregage:30-<35 years',
                      'pregage:35-<40 years', 'pregage:40-<45 years', 'pregage:45-50 years',
                      'RE:Asian Non-Hispanic',
                      'RE:Black or African American Non-Hispanic',
@@ -1204,25 +1217,25 @@ if __name__ == "__main__":
                         'PaxRisk:Chronic kidney disease',
                         'PaxRisk:Chronic liver disease',
                         'PaxRisk:Chronic lung disease',
-                        #'PaxRisk:Cystic fibrosis',
-                        #'PaxRisk:Dementia or other neurological conditions',
+                        # 'PaxRisk:Cystic fibrosis',
+                        # 'PaxRisk:Dementia or other neurological conditions',
                         'PaxRisk:Diabetes',
-                        #'PaxRisk:Disabilities',
+                        # 'PaxRisk:Disabilities',
                         'PaxRisk:Heart conditions',
                         'PaxRisk:Hypertension',
                         'PaxRisk:HIV infection',
                         'PaxRisk:Immunocompromised condition or weakened immune system',
-                        #'PaxRisk:Mental health conditions', # use obc mental part
-                        #'PaxRisk:Overweight and obesity',
+                        # 'PaxRisk:Mental health conditions', # use obc mental part
+                        # 'PaxRisk:Overweight and obesity',
                         'PaxRisk:Obesity',
-                        #'PaxRisk:Pregnancy',
+                        # 'PaxRisk:Pregnancy',
                         'PaxRisk:Sickle cell disease or thalassemia',
                         'PaxRisk:Smoking current',
                         'PaxRisk:Stroke or cerebrovascular disease',
-                        'PaxRisk:Substance use disorders', # use this one, more than obc: substance one
+                        'PaxRisk:Substance use disorders',  # use this one, more than obc: substance one
                         'PaxRisk:Tuberculosis'] +
                     [
-                        #'obc:Placenta accreta spectrum',
+                        # 'obc:Placenta accreta spectrum',
                         'obc:Pulmonary hypertension',
                         'obc:Chronic renal disease',
                         'obc:Cardiac disease, preexisting',
@@ -1233,23 +1246,22 @@ if __name__ == "__main__":
                         'obc:Anemia, preexisting',
                         # 'obc:Twin/multiple pregnancy',
                         'obc:Preterm birth (< 37 weeks)',
-                        #'obc:Placenta previa, complete or partial',
+                        # 'obc:Placenta previa, complete or partial',
                         'obc:Neuromuscular disease',
                         'obc:Asthma, acute or moderate/severe',
                         'obc:Preeclampsia without severe features or gestational hypertension',
-                        #'obc:Connective tissue or autoimmune disease',
+                        # 'obc:Connective tissue or autoimmune disease',
                         'obc:Uterine fibroids',
-                        #'obc:Substance use disorder',
+                        # 'obc:Substance use disorder',
                         'obc:Gastrointestinal disease',
                         'obc:Chronic hypertension',
                         'obc:Major mental health disorder',
-                        #'obc:Preexisting diabetes mellitus',
+                        # 'obc:Preexisting diabetes mellitus',
                         'obc:Thyrotoxicosis',
                         'obc:Previous cesarean birth',
                         # 'obc:Gestational diabetes mellitus',
                         # 'obc:Delivery BMI\xa0>\xa040'
                     ])
-
 
     if args.adjustless:
         covs_columns = [
@@ -1363,20 +1375,18 @@ if __name__ == "__main__":
         else:
             df = df_og
 
-
-        outcome_of_interest_flag = (df[outcome_of_interest]>= 1).astype('int') # outcome label, binary
-        exposure_label = (df['exposed'] >= 1).astype('int') # exposure label, binary
+        outcome_of_interest_flag = (df[outcome_of_interest] >= 1).astype('int')  # outcome label, binary
+        exposure_label = (df['exposed'] >= 1).astype('int')  # exposure label, binary
         covs_array = df.loc[:, covs_columns].astype('float')
 
-
-        print('Overall patients: {} ({:.2f}%)'.format(len(df), 1.*100),
+        print('Overall patients: {} ({:.2f}%)'.format(len(df), 1. * 100),
               'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag.sum(),
-                                                    outcome_of_interest_flag.sum()/len(df) * 100))
+                                                   outcome_of_interest_flag.sum() / len(df) * 100))
         print('Exposed patients: {} ({:.2f}%)'.format((exposure_label == 1).sum(), (exposure_label == 1).mean() * 100),
               'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag[(exposure_label == 1)].sum(),
                                                    outcome_of_interest_flag[(exposure_label == 1)].sum() / (
-                                                           exposure_label == 1).sum()* 100))
-        print('Control patients: {} ({:.2f}%)'.format((exposure_label == 0).sum(), (exposure_label == 0).mean()*100),
+                                                           exposure_label == 1).sum() * 100))
+        print('Control patients: {} ({:.2f}%)'.format((exposure_label == 0).sum(), (exposure_label == 0).mean() * 100),
               'Outcome event: {} ({:.2f}%)'.format(outcome_of_interest_flag[(exposure_label == 0)].sum(),
                                                    outcome_of_interest_flag[(exposure_label == 0)].sum() / (
                                                            exposure_label == 0).sum() * 100))
@@ -1405,6 +1415,7 @@ if __name__ == "__main__":
         # plt.scatter(range(len(smd)), smd)
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
+
         print('n unbalanced covariates before:after = {}:{}'.format(
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
@@ -1461,6 +1472,92 @@ if __name__ == "__main__":
             print(str(e))
             plt.close()
 
+        # 1. calculate odds ratio by original contigency table
+        #             exposed    unexposed
+        # cases          a           b
+        # noncases       c           d
+        n_exposed = (exposure_label == 1).sum()
+        n_unexposed = (exposure_label == 0).sum()
+        cont_table_a = outcome_of_interest_flag[(exposure_label == 1)].sum()
+        cont_table_b = outcome_of_interest_flag[(exposure_label == 0)].sum()
+        cont_table_c = (outcome_of_interest_flag[(exposure_label == 1)] == 0).sum()
+        cont_table_d = (outcome_of_interest_flag[(exposure_label == 0)] == 0).sum()
+
+        cont_table = [[cont_table_a, cont_table_b], [cont_table_c, cont_table_d]]
+        res_crude = odds_ratio(cont_table)
+        or_crude = res_crude.statistic
+        ci_crude = res_crude.confidence_interval(confidence_level=0.95)
+        or_ci_crude = [or_crude, ci_crude.low, ci_crude.high]
+
+        # 2. calculate odds ratio by re-weighted contigency table
+        n_exposed_iptw = iptw[exposure_label == 1].sum()
+        n_unexposed_iptw = iptw[exposure_label == 0].sum()
+        cont_table_a_iptw = np.inner(iptw[exposure_label == 1], outcome_of_interest_flag[(exposure_label == 1)])
+        cont_table_b_iptw = np.inner(iptw[exposure_label == 0], outcome_of_interest_flag[(exposure_label == 0)])
+        cont_table_c_iptw = n_exposed_iptw - cont_table_a_iptw
+        cont_table_d_iptw = n_unexposed_iptw - cont_table_b_iptw
+
+        # just store here, not for odds_ration, where A 2x2 contingency table.  Elements must be non-negative integers.
+        cont_table_iptw = [[cont_table_a_iptw, cont_table_b_iptw], [cont_table_c_iptw, cont_table_d_iptw]]
+        # res_crude_iptw = odds_ratio(cont_table_iptw)
+        # or_crude_iptw= res_crude_iptw.statistic
+        # ci_crude_iptw = res_crude_iptw.confidence_interval(confidence_level=0.95)
+        # or_ci_crude_iptw = [or_crude_iptw, ci_crude_iptw.low, ci_crude_iptw.high]
+
+        # 3. logistic regression  iptw as another cov
+        # covs_array['iptw'] = iptw
+        X = pd.DataFrame({'exposed':exposure_label , 'iptw':iptw})
+        X = sm.add_constant(X)
+        Y = outcome_of_interest_flag
+        # Fit the logistic regression model
+        model_lg = sm.Logit(Y, X).fit()
+        # Print the model summary to get p-values
+        print(model_lg.summary())
+        # Calculate odds ratios by exponentiating the coefficients
+        odds_ratios = np.exp(model_lg.params)
+        print("\nOdds Ratios:")
+        print(odds_ratios)
+        # Extract p-values directly from the model summary
+        p_values = model_lg.pvalues
+        print("\nP-values:")
+        print(p_values)
+        # 4. logistic regression  all the other cov
+        covs_columns = [
+            'age_pregonset',
+            # 'RE:Asian Non-Hispanic',
+            # 'RE:Black or African American Non-Hispanic',
+            # 'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
+            # 'RE:Other Non-Hispanic', 'RE:Unknown',
+            # 'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+            # 'BMI: >=30 obese ', 'BMI: missing',
+            'PaxRisk:Obesity',
+            'PaxRisk:Chronic kidney disease',
+            'PaxRisk:Hypertension',
+            'PaxRisk:Immunocompromised condition or weakened immune system',
+            'PaxRisk:Smoking current',
+            'PaxRisk:Substance use disorders'
+        ]
+        data_dict = {'exposed':exposure_label } #, 'iptw':iptw}
+        for col in covs_columns:
+            data_dict[col] = df[col]
+        X = pd.DataFrame(data_dict)
+        X = sm.add_constant(X)
+        Y = outcome_of_interest_flag
+        # Fit the logistic regression model
+        model_lg = sm.Logit(Y, X).fit()
+        # Print the model summary to get p-values
+        print(model_lg.summary())
+        # Calculate odds ratios by exponentiating the coefficients
+        odds_ratios = np.exp(model_lg.params)
+        print("\nOdds Ratios:")
+        print(odds_ratios)
+        # Extract p-values directly from the model summary
+        p_values = model_lg.pvalues
+        print("\nP-values:")
+        print(p_values)
+        # 5. logistic regression iptw and all the other cov
+        #
+
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             exposure_label, iptw, outcome_of_interest_flag, outcome_of_interest_t2e,
             fig_outfile=r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-km.png'.format(
@@ -1477,10 +1574,14 @@ if __name__ == "__main__":
             # change 2024-02-29 add CI for CIF difference and KM difference
             _results = [i, outcome_of_interest,
                         exposure_label.sum(), (exposure_label == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(), (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(), (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(), (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(), (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),
                         (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value,
@@ -1500,7 +1601,8 @@ if __name__ == "__main__":
             causal_results.append(_results)
             results_columns_name = [
                 'i', 'outcome_of_interest', 'case+', 'ctrl-',
-                'no. outcome_of_interest in +', 'no. outcome_of_interest in -', 'mean outcome_of_interest in +', 'mean outcome_of_interest in -',
+                'no. outcome_of_interest in +', 'no. outcome_of_interest in -', 'mean outcome_of_interest in +',
+                'mean outcome_of_interest in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                 'km-diff', 'km-diff-time', 'km-diff-p',
