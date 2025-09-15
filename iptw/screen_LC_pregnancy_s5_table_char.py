@@ -299,6 +299,13 @@ def build_exposure_group_and_table1_print_explore():
         _quantile_str(df_neg['days_between_covid_pregnant_onset']),
         _smd(df_pos['days_between_covid_pregnant_onset'], df_neg['days_between_covid_pregnant_onset'])
     ])
+    row_names.append('Days between infection+180 and pregnancy onset (IQR)-days')
+    records.append([
+        _quantile_str(df['days_between_covid_pregnant_onset']-180),
+        _quantile_str(df_pos['days_between_covid_pregnant_onset']-180),
+        _quantile_str(df_neg['days_between_covid_pregnant_onset']-180),
+        _smd(df_pos['days_between_covid_pregnant_onset']-180, df_neg['days_between_covid_pregnant_onset']-180)
+    ])
 
     # ADI
     row_names.append('Median area deprivation index (IQR)-rank')
