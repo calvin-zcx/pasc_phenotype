@@ -1278,7 +1278,9 @@ if __name__ == "__main__":
             'PaxRisk:Hypertension',
             'PaxRisk:Immunocompromised condition or weakened immune system',
             'PaxRisk:Smoking current',
-            'PaxRisk:Substance use disorders'
+            'PaxRisk:Substance use disorders',
+            # diabites
+            #
         ]
 
     print('len(covs_columns):', len(covs_columns), covs_columns)
@@ -1542,7 +1544,44 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
             res_iptwonly = [None, ] * 7
 
-        # 4. logistic regression  all the other cov
+        # 4 IPTW to re-weight
+        X = pd.DataFrame({'exposed': exposure_label, 'iptw': iptw})
+        X = sm.add_constant(X)
+        Y = outcome_of_interest_flag
+
+        # Fit the weighted GLM model with a Binomial family and logit link
+        # The weights argument is used for freq_weights
+        try:
+            model_reweight = sm.GLM(Y, X[['const', 'exposed']], family=sm.families.Binomial(), freq_weights=X['iptw']).fit()
+            print(model_reweight.summary())
+            odds_ratios_reweight  = np.exp(model_reweight.params)
+            odds_ratios_ci_reweight = np.exp(model_reweight.conf_int())
+            print("\nOdds Ratios:")
+            print(odds_ratios_reweight)
+            # Extract p-values directly from the model summary
+            p_values_reweight = model_reweight.pvalues
+            print("\nP-values:")
+            print(p_values_reweight)
+            # [ods ration, ci low, ci upper, p]
+            res_reweight = [odds_ratios_reweight.exposed,
+                            odds_ratios_ci_reweight.loc['exposed', 0],
+                            odds_ratios_ci_reweight.loc['exposed', 1],
+                            p_values_reweight.exposed,
+                            odds_ratios_reweight, odds_ratios_ci_reweight, p_values_reweight]
+        except:
+            print('Error in Fit the logistic regression model re-weighted by IPTW', i, outcome_of_interest,
+                        exposure_label.sum(), (exposure_label == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+            res_reweight = [None, ] * 7
+
+        # 5. logistic regression  all the other cov
         covs_columns = [
             'age_pregonset',
             'days_between_covid_pregnant_onset',
@@ -1599,7 +1638,7 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
             res_regress = [None, ] * 7
 
-        # 5. logistic regression iptw and all the other cov
+        # 6. logistic regression iptw and all the other cov
         #
 
         # km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
@@ -1648,6 +1687,8 @@ if __name__ == "__main__":
                         cont_table_a_iptw, cont_table_b_iptw, cont_table_c_iptw, cont_table_d_iptw,
                         res_iptwonly[0], res_iptwonly[1], res_iptwonly[2], res_iptwonly[3],
                         res_iptwonly[4], res_iptwonly[5], res_iptwonly[6],
+                        res_reweight[0], res_reweight[1], res_reweight[2], res_reweight[3],
+                        res_reweight[4], res_reweight[5], res_reweight[6],
                         res_regress[0], res_regress[1], res_regress[2], res_regress[3],
                         res_regress[4], res_regress[5], res_regress[6],
 
@@ -1677,6 +1718,11 @@ if __name__ == "__main__":
                 "odds_ratios_iptwonly.exposed", "odds_ratios_ci_iptwonly upper", "odds_ratios_ci_iptwonly lower",
                 "p_values_iptwonly.exposed",
                 "odds_ratios_iptwonly all", "odds_ratios_ci_iptwonly all", "p_values_iptwonly all",
+
+                "odds_ratios_iptwreweight.exposed", "odds_ratios_ci_iptwreweight upper", "odds_ratios_ci_iptwreweight lower",
+                "p_values_iptwreweight.exposed",
+                "odds_ratios_iptwreweight all", "odds_ratios_ci_iptwreweight all", "p_values_iptwreweight all",
+
                 "odds_ratios_regress.exposed", "odds_ratios_ci_regress upper", "odds_ratios_ci_regress lower",
                 "p_values_regress.exposed",
                 "odds_ratios_regress all", "odds_ratios_ci_regress all", "p_values_regress all",

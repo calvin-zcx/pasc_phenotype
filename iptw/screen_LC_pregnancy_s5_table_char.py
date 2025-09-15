@@ -291,6 +291,15 @@ def build_exposure_group_and_table1_print_explore():
     #     [[_percentage_str(df[c]), _percentage_str(df_pos[c]), _percentage_str(df_neg[c]), _smd(df_pos[c], df_neg[c])]
     #      for c in col_names])
 
+    # Days between preg onset and infection
+    row_names.append('Days between infection and pregnancy onset (IQR)-days')
+    records.append([
+        _quantile_str(df['days_between_covid_pregnant_onset']),
+        _quantile_str(df_pos['days_between_covid_pregnant_onset']),
+        _quantile_str(df_neg['days_between_covid_pregnant_onset']),
+        _smd(df_pos['days_between_covid_pregnant_onset'], df_neg['days_between_covid_pregnant_onset'])
+    ])
+
     # ADI
     row_names.append('Median area deprivation index (IQR)-rank')
     records.append([
@@ -369,6 +378,12 @@ def build_exposure_group_and_table1_print_explore():
 
     records.append([])
     col_names = (
+            ['PaxRisk:Obesity',
+            'PaxRisk:Chronic kidney disease',
+            'PaxRisk:Hypertension',
+            'PaxRisk:Immunocompromised condition or weakened immune system',
+            'PaxRisk:Smoking current',
+            'PaxRisk:Substance use disorders'] +
             ['PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
              'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
              'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
@@ -406,7 +421,12 @@ def build_exposure_group_and_table1_print_explore():
              'obc:Gestational diabetes mellitus', 'obc:Delivery BMI\xa0>\xa040']
     )
 
-    col_names_out = (['Cancer', 'Chronic kidney disease',
+    col_names_out = (['Obesity',
+            'Chronic kidney disease',
+            'Hypertension',
+            'Immunocompromised condition or weakened immune system',
+            'Smoking current',
+            'Substance use disorders'] + ['Cancer', 'Chronic kidney disease',
                      'Chronic liver disease',
                      'Chronic lung disease', 'Cystic fibrosis',
                      'Dementia or other neurological conditions', 'Diabetes',
