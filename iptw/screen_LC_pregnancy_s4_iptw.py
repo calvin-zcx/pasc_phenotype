@@ -1037,7 +1037,7 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 if __name__ == "__main__":
     # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK10replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK10replace.txt
     # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK5replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK5replace.txt
-
+    # python screen_LC_pregnancy_s4_iptw.py 2>&1 | tee  preg_output/screen_LC_pregnancy_s4_iptw-pregafter180-anypasc.txt
     start_time = time.time()
     args = parse_args()
 
@@ -1273,6 +1273,7 @@ if __name__ == "__main__":
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
+            'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
             'PaxRisk:Chronic kidney disease',
             'PaxRisk:Hypertension',
@@ -1591,6 +1592,7 @@ if __name__ == "__main__":
             # 'RE:Other Non-Hispanic', 'RE:Unknown',
             # 'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             # 'BMI: >=30 obese ', 'BMI: missing',
+            'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
             'PaxRisk:Chronic kidney disease',
             'PaxRisk:Hypertension',
@@ -1621,7 +1623,6 @@ if __name__ == "__main__":
             res_regress = [ odds_ratios_regress.exposed,
                             odds_ratios_ci_regress.loc['exposed', 0],
                             odds_ratios_ci_regress.loc['exposed', 1],
-                            p_values_regress.exposed,
                             p_values_regress.exposed,
                             odds_ratios_regress, odds_ratios_ci_regress, p_values_regress
                          ]
@@ -1713,17 +1714,19 @@ if __name__ == "__main__":
                 # 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time",
                 "n_exposed", "n_unexposed", "cont_table_a", "cont_table_b", "cont_table_c", "cont_table_d",
                 "odds_ratios_crude", "odds_ratios ci_crude.low", "odds_ratios ci_crude.high",
+
                 "n_exposed_iptw", "n_unexposed_iptw",
                 "cont_table_a_iptw", "cont_table_b_iptw", "cont_table_c_iptw", "cont_table_d_iptw",
-                "odds_ratios_iptwonly.exposed", "odds_ratios_ci_iptwonly upper", "odds_ratios_ci_iptwonly lower",
+
+                "odds_ratios_iptwonly.exposed", "odds_ratios_ci_iptwonly lower", "odds_ratios_ci_iptwonly upper",
                 "p_values_iptwonly.exposed",
                 "odds_ratios_iptwonly all", "odds_ratios_ci_iptwonly all", "p_values_iptwonly all",
 
-                "odds_ratios_iptwreweight.exposed", "odds_ratios_ci_iptwreweight upper", "odds_ratios_ci_iptwreweight lower",
+                "odds_ratios_iptwreweight.exposed", "odds_ratios_ci_iptwreweight lower", "odds_ratios_ci_iptwreweight upper",
                 "p_values_iptwreweight.exposed",
                 "odds_ratios_iptwreweight all", "odds_ratios_ci_iptwreweight all", "p_values_iptwreweight all",
 
-                "odds_ratios_regress.exposed", "odds_ratios_ci_regress upper", "odds_ratios_ci_regress lower",
+                "odds_ratios_regress.exposed", "odds_ratios_ci_regress lower", "odds_ratios_ci_regress upper",
                 "p_values_regress.exposed",
                 "odds_ratios_regress all", "odds_ratios_ci_regress all", "p_values_regress all",
                 'best_hyper_paras']
