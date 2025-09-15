@@ -1487,7 +1487,7 @@ if __name__ == "__main__":
         res_crude = odds_ratio(cont_table)
         or_crude = res_crude.statistic
         ci_crude = res_crude.confidence_interval(confidence_level=0.95)
-        or_ci_crude = [or_crude, ci_crude.low, ci_crude.high]
+        res_crude = [or_crude, ci_crude.low, ci_crude.high]
 
         # 2. calculate odds ratio by re-weighted contigency table
         n_exposed_iptw = iptw[exposure_label == 1].sum()
@@ -1497,7 +1497,7 @@ if __name__ == "__main__":
         cont_table_c_iptw = n_exposed_iptw - cont_table_a_iptw
         cont_table_d_iptw = n_unexposed_iptw - cont_table_b_iptw
 
-        # just store here, not for odds_ration, where A 2x2 contingency table.  Elements must be non-negative integers.
+        # just store here, not for odds_ratio, where A 2x2 contingency table.  Elements must be non-negative integers.
         cont_table_iptw = [[cont_table_a_iptw, cont_table_b_iptw], [cont_table_c_iptw, cont_table_d_iptw]]
         # res_crude_iptw = odds_ratio(cont_table_iptw)
         # or_crude_iptw= res_crude_iptw.statistic
@@ -1506,24 +1506,46 @@ if __name__ == "__main__":
 
         # 3. logistic regression  iptw as another cov
         # covs_array['iptw'] = iptw
-        X = pd.DataFrame({'exposed':exposure_label , 'iptw':iptw})
+        X = pd.DataFrame({'exposed':exposure_label, 'iptw':iptw})
         X = sm.add_constant(X)
         Y = outcome_of_interest_flag
         # Fit the logistic regression model
-        model_lg = sm.Logit(Y, X).fit()
-        # Print the model summary to get p-values
-        print(model_lg.summary())
-        # Calculate odds ratios by exponentiating the coefficients
-        odds_ratios = np.exp(model_lg.params)
-        print("\nOdds Ratios:")
-        print(odds_ratios)
-        # Extract p-values directly from the model summary
-        p_values = model_lg.pvalues
-        print("\nP-values:")
-        print(p_values)
+        try:
+            model_iptwonly = sm.Logit(Y, X).fit()
+            # Print the model summary to get p-values
+            print(model_iptwonly.summary())
+            # Calculate odds ratios by exponentiating the coefficients
+            odds_ratios_iptwonly = np.exp(model_iptwonly.params)
+            odds_ratios_ci_iptwonly = np.exp(model_iptwonly.conf_int())
+            print("\nOdds Ratios:")
+            print(odds_ratios_iptwonly)
+            # Extract p-values directly from the model summary
+            p_values_iptwonly = model_iptwonly.pvalues
+            print("\nP-values:")
+            print(p_values_iptwonly)
+            # [ods ration, ci low, ci upper, p]
+            res_iptwonly=[odds_ratios_iptwonly.exposed,
+                          odds_ratios_ci_iptwonly.loc['exposed', 0],
+                          odds_ratios_ci_iptwonly.loc['exposed', 1],
+                          p_values_iptwonly.exposed,
+                          odds_ratios_iptwonly, odds_ratios_ci_iptwonly, p_values_iptwonly]
+        except:
+            print('Error in Fit the logistic regression model with iptw only', i, outcome_of_interest,
+                        exposure_label.sum(), (exposure_label == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+            res_iptwonly = [None, ] * 7
+
         # 4. logistic regression  all the other cov
         covs_columns = [
             'age_pregonset',
+            'days_between_covid_pregnant_onset',
             # 'RE:Asian Non-Hispanic',
             # 'RE:Black or African American Non-Hispanic',
             # 'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
@@ -1537,37 +1559,59 @@ if __name__ == "__main__":
             'PaxRisk:Smoking current',
             'PaxRisk:Substance use disorders'
         ]
-        data_dict = {'exposed':exposure_label } #, 'iptw':iptw}
+        data_dict = {'exposed': exposure_label} #, 'iptw':iptw}
         for col in covs_columns:
             data_dict[col] = df[col]
         X = pd.DataFrame(data_dict)
         X = sm.add_constant(X)
         Y = outcome_of_interest_flag
         # Fit the logistic regression model
-        model_lg = sm.Logit(Y, X).fit()
-        # Print the model summary to get p-values
-        print(model_lg.summary())
-        # Calculate odds ratios by exponentiating the coefficients
-        odds_ratios = np.exp(model_lg.params)
-        print("\nOdds Ratios:")
-        print(odds_ratios)
-        # Extract p-values directly from the model summary
-        p_values = model_lg.pvalues
-        print("\nP-values:")
-        print(p_values)
+        try:
+            model_regress = sm.Logit(Y, X).fit()
+            # Print the model summary to get p-values
+            print(model_regress.summary())
+            # Calculate odds ratios by exponentiating the coefficients
+            odds_ratios_regress = np.exp(model_regress.params)
+            odds_ratios_ci_regress = np.exp(model_regress.conf_int())
+            print("\nOdds Ratios:")
+            print(odds_ratios_regress)
+            # Extract p-values directly from the model summary
+            p_values_regress = model_regress.pvalues
+            print("\nP-values:")
+            print(p_values_regress)
+            res_regress = [ odds_ratios_regress.exposed,
+                            odds_ratios_ci_regress.loc['exposed', 0],
+                            odds_ratios_ci_regress.loc['exposed', 1],
+                            p_values_regress.exposed,
+                            p_values_regress.exposed,
+                            odds_ratios_regress, odds_ratios_ci_regress, p_values_regress
+                         ]
+        except:
+            print('Error in Fit the logistic regression model with all covs', i, outcome_of_interest,
+                        exposure_label.sum(), (exposure_label == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+            res_regress = [None, ] * 7
+
         # 5. logistic regression iptw and all the other cov
         #
 
-        km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
-            exposure_label, iptw, outcome_of_interest_flag, outcome_of_interest_t2e,
-            fig_outfile=r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-km.png'.format(
-                args.cohorttype,
-                args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-                args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
-                args.negative_ratio, '-adjustless' if args.adjustless else '',
-                i, _clean_name_(outcome_of_interest)),
-            title=outcome_of_interest,
-            legends={'case': case_label, 'control': ctrl_label})
+        # km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
+        #     exposure_label, iptw, outcome_of_interest_flag, outcome_of_interest_t2e,
+        #     fig_outfile=r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-km.png'.format(
+        #         args.cohorttype,
+        #         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+        #         args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
+        #         args.negative_ratio, '-adjustless' if args.adjustless else '',
+        #         i, _clean_name_(outcome_of_interest)),
+        #     title=outcome_of_interest,
+        #     legends={'case': case_label, 'control': ctrl_label})
 
         try:
             # change 2022-03-20 considering competing risk 2
@@ -1584,20 +1628,30 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),
                         (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
-                        km[2], km[3], km[6].p_value,
-                        list(km[6].diff_of_mean), list(km[6].diff_of_mean_lower), list(km[6].diff_of_mean_upper),
-                        cif[2], cif[4], cif[5], cif[6], cif[7], cif[8], cif[9],
-                        list(cif[10].diff_of_mean), list(cif[10].diff_of_mean_lower), list(cif[10].diff_of_mean_upper),
-                        cif[10].p_value,
-                        km_w[2], km_w[3], km_w[6].p_value,
-                        list(km_w[6].diff_of_mean), list(km_w[6].diff_of_mean_lower), list(km_w[6].diff_of_mean_upper),
-                        cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
-                        list(cif_w[10].diff_of_mean), list(cif_w[10].diff_of_mean_lower),
-                        list(cif_w[10].diff_of_mean_upper),
-                        cif_w[10].p_value,
-                        cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
-                        cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
-                        cox_w[4], model.best_hyper_paras]
+                        # km[2], km[3], km[6].p_value,
+                        # list(km[6].diff_of_mean), list(km[6].diff_of_mean_lower), list(km[6].diff_of_mean_upper),
+                        # cif[2], cif[4], cif[5], cif[6], cif[7], cif[8], cif[9],
+                        # list(cif[10].diff_of_mean), list(cif[10].diff_of_mean_lower), list(cif[10].diff_of_mean_upper),
+                        # cif[10].p_value,
+                        # km_w[2], km_w[3], km_w[6].p_value,
+                        # list(km_w[6].diff_of_mean), list(km_w[6].diff_of_mean_lower), list(km_w[6].diff_of_mean_upper),
+                        # cif_w[2], cif_w[4], cif_w[5], cif_w[6], cif_w[7], cif_w[8], cif_w[9],
+                        # list(cif_w[10].diff_of_mean), list(cif_w[10].diff_of_mean_lower),
+                        # list(cif_w[10].diff_of_mean_upper),
+                        # cif_w[10].p_value,
+                        # cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
+                        # cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
+                        # cox_w[4],
+                        n_exposed, n_unexposed,  cont_table_a, cont_table_b, cont_table_c, cont_table_d,
+                        res_crude[0], res_crude[1], res_crude[2],
+                        n_exposed_iptw, n_unexposed_iptw,
+                        cont_table_a_iptw, cont_table_b_iptw, cont_table_c_iptw, cont_table_d_iptw,
+                        res_iptwonly[0], res_iptwonly[1], res_iptwonly[2], res_iptwonly[3],
+                        res_iptwonly[4], res_iptwonly[5], res_iptwonly[6],
+                        res_regress[0], res_regress[1], res_regress[2], res_regress[3],
+                        res_regress[4], res_regress[5], res_regress[6],
+
+                        model.best_hyper_paras]
             causal_results.append(_results)
             results_columns_name = [
                 'i', 'outcome_of_interest', 'case+', 'ctrl-',
@@ -1605,16 +1659,28 @@ if __name__ == "__main__":
                 'mean outcome_of_interest in -',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
-                'km-diff', 'km-diff-time', 'km-diff-p',
-                'km-diff-2', 'km-diff-CILower', 'km-diff-CIUpper',
-                'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
-                'cif-diff-2', 'cif-diff-CILower', 'cif-diff-CIUpper', 'cif-diff-p',
-                'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
-                'km-w-diff-2', 'km-w-diff-CILower', 'km-w-diff-CIUpper',
-                'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
-                "cif_0_w_CIUpper", 'cif-w-diff-2', 'cif-w-diff-CILower', 'cif-w-diff-CIUpper', 'cif-w-diff-p',
-                'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
-                'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time", 'best_hyper_paras']
+                #
+                # 'km-diff', 'km-diff-time', 'km-diff-p',
+                # 'km-diff-2', 'km-diff-CILower', 'km-diff-CIUpper',
+                # 'cif-diff', "cif_1", "cif_0", "cif_1_CILower", "cif_1_CIUpper", "cif_0_CILower", "cif_0_CIUpper",
+                # 'cif-diff-2', 'cif-diff-CILower', 'cif-diff-CIUpper', 'cif-diff-p',
+                # 'km-w-diff', 'km-w-diff-time', 'km-w-diff-p',
+                # 'km-w-diff-2', 'km-w-diff-CILower', 'km-w-diff-CIUpper',
+                # 'cif-w-diff', "cif_1_w", "cif_0_w", "cif_1_w_CILower", "cif_1_w_CIUpper", "cif_0_w_CILower",
+                # "cif_0_w_CIUpper", 'cif-w-diff-2', 'cif-w-diff-CILower', 'cif-w-diff-CIUpper', 'cif-w-diff-p',
+                # 'hr', 'hr-CI', 'hr-p', 'hr-logrank-p', 'hr_different_time',
+                # 'hr-w', 'hr-w-CI', 'hr-w-p', 'hr-w-logrank-p', "hr-w_different_time",
+                "n_exposed", "n_unexposed", "cont_table_a", "cont_table_b", "cont_table_c", "cont_table_d",
+                "odds_ratios_crude", "odds_ratios ci_crude.low", "odds_ratios ci_crude.high",
+                "n_exposed_iptw", "n_unexposed_iptw",
+                "cont_table_a_iptw", "cont_table_b_iptw", "cont_table_c_iptw", "cont_table_d_iptw",
+                "odds_ratios_iptwonly.exposed", "odds_ratios_ci_iptwonly upper", "odds_ratios_ci_iptwonly lower",
+                "p_values_iptwonly.exposed",
+                "odds_ratios_iptwonly all", "odds_ratios_ci_iptwonly all", "p_values_iptwonly all",
+                "odds_ratios_regress.exposed", "odds_ratios_ci_regress upper", "odds_ratios_ci_regress lower",
+                "p_values_regress.exposed",
+                "odds_ratios_regress all", "odds_ratios_ci_regress all", "p_values_regress all",
+                'best_hyper_paras']
             print('causal result:\n', causal_results[-1])
 
             if i % 2 == 0:
