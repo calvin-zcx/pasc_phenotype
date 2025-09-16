@@ -1035,19 +1035,6 @@ def more_ec_for_cohort_selection_new_order(df, cohorttype):
 
 
 if __name__ == "__main__":
-    num_buckets = 3
-    dict_data = [[] for x in range(num_buckets)]
-    pid_list = ['P001', 'P002', 'P003', 'P004']
-    print(dict_data)
-    for pid in pid_list:
-        idx = hash(pid) % num_buckets
-        print(pid, idx)
-        dict_data[idx].append(pid)
-        print(dict_data)
-    print(dict_data)
-    dict_data[0]
-    dict_data[1]
-
     # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK10replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK10replace.txt
     # python screen_naltrexone_iptw_pcornet.py  --cohorttype matchK5replace  2>&1 | tee  log_recover/screen_naltrexone_iptw_pcornet-matchK5replace.txt
     # python screen_LC_pregnancy_s4_iptw.py 2>&1 | tee  preg_output/screen_LC_pregnancy_s4_iptw-pregafter180-anypasc.txt
