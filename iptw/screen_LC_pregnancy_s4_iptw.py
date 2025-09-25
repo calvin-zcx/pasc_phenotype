@@ -1047,124 +1047,124 @@ if __name__ == "__main__":
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    # # **************
-    # # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
-    # in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
-    # in_file_og = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days.csv'
-    #
-    # print('infile update at pregnant onset:', in_file)
-    # print('infile at covid infection:', in_file_og)
-    # print('cohorttype:', )
-    #
-    # df = pd.read_csv(in_file,
-    #                  dtype={'patid': str, 'site': str, 'zip': str},
-    #                  parse_dates=['index date', 'dob',
-    #                               'index_date_pregnant_onset',
-    #                               'index_date_delivery',
-    #                               'index_date_pregnant_end'
-    #                               ])
-    #
-    # df_og = pd.read_csv(in_file_og,
-    #                     dtype={'patid': str, 'site': str, 'zip': str},
-    #                     parse_dates=['index date', 'dob',
-    #                                  'flag_delivery_date',
-    #                                  'flag_pregnancy_start_date',
-    #                                  'flag_pregnancy_end_date'
-    #                                  ])
-    #
-    # print('df.shape:', df.shape)
-    # print('df_og.shape:', df_og.shape)
-    #
-    # df = pd.merge(df, df_og, how='left', left_on=['patid', 'site'], right_on=['patid', 'site'], suffixes=('', '_og'), )
-    # print('After left merge, merged df.shape:', df.shape)
-    #
-    # print('Additional feature preprocessing for adjust and outcomes...')
-    # print('...Part1:  add_col: ing')
-    # df = add_col(df)
-    # print('... add_col done!')
-    #
-    # # deal with pregnancy related cov and outcomes
-    # print('...Part2:  feature_process_pregnancy: ing')
-    # df = feature_process_pregnancy(df)
-    # print('... feature_process_pregnancy done!')
-    #
-    # ## to do
-    # ## 1. cov, outcome, and expsoure columns
-    # ## 2. double check, simple table,
-    # ## 3. adjust analysis and print results
-    # ## 4. print final table on cov, outcome, etc.
-    #
-    # # df.to_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset-mergeOG.csv')
-    #
-    # print('Before selecting cohortype, ', args.cohorttype, len(df))
-    # N = len(df)
-    #
-    # ## Step-1: Build exposed groups
-    # # pregnancy onset after covid infection selection, primary 180, use this for other sensitivity analysis
-    # if args.cohorttype == 'pregafter30':
-    #     pass
-    # elif args.cohorttype == 'pregafter180':
-    #     n = len(df)
-    #     time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
-    #     df = df.loc[time_order_flag, :]
-    #     print('After selecting pregnant >= +180 days, len(df),\n',
-    #           '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
-    # else:
-    #     raise ValueError
-    #
-    # # label target exposure of interest
-    # if args.exptype == 'anypasc':
-    #     pasc_flag = df['any_pasc_flag'].astype('int')
-    #     pasc_t2e_label = 'any_pasc_t2e'
-    # else:
-    #     raise ValueError
-    #
-    # contrl_label = (df['any_pasc_flag'] == 0) & (df['any_CFR_flag'] == 0) & (df['any_brainfog_flag'] == 0) & \
-    #                (df['dxMECFS-out@ME/CFS'] == 0) & (df['dx-out@' + 'PASC-General'] == 0)
-    #
-    # df_pos = df.loc[(pasc_flag > 0), :]
-    # df_pos['exposed'] = 1
-    # print("Exposed group: ((pasc_flag > 0) ) len(df_pos)", len(df_pos))
-    #
-    # df_neg = df.loc[contrl_label, :]
-    # df_neg['exposed'] = 0
-    # print("V2-Contrl group, no all LC:  contrl_label  len(df_neg)", len(df_neg))
-    #
-    # df = pd.concat([df_pos.reset_index(), df_neg.reset_index()], ignore_index=True)
-    # print('After selected exposed groul, len(df)', len(df),
-    #       'exposed group:', len(df_pos),
-    #       'contrl group:', len(df_neg))
-    #
-    # print('After selecting cohortype, ', len(df))
-    # case_label = 'Exposed'
-    # ctrl_label = 'Ctrl'
-    #
-    # print('Before select_subpopulation, len(df)', args.cohorttype, len(df))
-    # df = select_subpopulation(df, args.severity)
-    # print('After select_subpopulation, len(df)', len(df))
-    #
-    # print('After building exposure groups:\n',
-    #       'args.cohorttype:', args.cohorttype, 'args.exptype:', args.exptype, 'args.severity', args.severity,
-    #       'len(df)', len(df), 'df.shape', df.shape,
-    #       'exposed group:', (df['exposed'] == 1).sum(), 'contrl group:', (df['exposed'] == 0).sum())
-    # print('%: {}/{}\t{:.2f}%'.format(len(df), N, len(df) / N * 100))
-    #
-    # out_file_for_table = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-{}-{}-{}.csv'.format(
-    #     args.cohorttype, args.severity, args.exptype)
-    # df.to_csv(out_file_for_table, index=False)
-    # print('Dump {} done!'.format(out_file_for_table))
-    # print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
-    # # **************
+    # **************
+    # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
+    in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
+    in_file_og = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days.csv'
 
-    print('Read dump file for debug:')
-    df = pd.read_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-pregafter180-all-anypasc.csv',
+    print('infile update at pregnant onset:', in_file)
+    print('infile at covid infection:', in_file_og)
+    print('cohorttype:', )
+
+    df = pd.read_csv(in_file,
                      dtype={'patid': str, 'site': str, 'zip': str},
                      parse_dates=['index date', 'dob',
-                                  'flag_delivery_date',
-                                  'flag_pregnancy_start_date',
-                                  'flag_pregnancy_end_date'
-                                  ],
-                     )
+                                  'index_date_pregnant_onset',
+                                  'index_date_delivery',
+                                  'index_date_pregnant_end'
+                                  ])
+
+    df_og = pd.read_csv(in_file_og,
+                        dtype={'patid': str, 'site': str, 'zip': str},
+                        parse_dates=['index date', 'dob',
+                                     'flag_delivery_date',
+                                     'flag_pregnancy_start_date',
+                                     'flag_pregnancy_end_date'
+                                     ])
+
+    print('df.shape:', df.shape)
+    print('df_og.shape:', df_og.shape)
+
+    df = pd.merge(df, df_og, how='left', left_on=['patid', 'site'], right_on=['patid', 'site'], suffixes=('', '_og'), )
+    print('After left merge, merged df.shape:', df.shape)
+
+    print('Additional feature preprocessing for adjust and outcomes...')
+    print('...Part1:  add_col: ing')
+    df = add_col(df)
+    print('... add_col done!')
+
+    # deal with pregnancy related cov and outcomes
+    print('...Part2:  feature_process_pregnancy: ing')
+    df = feature_process_pregnancy(df)
+    print('... feature_process_pregnancy done!')
+
+    ## to do
+    ## 1. cov, outcome, and expsoure columns
+    ## 2. double check, simple table,
+    ## 3. adjust analysis and print results
+    ## 4. print final table on cov, outcome, etc.
+
+    # df.to_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset-mergeOG.csv')
+
+    print('Before selecting cohortype, ', args.cohorttype, len(df))
+    N = len(df)
+
+    ## Step-1: Build exposed groups
+    # pregnancy onset after covid infection selection, primary 180, use this for other sensitivity analysis
+    if args.cohorttype == 'pregafter30':
+        pass
+    elif args.cohorttype == 'pregafter180':
+        n = len(df)
+        time_order_flag = (df['index date'] + datetime.timedelta(days=180) <= df['flag_pregnancy_start_date'])
+        df = df.loc[time_order_flag, :]
+        print('After selecting pregnant >= +180 days, len(df),\n',
+              '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+    else:
+        raise ValueError
+
+    # label target exposure of interest
+    if args.exptype == 'anypasc':
+        pasc_flag = df['any_pasc_flag'].astype('int')
+        pasc_t2e_label = 'any_pasc_t2e'
+    else:
+        raise ValueError
+
+    contrl_label = (df['any_pasc_flag'] == 0) & (df['any_CFR_flag'] == 0) & (df['any_brainfog_flag'] == 0) & \
+                   (df['dxMECFS-out@ME/CFS'] == 0) & (df['dx-out@' + 'PASC-General'] == 0)
+
+    df_pos = df.loc[(pasc_flag > 0), :]
+    df_pos['exposed'] = 1
+    print("Exposed group: ((pasc_flag > 0) ) len(df_pos)", len(df_pos))
+
+    df_neg = df.loc[contrl_label, :]
+    df_neg['exposed'] = 0
+    print("V2-Contrl group, no all LC:  contrl_label  len(df_neg)", len(df_neg))
+
+    df = pd.concat([df_pos.reset_index(), df_neg.reset_index()], ignore_index=True)
+    print('After selected exposed groul, len(df)', len(df),
+          'exposed group:', len(df_pos),
+          'contrl group:', len(df_neg))
+
+    print('After selecting cohortype, ', len(df))
+    case_label = 'Exposed'
+    ctrl_label = 'Ctrl'
+
+    print('Before select_subpopulation, len(df)', args.cohorttype, len(df))
+    df = select_subpopulation(df, args.severity)
+    print('After select_subpopulation, len(df)', len(df))
+
+    print('After building exposure groups:\n',
+          'args.cohorttype:', args.cohorttype, 'args.exptype:', args.exptype, 'args.severity', args.severity,
+          'len(df)', len(df), 'df.shape', df.shape,
+          'exposed group:', (df['exposed'] == 1).sum(), 'contrl group:', (df['exposed'] == 0).sum())
+    print('%: {}/{}\t{:.2f}%'.format(len(df), N, len(df) / N * 100))
+
+    out_file_for_table = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-{}-{}-{}.csv'.format(
+        args.cohorttype, args.severity, args.exptype)
+    df.to_csv(out_file_for_table, index=False)
+    print('Dump {} done!'.format(out_file_for_table))
+    print('Done load data! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    # **************
+
+    # print('Read dump file for debug:')
+    # df = pd.read_csv(r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_exposureBuilt-pregafter180-all-anypasc.csv',
+    #                  dtype={'patid': str, 'site': str, 'zip': str},
+    #                  parse_dates=['index date', 'dob',
+    #                               'flag_delivery_date',
+    #                               'flag_pregnancy_start_date',
+    #                               'flag_pregnancy_end_date'
+    #                               ],
+    #                  )
     print('df.shape:', df.shape)
 
     # Step-2: Select Cov columns
@@ -1330,6 +1330,9 @@ if __name__ == "__main__":
     icd_SMMpasc = utils.load(r'../data/mapping/icd_SMMpasc_mapping.pkl')
     SMMpasc_encoding = utils.load(r'../data/mapping/SMMpasc_index_mapping.pkl')
 
+    icd_pregnancyout2nd = utils.load(r'../data/mapping/icd_pregnancyout2nd_mapping.pkl')
+    pregnancyout2nd_encoding = utils.load(r'../data/mapping/pregnancyout2nd_index_mapping.pkl')
+
     # outcome_smm_column_names = ['smm-out@' + x for x in SMMpasc_encoding.keys()] + \
     #                            ['smm-t2e@' + x for x in SMMpasc_encoding.keys()] + \
     #                            ['smm-base@' + x for x in SMMpasc_encoding.keys()] + \
@@ -1347,12 +1350,14 @@ if __name__ == "__main__":
     SMM_outcome_list = ['smm-out@' + x for x in SMMpasc_encoding.keys()]
     df['SMM-overall-Any'] = (df[SMM_outcome_list].sum(axis=1) > 0).astype('int')
 
+    pregnancyout2nd_list = ['pregnancyout2nd-out@' + x for x in pregnancyout2nd_encoding.keys()]
+
     selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<34Andlivebirth',
                             'preg_outcome-livebirth', 'preg_outcome-stillbirth',
                             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
                             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
                             'preg_outcome-other', 'SMM-overall-Any'
-                            ] + SMM_outcome_list
+                            ]  + pregnancyout2nd_list + SMM_outcome_list
 
     # Step-4, Adjusted analysis and dump results
     causal_results = []
