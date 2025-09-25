@@ -2129,6 +2129,57 @@ def pregnancy_code_to_outcome_categories():
     return icd_cci,  df_cci
 
 
+def ICD_to_pregnancy_outcome_lc_multiplemapping():
+    # 2025-9-25
+    start_time = time.time()
+    dict_df_cci = pd.read_excel(r'../data/mapping/pregnancy_outcome_4lc.xlsx',
+                               sheet_name=None, dtype=str)
+    print('len(dict_df_cci)', len(dict_df_cci))
+
+    # warning: there are potnetial overlapping issue. If one icd code contribute two categories.
+    # not a problem if no overlap
+    icd_cci = {}
+    cci_index = {}
+
+    for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
+        print(ith, key, len(df_cci))
+
+        cci_index[key] = [ith, len(df_cci)]
+        for index, row in df_cci.iterrows():
+            icd = row['code'].strip().upper().replace('.', '')
+            name = row['description']
+            # type = row['codetype'] #'icd10' # all ICD10 for the current ones, not code type columns. row['code type']
+            category_des =  row['category']
+            subcategory_des = row['subcategory']
+
+            # cci = row['Category']
+            # order = row['CCI order']
+            order = ith
+            # Notes: 2025-7-11
+            # in this code list, one icd can map to different category, potential overwrite issues.
+            # thus, revise this to list of list structure, and then revise encoding function as well
+            # icd_cci[icd] = [key, type, name, category_des]
+            if icd not in icd_cci:
+                icd_cci[icd] = []
+
+            icd_cci[icd].append([key, 'icd10', name, subcategory_des, category_des])
+
+    print('len(icd_cci):', len(icd_cci))
+    output_file = r'../data/mapping/icd_pregnancyout2nd_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(icd_cci, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('len(cci_index):', len(cci_index))
+    output_file = r'../data/mapping/pregnancyout2nd_index_mapping.pkl'
+    utils.check_and_mkdir(output_file)
+    pickle.dump(cci_index, open(output_file, 'wb'))
+    print('dump done to {}'.format(output_file))
+
+    print('Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return icd_cci, cci_index, dict_df_cci
+
+
 if __name__ == '__main__':
     # python pre_codemapping.py 2>&1 | tee  log/pre_codemapping_zip_adi.txt
     start_time = time.time()
@@ -2234,12 +2285,15 @@ if __name__ == '__main__':
     # multiple mapping this time, different from all above
     # 2025-7-28 add pain subcategories
 
-    icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
+    # icd_covNaltrexone_multimap, covNaltrexone_index, list_df_covNaltrexone = ICD_to_covNaltrexone_multiplemapping()
 
     # 25 add Naltrexone related drugs, 2025-07-11
     # Naltrexone_drug_cov_code = build_Naltrexone_drug_cov_map()
 
     # 26 pregnancy primary and secondary outcome categories 2025-7-18
     # code_pregoutcomecat, df_pregoutcomecat = pregnancy_code_to_outcome_categories()
+
+    # 27 pregnancy secondary outcomes, more 2025-9-25
+    ICD_to_pregnancy_outcome_lc_multiplemapping()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

@@ -184,6 +184,10 @@ def _load_mapping():
     icd_covCNSLDN = utils.load(r'../data/mapping/icd_covCNS-LDN_mapping.pkl')
     covCNSLDN_encoding = utils.load(r'../data/mapping/covCNS-LDN_index_mapping.pkl')
 
+    # add pregnancyout2nd covs 2025-9-25
+    icd_pregnancyout2nd = utils.load(r'../data/mapping/icd_pregnancyout2nd_mapping.pkl')
+    pregnancyout2nd_encoding = utils.load(r'../data/mapping/pregnancyout2nd_index_mapping.pkl')
+
     return (icd_pasc, pasc_encoding, icd_cmr, cmr_encoding, icd_ccsr, ccsr_encoding,
             rxnorm_ing, rxnorm_atc, atcl2_encoding, atcl3_encoding, atcl4_encoding,
             ventilation_codes, comorbidity_codes, icd9_icd10, rxing_index, covidmed_codes, vaccine_codes,
@@ -193,7 +197,8 @@ def _load_mapping():
             icd_cognitive_fatigue_respiratory, cognitive_fatigue_respiratory_encoding,
             icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc, negctrlpasc_encoding, ssri_med,
             icd_mental, mental_encoding,
-            icd_mecfs, mecfs_encoding, icd_cvddeath, cvddeath_encoding, cnsldn_med, icd_covCNSLDN, covCNSLDN_encoding
+            icd_mecfs, mecfs_encoding, icd_cvddeath, cvddeath_encoding, cnsldn_med, icd_covCNSLDN, covCNSLDN_encoding,
+            icd_pregnancyout2nd, pregnancyout2nd_encoding,
             )
 
 
@@ -1328,6 +1333,54 @@ def _encoding_outcome_severe_maternal_morbidity_withalldays(dx_list, icd_smm, sm
     return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
 
 
+def _encoding_outcome_dx_withalldaysoveralltime_multimap(dx_list, icd_pasc_multimap, pasc_encoding, index_date, default_t2e):
+    # 2025-7-11, add _multimap function, add a loop over icd values, list of list
+
+    outcome_t2e = np.ones((1, len(pasc_encoding)), dtype='float') * default_t2e
+    outcome_flag = np.zeros((1, len(pasc_encoding)), dtype='int')
+    outcome_baseline = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_tlast = np.zeros((1, len(pasc_encoding)), dtype='int')
+
+    outcome_t2eall = [''] * len(pasc_encoding)
+
+    for records in dx_list:
+        # dx_date, icd = records[:2]
+        dx_date, icd, dx_type, enc_type = records
+        icd = icd.replace('.', '').upper()
+
+        flag, icdprefix = _prefix_in_set(icd, icd_pasc_multimap)
+
+        if flag:
+            days = (dx_date - index_date).days
+            for pasc_info in icd_pasc_multimap[icdprefix]:
+                # pasc_info = icd_pasc[icdprefix]
+                pasc = pasc_info[0]
+                rec = pasc_encoding[pasc]
+                pos = rec[0]
+
+                outcome_t2eall[pos] += '{};'.format(days)
+
+                if ecs._is_in_baseline(dx_date, index_date):
+                    outcome_baseline[0, pos] += 1
+
+                if ecs._is_in_followup_pregnantoucome(dx_date, index_date):
+                    # days = (dx_date - index_date).days
+                    # flag, icdprefix = _prefix_in_set(icd, icd_pasc)
+                    if outcome_flag[0, pos] == 0:
+                        # only records the first event and time
+                        if days < outcome_t2e[0, pos]:
+                            outcome_t2e[0, pos] = days
+                        outcome_flag[0, pos] = 1
+                        outcome_tlast[0, pos] = days
+                    else:
+                        outcome_flag[0, pos] += 1
+
+    # debug # a = pd.DataFrame({'1':pasc_encoding.keys(), '2':outcome_flag.squeeze(), '3':outcome_t2e.squeeze(), '4':outcome_baseline.squeeze()})
+    # outcome_t2eall = np.array([outcome_t2eall])
+    return outcome_flag, outcome_t2e, outcome_baseline, outcome_t2eall
+
+
 def _encoding_outcome_med_rxnorm_ingredient(med_list, rxnorm_ing, ing_encoding, index_date, default_t2e, verbose=0):
     # encoding 434 top rxnorm ingredient drugs
     # initialize t2e:  last encounter,  end of followup, death, event, whichever happens first
@@ -1535,7 +1588,7 @@ def build_feature_matrix(args):
      fips_ziplist, icd_CFR, CFR_encoding, icd_addedPaxRisk, addedPaxRisk_encoding, icd_negctrlpasc,
      negctrlpasc_encoding, ssri_med,
      icd_mental, mental_encoding, icd_mecfs, mecfs_encoding, icd_cvddeath, cvddeath_encoding,
-     cnsldn_med, icd_covCNSLDN, covCNSLDN_encoding) = _load_mapping()
+     cnsldn_med, icd_covCNSLDN, covCNSLDN_encoding, icd_pregnancyout2nd, pregnancyout2nd_encoding) = _load_mapping()
 
     # step 2: load cohorts pickle data
     print('In cohorts_characterization_build_data...')
@@ -1884,6 +1937,18 @@ def build_feature_matrix(args):
                                        ['smm-base@' + x for x in SMMpasc_encoding.keys()] + \
                                        ['smm-t2eall@' + x for x in SMMpasc_encoding.keys()]
 
+            # 2025-9-25 more pregnant outcomes
+            outcome_pregnancyout2nd_flag = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')  # 21
+            outcome_pregnancyout2nd_t2e = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')
+            outcome_pregnancyout2nd_baseline = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')
+            outcome_pregnancyout2nd_t2eall = []
+
+            outcome_pregnancyout2nd_column_names = (
+                    ['pregnancyout2nd-out@' + x for x in pregnancyout2nd_encoding.keys()] +
+                    ['pregnancyout2nd-t2e@' + x for x in pregnancyout2nd_encoding.keys()] +
+                    ['pregnancyout2nd-base@' + x for x in pregnancyout2nd_encoding.keys()] +
+                    ['pregnancyout2nd-t2eall@' + x for x in pregnancyout2nd_encoding.keys()])
+
             # 2025-4-21 add from SSRI, CNS, etc previous add columns work into primary table
             # 2024-4-3 ssri, snri drug updated codes
             # 2024-7-28 add more
@@ -1980,7 +2045,7 @@ def build_feature_matrix(args):
                            covidtreat_column_names + covidmed_column_names + outcome_covidmed_column_names + \
                            outcome_column_names + outcome_addedPASC_column_names + outcome_brainfog_column_names + \
                            outcome_CFR_column_names + addPaxRisk_column_names + outcome_U099_column_names + \
-                           outcome_hospitalization_column_names + outcome_smm_column_names + \
+                           outcome_hospitalization_column_names + outcome_smm_column_names + outcome_pregnancyout2nd_column_names + \
                            ssritreat_column_names + cnsldntreat_column_names + outcome_covCNSLDN_column_names + \
                            outcome_mental_column_names + outcome_mecfs_column_names + outcome_cvddeath_column_names  # + outcome_med_column_names
 
@@ -2152,6 +2217,13 @@ def build_feature_matrix(args):
                     dx, icd_SMMpasc, SMMpasc_encoding, index_date_pregnant_onset, default_t2e, procedure)
             outcome_smm_t2eall.append(outcome_smm_t2eall_1row)
 
+            ## 2025-9-25 pregnancyout2nd
+            outcome_pregnancyout2nd_flag[i, :], outcome_pregnancyout2nd_t2e[i, :], outcome_pregnancyout2nd_baseline[i, :], outcome_pregnancyout2nd_t2eall_1row = \
+                _encoding_outcome_dx_withalldaysoveralltime_multimap(
+                    dx, icd_pregnancyout2nd, pregnancyout2nd_encoding, index_date_pregnant_onset, default_t2e)
+            outcome_pregnancyout2nd_t2eall.append(outcome_pregnancyout2nd_t2eall_1row)
+
+
             ###
             # 2024-4-3  capture ssri and snri for exploration
             ssritreat_flag[i, :], ssritreat_t2e[i, :], ssritreat_t2eall_1row = \
@@ -2271,6 +2343,10 @@ def build_feature_matrix(args):
                                     outcome_smm_t2e,
                                     outcome_smm_baseline,
                                     np.asarray(outcome_smm_t2eall),
+                                    outcome_pregnancyout2nd_flag,
+                                    outcome_pregnancyout2nd_t2e,
+                                    outcome_pregnancyout2nd_baseline,
+                                    np.asarray(outcome_pregnancyout2nd_t2eall),
                                     ssritreat_flag,
                                     ssritreat_t2e,
                                     np.asarray(ssritreat_t2eall),
