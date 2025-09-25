@@ -580,6 +580,7 @@ def add_col(df):
                       x.startswith('dxbrainfog-out@') or
                       x.startswith('covidmed-out@') or
                       x.startswith('smm-out@') or
+                      x.startswith('pregnancyout2nd-out@') or
                       x.startswith('dxCFR-out@') or
                       x.startswith('mental-base@') or
                       x.startswith('dxMECFS-base@') or
