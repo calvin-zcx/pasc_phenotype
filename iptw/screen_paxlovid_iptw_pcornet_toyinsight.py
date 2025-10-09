@@ -77,7 +77,7 @@ def parse_args():
                                  'atrisk',
                                  'atrisknopreglabdx', 'norisklabdx', 'pregnantlabdx',
                                  'overall',],
-                        default='atrisknopreg')
+                        default='norisk')
     args = parser.parse_args()
 
     # More args
@@ -866,13 +866,11 @@ if __name__ == "__main__":
     selected_screen_list = (['any_pasc', 'PASC-General',
                              'death', 'death_acute', 'death_postacute',
                              'any_CFR',
-                             'hospitalization_acute', 'hospitalization_postacute']
-                            # +
-                            # CFR_list +
-                            # pasc_list +
-                            # addedPASC_list +
-                            # brainfog_list
-                            )
+                             'hospitalization_acute', 'hospitalization_postacute'] +
+                            CFR_list +
+                            pasc_list +
+                            addedPASC_list +
+                            brainfog_list)
 
     causal_results = []
     results_columns_name = []
@@ -1011,7 +1009,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
@@ -1022,7 +1020,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, covid_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -1031,13 +1029,13 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Paxlovid': covid_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
                 i, _clean_name_(pasc)))
         try:
-            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -1061,7 +1059,7 @@ if __name__ == "__main__":
 
         km, km_w, cox, cox_w, cif, cif_w = weighted_KM_HR(
             covid_label, iptw, pasc_flag, pasc_t2e,
-            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-km.png'.format(
+            fig_outfile=r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/{}-{}-km.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 'pcornet',  # '-select' if args.selectpasc else '',
@@ -1115,7 +1113,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         'pcornet',  # '-select' if args.selectpasc else '',
@@ -1125,7 +1123,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     'pcornet',  # '-select' if args.selectpasc else '',
@@ -1136,7 +1134,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/Paxlovid-{}-{}-{}-V3/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             'pcornet',  # '-select' if args.selectpasc else '',
