@@ -1568,12 +1568,12 @@ def build_feature_matrix(args):
     #     'index_date_drug_days']
     # use return: days_since_covid_match_pool.sample().iloc[0]
 
-    output_file_query12_bool = infile_name.replace('.csv', '-updateAtPregOnset.csv')
+    output_file_query12_bool = infile_name.replace('.csv', '-updateAtPregOnset-V2PE.csv')
 
-    output_med_info = infile_name.replace('.csv', '-info_medication_cohorts-updateAtPregOnset.csv')
+    output_med_info = infile_name.replace('.csv', '-info_medication_cohorts-updateAtPregOnset-V2PE.csv')
     # r'../data/recover/output/{}/info_medication_cohorts_{}_{}.csv'.format(args.dataset, args.cohorts, args.dataset)
 
-    output_dx_info = infile_name.replace('.csv', '-info_dx_cohorts-updateAtPregOnset.csv')
+    output_dx_info = infile_name.replace('.csv', '-info_dx_cohorts-updateAtPregOnset-V2PE.csv')
     # r'../data/recover/output/{}/info_dx_cohorts_{}_{}.csv'.format(args.dataset, args.cohorts, args.dataset)
 
     #
@@ -1938,6 +1938,7 @@ def build_feature_matrix(args):
                                        ['smm-t2eall@' + x for x in SMMpasc_encoding.keys()]
 
             # 2025-9-25 more pregnant outcomes
+            # 2025-10-10 break down of PE
             outcome_pregnancyout2nd_flag = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')  # 21
             outcome_pregnancyout2nd_t2e = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')
             outcome_pregnancyout2nd_baseline = np.zeros((n, len(pregnancyout2nd_encoding)), dtype='int16')

@@ -2141,10 +2141,12 @@ def ICD_to_pregnancy_outcome_lc_multiplemapping():
     icd_cci = {}
     cci_index = {}
 
+    off_set = 0
     for ith, (key, df_cci) in enumerate(dict_df_cci.items()):
         print(ith, key, len(df_cci))
 
         cci_index[key] = [ith, len(df_cci)]
+        off_set += 1
         for index, row in df_cci.iterrows():
             icd = row['code'].strip().upper().replace('.', '')
             name = row['description']
@@ -2155,6 +2157,33 @@ def ICD_to_pregnancy_outcome_lc_multiplemapping():
             # cci = row['Category']
             # order = row['CCI order']
             order = ith
+            # Notes: 2025-7-11
+            # in this code list, one icd can map to different category, potential overwrite issues.
+            # thus, revise this to list of list structure, and then revise encoding function as well
+            # icd_cci[icd] = [key, type, name, category_des]
+            if icd not in icd_cci:
+                icd_cci[icd] = []
+
+            icd_cci[icd].append([key, 'icd10', name, subcategory_des, category_des])
+
+    # add preeclampsia subcategories
+    df_pe = dict_df_cci['Preeclampsia']
+    sub_cat_list = df_pe['subcategory2'].value_counts()
+    sub_cat_list = list(sub_cat_list.index)
+    for ith, key in enumerate(sub_cat_list):
+        df_cci = df_pe[df_pe['subcategory2'] == key]
+        print(ith + off_set, key, len(df_cci))
+        cci_index[key] = [ith + off_set, len(df_cci)]
+        for index, row in df_cci.iterrows():
+            icd = row['code'].strip().upper().replace('.', '')
+            name = row['description']
+            # type = row['codetype'] #'icd10' # all ICD10 for the current ones, not code type columns. row['code type']
+            category_des =  row['subcategory2']
+            subcategory_des = row['subcategory']
+
+            # cci = row['Category']
+            # order = row['CCI order']
+            order = ith + off_set
             # Notes: 2025-7-11
             # in this code list, one icd can map to different category, potential overwrite issues.
             # thus, revise this to list of list structure, and then revise encoding function as well
@@ -2293,7 +2322,7 @@ if __name__ == '__main__':
     # 26 pregnancy primary and secondary outcome categories 2025-7-18
     # code_pregoutcomecat, df_pregoutcomecat = pregnancy_code_to_outcome_categories()
 
-    # 27 pregnancy secondary outcomes, more 2025-9-25
-    ICD_to_pregnancy_outcome_lc_multiplemapping()
+    # 27 pregnancy secondary outcomes, more 2025-9-25, update 20205-10-10
+    icd_cci, cci_index, dict_df_cci = ICD_to_pregnancy_outcome_lc_multiplemapping()
 
     print('Done! Time used:', time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))

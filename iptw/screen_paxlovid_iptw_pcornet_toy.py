@@ -544,9 +544,18 @@ if __name__ == "__main__":
               )
 
 
+    #
+    print('Further exclude baseline vaccined patients')
+    print('before df.shape', df.shape)
+    df = df.loc[(df['Fully vaccinated - Pre-index'] == 0) & (df['Partially vaccinated - Pre-index'] == 0), :].copy()
+    print('after df.shape', df.shape)
+
     print('Before select_subpopulation, len(df)', len(df))
     df = select_subpopulation(df, args.severity)
     print('After select_subpopulation, len(df)', len(df))
+
+
+
 
     # pre-process data a little bit
     selected_cols = [x for x in df.columns if (
@@ -771,7 +780,7 @@ if __name__ == "__main__":
             'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
             'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
             'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
-            'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            #'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
@@ -799,7 +808,7 @@ if __name__ == "__main__":
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
             'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
-            'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            #'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
@@ -837,7 +846,7 @@ if __name__ == "__main__":
             'PaxRisk:Sickle cell disease or thalassemia',
             'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
             'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
-            'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
+            #'Fully vaccinated - Pre-index', 'Partially vaccinated - Pre-index', 'No evidence - Pre-index',
             "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
             'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
         ]
@@ -881,6 +890,16 @@ if __name__ == "__main__":
                             # addedPASC_list +
                             # brainfog_list
                             )
+
+    out_file_source = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/source_data.csv'.format(
+        args.cohorttype,
+        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+        'pcornet',  # '-select' if args.selectpasc else '',
+        )
+
+    utils.check_and_mkdir(out_file_source)
+    df.to_csv(out_file_source)  # args.save_model_filename +
+    print('Dump to', out_file_source)
 
     causal_results = []
     results_columns_name = []
