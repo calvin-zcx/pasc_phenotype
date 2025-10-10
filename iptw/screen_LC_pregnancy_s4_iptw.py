@@ -1545,10 +1545,10 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
             res_iptwonly = [None, ] * 7
 
         # 4 IPTW to re-weight
@@ -1582,10 +1582,10 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
             res_reweight = [None, ] * 7
 
         # 5. logistic regression  all the other cov
@@ -1639,10 +1639,10 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),)
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
             res_regress = [None, ] * 7
 
         # 6. logistic regression iptw and all the other cov
@@ -1668,10 +1668,10 @@ if __name__ == "__main__":
                         (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 2).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 2).mean(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),
                         (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         # km[2], km[3], km[6].p_value,
