@@ -387,7 +387,7 @@ def add_col(df):
     df['PaxRisk:Smoking current'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
     df['PaxRisk:Smoking-Tobacco'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1)).astype('int')
     df['PaxRisk:Smoking-Tobacco-Disorder'] = ((df['Smoker: current'] >= 1) | (df['Smoker: former'] >= 1) | (
-                df['dx-base@Tobacco-related disorders'] >= 1)).astype('int')
+            df['dx-base@Tobacco-related disorders'] >= 1)).astype('int')
 
     # cell transplant, --> autoimmu category?
 
@@ -1050,7 +1050,8 @@ if __name__ == "__main__":
 
     # **************
     # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
-    in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
+    # in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
+    in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset-V2PE.csv'
     in_file_og = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days.csv'
 
     print('infile update at pregnant onset:', in_file)
@@ -1358,7 +1359,7 @@ if __name__ == "__main__":
                             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
                             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
                             'preg_outcome-other', 'SMM-overall-Any'
-                            ]  + pregnancyout2nd_list + SMM_outcome_list
+                            ] + pregnancyout2nd_list + SMM_outcome_list
 
     # Step-4, Adjusted analysis and dump results
     causal_results = []
@@ -1515,7 +1516,7 @@ if __name__ == "__main__":
 
         # 3. logistic regression  iptw as another cov
         # covs_array['iptw'] = iptw
-        X = pd.DataFrame({'exposed':exposure_label, 'iptw':iptw})
+        X = pd.DataFrame({'exposed': exposure_label, 'iptw': iptw})
         X = sm.add_constant(X)
         Y = outcome_of_interest_flag
         # Fit the logistic regression model
@@ -1533,22 +1534,22 @@ if __name__ == "__main__":
             print("\nP-values:")
             print(p_values_iptwonly)
             # [ods ration, ci low, ci upper, p]
-            res_iptwonly=[odds_ratios_iptwonly.exposed,
-                          odds_ratios_ci_iptwonly.loc['exposed', 0],
-                          odds_ratios_ci_iptwonly.loc['exposed', 1],
-                          p_values_iptwonly.exposed,
-                          odds_ratios_iptwonly, odds_ratios_ci_iptwonly, p_values_iptwonly]
+            res_iptwonly = [odds_ratios_iptwonly.exposed,
+                            odds_ratios_ci_iptwonly.loc['exposed', 0],
+                            odds_ratios_ci_iptwonly.loc['exposed', 1],
+                            p_values_iptwonly.exposed,
+                            odds_ratios_iptwonly, odds_ratios_ci_iptwonly, p_values_iptwonly]
         except:
             print('Error in Fit the logistic regression model with iptw only', i, outcome_of_interest,
-                        exposure_label.sum(), (exposure_label == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
+                  exposure_label.sum(), (exposure_label == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).mean(), )
             res_iptwonly = [None, ] * 7
 
         # 4 IPTW to re-weight
@@ -1559,9 +1560,10 @@ if __name__ == "__main__":
         # Fit the weighted GLM model with a Binomial family and logit link
         # The weights argument is used for freq_weights
         try:
-            model_reweight = sm.GLM(Y, X[['const', 'exposed']], family=sm.families.Binomial(), freq_weights=X['iptw']).fit()
+            model_reweight = sm.GLM(Y, X[['const', 'exposed']], family=sm.families.Binomial(),
+                                    freq_weights=X['iptw']).fit()
             print(model_reweight.summary())
-            odds_ratios_reweight  = np.exp(model_reweight.params)
+            odds_ratios_reweight = np.exp(model_reweight.params)
             odds_ratios_ci_reweight = np.exp(model_reweight.conf_int())
             print("\nOdds Ratios:")
             print(odds_ratios_reweight)
@@ -1577,15 +1579,15 @@ if __name__ == "__main__":
                             odds_ratios_reweight, odds_ratios_ci_reweight, p_values_reweight]
         except:
             print('Error in Fit the logistic regression model re-weighted by IPTW', i, outcome_of_interest,
-                        exposure_label.sum(), (exposure_label == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
+                  exposure_label.sum(), (exposure_label == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).mean(), )
             res_reweight = [None, ] * 7
 
         # 5. logistic regression  all the other cov
@@ -1606,7 +1608,7 @@ if __name__ == "__main__":
             'PaxRisk:Smoking current',
             'PaxRisk:Substance use disorders'
         ]
-        data_dict = {'exposed': exposure_label} #, 'iptw':iptw}
+        data_dict = {'exposed': exposure_label}  # , 'iptw':iptw}
         for col in covs_columns:
             data_dict[col] = df[col]
         X = pd.DataFrame(data_dict)
@@ -1626,23 +1628,23 @@ if __name__ == "__main__":
             p_values_regress = model_regress.pvalues
             print("\nP-values:")
             print(p_values_regress)
-            res_regress = [ odds_ratios_regress.exposed,
-                            odds_ratios_ci_regress.loc['exposed', 0],
-                            odds_ratios_ci_regress.loc['exposed', 1],
-                            p_values_regress.exposed,
-                            odds_ratios_regress, odds_ratios_ci_regress, p_values_regress
-                         ]
+            res_regress = [odds_ratios_regress.exposed,
+                           odds_ratios_ci_regress.loc['exposed', 0],
+                           odds_ratios_ci_regress.loc['exposed', 1],
+                           p_values_regress.exposed,
+                           odds_ratios_regress, odds_ratios_ci_regress, p_values_regress
+                           ]
         except:
             print('Error in Fit the logistic regression model with all covs', i, outcome_of_interest,
-                        exposure_label.sum(), (exposure_label == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
-                        (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
-                        (outcome_of_interest_flag[exposure_label == 0] == 0).mean(),)
+                  exposure_label.sum(), (exposure_label == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
+                  (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
+                  (outcome_of_interest_flag[exposure_label == 0] == 0).mean(), )
             res_regress = [None, ] * 7
 
         # 6. logistic regression iptw and all the other cov
@@ -1688,7 +1690,7 @@ if __name__ == "__main__":
                         # cox[0], cox[1], cox[3].summary.p.treatment if pd.notna(cox[3]) else np.nan, cox[2], cox[4],
                         # cox_w[0], cox_w[1], cox_w[3].summary.p.treatment if pd.notna(cox_w[3]) else np.nan, cox_w[2],
                         # cox_w[4],
-                        n_exposed, n_unexposed,  cont_table_a, cont_table_b, cont_table_c, cont_table_d,
+                        n_exposed, n_unexposed, cont_table_a, cont_table_b, cont_table_c, cont_table_d,
                         res_crude[0], res_crude[1], res_crude[2],
                         n_exposed_iptw, n_unexposed_iptw,
                         cont_table_a_iptw, cont_table_b_iptw, cont_table_c_iptw, cont_table_d_iptw,
@@ -1728,7 +1730,8 @@ if __name__ == "__main__":
                 "p_values_iptwonly.exposed",
                 "odds_ratios_iptwonly all", "odds_ratios_ci_iptwonly all", "p_values_iptwonly all",
 
-                "odds_ratios_iptwreweight.exposed", "odds_ratios_ci_iptwreweight lower", "odds_ratios_ci_iptwreweight upper",
+                "odds_ratios_iptwreweight.exposed", "odds_ratios_ci_iptwreweight lower",
+                "odds_ratios_ci_iptwreweight upper",
                 "p_values_iptwreweight.exposed",
                 "odds_ratios_iptwreweight all", "odds_ratios_ci_iptwreweight all", "p_values_iptwreweight all",
 
