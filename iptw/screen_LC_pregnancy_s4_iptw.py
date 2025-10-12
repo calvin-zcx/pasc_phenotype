@@ -1354,7 +1354,8 @@ if __name__ == "__main__":
 
     pregnancyout2nd_list = ['pregnancyout2nd-out@' + x for x in pregnancyout2nd_encoding.keys()]
 
-    selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<34Andlivebirth',
+    selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<37',
+                            'preterm birth<34Andlivebirth', 'preterm birth<37',
                             'preg_outcome-livebirth', 'preg_outcome-stillbirth',
                             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
                             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
@@ -1382,6 +1383,20 @@ if __name__ == "__main__":
             # select live birth cohort only for calculating
             # select outcome flag
             df = df_og.loc[df_og['preg_outcome-livebirth'] == 1]
+        elif ((outcome_of_interest == 'preterm birth<37') or
+                (outcome_of_interest == 'preterm birth<34')):
+            # outcome numerator among preterm birth and live birth
+            # outcome denomerator are overall
+            """
+            df.loc[index, 'preterm birth<37'] = int(gesage < 37)
+            df.loc[index, 'preterm birth<34'] = int(gesage < 34)
+
+            if df.loc[index, 'preg_outcome-livebirth'] == 1:
+                df.loc[index, 'preterm birth<37Andlivebirth'] = int(gesage < 37)
+                df.loc[index, 'preterm birth<34Andlivebirth'] = int(gesage < 34)
+            """
+            outcome_of_interest += 'Andlivebirth'
+            df = df_og
         else:
             df = df_og
 
