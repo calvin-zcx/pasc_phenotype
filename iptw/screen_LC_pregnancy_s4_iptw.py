@@ -1383,6 +1383,8 @@ if __name__ == "__main__":
             # select live birth cohort only for calculating
             # select outcome flag
             df = df_og.loc[df_og['preg_outcome-livebirth'] == 1]
+            outcome_of_interest_flag = (df[outcome_of_interest] >= 1).astype('int')  # outcome label, binary
+
         elif ((outcome_of_interest == 'preterm birth<37') or
                 (outcome_of_interest == 'preterm birth<34')):
             # outcome numerator among preterm birth and live birth
@@ -1395,12 +1397,14 @@ if __name__ == "__main__":
                 df.loc[index, 'preterm birth<37Andlivebirth'] = int(gesage < 37)
                 df.loc[index, 'preterm birth<34Andlivebirth'] = int(gesage < 34)
             """
-            outcome_of_interest += 'Andlivebirth'
             df = df_og
+            outcome_of_interest_flag = (df[outcome_of_interest + 'Andlivebirth'] >= 1).astype('int')  # outcome label, binary
+
         else:
             df = df_og
+            outcome_of_interest_flag = (df[outcome_of_interest] >= 1).astype('int')  # outcome label, binary
 
-        outcome_of_interest_flag = (df[outcome_of_interest] >= 1).astype('int')  # outcome label, binary
+        # outcome_of_interest_flag = (df[outcome_of_interest] >= 1).astype('int')  # outcome label, binary
         exposure_label = (df['exposed'] >= 1).astype('int')  # exposure label, binary
         covs_array = df.loc[:, covs_columns].astype('float')
 
