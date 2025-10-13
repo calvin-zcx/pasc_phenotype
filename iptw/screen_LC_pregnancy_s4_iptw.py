@@ -23,6 +23,7 @@ from sklearn.preprocessing import SplineTransformer
 import ast
 from scipy.stats.contingency import odds_ratio
 import statsmodels.api as sm
+from sklearn import preprocessing
 
 print = functools.partial(print, flush=True)
 
@@ -270,6 +271,11 @@ def add_col(df):
     # and https://www.paxlovid.com/who-can-take
     print('in add_col, df.shape', df.shape)
 
+    print(df['days_between_covid_pregnant_onset'].describe())
+    min_max_scaler = preprocessing.MinMaxScaler()
+    df['days_between_covid_pregnant_onset_minmaxscaler'] = min_max_scaler.fit_transform(df[['days_between_covid_pregnant_onset']])
+    print(df['days_between_covid_pregnant_onset_minmaxscaler'].describe())
+
     print('Build covs for outpatient cohorts w/o ICU or ventilation')
     df['inpatient'] = ((df['hospitalized'] == 1) & (df['ventilation'] == 0) & (df['criticalcare'] == 0)).astype('int')
     df['icu'] = (((df['hospitalized'] == 1) & (df['ventilation'] == 1)) | (df['criticalcare'] == 1)).astype('int')
@@ -289,6 +295,9 @@ def add_col(df):
     ).astype('int')
 
     df['PaxRisk:Chronic kidney disease'] = (df["DX: Chronic Kidney Disease"] >= 1).astype('int')
+    # 'obc:Chronic renal disease'
+    df['PaxRiskAndOB:Chronic renal disease'] = ((df["DX: Chronic Kidney Disease"] >= 1) & (df['obc:Chronic renal disease'] >= 1)).astype('int')
+
 
     df['PaxRisk:Chronic liver disease'] = (
             ((df["DX: Cirrhosis"] >= 1).astype('int') +
@@ -340,7 +349,20 @@ def add_col(df):
              ) >= 1
     ).astype('int')
 
+    df['PaxRiskAndOB:Heart conditions'] = (
+            ((df["DX: Congestive Heart Failure"] >= 1).astype('int') +
+             (df["DX: Coronary Artery Disease"] >= 1).astype('int') +
+             (df["DX: Arrythmia"] >= 1).astype('int') +
+             (df['CCI:Myocardial Infarction'] >= 1).astype('int') +
+             (df['CCI:Congestive Heart Failure'] >= 1).astype('int') +
+             (df['obc:Cardiac disease, preexisting'] >= 1).astype('int')
+             ) >= 1
+    ).astype('int')
+
     df['PaxRisk:Hypertension'] = (df["DX: Hypertension"] >= 1).astype('int')
+
+    df['PaxRiskAndOB:Hypertension'] = ((df["DX: Hypertension"] >= 1) & (df['obc:Chronic hypertension'] >= 1)).astype('int')
+
 
     df['PaxRisk:HIV infection'] = (
             ((df["DX: HIV"] >= 1).astype('int') +
@@ -381,6 +403,13 @@ def add_col(df):
     df['PaxRisk:Sickle cell disease or thalassemia'] = (
             ((df['DX: Sickle Cell'] >= 1).astype('int') +
              (df["DX: Anemia"] >= 1).astype('int')
+             ) >= 1
+    ).astype('int')
+
+    df['PaxRiskAndOB:Anemia, Sickle cell  or thalassemia'] = (
+            ((df['DX: Sickle Cell'] >= 1).astype('int') +
+             (df["DX: Anemia"] >= 1).astype('int') +
+             (df['obc:Anemia, preexisting'] >= 1).astype('int')
              ) >= 1
     ).astype('int')
 
@@ -1212,26 +1241,30 @@ if __name__ == "__main__":
                      'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
                      'RE:Other Non-Hispanic', 'RE:Unknown',
                      'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
-                     'BMI: >=30 obese ', 'BMI: missing',
+                     'BMI: >=30 obese ', 'BMI: missing', 'days_between_covid_pregnant_onset_minmaxscaler',
                      ] +
                     [
                         'PaxRisk:Cancer',
-                        'PaxRisk:Chronic kidney disease',
+                        # 'PaxRisk:Chronic kidney disease', # into 'PaxRiskAndOB:Chronic renal disease'
+                        'PaxRiskAndOB:Chronic renal disease',
                         'PaxRisk:Chronic liver disease',
                         'PaxRisk:Chronic lung disease',
                         # 'PaxRisk:Cystic fibrosis',
                         # 'PaxRisk:Dementia or other neurological conditions',
                         'PaxRisk:Diabetes',
                         # 'PaxRisk:Disabilities',
-                        'PaxRisk:Heart conditions',
-                        'PaxRisk:Hypertension',
+                        # 'PaxRisk:Heart conditions', # into 'PaxRiskAndOB:Heart conditions'
+                        'PaxRiskAndOB:Heart conditions',
+                        # 'PaxRisk:Hypertension', #into 'PaxRiskAndOB:Hypertension'
+                        'PaxRiskAndOB:Hypertension',
                         'PaxRisk:HIV infection',
                         'PaxRisk:Immunocompromised condition or weakened immune system',
                         # 'PaxRisk:Mental health conditions', # use obc mental part
                         # 'PaxRisk:Overweight and obesity',
                         'PaxRisk:Obesity',
                         # 'PaxRisk:Pregnancy',
-                        'PaxRisk:Sickle cell disease or thalassemia',
+                        # 'PaxRisk:Sickle cell disease or thalassemia', #into 'PaxRiskAndOB:Anemia, Sickle cell  or thalassemia'
+                        'PaxRiskAndOB:Anemia, Sickle cell  or thalassemia',
                         'PaxRisk:Smoking current',
                         'PaxRisk:Stroke or cerebrovascular disease',
                         'PaxRisk:Substance use disorders',  # use this one, more than obc: substance one
@@ -1239,13 +1272,13 @@ if __name__ == "__main__":
                     [
                         # 'obc:Placenta accreta spectrum',
                         'obc:Pulmonary hypertension',
-                        'obc:Chronic renal disease',
-                        'obc:Cardiac disease, preexisting',
+                        # 'obc:Chronic renal disease', # into 'PaxRiskAndOB:Chronic renal disease'
+                        # 'obc:Cardiac disease, preexisting', #into 'PaxRiskAndOB:Heart conditions'
                         # 'obc:HIV/AIDS',
                         # 'obc:Preeclampsia with severe features',
                         # 'obc:Placental abruption',
                         'obc:Bleeding disorder, preexisting',
-                        'obc:Anemia, preexisting',
+                        # 'obc:Anemia, preexisting', # 'PaxRiskAndOB:Anemia, Sickle cell  or thalassemia'
                         # 'obc:Twin/multiple pregnancy',
                         'obc:Preterm birth (< 37 weeks)',
                         # 'obc:Placenta previa, complete or partial',
@@ -1256,7 +1289,7 @@ if __name__ == "__main__":
                         'obc:Uterine fibroids',
                         # 'obc:Substance use disorder',
                         'obc:Gastrointestinal disease',
-                        'obc:Chronic hypertension',
+                        # 'obc:Chronic hypertension', #into 'PaxRiskAndOB:Hypertension'
                         'obc:Major mental health disorder',
                         # 'obc:Preexisting diabetes mellitus',
                         'obc:Thyrotoxicosis',
@@ -1277,8 +1310,10 @@ if __name__ == "__main__":
             'BMI: >=30 obese ', 'BMI: missing',
             'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
-            'PaxRisk:Chronic kidney disease',
-            'PaxRisk:Hypertension',
+            # 'PaxRisk:Chronic kidney disease',
+            'PaxRiskAndOB:Chronic renal disease',
+            # 'PaxRisk:Hypertension',
+            'PaxRiskAndOB:Hypertension',
             'PaxRisk:Immunocompromised condition or weakened immune system',
             'PaxRisk:Smoking current',
             'PaxRisk:Substance use disorders',
@@ -1355,7 +1390,7 @@ if __name__ == "__main__":
     pregnancyout2nd_list = ['pregnancyout2nd-out@' + x for x in pregnancyout2nd_encoding.keys()]
 
     selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<37',
-                            'preterm birth<34Andlivebirth', 'preterm birth<37',
+                            'preterm birth<34Andlivebirth', 'preterm birth<34',
                             'preg_outcome-livebirth', 'preg_outcome-stillbirth',
                             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
                             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
@@ -1621,11 +1656,15 @@ if __name__ == "__main__":
             # 'BMI: >=30 obese ', 'BMI: missing',
             'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
-            'PaxRisk:Chronic kidney disease',
-            'PaxRisk:Hypertension',
+            # 'PaxRisk:Chronic kidney disease',
+            'PaxRiskAndOB:Chronic renal disease',
+            # 'PaxRisk:Hypertension',
+            'PaxRiskAndOB:Hypertension',
             'PaxRisk:Immunocompromised condition or weakened immune system',
             'PaxRisk:Smoking current',
-            'PaxRisk:Substance use disorders'
+            'PaxRisk:Substance use disorders',
+            'obc:Major mental health disorder',
+            'PaxRiskAndOB:Anemia, Sickle cell  or thalassemia',
         ]
         data_dict = {'exposed': exposure_label}  # , 'iptw':iptw}
         for col in covs_columns:

@@ -841,9 +841,13 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
     # 2025-02-21 with any brain fog, revise control name,
     output_dir = indir + r'figure/'
 
-    df = pd.read_csv(indir + 'causal_effects_specific-select.csv')
+    df = pd.read_csv(indir + 'causal_effects_specific.csv')
+    print(df['outcome_of_interest'].to_list())
+
 
     selected_rows =  [
+        'preterm birth<37',
+        'preterm birth<34',
         'preterm birth<37Andlivebirth',
          'preterm birth<34Andlivebirth',
          # 'preg_outcome-livebirth',
@@ -857,8 +861,15 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
          'pregnancyout2nd-out@thromboembolic events',
          'pregnancyout2nd-out@Gestational diabetes mellitus',
          'pregnancyout2nd-out@Preeclampsia',
-         'smm-out@smm:Eclampsia',
+        'pregnancyout2nd-out@Preeclampsia-siPEC',
+        'pregnancyout2nd-out@Preeclampsia-mPEC',
+        'pregnancyout2nd-out@Preeclampsia-sPEC',
+        'pregnancyout2nd-out@Preeclampsia-HELLP',
+        'pregnancyout2nd-out@Preeclampsia-unPEC',
+        'pregnancyout2nd-out@Preeclampsia-gHTN',
+        'pregnancyout2nd-out@Eclampsia',
          'SMM-overall-Any',
+        # 'smm-out@smm:Eclampsia',
          # 'smm-out@smm:Acute myocardial infarction', 'smm-out@smm:Aneurysm', 'smm-out@smm:Acute renal failure',
          # 'smm-out@smm:Adult respiratory distress syndrome', 'smm-out@smm:Amniotic fluid embolism',
          # 'smm-out@smm:Cardiac arrest/ventricular fibrillation', 'smm-out@smm:Conversion of cardiac rhythm',
@@ -871,8 +882,10 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
         ]
 
     selected_rows_namemap = {
-        'preterm birth<37Andlivebirth': 'Preterm birth<37weeks',
-         'preterm birth<34Andlivebirth': 'Preterm birth<34weeks',
+        'preterm birth<37': 'Preterm birth<37weeks',
+        'preterm birth<34': 'Preterm birth<34weeks',
+        'preterm birth<37Andlivebirth': 'Preterm birth<37weeks in live',
+         'preterm birth<34Andlivebirth': 'Preterm birth<34weeks in live',
          'preg_outcome-livebirth':'Live birth',
          'preg_outcome-stillbirth': 'Still birth',
          'preg_outcome-miscarriage':'Miscarriage',
@@ -884,6 +897,13 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
          'pregnancyout2nd-out@thromboembolic events': 'Thromboembolic events',
          'pregnancyout2nd-out@Gestational diabetes mellitus': 'Gestational diabetes',
          'pregnancyout2nd-out@Preeclampsia': 'Preeclampsia',
+        'pregnancyout2nd-out@Preeclampsia-siPEC': 'siPEC (O11)',
+        'pregnancyout2nd-out@Preeclampsia-gHTN': 'gHTN (O13)',
+        'pregnancyout2nd-out@Preeclampsia-mPEC': 'mPEC (O140)',
+        'pregnancyout2nd-out@Preeclampsia-sPEC': 'sPEC (O141)',
+        'pregnancyout2nd-out@Preeclampsia-HELLP': 'HELLP (O142)',
+        'pregnancyout2nd-out@Preeclampsia-unPEC': 'unPEC (O149)',
+        'pregnancyout2nd-out@Eclampsia': 'Eclampsia (O15)',
          'SMM-overall-Any': 'SMM-overall',
          'smm-out@smm:Acute myocardial infarction':'Acute myocardial infarction',
          'smm-out@smm:Aneurysm': 'Aneurysm',
