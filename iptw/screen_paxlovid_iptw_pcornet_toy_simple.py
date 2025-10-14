@@ -5,14 +5,17 @@ sys.path.insert(0, '..')
 import time
 import pickle
 import argparse
-from evaluation import *
+# from evaluation import *
+from evaluation import  weighted_KM_HR
 import os
 import random
 import pandas as pd
 import json
 import matplotlib.pyplot as plt
 import numpy as np
-from PSModels import ml
+# from PSModels import ml
+from PSModels import mltoyps
+
 from misc import utils
 import itertools
 import functools
@@ -22,6 +25,16 @@ import seaborn as sns
 from sklearn.preprocessing import SplineTransformer
 
 print = functools.partial(print, flush=True)
+
+
+# use
+# # utils.t2eall_to_int_list_dedup
+# def _t2eall_to_int_list_dedup(t2eall):
+#     t2eall = t2eall.strip(';').split(';')
+#     t2eall = set(map(int, t2eall))
+#     t2eall = sorted(t2eall)
+#
+#     return t2eall
 
 
 def parse_args():
@@ -92,15 +105,15 @@ def parse_args():
     return args
 
 
-def _evaluation_helper(X, T, PS_logits, loss):
-    y_pred_prob = logits_to_probability(PS_logits, normalized=False)
-    auc = roc_auc_score(T, y_pred_prob)
-    max_smd, smd, max_smd_weighted, smd_w, before, after = cal_deviation(X, T, PS_logits, normalized=False,
-                                                                         verbose=False)
-    n_unbalanced_feature = len(np.where(smd > SMD_THRESHOLD)[0])
-    n_unbalanced_feature_weighted = len(np.where(smd_w > SMD_THRESHOLD)[0])
-    result = (loss, auc, max_smd, n_unbalanced_feature, max_smd_weighted, n_unbalanced_feature_weighted)
-    return result
+# def _evaluation_helper(X, T, PS_logits, loss):
+#     y_pred_prob = logits_to_probability(PS_logits, normalized=False)
+#     auc = roc_auc_score(T, y_pred_prob)
+#     max_smd, smd, max_smd_weighted, smd_w, before, after = cal_deviation(X, T, PS_logits, normalized=False,
+#                                                                          verbose=False)
+#     n_unbalanced_feature = len(np.where(smd > SMD_THRESHOLD)[0])
+#     n_unbalanced_feature_weighted = len(np.where(smd_w > SMD_THRESHOLD)[0])
+#     result = (loss, auc, max_smd, n_unbalanced_feature, max_smd_weighted, n_unbalanced_feature_weighted)
+#     return result
 
 
 def _loss_helper(v_loss, v_weights):
@@ -134,27 +147,6 @@ def summary_covariate(df, label, weights, smd, smd_weighted, before, after):
     })
     # df_summary.to_csv('../data/V15_COVID19/output/character/outcome-dx-evaluation_encoding_balancing.csv')
     return df_summary
-
-def add_col(df):
-    print('in add_col')
-    drug_names = [
-        'naltrexone',
-    ]
-    df['hospitalization-flag'] = 0
-    df['hospitalization-t2e'] = 181
-
-    for index, row in tqdm(df.iterrows(), total=len(df)):
-        index_date = pd.to_datetime(row['index date'])
-        t2eall = row['hospitalization-t2eall']
-        if pd.notna(t2eall):
-            t2eall = utils.t2eall_to_int_list_dedup(t2eall)
-            for t2e in t2eall:
-                if 0 < t2e < 180:
-                    df.loc[index, 'hospitalization-flag'] = 1
-                    if t2e < df.loc[index, 'hospitalization-t2e']:
-                        df.loc[index, 'hospitalization-t2e'] = t2e
-
-    return df
 
 
 def feature_process_pregnancy(df):
@@ -200,6 +192,28 @@ def feature_process_pregnancy(df):
 
     print('feature_process_additional Done! Time used:',
           time.strftime("%H:%M:%S", time.gmtime(time.time() - start_time)))
+    return df
+
+
+def add_col(df):
+    print('in add_col')
+    drug_names = [
+        'naltrexone',
+    ]
+    df['hospitalization-flag'] = 0
+    df['hospitalization-t2e'] = 180
+
+    for index, row in tqdm(df.iterrows(), total=len(df)):
+        index_date = pd.to_datetime(row['index date'])
+        t2eall = row['hospitalization-t2eall']
+        if pd.notna(t2eall):
+            t2eall = utils.t2eall_to_int_list_dedup(t2eall)
+            for t2e in t2eall:
+                if 0 < t2e < 180:
+                    df.loc[index, 'hospitalization-flag'] = 1
+                    if t2e < df.loc[index, 'hospitalization-t2e']:
+                        df.loc[index, 'hospitalization-t2e'] = t2e
+
     return df
 
 
@@ -445,309 +459,21 @@ if __name__ == "__main__":
     print('args: ', args)
     print('random_seed: ', args.random_seed)
 
-    # add matched cohorts later
-    if args.cohorttype == 'atrisknopreg':
-        print('select AT risk cohort w/o pregnant')
-        # print('use -negctrl cohort! oct-9-2025')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-negctrl-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
-    elif args.cohorttype == 'norisk':
-        print('select NO risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-220301-230201.csv'
-    elif args.cohorttype == 'pregnant':
-        print('select pregnant cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
-    elif args.cohorttype == 'atrisk':
-        print('select At risk and with Pregnant cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
-        fname3 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
-        fname4 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
-    elif args.cohorttype == 'overall':
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-atRiskNoPreg-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-atRiskNoPreg-220301-230201.csv'
-        fname3 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-pregnant-220301-230201.csv'
-        fname4 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-pregnant-220301-230201.csv'
-        fname5 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-treated-noRisk-220301-230201.csv'
-        fname6 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-ctrl-noRisk-220301-230201.csv'
-    elif args.cohorttype == 'atrisknopreglabdx':
-        print('select AT risk cohort w/o pregnant')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-atRiskNoPreg-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-atRiskNoPreg-220301-230201.csv'
-    elif args.cohorttype == 'norisklabdx':
-        print('select NO risk cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-noRisk-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-noRisk-220301-230201.csv'
-    elif args.cohorttype == 'pregnantlabdx':
-        print('select pregnant cohort')
-        fname1 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-treated-pregnant-220301-230201.csv'
-        fname2 = r'recover29Nov27_covid_pos_addCFR-PaxRisk-U099-Hospital-Preg_4PCORNetPax-addPaxFeats-lab-dx-ctrl-pregnant-220301-230201.csv'
-    else:
-        #
-        raise ValueError
+    input_file_source = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/source_data.csv'.format(
+        args.cohorttype,
+        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+        'pcornet',  # '-select' if args.selectpasc else '',
+    )
 
-    print('fname1:', fname1)
-    print('fname2:', fname2)
+    print('read', input_file_source)
 
-    # %% Step 1. Load  Data
-    df1 = pd.read_csv(fname1, dtype={'patid': str, 'site': str, 'zip': str},
+    df = pd.read_csv(input_file_source, dtype={'patid': str, 'site': str, 'zip': str},
                       parse_dates=['index date', 'dob',
                                    'flag_delivery_date',
                                    'flag_pregnancy_start_date',
                                    'flag_pregnancy_end_date'])
 
-    df2 = pd.read_csv(fname2, dtype={'patid': str, 'site': str, 'zip': str},
-                      parse_dates=['index date', 'dob',
-                                   'flag_delivery_date',
-                                   'flag_pregnancy_start_date',
-                                   'flag_pregnancy_end_date'
-                                   ])
-    df = pd.concat([df1, df2], ignore_index=True)
-
-    print('treated df1.shape', df1.shape,
-          'control df2.shape', df2.shape,
-          'combined df.shape', df.shape, )
-
-    if args.cohorttype == 'atrisk':
-        print('selecting cohorttype atrisk Further combine df3 and df4')
-        print('fname3:', fname3)
-        print('fname4:', fname4)
-
-        df3 = pd.read_csv(fname3, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'])
-
-        df4 = pd.read_csv(fname4, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'
-                                       ])
-        df = pd.concat([df, df3, df4], ignore_index=True)
-        print('treated df3.shape', df3.shape,
-              'control df4.shape', df4.shape,
-              'combined df.shape', df.shape, )
-    elif args.cohorttype == 'overall':
-        df3 = pd.read_csv(fname3, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'])
-
-        df4 = pd.read_csv(fname4, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'
-                                       ])
-        df5 = pd.read_csv(fname5, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'])
-
-        df6 = pd.read_csv(fname6, dtype={'patid': str, 'site': str, 'zip': str},
-                          parse_dates=['index date', 'dob',
-                                       'flag_delivery_date',
-                                       'flag_pregnancy_start_date',
-                                       'flag_pregnancy_end_date'
-                                       ])
-        df = pd.concat([df, df3, df4, df5, df6], ignore_index=True)
-        print('treated df3.shape', df3.shape,
-              'control df4.shape', df4.shape,
-              'control df5.shape', df5.shape,
-              'combined df6.shape', df6.shape,
-              'combined df.shape', df.shape,
-              )
-
-
-    #
-    print('Further exclude baseline vaccined patients')
-    print('before df.shape', df.shape)
-    df = df.loc[(df['Fully vaccinated - Pre-index'] == 0) & (df['Partially vaccinated - Pre-index'] == 0), :].copy()
-    print('after df.shape', df.shape)
-
-    # add hospitalization over all time
     df = add_col(df)
-
-    print('Before select_subpopulation, len(df)', len(df))
-    df = select_subpopulation(df, args.severity)
-    print('After select_subpopulation, len(df)', len(df))
-
-
-
-
-    # pre-process data a little bit
-    selected_cols = [x for x in df.columns if (
-            x.startswith('DX:') or
-            x.startswith('MEDICATION:') or
-            x.startswith('CCI:') or
-            x.startswith('obc:')
-    )]
-    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
-    df.loc[:, r"DX: Hypertension and Type 1 or 2 Diabetes Diagnosis"] = \
-        (df.loc[:, r'DX: Hypertension'] & (
-                df.loc[:, r'DX: Diabetes Type 1'] | df.loc[:, r'DX: Diabetes Type 2'])).astype('int')
-
-    # baseline part have been binarized already
-    selected_cols = [x for x in df.columns if
-                     (x.startswith('dx-out@') or
-                      x.startswith('dxadd-out@') or
-                      x.startswith('dxbrainfog-out@') or
-                      x.startswith('covidmed-out@') or
-                      x.startswith('smm-out@') or
-                      x.startswith('dxCFR-out@')
-                      )]
-    df.loc[:, selected_cols] = (df.loc[:, selected_cols].astype('int') >= 1).astype('int')
-
-    # data clean for <0 error death records, and add censoring to the death time to event columns
-
-    df.loc[df['death t2e'] < 0, 'death'] = 0
-    df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
-
-    # death in [0, 180). 1: evnt, 0: censored, censored at 180. death at 180, not counted, thus use <
-    df['death all'] = ((df['death'] == 1) & (df['death t2e'] >= 0) & (df['death t2e'] < 180)).astype('int')
-    df['death t2e all'] = df['death t2e'].clip(lower=0, upper=180)
-    df.loc[df['death all'] == 0, 'death t2e all'] = df['maxfollowup'].clip(lower=0, upper=180)
-
-    # death in [0, 30). 1: evnt, 0: censored, censored at 30. death at 30, not counted, thus use <
-    df['death acute'] = ((df['death'] == 1) & (df['death t2e'] <= 30)).astype('int')
-    df['death t2e acute'] = df['death t2e all'].clip(upper=31)
-
-    # death in [30, 180).  1:event, 0: censored. censored at 180 or < 30, say death at 20, flag is 0, time is 20
-    df['death postacute'] = ((df['death'] == 1) & (df['death t2e'] >= 31) & (df['death t2e'] < 180)).astype('int')
-    df['death t2e postacute'] = df['death t2e all']
-
-    #
-    df['hospitalization-acute-flag'] = (df['hospitalization-acute-flag'] >= 1).astype('int')
-    df['hospitalization-acute-t2e'] = df['hospitalization-acute-t2e'].clip(upper=31)
-    df['hospitalization-postacute-flag'] = (df['hospitalization-postacute-flag'] >= 1).astype('int')
-
-    #
-    # pre-process PASC info
-    df_pasc_info = pd.read_excel(r'../prediction/output/causal_effects_specific_withMedication_v3.xlsx',
-                                 sheet_name='diagnosis')
-    addedPASC_encoding = utils.load(r'../data/mapping/addedPASC_index_mapping.pkl')
-    addedPASC_list = list(addedPASC_encoding.keys())
-    brainfog_encoding = utils.load(r'../data/mapping/brainfog_index_mapping.pkl')
-    brainfog_list = list(brainfog_encoding.keys())
-
-    CFR_encoding = utils.load(r'../data/mapping/cognitive-fatigue-respiratory_index_mapping.pkl')
-    CFR_list = list(CFR_encoding.keys())
-
-    pasc_simname = {}
-    pasc_organ = {}
-    for index, rows in df_pasc_info.iterrows():
-        pasc_simname[rows['pasc']] = (rows['PASC Name Simple'], rows['Organ Domain'])
-        pasc_organ[rows['pasc']] = rows['Organ Domain']
-
-    for p in addedPASC_list:
-        pasc_simname[p] = (p, 'General-add')
-        pasc_organ[p] = 'General-add'
-
-    for p in brainfog_list:
-        pasc_simname[p] = (p, 'brainfog')
-        pasc_organ[p] = 'brainfog'
-
-    for p in CFR_list:
-        pasc_simname[p] = (p, 'cognitive-fatigue-respiratory')
-        pasc_organ[p] = 'cognitive-fatigue-respiratory'
-
-    # pasc_list = df_pasc_info.loc[df_pasc_info['selected'] == 1, 'pasc']
-    pasc_list_raw = df_pasc_info.loc[df_pasc_info['selected_narrow'] == 1, 'pasc'].to_list()
-    _exclude_list = ['Pressure ulcer of skin', 'Fluid and electrolyte disorders']
-    pasc_list = [x for x in pasc_list_raw if x not in _exclude_list]
-
-    pasc_add = ['smell and taste', ]
-    print('len(pasc_list)', len(pasc_list), 'len(pasc_add)', len(pasc_add))
-    print('pasc_list:', pasc_list)
-    print('pasc_add', pasc_add)
-
-    for p in pasc_list:
-        df[p + '_pasc_flag'] = 0
-    for p in pasc_add:
-        df[p + '_pasc_flag'] = 0
-
-    for p in CFR_list:
-        df[p + '_CFR_flag'] = 0
-
-    df['any_pasc_flag'] = 0
-    df['any_pasc_type'] = np.nan
-    df['any_pasc_t2e'] = 180  # np.nan
-    df['any_pasc_txt'] = ''
-    df['any_pasc_baseline'] = 0  # placeholder for screening, no special meaning, null column
-
-    df['any_CFR_flag'] = 0
-    # df['any_CFR_type'] = np.nan
-    df['any_CFR_t2e'] = 180  # np.nan
-    df['any_CFR_txt'] = ''
-    df['any_CFR_baseline'] = 0  # placeholder for screening, no special meaning, null column
-
-    for index, rows in tqdm(df.iterrows(), total=df.shape[0]):
-        # for any 1 pasc
-        t2e_list = []
-        pasc_1_list = []
-        pasc_1_name = []
-        pasc_1_text = ''
-        for p in pasc_list:
-            if (rows['dx-out@' + p] > 0) and (rows['dx-base@' + p] == 0):
-                t2e_list.append(rows['dx-t2e@' + p])
-                pasc_1_list.append(p)
-                pasc_1_name.append(pasc_simname[p])
-                pasc_1_text += (pasc_simname[p][0] + ';')
-
-                df.loc[index, p + '_pasc_flag'] = 1
-
-        for p in pasc_add:
-            if (rows['dxadd-out@' + p] > 0) and (rows['dxadd-base@' + p] == 0):
-                t2e_list.append(rows['dxadd-t2e@' + p])
-                pasc_1_list.append(p)
-                pasc_1_name.append(pasc_simname[p])
-                pasc_1_text += (pasc_simname[p][0] + ';')
-
-                df.loc[index, p + '_pasc_flag'] = 1
-
-        if len(t2e_list) > 0:
-            df.loc[index, 'any_pasc_flag'] = 1
-            df.loc[index, 'any_pasc_t2e'] = np.min(t2e_list)
-            df.loc[index, 'any_pasc_txt'] = pasc_1_text
-        else:
-            df.loc[index, 'any_pasc_flag'] = 0
-            df.loc[index, 'any_pasc_t2e'] = rows[['dx-t2e@' + p for p in pasc_list]].max()  # censoring time
-
-        # for CFR pasc
-        CFR_t2e_list = []
-        CFR_1_list = []
-        CFR_1_name = []
-        CFR_1_text = ''
-        for p in CFR_list:
-            if (rows['dxCFR-out@' + p] > 0) and (rows['dxCFR-base@' + p] == 0):
-                CFR_t2e_list.append(rows['dxCFR-t2e@' + p])
-                CFR_1_list.append(p)
-                CFR_1_name.append(pasc_simname[p])
-                CFR_1_text += (pasc_simname[p][0] + ';')
-
-                df.loc[index, p + '_CFR_flag'] = 1
-
-        if len(CFR_t2e_list) > 0:
-            df.loc[index, 'any_CFR_flag'] = 1
-            df.loc[index, 'any_CFR_t2e'] = np.min(CFR_t2e_list)
-            df.loc[index, 'any_CFR_txt'] = CFR_1_text
-        else:
-            df.loc[index, 'any_CFR_flag'] = 0
-            df.loc[index, 'any_CFR_t2e'] = rows[['dxCFR-t2e@' + p for p in CFR_list]].max()  # censoring time
-
-    # pd.Series(df.columns).to_csv('recover_covid_pos-with-pax-V3-column-name.csv')
-
-    print('Severity cohorts:', args.severity,
-          'df1.shape:', df1.shape,
-          'df2.shape:', df2.shape,
-          'df.shape:', df.shape,
-          )
 
     col_names = pd.Series(df.columns)
     df_info = df[['patid', 'site', 'index date', 'treated',
@@ -883,6 +609,22 @@ if __name__ == "__main__":
     df_covs = df.loc[:, covs_columns].astype('float')
     print('df.shape:', df.shape, 'df_covs.shape:', df_covs.shape)
 
+    df_simple = df[['treated', 'age', 'adi', 'bmi'] + covs_columns + ['death acute', 'death t2e acute',
+                                     'death', 'death t2e all',
+                                     'hospitalization-acute-flag', 'hospitalization-acute-t2e',
+                                     'hospitalization-flag', 'hospitalization-t2e',]]
+
+    out_file_source = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/source_data-simple.csv'.format(
+        args.cohorttype,
+        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
+        'pcornet',  # '-select' if args.selectpasc else '',
+    )
+
+    utils.check_and_mkdir(out_file_source)
+    df_simple.to_csv(out_file_source)  # args.save_model_filename +
+    print('Dump to', out_file_source)
+
+
     print('all',
           'df.shape', df.shape,
           'df_info.shape:', df_info.shape,
@@ -904,7 +646,7 @@ if __name__ == "__main__":
         print('e.g.:', record_example)
 
     selected_screen_list = (['death', 'death_acute', 'death_postacute',
-                             'hospitalization_acute', 'hospitalization_postacute',
+                             'hospitalization_acute', 'hospitalization_postacute', 'hospitalization',
                              'any_pasc', 'PASC-General',
                              'any_CFR',
                              ]
@@ -915,15 +657,7 @@ if __name__ == "__main__":
                             # brainfog_list
                             )
 
-    out_file_source = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/source_data.csv'.format(
-        args.cohorttype,
-        args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
-        'pcornet',  # '-select' if args.selectpasc else '',
-        )
 
-    utils.check_and_mkdir(out_file_source)
-    df.to_csv(out_file_source)  # args.save_model_filename +
-    print('Dump to', out_file_source)
 
     causal_results = []
     results_columns_name = []
@@ -956,26 +690,11 @@ if __name__ == "__main__":
             pasc_flag = df['hospitalization-postacute-flag'].astype('int')
             pasc_t2e = df['hospitalization-postacute-t2e'].astype('float')
             pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
-        elif pasc in pasc_list:
-            pasc_flag = (df['dx-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dx-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dx-base@' + pasc]
-        elif pasc in addedPASC_list:
-            pasc_flag = (df['dxadd-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxadd-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxadd-base@' + pasc]
-        elif pasc in brainfog_list:
-            pasc_flag = (df['dxbrainfog-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxbrainfog-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxbrainfog-base@' + pasc]
-        elif pasc == 'any_CFR':
-            pasc_flag = df['any_CFR_flag'].astype('int')
-            pasc_t2e = df['any_CFR_t2e'].astype('float')
-            pasc_baseline = df['any_CFR_baseline']
-        elif pasc in CFR_list:
-            pasc_flag = (df['dxCFR-out@' + pasc].copy() >= 1).astype('int')
-            pasc_t2e = df['dxCFR-t2e@' + pasc].astype('float')
-            pasc_baseline = df['dxCFR-base@' + pasc]
+
+        elif pasc == 'hospitalization':
+            pasc_flag = df['hospitalization-flag'].astype('int')
+            pasc_t2e = df['hospitalization-t2e'].astype('float')
+            pasc_baseline = (df['hospitalization-base'].isna()).astype('int')  # all 0, not acounting incident inpatient
 
         # considering competing risks of death, and (all, acute, post-acute) death as outcomes
         if pasc == 'death':
@@ -1044,7 +763,7 @@ if __name__ == "__main__":
         #     'max_iter': 200,
         #     'random_state': 0}
 
-        model = ml.PropensityEstimator(learner='LR', paras_grid={
+        model = mltoyps.PropensityEstimator(learner='LR', paras_grid={
             'penalty': ['l2'],  # 'l1',
             'C': 10 ** np.arange(-1.5, 1., 0.25),  # 10 ** np.arange(-2, 1.5, 0.5),
             'max_iter': [150],  # [100, 200, 500],
@@ -1059,8 +778,8 @@ if __name__ == "__main__":
         # plt.scatter(range(len(smd)), smd_weighted)
         # plt.show()
         print('n unbalanced covariates before:after = {}:{}'.format(
-            (np.abs(smd) > SMD_THRESHOLD).sum(),
-            (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
+            (np.abs(smd) > mltoyps.SMD_THRESHOLD).sum(),
+            (np.abs(smd_weighted) > mltoyps.SMD_THRESHOLD).sum())
         )
         out_file_balance = r'../data/recover/output/results/Paxlovid-{}-{}-{}-Vtoy/{}-{}-results.csv'.format(
             args.cohorttype,
@@ -1129,7 +848,7 @@ if __name__ == "__main__":
                         (pasc_flag[covid_label == 1] == 1).mean(), (pasc_flag[covid_label == 0] == 1).mean(),
                         (pasc_flag[covid_label == 1] == 2).sum(), (pasc_flag[covid_label == 0] == 2).sum(),
                         (pasc_flag[covid_label == 1] == 2).mean(), (pasc_flag[covid_label == 0] == 2).mean(),
-                        (np.abs(smd) > SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > SMD_THRESHOLD).sum(),
+                        (np.abs(smd) > mltoyps.SMD_THRESHOLD).sum(), (np.abs(smd_weighted) > mltoyps.SMD_THRESHOLD).sum(),
                         np.abs(smd).max(), np.abs(smd_weighted).max(),
                         km[2], km[3], km[6].p_value,
                         list(km[6].diff_of_mean), list(km[6].diff_of_mean_lower), list(km[6].diff_of_mean_upper),

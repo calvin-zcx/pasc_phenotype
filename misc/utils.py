@@ -570,6 +570,12 @@ def load_icd_to_ccw(path):
         data_info = (name_id, id_name, data)
         return icd_ccwid, icd_ccwname, data_info
 
+def t2eall_to_int_list_dedup(t2eall):
+    t2eall = t2eall.strip(';').split(';')
+    t2eall = set(map(int, t2eall))
+    t2eall = sorted(t2eall)
+
+    return t2eall
 
 if __name__ == '__main__':
     start_time = time.time()
