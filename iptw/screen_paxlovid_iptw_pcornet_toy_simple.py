@@ -706,6 +706,7 @@ if __name__ == "__main__":
             pasc_flag.loc[df['death acute'] == 1] = 0
         else:
             # general conditions
+            # be very careful about death data!!!!
             print('considering general pasc in POST acute phase, set any death as competing risk')
             death_flag = df['death']
             death_t2e = df['death t2e']

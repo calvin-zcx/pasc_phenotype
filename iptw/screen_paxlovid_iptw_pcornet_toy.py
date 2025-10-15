@@ -606,6 +606,8 @@ if __name__ == "__main__":
 
     # data clean for <0 error death records, and add censoring to the death time to event columns
 
+    # what does mean for death t2e < 0? wrong data?
+
     df.loc[df['death t2e'] < 0, 'death'] = 0
     df.loc[df['death t2e'] < 0, 'death t2e'] = 9999
 
