@@ -83,8 +83,9 @@ def parse_args():
 
     parser.add_argument('--cohorttype',  #
                         choices=['pregafter30', 'pregafter180',
+                                 'pregafter180toAdd180', 'pregafter180toAdd365',
                                  ],
-                        default='pregafter180')
+                        default='pregafter180toAdd365')
     parser.add_argument('--exptype',
                         choices=['anypasc', 'anyCFR', 'mecfs', 'brainfog', 'U099',
                                  ], default='anypasc')  # 'base180-0'
@@ -1140,6 +1141,19 @@ if __name__ == "__main__":
         df = df.loc[time_order_flag, :]
         print('After selecting pregnant >= +180 days, len(df),\n',
               '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+        # 'pregafter180toAdd180', 'pregafter180toAdd365',
+    elif args.cohorttype == 'pregafter180toAdd180':
+        n = len(df)
+        time_order_flag = ((df['index date'] + datetime.timedelta(days=180)) <= df['flag_pregnancy_start_date']) & (df['flag_pregnancy_start_date']<= (df['index date'] + datetime.timedelta(days=360)))
+        df = df.loc[time_order_flag, :]
+        print('After selecting pregnant >= +180 days and <= 360 days, len(df),\n',
+              '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
+    elif args.cohorttype == 'pregafter180toAdd365':
+        n = len(df)
+        time_order_flag = ((df['index date'] + datetime.timedelta(days=180)) <= df['flag_pregnancy_start_date']) & (df['flag_pregnancy_start_date']<= (df['index date'] + datetime.timedelta(days=545)))
+        df = df.loc[time_order_flag, :]
+        print('After selecting pregnant >= +180 days and <= 545 days, len(df),\n',
+              '{}\t{:.2f}%\t{:.2f}%'.format(len(df), len(df) / n * 100, len(df) / N * 100))
     else:
         raise ValueError
 
@@ -1147,6 +1161,18 @@ if __name__ == "__main__":
     if args.exptype == 'anypasc':
         pasc_flag = df['any_pasc_flag'].astype('int')
         pasc_t2e_label = 'any_pasc_t2e'
+    elif args.exptype == 'brainfog':
+        pasc_flag = df['any_brainfog_flag'].astype('int')
+        pasc_t2e_label = 'any_brainfog_t2e'
+    elif args.exptype == 'anyCFR':
+        pasc_flag = df['any_CFR_flag'].astype('int')
+        pasc_t2e_label = 'any_CFR_t2e'
+    elif args.exptype == 'mecfs':
+        pasc_flag = df['dxMECFS-out@ME/CFS'].astype('int')
+        pasc_t2e_label = 'dxMECFS-t2e@ME/CFS' #
+    elif args.exptype == 'U099':
+        pasc_flag = df['dx-out@PASC-General'].astype('int')
+        pasc_t2e_label = 'dx-t2e@PASC-General' #U099
     else:
         raise ValueError
 

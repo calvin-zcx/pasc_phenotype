@@ -837,7 +837,7 @@ def load_pasc_info():
 #     return df_result
 
 
-def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
+def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full', excludenull=False):
     # 2025-02-21 with any brain fog, revise control name,
     output_dir = indir + r'figure/'
 
@@ -957,6 +957,8 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
         cif0 = row['mean outcome_of_interest in -'] * 100
         cif0_ci = [np.nan, np.nan]
 
+        if excludenull and ((cif1 == 0) or (cif0 == 0)):
+            continue
         # cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
         # cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
         #                stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
@@ -1047,7 +1049,7 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full'):
         # groupvar="group",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Odds Ratio",  # x-label title
-        xticks=[0.2, 1, 3.],
+        xticks=[0.2, 1, 4.],
         # [0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
@@ -2610,9 +2612,30 @@ def plot_forest_for_ssri_subgroup_lib2_cifdiff(show='full', outcome='any_pasc'):
 if __name__ == '__main__':
 
     ## 2025-10-3 Primary results
+    # xticks=[0.2, 1, 3.], logscale=False,
     indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-anypascs99/'
+
+    # xticks=[0.1, 1, 10.], logscale=True,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-brainfogs99/'
+
+    # xticks=[0.1, 1, 10.], logscale=True,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-anyCFRs99/'
+    # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval')
+
+    # xticks=xticks=[0.2, 1, 4.],, logscale=False,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180toAdd180-all-anypascs99/'
+
+    # xticks=xticks=[0.2, 1, 4.],, logscale=False,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180toAdd365-all-anypascs99/'
     df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval')
 
 
+    # indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-mecfss99/'
+    # # xticks=[0.1, 1, 20.], logscale=True,
+    # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval', excludenull=True)
+
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-U099s99/'
+    # xticks=[0.1, 1, 20.], logscale=True,
+    # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval', excludenull=True)
 
     print('Done!')
