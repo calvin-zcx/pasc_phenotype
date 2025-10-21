@@ -14,7 +14,9 @@ import json
 import matplotlib.pyplot as plt
 import numpy as np
 # from PSModels import ml
-from PSModels import mltoyps
+from PSModels import mltoyps as mlps
+
+
 
 from misc import utils
 import itertools
@@ -620,11 +622,58 @@ if __name__ == "__main__":
         'pcornet',  # '-select' if args.selectpasc else '',
     )
 
-    utils.check_and_mkdir(out_file_source)
-    df_simple.to_csv(out_file_source)  # args.save_model_filename +
+    # utils.check_and_mkdir(out_file_source)
+    # df_simple.to_csv(out_file_source)  # args.save_model_filename +
     print('Dump to', out_file_source)
 
+    df = df_simple.copy()
+    covs_columns = [
+        'Female', 'Male', 'Other/Missing',
+        'age@18-24', 'age@25-34', 'age@35-49', 'age@50-64',
+        '65-<75 years', '75-<85 years', '85+ years',
+        'RE:Asian Non-Hispanic',
+        'RE:Black or African American Non-Hispanic',
+        'RE:Hispanic or Latino Any Race', 'RE:White Non-Hispanic',
+        'RE:Other Non-Hispanic', 'RE:Unknown',
+        'ADI1-9', 'ADI10-19', 'ADI20-29', 'ADI30-39', 'ADI40-49',
+        'ADI50-59', 'ADI60-69', 'ADI70-79', 'ADI80-89', 'ADI90-100', 'ADIMissing',
+        '03/22-06/22', '07/22-10/22', '11/22-02/23',
+        'inpatient visits 0', 'inpatient visits 1-2', 'inpatient visits 3-4',
+        'inpatient visits >=5',
+        'outpatient visits 0', 'outpatient visits 1-2', 'outpatient visits 3-4',
+        'outpatient visits >=5',
+        'emergency visits 0', 'emergency visits 1-2', 'emergency visits 3-4',
+        'emergency visits >=5',
+        'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
+        'BMI: >=30 obese ', 'BMI: missing',
+        'Smoker: never', 'Smoker: current', 'Smoker: former', 'Smoker: missing',
+        'PaxRisk:Cancer', 'PaxRisk:Chronic kidney disease', 'PaxRisk:Chronic liver disease',
+        'PaxRisk:Chronic lung disease', 'PaxRisk:Cystic fibrosis',
+        'PaxRisk:Dementia or other neurological conditions', 'PaxRisk:Diabetes', 'PaxRisk:Disabilities',
+        'PaxRisk:Heart conditions', 'PaxRisk:Hypertension', 'PaxRisk:HIV infection',
+        'PaxRisk:Immunocompromised condition or weakened immune system', 'PaxRisk:Mental health conditions',
+        'PaxRisk:Overweight and obesity', 'PaxRisk:Pregnancy', 'PaxRisk:Sickle cell disease or thalassemia',
+        'PaxRisk:Smoking current', 'PaxRisk:Stroke or cerebrovascular disease',
+        'PaxRisk:Substance use disorders', 'PaxRisk:Tuberculosis',
+        "DX: Coagulopathy", "DX: Peripheral vascular disorders ", "DX: Seizure/Epilepsy", "DX: Weight Loss",
+        'DX: Obstructive sleep apnea', 'DX: Epstein-Barr and Infectious Mononucleosis (Mono)', 'DX: Herpes Zoster',
+    ]
+    df_covs = df[covs_columns].astype('float')
+    print('df_covs.shape:', df_covs.shape)
 
+    treated_label = df['treated']
+
+    model = mlps.PropensityEstimator(learner='LR', ).cross_validation_fit(
+        df_covs, treated_label, verbose=0)
+
+    ps = model.predict_ps(df_covs)
+    model.report_stats()
+    # stablized weights, clip extreme weights/values top/bottom 1%
+    iptw = model.predict_inverse_weight(df_covs, treated_label, stabilized=True, clip=True)
+
+
+
+    zz
     print('all',
           'df.shape', df.shape,
           'df_info.shape:', df_info.shape,
