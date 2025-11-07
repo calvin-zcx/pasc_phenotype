@@ -85,7 +85,7 @@ def parse_args():
                         choices=['pregafter30', 'pregafter180',
                                  'pregafter180toAdd180', 'pregafter180toAdd365',
                                  ],
-                        default='pregafter180toAdd365')
+                        default='pregafter180')
     parser.add_argument('--exptype',
                         choices=['anypasc', 'anyCFR', 'mecfs', 'brainfog', 'U099',
                                  ], default='anypasc')  # 'base180-0'
@@ -330,6 +330,16 @@ def add_col(df):
              (df["DX: Diabetes Type 2"] >= 1).astype('int') +
              (df['CCI:Diabetes without complications'] >= 1).astype('int') +
              (df['CCI:Diabetes with complications'] >= 1).astype('int')
+             ) >= 1
+    ).astype('int')
+
+    df['PaxRiskAndOB:Diabetes'] = (
+            ((df["DX: Diabetes Type 1"] >= 1).astype('int') +
+             (df["DX: Diabetes Type 2"] >= 1).astype('int') +
+             (df['CCI:Diabetes without complications'] >= 1).astype('int') +
+             (df['CCI:Diabetes with complications'] >= 1).astype('int') +
+             (df['obc:Preexisting diabetes mellitus'] >= 1).astype('int')+
+             (df['obc:Gestational diabetes mellitus'] >= 1).astype('int')
              ) >= 1
     ).astype('int')
 
@@ -1077,7 +1087,6 @@ if __name__ == "__main__":
 
     print('args: ', args)
     print('random_seed: ', args.random_seed)
-
     # **************
     # in_file_infectt0 = r'./cns_output/Matrix-cns-adhd-CNS-ADHD-acuteIncident-0-30-25Q2-v3.csv'
     # in_file = r'../data/recover/output/pregnancy_output_y4/pregnant_yr4_pergnantOnsetGEinfect30days-updateAtPregOnset.csv'
@@ -1277,7 +1286,8 @@ if __name__ == "__main__":
                         'PaxRisk:Chronic lung disease',
                         # 'PaxRisk:Cystic fibrosis',
                         # 'PaxRisk:Dementia or other neurological conditions',
-                        'PaxRisk:Diabetes',
+                        #'PaxRisk:Diabetes', #into 'PaxRiskAndOB:Diabetes'
+                        'PaxRiskAndOB:Diabetes',
                         # 'PaxRisk:Disabilities',
                         # 'PaxRisk:Heart conditions', # into 'PaxRiskAndOB:Heart conditions'
                         'PaxRiskAndOB:Heart conditions',
@@ -1334,7 +1344,7 @@ if __name__ == "__main__":
             'RE:Other Non-Hispanic', 'RE:Unknown',
             'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             'BMI: >=30 obese ', 'BMI: missing',
-            'PaxRisk:Diabetes',
+            'PaxRiskAndOB:Diabetes', #'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
             # 'PaxRisk:Chronic kidney disease',
             'PaxRiskAndOB:Chronic renal disease',
@@ -1436,6 +1446,19 @@ if __name__ == "__main__":
         # Binary during 1 year after pregnancy onset
         # perterm birth is defined among live birth
         # others can be evaluated among all
+        
+        {'fetal growth restriction': [0, 67], 
+        'thromboembolic events': [1, 102], 
+        'Gestational diabetes mellitus': [2, 16], 
+        'Preeclampsia': [3, 39], 
+        'Eclampsia': [4, 8], 
+        'Preeclampsia-siPEC': [5, 7], 
+        'Preeclampsia-gHTN': [6, 7], 
+        'Preeclampsia-mPEC': [7, 6], 
+        'Preeclampsia-sPEC': [8, 6], 
+        'Preeclampsia-HELLP': [9, 6], 
+        'Preeclampsia-unPEC': [10, 6]}
+
         """
         print('\n In screening:', i, outcome_of_interest)
 
@@ -1460,6 +1483,21 @@ if __name__ == "__main__":
             """
             df = df_og
             outcome_of_interest_flag = (df[outcome_of_interest + 'Andlivebirth'] >= 1).astype('int')  # outcome label, binary
+        elif ('Gestational diabetes mellitus' in outcome_of_interest ):
+            df = df_og
+            outcome_of_interest_flag = ((df[outcome_of_interest] >= 1) & (df['PaxRiskAndOB:Diabetes'] ==0)).astype('int')  # outcome label, binary
+        elif any(x in outcome_of_interest for x in
+                 ['Preeclampsia',
+                  #'Eclampsia',
+                  #'Preeclampsia-siPEC',
+                  'Preeclampsia-gHTN',
+                  'Preeclampsia-mPEC',
+                  'Preeclampsia-sPEC',
+                  'Preeclampsia-HELLP',
+                  'Preeclampsia-unPEC']) :
+            df = df_og
+            outcome_of_interest_flag = ((df[outcome_of_interest] >= 1) & (df['PaxRiskAndOB:Hypertension'] == 0)).astype(
+                'int')
 
         else:
             df = df_og
@@ -1510,7 +1548,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
@@ -1522,7 +1560,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, exposure_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
@@ -1532,14 +1570,14 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': exposure_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(outcome_of_interest)))
         try:
-            figout = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
@@ -1680,7 +1718,7 @@ if __name__ == "__main__":
             # 'RE:Other Non-Hispanic', 'RE:Unknown',
             # 'BMI: <18.5 under weight', 'BMI: 18.5-<25 normal weight', 'BMI: 25-<30 overweight ',
             # 'BMI: >=30 obese ', 'BMI: missing',
-            'PaxRisk:Diabetes',
+            'PaxRiskAndOB:Diabetes', #'PaxRisk:Diabetes',
             'PaxRisk:Obesity',
             # 'PaxRisk:Chronic kidney disease',
             'PaxRiskAndOB:Chronic renal disease',
@@ -1828,7 +1866,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
@@ -1839,7 +1877,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
@@ -1851,7 +1889,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectoutcome_of_interest else '',

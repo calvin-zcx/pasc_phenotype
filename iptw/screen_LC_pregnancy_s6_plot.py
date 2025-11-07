@@ -1049,7 +1049,7 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full', excludenull
         # groupvar="group",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Odds Ratio",  # x-label title
-        xticks=[0.2, 1, 4.],
+        xticks=[0.2, 1, 3.],
         # [0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
@@ -2627,6 +2627,9 @@ if __name__ == '__main__':
 
     # xticks=xticks=[0.2, 1, 4.],, logscale=False,
     indir = r'../data/recover/output/results/LCPregOut-pregafter180toAdd365-all-anypascs99/'
+
+    # xticks=[0.2, 1, 3.], logscale=False,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-anypascs99-V2Incident/'
     df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval')
 
 
@@ -2634,7 +2637,7 @@ if __name__ == '__main__':
     # # xticks=[0.1, 1, 20.], logscale=True,
     # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval', excludenull=True)
 
-    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-U099s99/'
+    # indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-U099s99/'
     # xticks=[0.1, 1, 20.], logscale=True,
     # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval', excludenull=True)
 
