@@ -1208,12 +1208,16 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
 
         ahr_pformat, ahr_psym = pformat_symbol(p)
 
+        # 'case_in_exposed_lower_bound', 'case_in_exposed_upper_bound',
+        # 'case_in_unexposed_lower_bound', 'case_in_unexposed_upper_bound',
         cif1 = row['mean outcome_of_interest in +'] * 100
-        cif1_ci = [np.nan, np.nan]
+        # cif1_ci = [np.nan, np.nan]
+        cif1_ci = [row['case_in_exposed_lower_bound'] * 100, row['case_in_exposed_upper_bound'] * 100]
 
         # use nabs for ncum_ci_negative
         cif0 = row['mean outcome_of_interest in -'] * 100
-        cif0_ci = [np.nan, np.nan]
+        # cif0_ci = [np.nan, np.nan]
+        cif0_ci = [row['case_in_unexposed_lower_bound'] * 100, row['case_in_unexposed_upper_bound'] * 100]
 
         if excludenull and ((cif1 == 0) or (cif0 == 0)):
             continue
@@ -1227,8 +1231,8 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
                   hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
                   '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
                   '({:.2f},{:.2f})'.format(ci[0], ci[1]),
-                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f}'.format(cif1, cif1_ci[0], cif1_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
-                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f}'.format(cif0, cif0_ci[0], cif0_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
                   ahr_pformat + ahr_psym, ahr_psym,
                   # cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
                   # '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
@@ -1330,8 +1334,8 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
 
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-addCI.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-addCI.pdf'.format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
