@@ -620,7 +620,7 @@ def add_col(df):
                       x.startswith('dxbrainfog-out@') or
                       x.startswith('covidmed-out@') or
                       x.startswith('smm-out@') or
-                      x.startswith('pregnancyout2nd-out@') or
+                      # x.startswith('pregnancyout2nd-out@') or  # count abs value
                       x.startswith('dxCFR-out@') or
                       x.startswith('mental-base@') or
                       x.startswith('dxMECFS-base@') or
@@ -1425,13 +1425,44 @@ if __name__ == "__main__":
 
     pregnancyout2nd_list = ['pregnancyout2nd-out@' + x for x in pregnancyout2nd_encoding.keys()]
 
+    ## revise PE definition per MD 2025-12-2
+    # ['fetal growth restriction', 'thromboembolic events', 'Gestational diabetes mellitus',
+    # 'Preeclampsia', 'Eclampsia',
+    # 'Preeclampsia-siPEC', 'Preeclampsia-gHTN', 'Preeclampsia-mPEC',
+    # 'Preeclampsia-sPEC', 'Preeclampsia-HELLP', 'Preeclampsia-unPEC']
+    df['revisedout2nd@Preeclampsia'] = (df['pregnancyout2nd-out@Preeclampsia'] >= 2).astype('int')
+
+    df['revisedout2nd@gHTN-unPEC-mPEC-COUNT'] = df[['pregnancyout2nd-out@Preeclampsia-gHTN',
+                                              'pregnancyout2nd-out@Preeclampsia-mPEC',
+                                              'pregnancyout2nd-out@Preeclampsia-unPEC']].sum(axis=1)
+
+    df['revisedout2nd@gHTN-unPEC-mPEC'] = ((df['revisedout2nd@gHTN-unPEC-mPEC-COUNT'] >= 2) & (df['PaxRiskAndOB:Hypertension'] == 0)).astype('int')
+    df['revisedout2nd@Preeclampsia-siPEC'] = ((df['pregnancyout2nd-out@Preeclampsia-siPEC'] >= 2) & (df['PaxRiskAndOB:Hypertension'] > 0)).astype('int')
+    df['revisedout2nd@Preeclampsia-sPEC'] = (df['pregnancyout2nd-out@Preeclampsia-sPEC'] >= 2).astype('int')
+    df['revisedout2nd@Preeclampsia-HELLP'] = (df['pregnancyout2nd-out@Preeclampsia-HELLP'] >= 2).astype('int')
+
+    df['revisedout2nd@Preeclampsia-sumV2'] = ( (df['revisedout2nd@gHTN-unPEC-mPEC'] +
+                                               df['revisedout2nd@Preeclampsia-siPEC'] +
+                                               df['revisedout2nd@Preeclampsia-sPEC'] +
+                                               df['revisedout2nd@Preeclampsia-HELLP']) > 0
+                                               ).astype('int')
+
+    pregnancyout2nd_list_revised = ['revisedout2nd@Preeclampsia',
+                                    'revisedout2nd@Preeclampsia-sumV2',
+                                    'revisedout2nd@gHTN-unPEC-mPEC',
+                                    'revisedout2nd@Preeclampsia-siPEC',
+                                    'revisedout2nd@Preeclampsia-sPEC',
+                                    'revisedout2nd@Preeclampsia-HELLP'
+                                    ]
+    ##
+
     selected_screen_list = ['preterm birth<37Andlivebirth', 'preterm birth<37',
                             'preterm birth<34Andlivebirth', 'preterm birth<34',
                             'preg_outcome-livebirth', 'preg_outcome-stillbirth',
                             'preg_outcome-miscarriage', 'preg_outcome-miscarriage<20week',
                             'preg_outcome-abortion', 'preg_outcome-abortion<20week',
                             'preg_outcome-other', 'SMM-overall-Any'
-                            ] + pregnancyout2nd_list + SMM_outcome_list
+                            ] + pregnancyout2nd_list + pregnancyout2nd_list_revised + SMM_outcome_list
 
     # Step-4, Adjusted analysis and dump results
     causal_results = []
@@ -1494,7 +1525,7 @@ if __name__ == "__main__":
                   'Preeclampsia-mPEC',
                   'Preeclampsia-sPEC',
                   'Preeclampsia-HELLP',
-                  'Preeclampsia-unPEC']) :
+                  'Preeclampsia-unPEC']) and (not outcome_of_interest.startswith('revisedout2nd@')) :
             df = df_og
             outcome_of_interest_flag = ((df[outcome_of_interest] >= 1) & (df['PaxRiskAndOB:Hypertension'] == 0)).astype(
                 'int')
@@ -1548,7 +1579,7 @@ if __name__ == "__main__":
             (np.abs(smd) > SMD_THRESHOLD).sum(),
             (np.abs(smd_weighted) > SMD_THRESHOLD).sum())
         )
-        out_file_balance = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-results.csv'.format(
+        out_file_balance = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/{}-{}-results.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectpasc else '',
@@ -1560,7 +1591,7 @@ if __name__ == "__main__":
 
         df_summary = summary_covariate(covs_array, exposure_label, iptw, smd, smd_weighted, before, after)
         df_summary.to_csv(
-            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-evaluation_balance.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/{}-{}-evaluation_balance.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectpasc else '',
@@ -1570,14 +1601,14 @@ if __name__ == "__main__":
         dfps = pd.DataFrame({'ps': ps, 'iptw': iptw, 'Exposure': exposure_label})
 
         dfps.to_csv(
-            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-evaluation_ps-iptw.csv'.format(
+            '../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/{}-{}-evaluation_ps-iptw.csv'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
                 args.negative_ratio, '-adjustless' if args.adjustless else '',
                 i, _clean_name_(outcome_of_interest)))
         try:
-            figout = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/{}-{}-PS.png'.format(
+            figout = r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/{}-{}-PS.png'.format(
                 args.cohorttype,
                 args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                 args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
@@ -1866,7 +1897,7 @@ if __name__ == "__main__":
             if i % 2 == 0:
                 pd.DataFrame(causal_results, columns=results_columns_name). \
                     to_csv(
-                    r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific-snapshot-{}.csv'.format(
+                    r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/causal_effects_specific-snapshot-{}.csv'.format(
                         args.cohorttype,
                         args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                         args.exptype,  # '-select' if args.selectpasc else '',
@@ -1877,7 +1908,7 @@ if __name__ == "__main__":
             df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
             df_causal.to_csv(
-                r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific-ERRORSAVE.csv'.format(
+                r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/causal_effects_specific-ERRORSAVE.csv'.format(
                     args.cohorttype,
                     args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
                     args.exptype,  # '-select' if args.selectoutcome_of_interest else '',
@@ -1889,7 +1920,7 @@ if __name__ == "__main__":
     df_causal = pd.DataFrame(causal_results, columns=results_columns_name)
 
     df_causal.to_csv(
-        r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V2Incident/causal_effects_specific.csv'.format(
+        r'../data/recover/output/results/LCPregOut-{}-{}-{}s{}{}-V3Incident/causal_effects_specific.csv'.format(
             args.cohorttype,
             args.severity.replace(':', '_').replace('/', '-').replace(' ', '_'),
             args.exptype,  # '-select' if args.selectoutcome_of_interest else '',

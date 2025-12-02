@@ -1078,6 +1078,264 @@ def plot_forest_for_LC_pregnant_outcome_primary(indir,  show='full', excludenull
     print('Done')
     return df_result
 
+def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excludenull=False):
+    # 2025-02-21 with any brain fog, revise control name,
+    # 2025-12-2 with revised PE
+
+    output_dir = indir + r'figure/'
+
+    df = pd.read_csv(indir + 'causal_effects_specific.csv')
+    print(df['outcome_of_interest'].to_list())
+
+
+    selected_rows =  [
+        'preterm birth<37',
+        'preterm birth<34',
+        'preterm birth<37Andlivebirth',
+         'preterm birth<34Andlivebirth',
+         # 'preg_outcome-livebirth',
+         'preg_outcome-stillbirth',
+         # 'preg_outcome-miscarriage',
+         # 'preg_outcome-miscarriage<20week',
+         # 'preg_outcome-abortion',
+         # 'preg_outcome-abortion<20week',
+         # 'preg_outcome-other',
+         'pregnancyout2nd-out@fetal growth restriction',
+         'pregnancyout2nd-out@thromboembolic events',
+         'pregnancyout2nd-out@Gestational diabetes mellitus',
+
+         'pregnancyout2nd-out@Preeclampsia',
+        'pregnancyout2nd-out@Preeclampsia-siPEC',
+        'pregnancyout2nd-out@Preeclampsia-sPEC',
+        'pregnancyout2nd-out@Preeclampsia-HELLP',
+        'pregnancyout2nd-out@Preeclampsia-mPEC',
+        'pregnancyout2nd-out@Preeclampsia-unPEC',
+        'pregnancyout2nd-out@Preeclampsia-gHTN',
+
+        # 'revisedout2nd@Preeclampsia',
+        'revisedout2nd@Preeclampsia-sumV2',
+        'revisedout2nd@Preeclampsia-siPEC',
+        'revisedout2nd@Preeclampsia-sPEC',
+        'revisedout2nd@Preeclampsia-HELLP',
+        'revisedout2nd@gHTN-unPEC-mPEC',
+
+        'pregnancyout2nd-out@Eclampsia',
+         'SMM-overall-Any',
+        # 'smm-out@smm:Eclampsia',
+         # 'smm-out@smm:Acute myocardial infarction', 'smm-out@smm:Aneurysm', 'smm-out@smm:Acute renal failure',
+         # 'smm-out@smm:Adult respiratory distress syndrome', 'smm-out@smm:Amniotic fluid embolism',
+         # 'smm-out@smm:Cardiac arrest/ventricular fibrillation', 'smm-out@smm:Conversion of cardiac rhythm',
+         # 'smm-out@smm:Disseminated intravascular coagulation', 'smm-out@smm:Eclampsia',
+         # 'smm-out@smm:Heart failure/arrest during surgery or procedure', 'smm-out@smm:Puerperal cerebrovascular disorders',
+         # 'smm-out@smm:Pulmonary edema / Acute heart failure', 'smm-out@smm:Severe anesthesia complications',
+         # 'smm-out@smm:Sepsis', 'smm-out@smm:Shock', 'smm-out@smm:Sickle cell disease with crisis',
+         # 'smm-out@smm:Air and thrombotic embolism', 'smm-out@smm:Blood products transfusion', 'smm-out@smm:Hysterectomy',
+         # 'smm-out@smm:Temporary tracheostomy', 'smm-out@smm:Ventilation'
+        ]
+
+    selected_rows_namemap = {
+        'preterm birth<37': 'Preterm birth<37weeks',
+        'preterm birth<34': 'Preterm birth<34weeks',
+        'preterm birth<37Andlivebirth': 'Preterm birth<37weeks in live',
+         'preterm birth<34Andlivebirth': 'Preterm birth<34weeks in live',
+         'preg_outcome-livebirth':'Live birth',
+         'preg_outcome-stillbirth': 'Still birth',
+         'preg_outcome-miscarriage':'Miscarriage',
+         'preg_outcome-miscarriage<20week':'Miscarriage<20weeks',
+         'preg_outcome-abortion':'abortuion',
+         'preg_outcome-abortion<20week':'abortuion<20weeks',
+         'preg_outcome-other':'Others',
+         'pregnancyout2nd-out@fetal growth restriction':'Fetal growth restriction',
+         'pregnancyout2nd-out@thromboembolic events': 'Thromboembolic events',
+         'pregnancyout2nd-out@Gestational diabetes mellitus': 'Gestational diabetes',
+         'pregnancyout2nd-out@Preeclampsia': 'Preeclampsia',
+        'pregnancyout2nd-out@Preeclampsia-siPEC': 'siPEC (O11)',
+        'pregnancyout2nd-out@Preeclampsia-gHTN': 'gHTN (O13)',
+        'pregnancyout2nd-out@Preeclampsia-mPEC': 'mPEC (O140)',
+        'pregnancyout2nd-out@Preeclampsia-sPEC': 'sPEC (O141)',
+        'pregnancyout2nd-out@Preeclampsia-HELLP': 'HELLP (O142)',
+        'pregnancyout2nd-out@Preeclampsia-unPEC': 'unPEC (O149)',
+        'revisedout2nd@Preeclampsia': 'Preeclampsia-rev',
+        'revisedout2nd@Preeclampsia-sumV2': 'Preeclampsia-revs',
+        'revisedout2nd@gHTN-unPEC-mPEC':'gHTN/unPEC/mPEC-rev',
+        'revisedout2nd@Preeclampsia-siPEC':'siPEC-rev + base HTN',
+        'revisedout2nd@Preeclampsia-sPEC':'sPEC-rev',
+        'revisedout2nd@Preeclampsia-HELLP':'HELLP-rev',
+        'pregnancyout2nd-out@Eclampsia': 'Eclampsia (O15)',
+         'SMM-overall-Any': 'SMM-overall',
+         'smm-out@smm:Acute myocardial infarction':'Acute myocardial infarction',
+         'smm-out@smm:Aneurysm': 'Aneurysm',
+         'smm-out@smm:Acute renal failure': 'Acute renal failure',
+         # 'smm-out@smm:Adult respiratory distress syndrome',
+        # 'smm-out@smm:Amniotic fluid embolism',
+         # 'smm-out@smm:Cardiac arrest/ventricular fibrillation', '
+        # smm-out@smm:Conversion of cardiac rhythm',
+         # 'smm-out@smm:Disseminated intravascular coagulation',
+         'smm-out@smm:Eclampsia': 'Eclampsia',
+         # 'smm-out@smm:Heart failure/arrest during surgery or procedure',
+         # 'smm-out@smm:Puerperal cerebrovascular disorders',
+         # 'smm-out@smm:Pulmonary edema / Acute heart failure', 'smm-out@smm:Severe anesthesia complications',
+         # 'smm-out@smm:Sepsis', 'smm-out@smm:Shock', 'smm-out@smm:Sickle cell disease with crisis',
+         # 'smm-out@smm:Air and thrombotic embolism', 'smm-out@smm:Blood products transfusion',
+         # 'smm-out@smm:Hysterectomy',
+         # 'smm-out@smm:Temporary tracheostomy',
+        # 'smm-out@smm:Ventilation'
+    }
+
+    # 'Injury, Poisoning and Certain Other Consequences of External Causes']
+
+    results_list = []
+
+    for outcome_name in selected_rows:
+        row = df.loc[df['outcome_of_interest'] == outcome_name, :]
+        row = row.iloc[0]
+
+        name = row['outcome_of_interest'].strip('*')
+        # if len(name.split()) >= 5:
+        #     name = ' '.join(name.split()[:4]) + '\n' + ' '.join(name.split()[4:])
+        name_simple = selected_rows_namemap[name]
+        print(outcome_name, name, name_simple)
+
+
+        hr = row['odds_ratios_iptwreweight.exposed']
+        if pd.notna(row['odds_ratios_iptwreweight.exposed']):
+            ci = [row['odds_ratios_ci_iptwreweight lower'], row['odds_ratios_ci_iptwreweight upper']]
+        else:
+            ci = [np.nan, np.nan]
+        p = row['p_values_iptwreweight.exposed']
+
+
+
+        ahr_pformat, ahr_psym = pformat_symbol(p)
+
+        cif1 = row['mean outcome_of_interest in +'] * 100
+        cif1_ci = [np.nan, np.nan]
+
+        # use nabs for ncum_ci_negative
+        cif0 = row['mean outcome_of_interest in -'] * 100
+        cif0_ci = [np.nan, np.nan]
+
+        if excludenull and ((cif1 == 0) or (cif0 == 0)):
+            continue
+        # cif_diff = stringlist_2_list(row['cif-w-diff-2'])[-1] * 100
+        # cif_diff_ci = [stringlist_2_list(row['cif-w-diff-CILower'])[-1] * 100,
+        #                stringlist_2_list(row['cif-w-diff-CIUpper'])[-1] * 100]
+        # cif_diff_p = stringlist_2_list(row['cif-w-diff-p'])[-1]
+        # cif_diff_pformat, cif_diff_psym = pformat_symbol(cif_diff_p)
+
+        result = [name, name_simple,
+                  hr, '{:.2f} ({:.2f}, {:.2f})'.format(hr, ci[0], ci[1]), p,
+                  '{:.2f}'.format(ci[0]), '{:.2f}'.format(ci[1]),
+                  '({:.2f},{:.2f})'.format(ci[0], ci[1]),
+                  cif1, cif1_ci[0], cif1_ci[1], '{:.2f}'.format(cif1, cif1_ci[0], cif1_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif1, cif1_ci[0], cif1_ci[1]),
+                  cif0, cif0_ci[0], cif0_ci[1], '{:.2f}'.format(cif0, cif0_ci[0], cif0_ci[1]), #'{:.2f} ({:.2f}, {:.2f})'.format(cif0, cif0_ci[0], cif0_ci[1]),
+                  ahr_pformat + ahr_psym, ahr_psym,
+                  # cif_diff, '{:.2f} ({:.2f}, {:.2f})'.format(cif_diff, cif_diff_ci[0], cif_diff_ci[1]), cif_diff_p,
+                  # '{:.2f}'.format(cif_diff_ci[0]), '{:.2f}'.format(cif_diff_ci[1]),
+                  # '({:.2f},{:.2f})'.format(cif_diff_ci[0], cif_diff_ci[1]),
+                  # cif_diff_pformat + cif_diff_psym, cif_diff_psym
+                  ]
+        results_list.append(result)
+
+    df_result = pd.DataFrame(results_list,
+                             columns=['name', 'name_simple',
+                                      'odds ratio', 'odds ratio-str', 'p-val', 'odds ratio-lb', 'odds ratio-ub',
+                                      'odds ratio-CI-str',
+                                      'CIF1', 'CIF1-lb', 'CIF1-ub', 'CIF1-str',
+                                      'CIF0', 'CIF0-lb', 'CIF0-ub', 'CIF0-str',
+                                      'p-val-sci', 'sigsym',
+                                      # 'cif_diff', 'cif_diff-str', 'cif_diff-p',
+                                      # 'cif_diff_cilower', 'cif_diff_ciupper', 'cif_diff-CI-str',
+                                      # 'cif_diff-p-format', 'cif_diff-p-symbol'
+                                      ])
+
+    # df_result['-aHR'] = -1 * df_result['aHR']
+    # df_result = df_result.loc[~df_result['aHR'].isna()]
+    # df_result = df_result.loc[(1e-5 < df_result['aHR']) & (df_result['aHR'] < 100)].reset_index()
+    # df_result.loc[df_result['pasc'] == r'Headache; including migraine', r'name'] = r'Headache '
+
+    plt.rc('font', family='serif')
+    if show == 'full':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100', 'P-Value',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        left_annoteheaders = ['CIF/100 in CNS', 'CIF/100 in Non-CNS']
+
+    elif show == 'short':
+        rightannote = ["aHR-str", 'p-val-sci',
+                       'cif_diff-str', 'cif_diff-p-format',
+                       ]
+        right_annoteheaders = ["HR (95% CI)", "P-value",
+                               'DIFF/100 (95% CI)', 'P-Value',
+                               ]
+        leftannote = []
+        left_annoteheaders = []
+    elif show == 'full-nopval':
+        rightannote = ["odds ratio-str",
+                       #'cif_diff-str',
+                       ]
+        right_annoteheaders = ["odds ratio (95% CI)",
+                               #'DIFF/100 (95% CI)',
+                               ]
+
+        leftannote = ['CIF1-str', 'CIF0-str']
+        # left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Non-SSRI']
+        left_annoteheaders = ['CIF/100 with LC', 'CIF/100 w/o LC']
+
+    # fig, ax = plt.subplots()
+    axs = fp.forestplot(
+        df_result,  # the dataframe with results data
+        figsize=(4, 12),
+        estimate="odds ratio",  # col containing estimated effect size
+        ll='odds ratio-lb',
+        hl='odds ratio-ub',  # lower & higher limits of conf. int.
+        varlabel="name_simple",  # column containing the varlabels to be printed on far left
+        # capitalize="capitalize",  # Capitalize labels
+        pval="p-val",  # column containing p-values to be formatted
+        starpval=True,
+        annote=leftannote,  # ["aHR", "aHR-CI-str"],  # columns to report on left of plot
+        annoteheaders=left_annoteheaders,  # annoteheaders=[ "aHR", "Est. (95% Conf. Int.)"],  # ^corresponding headers
+        rightannote=rightannote,
+        # p_format, columns to report on right of plot
+        right_annoteheaders=right_annoteheaders,  # p_format, ^corresponding headers
+        # groupvar="group",  # column containing group labels
+        # group_order=df_result['group'].unique(),
+        xlabel="Odds Ratio",  # x-label title
+        xticks=[0.2, 1, 3.],
+        # [0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
+        color_alt_rows=True,
+        # flush=True,
+        # sort=False, #True,  # sort estimates in ascending order
+        # sortby='-aHR',
+        # table=True,  # Format as a table
+        # logscale=True,  # True, #False, #True, #False, #True, #False, #True,
+        # Additional kwargs for customizations
+        **{
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+            "marker": "D",  # set maker symbol as diamond
+            "markersize": 35,  # adjust marker size
+            "xlinestyle": (0., (10, 5)),  # long dash for x-reference line
+            "xlinecolor": ".1",  # gray color for x-reference line
+            "xtick_size": 12,  # adjust x-ticker fontsize
+            # 'fontfamily': 'sans-serif',  # 'sans-serif'
+        },
+    )
+    # axs.set_xlim([0.1, 5])
+
+    axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
+    check_and_mkdir(output_dir)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.png'.format(show), bbox_inches='tight', dpi=600)
+    plt.savefig(output_dir + 'hr_moretabs-{}-nosort.pdf'.format(show), bbox_inches='tight', transparent=True)
+
+    print('Done')
+    return df_result
+
 
 def plot_forest_for_dx_organ_ssri_lib2_cifdiff_primary_v3_individualSSRI(indir, drugname, ctrlname='Non-SSRI',
                                                                          show='full'):
@@ -2630,7 +2888,11 @@ if __name__ == '__main__':
 
     # xticks=[0.2, 1, 3.], logscale=False,
     indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-anypascs99-V2Incident/'
-    df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval')
+    # df_result = plot_forest_for_LC_pregnant_outcome_primary(indir, show='full-nopval')
+
+    # xticks=[0.2, 1, 3.], logscale=False,
+    indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-anypascs99-V3Incident/'
+    df_result = plot_forest_for_LC_pregnant_outcome_primary_v2(indir, show='full-nopval')
 
 
     # indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-mecfss99/'
