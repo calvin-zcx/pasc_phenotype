@@ -1148,15 +1148,15 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
          'pregnancyout2nd-out@fetal growth restriction':'Fetal growth restriction',
          'pregnancyout2nd-out@thromboembolic events': 'Thromboembolic events',
          'pregnancyout2nd-out@Gestational diabetes mellitus': 'Gestational diabetes',
-         'pregnancyout2nd-out@Preeclampsia': 'Preeclampsia',
+         'pregnancyout2nd-out@Preeclampsia': 'Preeclampsia/HDPs',
         'pregnancyout2nd-out@Preeclampsia-siPEC': 'siPEC (O11)',
         'pregnancyout2nd-out@Preeclampsia-gHTN': 'gHTN (O13)',
         'pregnancyout2nd-out@Preeclampsia-mPEC': 'mPEC (O140)',
         'pregnancyout2nd-out@Preeclampsia-sPEC': 'sPEC (O141)',
         'pregnancyout2nd-out@Preeclampsia-HELLP': 'HELLP (O142)',
         'pregnancyout2nd-out@Preeclampsia-unPEC': 'unPEC (O149)',
-        'revisedout2nd@Preeclampsia': 'Preeclampsia-rev',
-        'revisedout2nd@Preeclampsia-sumV2': 'Preeclampsia-revs',
+        'revisedout2nd@Preeclampsia': 'Preeclampsia/HDPs-rev',
+        'revisedout2nd@Preeclampsia-sumV2': 'Preeclampsia/HDPs-revs',
         'revisedout2nd@gHTN-unPEC-mPEC':'gHTN/unPEC/mPEC-rev',
         'revisedout2nd@Preeclampsia-siPEC':'siPEC-rev + base HTN',
         'revisedout2nd@Preeclampsia-sPEC':'sPEC-rev',
@@ -1280,13 +1280,13 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
         rightannote = ["odds ratio-str",
                        #'cif_diff-str',
                        ]
-        right_annoteheaders = ["odds ratio (95% CI)",
+        right_annoteheaders = ["Adjusted Odds Ratio (95% CI)",
                                #'DIFF/100 (95% CI)',
                                ]
 
         leftannote = ['CIF1-str', 'CIF0-str']
         # left_annoteheaders = ['CIF/100 in SSRI', 'CIF/100 in Non-SSRI']
-        left_annoteheaders = ['CIF/100 with LC', 'CIF/100 w/o LC']
+        left_annoteheaders = ['CIF% with LC', 'CIF% w/o LC']
 
     # fig, ax = plt.subplots()
     axs = fp.forestplot(
@@ -1307,7 +1307,7 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
         # groupvar="group",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Odds Ratio",  # x-label title
-        xticks=[0.2, 1, 3.],
+        xticks=[0.01, 1, 3.],
         # [0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
