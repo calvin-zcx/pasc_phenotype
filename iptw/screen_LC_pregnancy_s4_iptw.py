@@ -1817,12 +1817,29 @@ if __name__ == "__main__":
         try:
             # change 2022-03-20 considering competing risk 2
             # change 2024-02-29 add CI for CIF difference and KM difference
+
+            case_in_exposed_lower_bound, case_in_exposed_upper_bound = sm.stats.proportion_confint(
+                count=cont_table_a,
+                nobs=cont_table_a + cont_table_c,
+                alpha=0.05,
+                method='normal'
+            )
+
+            case_in_unexposed_lower_bound, case_in_unexposed_upper_bound = sm.stats.proportion_confint(
+                count=cont_table_b,
+                nobs=cont_table_b + cont_table_d,
+                alpha=0.05,
+                method='normal'
+            )
+
             _results = [i, outcome_of_interest,
                         exposure_label.sum(), (exposure_label == 0).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 1).mean(),
                         (outcome_of_interest_flag[exposure_label == 0] == 1).mean(),
+                        case_in_exposed_lower_bound, case_in_exposed_upper_bound,
+                        case_in_unexposed_lower_bound, case_in_unexposed_upper_bound,
                         (outcome_of_interest_flag[exposure_label == 1] == 0).sum(),
                         (outcome_of_interest_flag[exposure_label == 0] == 0).sum(),
                         (outcome_of_interest_flag[exposure_label == 1] == 0).mean(),
@@ -1858,8 +1875,11 @@ if __name__ == "__main__":
             causal_results.append(_results)
             results_columns_name = [
                 'i', 'outcome_of_interest', 'case+', 'ctrl-',
-                'no. outcome_of_interest in +', 'no. outcome_of_interest in -', 'mean outcome_of_interest in +',
+                'no. outcome_of_interest in +', 'no. outcome_of_interest in -',
+                'mean outcome_of_interest in +',
                 'mean outcome_of_interest in -',
+                'case_in_exposed_lower_bound', 'case_in_exposed_upper_bound',
+                'case_in_unexposed_lower_bound', 'case_in_unexposed_upper_bound',
                 'no. death in +', 'no. death in -', 'mean death in +', 'mean death in -',
                 'no. unbalance', 'no. unbalance iptw', 'max smd', 'max smd iptw',
                 #
