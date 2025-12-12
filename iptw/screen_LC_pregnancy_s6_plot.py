@@ -1341,13 +1341,13 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2(indir,  show='full', excluden
     return df_result
 
 
-def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excludenull=False):
+def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir, infile_name,  show='full', excludenull=False):
     # 2025-02-21 with any brain fog, revise control name,
     # 2025-12-2 with revised PE
 
     output_dir = indir + r'figure/'
 
-    df = pd.read_excel(indir + '25_12_09 Main Results Exposure IPTW.xlsx')
+    df = pd.read_excel( indir + infile_name ) #  test: # '25_12_09 Main Results Exposure IPTW.xlsx'
     print(df['outcome_of_interest'].to_list())
 
 
@@ -1363,7 +1363,7 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excl
          # 'preg_outcome-abortion',
          # 'preg_outcome-abortion<20week',
          # 'preg_outcome-other',
-         # 'pregnancyout2nd-out@fetal growth restriction',
+         'outcome_0_fetal_growth_restriction',
          'outcome_1_thromboembolic_events',
          'outcome_2_gestational_diabetes_mellitus',
 
@@ -1409,12 +1409,13 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excl
          'preg_outcome-abortion<20week':'abortuion<20weeks',
          'preg_outcome-other':'Others',
          'pregnancyout2nd-out@fetal growth restriction':'Fetal growth restriction',
+        'outcome_0_fetal_growth_restriction': 'Fetal growth restriction',
         'outcome_1_thromboembolic_events': 'Thromboembolic events',
     'outcome_2_gestational_diabetes_mellitus': 'Gestational diabetes',
 
     'outcome_3_preeclampsia': 'Preeclampsia/HDPs',
     'outcome_5_preeclampsia_sipec': 'siPEC (O11)',
-    'outcome_8_preeclampsia_spec': 'siPEC (O11)',
+    'outcome_8_preeclampsia_spec': 'sPEC (O141)',
     'outcome_9_preeclampsia_hellp': 'HELLP (O142)',
     'outcome_7_preeclampsia_mpec': 'mPEC (O140)',
     'outcome_10_preeclampsia_unpec': 'unPEC (O149)',
@@ -1484,7 +1485,7 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excl
 
 
 
-        p =  np.nan #row['p_values_iptwreweight.exposed']
+        p =  row['p_values_iptwreweight.exposed']
 
 
 
@@ -1593,14 +1594,14 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excl
         # groupvar="group",  # column containing group labels
         # group_order=df_result['group'].unique(),
         xlabel="Odds Ratio",  # x-label title
-        xticks=[0.01, 1, 10.],
+        xticks=[0.01, 1, 3.],
         # [0.1, 1, 5],  #[0.1, 1, 2.5],  #[0.5, 1, 2.],  #[0.1, 1, 10], #[0.3, 1, 2.5], #[0.5, 1, 2.],  # x-ticks to be printed  [0.5, 1, 35],  #
         color_alt_rows=True,
         # flush=True,
         # sort=False, #True,  # sort estimates in ascending order
         # sortby='-aHR',
         # table=True,  # Format as a table
-        logscale=True,  # True, #False, #True, #False, #True, #False, #True,
+        # logscale=True,  # True, #False, #True, #False, #True, #False, #True,
         # Additional kwargs for customizations
         **{
             # 'fontfamily': 'sans-serif',  # 'sans-serif'
@@ -1612,12 +1613,12 @@ def plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir,  show='full', excl
             # 'fontfamily': 'sans-serif',  # 'sans-serif'
         },
     )
-    # axs.set_xlim([0.1, 5])
+    axs.set_xlim([0.01, 3])
 
     axs.axvline(x=1, ymin=0, ymax=0.95, color='grey', linestyle='dashed')
     check_and_mkdir(output_dir)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-addCI.png'.format(show), bbox_inches='tight', dpi=600)
-    plt.savefig(output_dir + 'hr_moretabs-{}-nosort-addCI.pdf'.format(show), bbox_inches='tight', transparent=True)
+    plt.savefig(indir + r'figure/' + infile_name.replace('.xlsx', '-hr_moretabs-{}-25-12-10.png'.format(show)), bbox_inches='tight', dpi=600)
+    plt.savefig(indir + r'figure/' + infile_name.replace('.xlsx', '-hr_moretabs-{}-25-12-10.pdf'.format(show)).format(show), bbox_inches='tight', transparent=True)
 
     print('Done')
     return df_result
@@ -3181,7 +3182,11 @@ if __name__ == '__main__':
     # df_result = plot_forest_for_LC_pregnant_outcome_primary_v2(indir, show='full-nopval')
 
     indir = r'../data/recover/output/results/LCPregOut-N3C/'
-    df_result = plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir, show='full-nopval')
+    infile_name = '25_12_10 Main Results Causal Subset.xlsx'
+    infile_name = '25_12_10 Supplemental 4 CFR Causal Subset.xlsx'
+    infile_name = '25_12_10 Supplemental 3 Brain Fog Causal Subset.xlsx'
+    infile_name = '25_12_10 Supplemental 5 U099 Causal Subset.xlsx'
+    df_result = plot_forest_for_LC_pregnant_outcome_primary_v2_N3C(indir, infile_name, show='full-nopval')
 
 
     # indir = r'../data/recover/output/results/LCPregOut-pregafter180-all-mecfss99/'
